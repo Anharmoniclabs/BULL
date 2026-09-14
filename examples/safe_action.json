@@ -1,0 +1,11 @@
+{
+  "actor": "alice",
+  "task": "Fix CSS spacing in settings page",
+  "operation": "write_file",
+  "resource": "/workspace/src/settings.css",
+  "capability": "fs.write.project",
+  "granted_capabilities": ["fs.read.project", "fs.write.project"],
+  "provenance": ["human", "repository"],
+  "irreversible": false,
+  "external_side_effect": false
+}
