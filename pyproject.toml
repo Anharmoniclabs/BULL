@@ -1,0 +1,18 @@
+[project]
+name = "bulldog-ai-firewall"
+version = "0.1.0"
+description = "Local execution firewall and provenance-aware policy harness for AI agents"
+requires-python = ">=3.11"
+authors = [{name = "Anharmoniclabs"}]
+license = {text = "Apache-2.0"}
+dependencies = []
+
+[project.scripts]
+bulldog = "bulldog.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
