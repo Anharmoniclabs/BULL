@@ -1,0 +1,11 @@
+{
+  "actor": "alice",
+  "task": "Fix CSS spacing in settings page",
+  "operation": "read_file",
+  "resource": "/home/user/.ssh/id_rsa",
+  "capability": "credential.read",
+  "granted_capabilities": ["credential.read", "fs.write.project"],
+  "provenance": ["internet", "external_agent"],
+  "irreversible": false,
+  "external_side_effect": false
+}
