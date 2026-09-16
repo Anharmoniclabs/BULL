@@ -39,7 +39,13 @@ class BulldogEngine:
             reasons = hard.reasons
             if advisory.reason and advisory.reason != "no advisory model configured":
                 reasons = reasons + (f"advisory: {advisory.reason}",)
-            result = Evaluation(decision, risk, reasons, hard_block=False)
+            result = Evaluation(
+                decision,
+                risk,
+                reasons,
+                hard_block=False,
+                flags=hard.flags,
+            )
 
         if self.ledger is not None:
             self.ledger.append(action, result)
