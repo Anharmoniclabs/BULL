@@ -21,11 +21,22 @@ class AuditLedger:
             "task": action.task,
             "operation": action.operation,
             "resource": action.resource,
+            "resolved_resource": action.resolved_resource,
             "capability": action.capability.value,
             "provenance": [p.value for p in action.provenance],
+            "security_context_verified": action.security_context_verified,
+            "secret_taint": action.secret_taint,
             "decision": evaluation.decision.value,
             "risk": evaluation.risk,
             "reasons": list(evaluation.reasons),
+            "flags": [
+                {
+                    "code": item.code,
+                    "severity": item.severity,
+                    "plain_english": item.plain_english,
+                }
+                for item in evaluation.flags
+            ],
             "hard_block": evaluation.hard_block,
             "previous_hash": previous,
         }
