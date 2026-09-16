@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Iterable
 
+from .security_flags import SecurityFlag
+
 
 class Decision(str, Enum):
     ALLOW = "ALLOW"
@@ -50,6 +52,12 @@ class ActionRequest:
     external_side_effect: bool = False
     metadata: dict[str, str] = field(default_factory=dict)
 
+    # HARDENING: these fields must be populated by the trusted host adapter,
+    # never by model output. The policy fails closed when context is not verified.
+    security_context_verified: bool = False
+    resolved_resource: str | None = None
+    secret_taint: bool = False
+
     @classmethod
     def from_dict(cls, data: dict) -> "ActionRequest":
         return cls(
@@ -68,6 +76,9 @@ class ActionRequest:
             irreversible=bool(data.get("irreversible", False)),
             external_side_effect=bool(data.get("external_side_effect", False)),
             metadata={str(k): str(v) for k, v in data.get("metadata", {}).items()},
+            security_context_verified=bool(data.get("security_context_verified", False)),
+            resolved_resource=(str(data["resolved_resource"]) if data.get("resolved_resource") is not None else None),
+            secret_taint=bool(data.get("secret_taint", False)),
         )
 
 
@@ -77,6 +88,11 @@ class Evaluation:
     risk: float
     reasons: tuple[str, ...]
     hard_block: bool = False
+    flags: tuple[SecurityFlag, ...] = ()
+
+    @property
+    def plain_english_flags(self) -> tuple[str, ...]:
+        return tuple(item.render() for item in self.flags)
 
 
 def has_external_provenance(values: Iterable[Provenance]) -> bool:
