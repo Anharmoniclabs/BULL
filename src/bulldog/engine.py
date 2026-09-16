@@ -4,6 +4,7 @@ from .advisory import AdvisoryModel, NullAdvisoryModel
 from .audit import AuditLedger
 from .models import ActionRequest, Decision, Evaluation
 from .policy import DeterministicPolicy
+from .session_guard import SessionGuard
 
 
 _DECISION_ORDER = {
@@ -20,27 +21,54 @@ class BulldogEngine:
         policy: DeterministicPolicy | None = None,
         advisory: AdvisoryModel | None = None,
         ledger: AuditLedger | None = None,
+        session_guard: SessionGuard | None = None,
     ):
         self.policy = policy or DeterministicPolicy()
         self.advisory = advisory or NullAdvisoryModel()
         self.ledger = ledger
+        self.session_guard = session_guard or SessionGuard()
 
     def evaluate(self, action: ActionRequest) -> Evaluation:
         hard = self.policy.evaluate(action)
+
         if hard.hard_block:
             result = hard
         else:
             advisory = self.advisory.evaluate(action)
+
             decision = max(
                 (hard.decision, advisory.recommendation),
                 key=lambda d: _DECISION_ORDER[d],
             )
-            risk = max(hard.risk, min(max(advisory.risk, 0.0), 1.0))
+
+            risk = max(
+                hard.risk,
+                min(max(advisory.risk, 0.0), 1.0),
+            )
+
             reasons = hard.reasons
-            if advisory.reason and advisory.reason != "no advisory model configured":
-                reasons = reasons + (f"advisory: {advisory.reason}",)
-            result = Evaluation(decision, risk, reasons, hard_block=False)
+
+            if (
+                advisory.reason
+                and advisory.reason != "no advisory model configured"
+            ):
+                reasons = reasons + (
+                    f"advisory: {advisory.reason}",
+                )
+
+            result = Evaluation(
+                decision,
+                risk,
+                reasons,
+                hard_block=False,
+            )
+
+        result = self.session_guard.enforce(action, result)
 
         if self.ledger is not None:
             self.ledger.append(action, result)
+
         return result
+
+    def clear_session(self, session_id: str | None = None) -> None:
+        self.session_guard.clear(session_id)

@@ -1,31 +1,78 @@
 from __future__ import annotations
 
 import argparse
-import json
+import sys
 from pathlib import Path
 
-from .audit import AuditLedger
-from .engine import BulldogEngine
-from .models import ActionRequest
+from .verify import main as verify_main
+
+
+def _run_verify(args: argparse.Namespace) -> int:
+    forwarded = ["bull verify"]
+
+    if args.audit is not None:
+        forwarded.extend([
+            "--audit",
+            str(args.audit),
+        ])
+
+    if args.json is not None:
+        forwarded.extend([
+            "--json",
+            str(args.json),
+        ])
+
+    original_argv = sys.argv
+
+    try:
+        sys.argv = forwarded
+        return verify_main()
+    finally:
+        sys.argv = original_argv
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="bull",
+        description="BULL AI execution-governance runtime",
+    )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    verify_parser = subparsers.add_parser(
+        "verify",
+        help="Verify BULL runtime and optional audit ledger.",
+    )
+
+    verify_parser.add_argument(
+        "--audit",
+        type=Path,
+        default=None,
+        help="Optional audit JSONL ledger to verify.",
+    )
+
+    verify_parser.add_argument(
+        "--json",
+        type=Path,
+        default=None,
+        help="Optional JSON verification report path.",
+    )
+
+    verify_parser.set_defaults(handler=_run_verify)
+    return parser
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Evaluate an AI-agent action through Bulldog policy")
-    parser.add_argument("request", help="JSON action request")
-    parser.add_argument("--ledger", default=".bulldog/audit.jsonl")
+    parser = build_parser()
     args = parser.parse_args()
 
-    data = json.loads(Path(args.request).read_text(encoding="utf-8"))
-    action = ActionRequest.from_dict(data)
-    engine = BulldogEngine(ledger=AuditLedger(args.ledger))
-    result = engine.evaluate(action)
-    print(json.dumps({
-        "decision": result.decision.value,
-        "risk": result.risk,
-        "hard_block": result.hard_block,
-        "reasons": result.reasons,
-    }, indent=2))
-    return 0 if result.decision.value in {"ALLOW", "SANDBOX"} else 2
+    handler = getattr(args, "handler", None)
+
+    if handler is None:
+        parser.print_help()
+        return 0
+
+    return handler(args)
 
 
 if __name__ == "__main__":

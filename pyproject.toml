@@ -8,7 +8,7 @@ license = {text = "Apache-2.0"}
 dependencies = []
 
 [project.scripts]
-bulldog = "bulldog.cli:main"
+bull = "bulldog.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]

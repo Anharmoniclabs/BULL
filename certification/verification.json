@@ -1,0 +1,26 @@
+{
+  "audit": {
+    "checked": true,
+    "error": null,
+    "error_index": null,
+    "head_hash": "b8dd1b230bf824ebd400c328e6d874526b369c917da0536fab928b630a5b7dfb",
+    "records": 3,
+    "valid": true
+  },
+  "import_check": {
+    "error": null,
+    "passed": true
+  },
+  "overall_pass": true,
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "product": "BULL",
+  "python": "3.13.15 (main, Aug  6 2026, 11:06:22) [GCC 13.3.0]",
+  "root": "/content/BULL",
+  "tests": {
+    "output": "...........................................                              [100%]\n43 passed in 0.12s",
+    "passed": true,
+    "return_code": 0
+  },
+  "timestamp_utc": "2026-09-16T14:29:20.888989+00:00",
+  "verification_version": 1
+}
