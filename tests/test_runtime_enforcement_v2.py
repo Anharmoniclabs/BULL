@@ -1,5 +1,6 @@
 from pathlib import Path
 from types import SimpleNamespace
+import os
 
 import pytest
 
@@ -143,7 +144,7 @@ def test_runtime_rejects_special_files_before_execution(tmp_path):
     project.mkdir()
     (project / "payload.txt").write_text("CLEAN", encoding="utf-8")
     fifo = project / "danger.pipe"
-    fifo.mkfifo()
+    os.mkfifo(fifo)
 
     sandbox = CapturingSandbox()
     runtime = BulldogRuntime(
