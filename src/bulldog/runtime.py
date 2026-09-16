@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Sequence
 
 from .engine import BulldogEngine
+from .filesystem_manifest import (
+    FilesystemManifestViolation,
+    build_manifest,
+)
 from .malware_scanner import (
     MalwareScanner,
     MalwareScannerError,
@@ -19,15 +23,14 @@ from .namespace_sandbox import (
     NamespaceSandbox,
     SandboxResult,
 )
-from .trace_runtime import (
-    RuntimeTraceVerifier,
-)
+from .resource_limits import ResourceBudget
 from .snapshot import (
     SnapshotViolation,
     create_snapshot,
     destroy_snapshot,
     hash_tree,
 )
+from .trace_runtime import RuntimeTraceVerifier
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,10 @@ class ExecutionResult:
 class BulldogRuntime:
     """
     Unified BULL runtime with live formal-trace enforcement.
+
+    Security-critical execution uses an immutable snapshot. The exact
+    snapshot that is scanned and hash-verified is the directory mounted
+    into the namespace sandbox.
     """
 
     def __init__(
@@ -60,46 +67,35 @@ class BulldogRuntime:
         malware_scanner: MalwareScanner | None = None,
         malware_scan_required: bool = True,
         trace_verifier: RuntimeTraceVerifier | None = None,
+        resource_budget: ResourceBudget | None = None,
     ):
-        self.engine = (
-            engine
-            if engine is not None
-            else BulldogEngine()
-        )
-
-        self.sandbox = (
-            sandbox
-            if sandbox is not None
-            else NamespaceSandbox()
-        )
-
+        self.engine = engine if engine is not None else BulldogEngine()
+        self.sandbox = sandbox if sandbox is not None else NamespaceSandbox()
         self.trace = (
             trace_verifier
             if trace_verifier is not None
             else RuntimeTraceVerifier()
         )
-
-        self.malware_scan_required = bool(
-            malware_scan_required
+        self.resource_budget = (
+            resource_budget
+            if resource_budget is not None
+            else ResourceBudget()
         )
+
+        self.malware_scan_required = bool(malware_scan_required)
 
         if malware_scanner is not None:
             self.malware_scanner = malware_scanner
-
         elif self.malware_scan_required:
-
             try:
                 self.malware_scanner = MalwareScanner()
-
             except (
                 MalwareScannerUnavailable,
                 MalwareScannerError,
             ):
                 self.malware_scanner = None
-
         else:
             self.malware_scanner = None
-
 
     def execute(
         self,
@@ -109,42 +105,21 @@ class BulldogRuntime:
         project_root: str | Path,
         timeout: float | None = 30.0,
     ) -> ExecutionResult:
-
         # Fresh execution trace for each runtime invocation.
         parent_has = (
             action.parent_capabilities is not None
             and action.capability in action.parent_capabilities
         )
+        self.trace.reset(parent_has_capability=parent_has)
 
-        self.trace.reset(
-            parent_has_capability=parent_has
-        )
-
-        evaluation = self.engine.evaluate(
-            action
-        )
-
-        # ---------------------------------------------------------------
-        # Emit formal Evaluate transition.
-        # Any impossible decision fails closed here.
-        # ---------------------------------------------------------------
-
+        evaluation = self.engine.evaluate(action)
         self.trace.emit(
             "Evaluate",
             decision=evaluation.decision.value,
         )
 
-
-        # ===============================================================
-        # DENY
-        # ===============================================================
-
         if evaluation.decision == Decision.DENY:
-
-            self.trace.emit(
-                "ResolveDeny"
-            )
-
+            self.trace.emit("ResolveDeny")
             return ExecutionResult(
                 evaluation=evaluation,
                 executed=False,
@@ -156,17 +131,8 @@ class BulldogRuntime:
                 trace_state=self.trace.snapshot(),
             )
 
-
-        # ===============================================================
-        # ESCALATE
-        # ===============================================================
-
         if evaluation.decision == Decision.ESCALATE:
-
-            self.trace.emit(
-                "ResolveEscalate"
-            )
-
+            self.trace.emit("ResolveEscalate")
             return ExecutionResult(
                 evaluation=evaluation,
                 executed=False,
@@ -178,27 +144,27 @@ class BulldogRuntime:
                 trace_state=self.trace.snapshot(),
             )
 
+        project_root = Path(project_root).resolve(strict=True)
 
-        project_root = Path(
-            project_root
-        ).resolve(
-            strict=True
-        )
-
-        # ===============================================================
-        # IMMUTABLE EXECUTION SNAPSHOT
-        #
-        # Reject symlinks/hardlinks and freeze the project bytes before
-        # malware scanning. Execution runs from this snapshot, not from
-        # the mutable original tree.
-        # ===============================================================
+        # Reject unsupported filesystem objects and mount/device boundaries
+        # before copying anything into the trusted execution snapshot.
+        try:
+            build_manifest(project_root)
+        except FilesystemManifestViolation as exc:
+            return ExecutionResult(
+                evaluation=evaluation,
+                executed=False,
+                sandboxed=False,
+                review_required=False,
+                returncode=None,
+                stdout="",
+                stderr="project manifest rejected: " + str(exc),
+                trace_state=self.trace.snapshot(),
+            )
 
         try:
-            snapshot = create_snapshot(
-                project_root
-            )
+            snapshot = create_snapshot(project_root)
         except SnapshotViolation as exc:
-
             return ExecutionResult(
                 evaluation=evaluation,
                 executed=False,
@@ -206,69 +172,18 @@ class BulldogRuntime:
                 review_required=False,
                 returncode=None,
                 stdout="",
-                stderr=(
-                    "project snapshot rejected: "
-                    + str(exc)
-                ),
+                stderr="project snapshot rejected: " + str(exc),
                 trace_state=self.trace.snapshot(),
             )
 
-        execution_root = (
-            snapshot.snapshot_root
-        )
+        execution_root = snapshot.snapshot_root
 
-
-        # ===============================================================
-        # MALWARE SCAN
-        # ===============================================================
-
-        if self.malware_scan_required:
-
-            if self.malware_scanner is None:
-
-                # Scanner unavailable = fail closed.
-                #
-                # Model this as malware/non-clean path because execution
-                # must not proceed without a clean scan.
-                self.trace.emit(
-                    "ScanMalware"
-                )
-
-                self.trace.emit(
-                    "BlockMalware"
-                )
-
-                return ExecutionResult(
-                    evaluation=evaluation,
-                    executed=False,
-                    sandboxed=False,
-                    review_required=False,
-                    returncode=None,
-                    stdout="",
-                    stderr=(
-                        "malware scan required but scanner unavailable"
-                    ),
-                    malware_scan_performed=False,
-                    malware_clean=None,
-                    trace_state=self.trace.snapshot(),
-                )
-
+        try:
+            # The copied tree must independently satisfy the same filesystem
+            # contract before it can become executable state.
             try:
-
-                scan = self.malware_scanner.scan_project(
-                    project_root
-                )
-
-            except Exception as exc:
-
-                self.trace.emit(
-                    "ScanMalware"
-                )
-
-                self.trace.emit(
-                    "BlockMalware"
-                )
-
+                build_manifest(execution_root)
+            except FilesystemManifestViolation as exc:
                 return ExecutionResult(
                     evaluation=evaluation,
                     executed=False,
@@ -276,31 +191,79 @@ class BulldogRuntime:
                     review_required=False,
                     returncode=None,
                     stdout="",
-                    stderr=(
-                        "malware scan failed closed: "
-                        + str(exc)
-                    ),
-                    malware_scan_performed=True,
-                    malware_clean=None,
+                    stderr="execution snapshot manifest rejected: " + str(exc),
                     trace_state=self.trace.snapshot(),
                 )
 
+            if self.malware_scan_required:
+                if self.malware_scanner is None:
+                    self.trace.emit("ScanMalware")
+                    self.trace.emit("BlockMalware")
+                    return ExecutionResult(
+                        evaluation=evaluation,
+                        executed=False,
+                        sandboxed=False,
+                        review_required=False,
+                        returncode=None,
+                        stdout="",
+                        stderr="malware scan required but scanner unavailable",
+                        malware_scan_performed=False,
+                        malware_clean=None,
+                        trace_state=self.trace.snapshot(),
+                    )
 
-            if not scan.clean:
+                try:
+                    # IMPORTANT: scan the immutable execution snapshot, not
+                    # the mutable source project.
+                    scan = self.malware_scanner.scan_project(execution_root)
+                except Exception as exc:
+                    self.trace.emit("ScanMalware")
+                    self.trace.emit("BlockMalware")
+                    return ExecutionResult(
+                        evaluation=evaluation,
+                        executed=False,
+                        sandboxed=False,
+                        review_required=False,
+                        returncode=None,
+                        stdout="",
+                        stderr="malware scan failed closed: " + str(exc),
+                        malware_scan_performed=True,
+                        malware_clean=None,
+                        trace_state=self.trace.snapshot(),
+                    )
 
-                self.trace.emit(
-                    "ScanMalware"
+                if not scan.clean:
+                    self.trace.emit("ScanMalware")
+                    self.trace.emit("BlockMalware")
+                    detections = tuple(
+                        result.signature or result.path
+                        for result in scan.detections
+                    )
+                    return ExecutionResult(
+                        evaluation=evaluation,
+                        executed=False,
+                        sandboxed=False,
+                        review_required=False,
+                        returncode=None,
+                        stdout="",
+                        stderr="malware detection blocked execution",
+                        malware_scan_performed=True,
+                        malware_clean=False,
+                        malware_detections=detections,
+                        trace_state=self.trace.snapshot(),
+                    )
+
+                self.trace.emit("ScanClean")
+                malware_clean = True
+            else:
+                raise RuntimeError(
+                    "formal runtime instrumentation requires malware scanning"
                 )
 
-                self.trace.emit(
-                    "BlockMalware"
-                )
-
-                detections = tuple(
-                    result.signature or result.path
-                    for result in scan.detections
-                )
-
+            # Bind the exact bytes admitted by the malware scanner to the
+            # execution decision. A mutation after scanning fails closed.
+            current_snapshot_hash = hash_tree(execution_root)
+            if current_snapshot_hash != snapshot.snapshot_hash:
                 return ExecutionResult(
                     evaluation=evaluation,
                     executed=False,
@@ -308,107 +271,43 @@ class BulldogRuntime:
                     review_required=False,
                     returncode=None,
                     stdout="",
-                    stderr="malware detection blocked execution",
+                    stderr="execution snapshot changed after malware scan",
                     malware_scan_performed=True,
-                    malware_clean=False,
-                    malware_detections=detections,
+                    malware_clean=True,
                     trace_state=self.trace.snapshot(),
                 )
 
+            writable = action.capability.value == "fs.write.project"
+            if action.capability.value == "process.exec":
+                writable = False
 
-            # Clean scan transition.
+            # IMPORTANT: the sandbox mounts execution_root. The mutable source
+            # project is never mounted after admission.
+            result: SandboxResult = self.sandbox.run(
+                command,
+                project_root=execution_root,
+                writable=writable,
+                timeout=timeout,
+                resource_budget=self.resource_budget,
+            )
+
             self.trace.emit(
-                "ScanClean"
-            )
-
-            malware_clean = True
-
-        else:
-            # Formal runtime requires a clean scan before execution.
-            #
-            # If scanning is disabled, do not silently bypass the model.
-            raise RuntimeError(
-                "formal runtime instrumentation requires malware scanning"
-            )
-
-
-        # ===============================================================
-        # SANDBOX EXECUTION
-        # ===============================================================
-
-        writable = (
-            action.capability.value
-            == "fs.write.project"
-        )
-
-        if action.capability.value == "process.exec":
-            writable = False
-
-
-        # Scanner must have inspected exactly the bytes that will execute.
-        current_snapshot_hash = hash_tree(
-            execution_root
-        )
-
-        if (
-            current_snapshot_hash
-            != snapshot.snapshot_hash
-        ):
-            destroy_snapshot(
-                snapshot
+                "Execute",
+                sandboxed=True,
+                seccomp=True,
             )
 
             return ExecutionResult(
                 evaluation=evaluation,
-                executed=False,
-                sandboxed=False,
+                executed=True,
+                sandboxed=True,
                 review_required=False,
-                returncode=None,
-                stdout="",
-                stderr=(
-                    "execution snapshot changed after malware scan"
-                ),
+                returncode=result.returncode,
+                stdout=result.stdout,
+                stderr=result.stderr,
                 malware_scan_performed=True,
-                malware_clean=True,
+                malware_clean=malware_clean,
                 trace_state=self.trace.snapshot(),
             )
-
-
-        result: SandboxResult = self.sandbox.run(
-            command,
-            project_root=project_root,
-            writable=writable,
-            timeout=timeout,
-        )
-
-
-        # NamespaceSandbox v1 guarantees:
-        #   sandboxed = True
-        #
-        # Launcher installs:
-        #   BULL seccomp = True
-        #
-        # Emit only after successful sandbox launch attempt.
-        self.trace.emit(
-            "Execute",
-            sandboxed=True,
-            seccomp=True,
-        )
-
-        destroy_snapshot(
-            snapshot
-        )
-
-
-        return ExecutionResult(
-            evaluation=evaluation,
-            executed=True,
-            sandboxed=True,
-            review_required=False,
-            returncode=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-            malware_scan_performed=True,
-            malware_clean=malware_clean,
-            trace_state=self.trace.snapshot(),
-        )
+        finally:
+            destroy_snapshot(snapshot)
