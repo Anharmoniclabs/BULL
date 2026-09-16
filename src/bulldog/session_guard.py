@@ -41,7 +41,32 @@ class SessionGuard:
     history: dict[str, list[SessionEvent]] = field(default_factory=dict)
 
     def session_key(self, action: ActionRequest) -> str:
-        return action.metadata.get("session_id") or action.actor
+        """
+        Return the SECURITY history key.
+
+        metadata["session_id"] is logging/descriptive metadata only.
+        It must not be able to reset behavioral history.
+
+        A trusted host/runtime may provide security_context_id to
+        intentionally separate independent security contexts.
+
+        Otherwise history is anchored to actor identity.
+        """
+
+        trusted_context = action.metadata.get(
+            "security_context_id"
+        )
+
+        if trusted_context:
+            return (
+                "security-context:"
+                + str(trusted_context)
+            )
+
+        return (
+            "actor:"
+            + str(action.actor)
+        )
 
     def enforce(
         self,
