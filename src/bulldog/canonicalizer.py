@@ -42,6 +42,9 @@ class TrustedExecutionContext:
     parent_domain_id: str | None = None
     initial_intent_hash: str | None = None
     initial_command_hash: str | None = None
+    model_id: str | None = None
+    model_id_hash: str | None = None
+    domain_fingerprint: str | None = None
     spawn_depth: int = 0
 
 
@@ -82,9 +85,6 @@ def canonicalize_filesystem_resource(resource: str) -> str:
             "filesystem resource must be an absolute path"
         )
 
-    # Reject traversal rather than silently normalizing it. This makes the
-    # audit record preserve the fact that a boundary-crossing path was asked
-    # for instead of converting it into an apparently benign target.
     if any(part == ".." for part in decoded.split("/")):
         raise ActionCanonicalizationError(
             "parent-directory traversal in filesystem resource"
@@ -107,14 +107,9 @@ def canonicalize_resource(operation: str, resource: str) -> str:
     if not raw:
         raise ActionCanonicalizationError("missing resource")
 
-    # Filesystem operations always use canonical absolute POSIX paths.
-    # Absolute path-like resources on other operations are canonicalized too
-    # so sensitive-path detection cannot be bypassed by traversal/encoding.
     if op in _PATH_OPERATIONS or raw.startswith(("/", "\\")):
         return canonicalize_filesystem_resource(raw)
 
-    # URLs and logical non-path resources are not path-normalized here; their
-    # authority is enforced by the dedicated egress/process policy layers.
     return _decode_resource(raw)
 
 
@@ -223,6 +218,9 @@ def canonicalize_action(
         "parent_domain_id": trusted.parent_domain_id,
         "initial_intent_hash": trusted.initial_intent_hash,
         "initial_command_hash": trusted.initial_command_hash,
+        "model_id": trusted.model_id,
+        "model_id_hash": trusted.model_id_hash,
+        "domain_fingerprint": trusted.domain_fingerprint,
         "spawn_depth": str(trusted.spawn_depth),
     }
 
