@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -9,30 +10,20 @@ from .canonicalizer import (
     canonicalize_filesystem_resource,
 )
 from .engine import BulldogEngine
-from .filesystem_manifest import (
-    FilesystemManifestViolation,
-    build_manifest,
-)
+from .filesystem_manifest import FilesystemManifestViolation, build_manifest
 from .malware_scanner import (
     MalwareScanner,
     MalwareScannerError,
     MalwareScannerUnavailable,
 )
-from .models import (
-    ActionRequest,
-    Capability,
-    Decision,
-    Evaluation,
-)
-from .namespace_sandbox import (
-    NamespaceSandbox,
-    SandboxResult,
-)
+from .models import ActionRequest, Capability, Decision, Evaluation
+from .namespace_sandbox import NamespaceSandbox, SandboxResult
 from .resource_limits import ResourceBudget
 from .security_domain import hash_command
 from .snapshot import (
     SnapshotViolation,
     create_snapshot,
+    create_snapshot_isolated,
     destroy_snapshot,
     hash_tree,
 )
@@ -85,9 +76,7 @@ class BulldogRuntime:
             else RuntimeTraceVerifier()
         )
         self.resource_budget = (
-            resource_budget
-            if resource_budget is not None
-            else ResourceBudget()
+            resource_budget if resource_budget is not None else ResourceBudget()
         )
         self.require_full_argv_binding = bool(require_full_argv_binding)
         self.workspace_budget = workspace_budget or WorkspaceBudget()
@@ -113,10 +102,7 @@ class BulldogRuntime:
                         self.workspace_budget.max_total_bytes,
                     ),
                 )
-            except (
-                MalwareScannerUnavailable,
-                MalwareScannerError,
-            ):
+            except (MalwareScannerUnavailable, MalwareScannerError):
                 self.malware_scanner = None
         else:
             self.malware_scanner = None
@@ -132,12 +118,8 @@ class BulldogRuntime:
             return "runtime command cannot be empty"
 
         try:
-            authorized_executable = canonicalize_filesystem_resource(
-                action.resource
-            )
-            requested_executable = canonicalize_filesystem_resource(
-                str(command[0])
-            )
+            authorized_executable = canonicalize_filesystem_resource(action.resource)
+            requested_executable = canonicalize_filesystem_resource(str(command[0]))
         except ActionCanonicalizationError as exc:
             return "invalid execution binding: " + str(exc)
 
@@ -232,11 +214,18 @@ class BulldogRuntime:
 
         project_root = Path(project_root).resolve(strict=True)
         try:
-            snapshot = create_snapshot(
-                project_root,
-                budget=self.workspace_budget,
-                scratch_root=self.snapshot_root,
-            )
+            if self.snapshot_root is not None and os.environ.get("BULL_CGROUP_PARENT"):
+                snapshot = create_snapshot_isolated(
+                    project_root,
+                    budget=self.workspace_budget,
+                    scratch_root=self.snapshot_root,
+                )
+            else:
+                snapshot = create_snapshot(
+                    project_root,
+                    budget=self.workspace_budget,
+                    scratch_root=self.snapshot_root,
+                )
         except SnapshotViolation as exc:
             return ExecutionResult(
                 evaluation=evaluation,
@@ -286,9 +275,7 @@ class BulldogRuntime:
                     if getattr(self.malware_scanner, "bounded_scan", False):
                         scan = self.malware_scanner.scan_project(
                             execution_root,
-                            timeout_seconds=(
-                                self.workspace_budget.malware_scan_timeout_seconds
-                            ),
+                            timeout_seconds=self.workspace_budget.malware_scan_timeout_seconds,
                             max_total_bytes=self.workspace_budget.max_total_bytes,
                             max_files=self.workspace_budget.max_files,
                         )
@@ -314,8 +301,7 @@ class BulldogRuntime:
                     self.trace.emit("ScanMalware")
                     self.trace.emit("BlockMalware")
                     detections = tuple(
-                        result.signature or result.path
-                        for result in scan.detections
+                        result.signature or result.path for result in scan.detections
                     )
                     return ExecutionResult(
                         evaluation=evaluation,
@@ -362,19 +348,11 @@ class BulldogRuntime:
                     "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
                     "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
                     "BULL_PARENT_DOMAIN_ID": action.metadata.get("parent_domain_id"),
-                    "BULL_INITIAL_INTENT_HASH": action.metadata.get(
-                        "initial_intent_hash"
-                    ),
-                    "BULL_INITIAL_COMMAND_HASH": action.metadata.get(
-                        "initial_command_hash"
-                    ),
+                    "BULL_INITIAL_INTENT_HASH": action.metadata.get("initial_intent_hash"),
+                    "BULL_INITIAL_COMMAND_HASH": action.metadata.get("initial_command_hash"),
                     "BULL_MODEL_ID_HASH": action.metadata.get("model_id_hash"),
-                    "BULL_DOMAIN_FINGERPRINT": action.metadata.get(
-                        "domain_fingerprint"
-                    ),
-                    "BULL_AUTHORIZED_ARGV_HASH": action.metadata.get(
-                        "authorized_argv_hash"
-                    ),
+                    "BULL_DOMAIN_FINGERPRINT": action.metadata.get("domain_fingerprint"),
+                    "BULL_AUTHORIZED_ARGV_HASH": action.metadata.get("authorized_argv_hash"),
                 }.items()
                 if value is not None
             }
