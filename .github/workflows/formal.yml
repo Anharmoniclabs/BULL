@@ -1,0 +1,47 @@
+name: BULL formal invariants
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tla-model-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Fetch pinned TLA+ tools
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar \
+            --output /tmp/tla2tools.jar
+          echo "bee4a54f3ee3d4afc347c3240ec2d9e93b075104  /tmp/tla2tools.jar" \
+            | sha1sum --check --strict
+
+      - name: Parse TLA+ specification
+        run: |
+          java -cp /tmp/tla2tools.jar tla2sany.SANY \
+            formal/tla/BullRuntime.tla
+
+      - name: Model-check BULL runtime invariants
+        run: |
+          # BullRuntime contains intentional terminal states such as review,
+          # blocked, and completed execution/broker states. TLC's -deadlock
+          # flag disables deadlock-as-error while still checking every
+          # configured invariant across the reachable state graph.
+          timeout 180s java -cp /tmp/tla2tools.jar tlc2.TLC \
+            -deadlock \
+            -workers 1 \
+            -config formal/tla/BullRuntime.cfg \
+            formal/tla/BullRuntime.tla

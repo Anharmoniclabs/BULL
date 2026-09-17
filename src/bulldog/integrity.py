@@ -26,6 +26,7 @@ CRITICAL_FILES = (
     "runtime.py",
     "seccomp_policy.py",
     "secret_broker.py",
+    "security_domain.py",
     "session_guard.py",
     "snapshot.py",
     "trace_model.py",
