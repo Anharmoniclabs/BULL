@@ -13,6 +13,7 @@ from .contracts import (
     CAP_AUDIT,
     CAP_COORDINATE,
     CAP_EXECUTE,
+    CAP_HONEYTOKEN,
     CAP_POLICY,
     CAP_VERIFY,
     AgentIdentity,
@@ -23,6 +24,7 @@ from .contracts import (
     Severity,
     Verdict,
 )
+from .honeytoken import HoneyTokenAgent, HoneyTokenLeak
 from .system import MultiAgentSystem, RunReport, StepReport
 
 __all__ = [
@@ -32,6 +34,8 @@ __all__ = [
     "ExecutorAgent",
     "PolicyAgent",
     "VerifierAgent",
+    "HoneyTokenAgent",
+    "HoneyTokenLeak",
     "DeliveryError",
     "MessageBus",
     "MultiAgentSystem",
@@ -47,6 +51,7 @@ __all__ = [
     "CAP_AUDIT",
     "CAP_COORDINATE",
     "CAP_EXECUTE",
+    "CAP_HONEYTOKEN",
     "CAP_POLICY",
     "CAP_VERIFY",
 ]
