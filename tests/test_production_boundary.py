@@ -23,31 +23,25 @@ from bulldog.models import (
     Evaluation,
     Provenance,
 )
-from bulldog.namespace_sandbox import (
-    NamespaceSandbox,
-    SandboxAttestationError,
-)
-from bulldog.production_gate import (
-    ProductionGateFailure,
-    verify_production_environment,
-)
-from bulldog.seccomp_policy import (
-    DENIED_SYSCALLS,
-    STRICT_ALLOWED_SYSCALLS,
-)
+from bulldog.namespace_sandbox import NamespaceSandbox, SandboxAttestationError
+from bulldog.policy_bundle import sign_policy_bundle
+from bulldog.production_gate import ProductionGateFailure, verify_production_environment
+from bulldog.seccomp_policy import DENIED_SYSCALLS, STRICT_ALLOWED_SYSCALLS
 
 
 def _attestation(nonce="NONCE", profile="strict") -> bytes:
     return (
         json.dumps(
             {
-                "format": "bull-sandbox-attestation-v1",
+                "format": "bull-sandbox-attestation-v2",
                 "nonce": nonce,
                 "pid": 1,
                 "no_new_privs": True,
                 "seccomp": True,
                 "seccomp_profile": profile,
                 "seccomp_rules": 100,
+                "landlock": True,
+                "landlock_abi": 3,
                 "network_interfaces": ["lo"],
                 "network_isolated": True,
                 "python": "/usr/bin/python3",
@@ -64,6 +58,9 @@ def test_security_bootstrap_never_imports_from_agent_workspace():
     assert "/workspace/.bull_runtime" not in text
     assert 'sys.path[:] = ["/bull_runtime"]' in text
     assert 'mount --bind "$RUNTIME_ROOT" "$ROOTFS/bull_runtime"' in text
+    assert "install_bull_landlock" in text
+    assert "PYTHONPATH" in text
+    assert "LD_PRELOAD" in text
 
 
 def test_backend_attestation_is_nonce_bound_and_strict():
@@ -75,6 +72,8 @@ def test_backend_attestation_is_nonce_bound_and_strict():
     assert att.pid == 1
     assert att.no_new_privs is True
     assert att.seccomp is True
+    assert att.landlock is True
+    assert att.landlock_abi >= 1
     assert att.network_isolated is True
     assert att.runtime_root == "/bull_runtime"
 
@@ -90,6 +89,15 @@ def test_backend_attestation_is_nonce_bound_and_strict():
     with pytest.raises(SandboxAttestationError):
         NamespaceSandbox._parse_attestation(
             (json.dumps(bad) + "\n").encode(),
+            expected_nonce="NONCE",
+            expected_profile="strict",
+        )
+
+    bad_landlock = json.loads(_attestation().decode("utf-8"))
+    bad_landlock["landlock"] = False
+    with pytest.raises(SandboxAttestationError, match="Landlock"):
+        NamespaceSandbox._parse_attestation(
+            (json.dumps(bad_landlock) + "\n").encode(),
             expected_nonce="NONCE",
             expected_profile="strict",
         )
@@ -203,21 +211,15 @@ def test_remote_audit_anchor_is_monotonic_and_fail_closed(tmp_path, monkeypatch)
     assert "remote audit checkpoint" in str(verification.error)
 
 
-def test_production_gate_requires_strict_profile_https_anchor_and_signature(
-    tmp_path,
-    monkeypatch,
-):
+def _configure_production_env(tmp_path, monkeypatch):
     monkeypatch.setattr(
         production_gate,
         "certify_host",
         lambda **kwargs: {"certified": True, "dynamic_error": None},
     )
-    monkeypatch.setattr(
-        integrity_module,
-        "CRITICAL_FILES",
-        ("a.py",),
-    )
+    monkeypatch.setattr(integrity_module, "CRITICAL_FILES", ("a.py",))
     (tmp_path / "a.py").write_text("SAFE", encoding="utf-8")
+
     manifest = sign_integrity_manifest(
         build_integrity_manifest(tmp_path),
         "integrity-secret",
@@ -225,12 +227,42 @@ def test_production_gate_requires_strict_profile_https_anchor_and_signature(
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
+    policy = sign_policy_bundle(
+        allowed_capabilities={Capability.PROCESS_EXEC, Capability.NETWORK_OUTBOUND},
+        key="policy-secret",
+    )
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+
+    snapshot_root = tmp_path / "snapshots"
+    snapshot_root.mkdir()
+    audit_root = tmp_path / "audit"
+    audit_root.mkdir()
+    cgroup_root = tmp_path / "delegated-cgroup"
+    cgroup_root.mkdir()
+    (cgroup_root / "cgroup.procs").write_text("", encoding="ascii")
+
     monkeypatch.setenv("BULL_INTEGRITY_MANIFEST", str(manifest_path))
     monkeypatch.setenv("BULL_INTEGRITY_MANIFEST_KEY", "integrity-secret")
+    monkeypatch.setenv("BULL_POLICY_BUNDLE", str(policy_path))
+    monkeypatch.setenv("BULL_POLICY_BUNDLE_KEY", "policy-secret")
     monkeypatch.setenv("BULL_REMOTE_AUDIT_ANCHOR_URL", "https://audit.example/anchor")
     monkeypatch.setenv("BULL_REMOTE_AUDIT_ANCHOR_KEY", "audit-secret")
     monkeypatch.setenv("BULL_SECCOMP_PROFILE", "strict")
+    monkeypatch.setenv("BULL_SNAPSHOT_ROOT", str(snapshot_root))
+    monkeypatch.setenv("BULL_SNAPSHOT_MIN_FREE_BYTES", "1")
+    monkeypatch.setenv("BULL_AUDIT_LEDGER", str(audit_root / "audit.jsonl"))
+    monkeypatch.setenv("BULL_CGROUP_PARENT", str(cgroup_root))
+    return {
+        "manifest": manifest_path,
+        "policy": policy_path,
+        "snapshot": snapshot_root,
+        "cgroup": cgroup_root,
+    }
 
+
+def test_production_gate_requires_all_security_prerequisites(tmp_path, monkeypatch):
+    _configure_production_env(tmp_path, monkeypatch)
     verify_production_environment(package_root=tmp_path)
 
     monkeypatch.setenv("BULL_SECCOMP_PROFILE", "compat")
@@ -241,3 +273,21 @@ def test_production_gate_requires_strict_profile_https_anchor_and_signature(
     monkeypatch.setenv("BULL_REMOTE_AUDIT_ANCHOR_URL", "http://audit.example/anchor")
     with pytest.raises(ProductionGateFailure, match="HTTPS"):
         verify_production_environment(package_root=tmp_path)
+
+
+def test_production_gate_rejects_missing_policy_scratch_audit_or_cgroup(
+    tmp_path,
+    monkeypatch,
+):
+    _configure_production_env(tmp_path, monkeypatch)
+    for env_name, expected in (
+        ("BULL_POLICY_BUNDLE", "policy bundle"),
+        ("BULL_SNAPSHOT_ROOT", "snapshot scratch"),
+        ("BULL_AUDIT_LEDGER", "audit ledger"),
+        ("BULL_CGROUP_PARENT", "cgroup"),
+    ):
+        old = dict(__import__("os").environ)
+        monkeypatch.delenv(env_name, raising=False)
+        with pytest.raises(ProductionGateFailure, match=expected):
+            verify_production_environment(package_root=tmp_path)
+        monkeypatch.setenv(env_name, old[env_name])
