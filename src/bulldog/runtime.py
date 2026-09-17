@@ -281,6 +281,30 @@ class BulldogRuntime:
             if action.capability.value == "process.exec":
                 writable = False
 
+            # Domain identity is trusted metadata minted by the host-side
+            # canonicalizer. Propagate only those values into the isolated
+            # workload so audit/broker clients can bind activity to the exact
+            # security domain without accepting model-provided identities.
+            sandbox_env: dict[str, str] = {}
+            environment_bindings = {
+                "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
+                "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
+                "BULL_PARENT_DOMAIN_ID": action.metadata.get("parent_domain_id"),
+                "BULL_INITIAL_INTENT_HASH": action.metadata.get(
+                    "initial_intent_hash"
+                ),
+                "BULL_INITIAL_COMMAND_HASH": action.metadata.get(
+                    "initial_command_hash"
+                ),
+            }
+            sandbox_env.update(
+                {
+                    key: str(value)
+                    for key, value in environment_bindings.items()
+                    if value is not None
+                }
+            )
+
             # IMPORTANT: the sandbox mounts execution_root. The mutable source
             # project is never mounted after admission.
             result: SandboxResult = self.sandbox.run(
@@ -288,6 +312,7 @@ class BulldogRuntime:
                 project_root=execution_root,
                 writable=writable,
                 timeout=timeout,
+                env=sandbox_env,
                 resource_budget=self.resource_budget,
             )
 
