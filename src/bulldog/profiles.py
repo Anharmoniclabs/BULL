@@ -10,7 +10,7 @@ from typing import Sequence
 import warnings
 
 from .audit import AuditLedger
-from .dispatcher import CapabilityDispatcher
+from .dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
 from .engine import BulldogEngine
 from .malware_scanner import MalwareScanner
 from .models import ActionRequest
@@ -19,7 +19,7 @@ from .policy import DeterministicPolicy
 from .policy_bundle import load_policy_bundle
 from .production_gate import verify_production_environment
 from .runtime import BulldogRuntime, ExecutionResult
-from .security_domain import hash_command
+from .security_domain import SecurityDomainError, hash_command
 from .workspace_limits import WorkspaceBudget, production_snapshot_root
 
 
@@ -51,11 +51,7 @@ def _action_hash(action: ActionRequest) -> str:
 
 
 class DevelopmentRuntime(BulldogRuntime):
-    """Explicitly weak/development runtime.
-
-    It exists so developers must opt into a name that communicates the weaker
-    boundary instead of silently toggling a production Boolean off.
-    """
+    """Explicitly weak/development runtime."""
 
     def __init__(self, **kwargs):
         warnings.warn(DEVELOPMENT_WARNING, RuntimeWarning, stacklevel=2)
@@ -189,3 +185,56 @@ class ProductionDispatcher(CapabilityDispatcher):
             production_mode=True,
             **kwargs,
         )
+
+    def execute(
+        self,
+        request: DispatchRequest,
+        command: Sequence[str],
+        *,
+        project_root: str | Path,
+        timeout: float = 30.0,
+    ):
+        action = self._bind_execution(
+            self.canonicalize(request),
+            command,
+            request,
+        )
+        if self.domain_registry is not None:
+            assert request.domain_id is not None
+            try:
+                self.domain_registry.record_dispatch(
+                    request.domain_id,
+                    capability=action.capability,
+                    resource=action.resource,
+                    command=command,
+                )
+            except SecurityDomainError as exc:
+                raise DispatchDenied(str(exc)) from exc
+
+        permit = self.runtime._mint_dispatch_permit(action, command)
+        result = self.runtime.execute(
+            action,
+            command,
+            project_root=project_root,
+            timeout=timeout,
+            permit=permit,
+        )
+
+        if (
+            self.domain_registry is not None
+            and self.freeze_on_violation
+            and request.domain_id is not None
+        ):
+            behavioral_violation = any(
+                str(reason).startswith("session behavior:")
+                for reason in result.evaluation.reasons
+            )
+            if result.evaluation.hard_block or behavioral_violation:
+                domain = self.domain_registry.get(request.domain_id)
+                self.domain_registry.freeze_root(
+                    domain.root_domain_id,
+                    "hard policy block"
+                    if result.evaluation.hard_block
+                    else "cross-agent behavioral violation",
+                )
+        return result
