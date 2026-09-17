@@ -47,6 +47,10 @@ CAP_AUDIT = Capability("audit", "Inspect payloads and results for unauthorized l
 CAP_POLICY = Capability("policy", "Render allow/deny verdicts on proposed actions")
 CAP_EXECUTE = Capability("execute", "Run approved actions in the restricted executor")
 CAP_VERIFY = Capability("verify", "Independently verify executed results")
+CAP_HONEYTOKEN = Capability(
+    "honeytoken",
+    "Mint and monitor host-owned canaries without granting execution authority",
+)
 
 
 @dataclass(frozen=True)
