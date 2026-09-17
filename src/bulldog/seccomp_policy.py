@@ -13,19 +13,15 @@ class SeccompError(RuntimeError):
     pass
 
 
-# libseccomp action constants.
 SCMP_ACT_ALLOW = 0x7FFF0000
 SCMP_ACT_ERRNO_BASE = 0x00050000
 
 
 def SCMP_ACT_ERRNO(value: int) -> int:
-    return (
-        SCMP_ACT_ERRNO_BASE
-        | (value & 0xFFFF)
-    )
+    return SCMP_ACT_ERRNO_BASE | (value & 0xFFFF)
 
 
-# Initial BULL kernel-control deny set.
+# Compatibility profile: default allow with an explicit kernel-control deny set.
 DENIED_SYSCALLS = (
     "mount",
     "umount2",
@@ -62,203 +58,293 @@ DENIED_SYSCALLS = (
 )
 
 
+# Production profile: default deny, then permit a deliberately broad userland
+# baseline sufficient for normal dynamically-linked CLI/Python workloads inside
+# BULL's already-isolated mount/PID/network namespaces. Dangerous kernel-control
+# surfaces are absent because anything not listed returns EPERM.
+STRICT_ALLOWED_SYSCALLS = (
+    # process / execution
+    "execve",
+    "execveat",
+    "exit",
+    "exit_group",
+    "clone",
+    "fork",
+    "vfork",
+    "wait4",
+    "waitid",
+    "getpid",
+    "getppid",
+    "gettid",
+    "getuid",
+    "geteuid",
+    "getgid",
+    "getegid",
+    "getgroups",
+    "setuid",
+    "setgid",
+    "setreuid",
+    "setregid",
+    "setresuid",
+    "setresgid",
+    "setgroups",
+    "setsid",
+    "getpgid",
+    "setpgid",
+    "getpgrp",
+    # memory / runtime
+    "brk",
+    "mmap",
+    "mprotect",
+    "munmap",
+    "mremap",
+    "madvise",
+    "mlock",
+    "munlock",
+    "futex",
+    "rseq",
+    "set_tid_address",
+    "set_robust_list",
+    "arch_prctl",
+    "prctl",
+    "membarrier",
+    # signals / scheduling / time
+    "rt_sigaction",
+    "rt_sigprocmask",
+    "rt_sigreturn",
+    "rt_sigsuspend",
+    "rt_sigpending",
+    "rt_sigtimedwait",
+    "sigaltstack",
+    "kill",
+    "tgkill",
+    "sched_yield",
+    "sched_getaffinity",
+    "sched_setaffinity",
+    "clock_gettime",
+    "clock_getres",
+    "clock_nanosleep",
+    "nanosleep",
+    "gettimeofday",
+    "time",
+    "times",
+    # file descriptors / filesystem inside the isolated root
+    "read",
+    "write",
+    "readv",
+    "writev",
+    "pread64",
+    "pwrite64",
+    "preadv",
+    "pwritev",
+    "close",
+    "close_range",
+    "lseek",
+    "open",
+    "openat",
+    "creat",
+    "newfstatat",
+    "stat",
+    "lstat",
+    "fstat",
+    "statx",
+    "access",
+    "faccessat",
+    "faccessat2",
+    "readlink",
+    "readlinkat",
+    "getdents",
+    "getdents64",
+    "getcwd",
+    "chdir",
+    "fchdir",
+    "mkdir",
+    "mkdirat",
+    "rmdir",
+    "unlink",
+    "unlinkat",
+    "rename",
+    "renameat",
+    "renameat2",
+    "link",
+    "linkat",
+    "symlink",
+    "symlinkat",
+    "chmod",
+    "fchmod",
+    "fchmodat",
+    "chown",
+    "fchown",
+    "fchownat",
+    "lchown",
+    "truncate",
+    "ftruncate",
+    "fsync",
+    "fdatasync",
+    "sync_file_range",
+    "umask",
+    "fcntl",
+    "ioctl",
+    "dup",
+    "dup2",
+    "dup3",
+    "flock",
+    "pipe",
+    "pipe2",
+    "sendfile",
+    "copy_file_range",
+    "splice",
+    "tee",
+    # event / multiplexing
+    "select",
+    "pselect6",
+    "poll",
+    "ppoll",
+    "epoll_create",
+    "epoll_create1",
+    "epoll_ctl",
+    "epoll_wait",
+    "epoll_pwait",
+    "epoll_pwait2",
+    "eventfd",
+    "eventfd2",
+    "signalfd",
+    "signalfd4",
+    "timerfd_create",
+    "timerfd_settime",
+    "timerfd_gettime",
+    # local IPC and sockets. The network namespace supplies the network boundary;
+    # allowing socket syscalls is required for AF_UNIX brokers and normal runtimes.
+    "socket",
+    "socketpair",
+    "bind",
+    "listen",
+    "accept",
+    "accept4",
+    "connect",
+    "getsockname",
+    "getpeername",
+    "sendto",
+    "recvfrom",
+    "sendmsg",
+    "recvmsg",
+    "shutdown",
+    "setsockopt",
+    "getsockopt",
+    # identity / environment / misc runtime discovery
+    "uname",
+    "sysinfo",
+    "getrandom",
+    "getrlimit",
+    "setrlimit",
+    "prlimit64",
+    "getrusage",
+    "getcpu",
+    "personality",
+)
+
+
 def _load_libseccomp():
-    """
-    Load libseccomp without depending on ldconfig/find_library.
-
-    BULL's sandbox intentionally exposes only a minimal runtime,
-    so ctypes.util.find_library() may fail even though the shared
-    object is present and resolvable by the ELF dynamic loader.
-    """
-
-    candidates = [
-        "libseccomp.so.2",
-        "libseccomp.so",
-    ]
-
-    discovered = ctypes.util.find_library(
-        "seccomp"
-    )
-
+    candidates = ["libseccomp.so.2", "libseccomp.so"]
+    discovered = ctypes.util.find_library("seccomp")
     if discovered:
-        candidates.append(
-            discovered
-        )
+        candidates.append(discovered)
 
     errors = []
-
     for candidate in candidates:
-
         try:
-
-            return ctypes.CDLL(
-                candidate,
-                use_errno=True,
-            )
-
+            return ctypes.CDLL(candidate, use_errno=True)
         except OSError as exc:
-
-            errors.append(
-                f"{candidate}: {exc}"
-            )
+            errors.append(f"{candidate}: {exc}")
 
     raise SeccompUnavailable(
-        "unable to load libseccomp; "
-        + " | ".join(errors)
+        "unable to load libseccomp; " + " | ".join(errors)
     )
 
 
 _lib = _load_libseccomp()
 
-
-# scmp_filter_ctx seccomp_init(uint32_t def_action)
-_lib.seccomp_init.argtypes = [
-    ctypes.c_uint32,
-]
-
-_lib.seccomp_init.restype = (
-    ctypes.c_void_p
-)
-
-
-# void seccomp_release(scmp_filter_ctx ctx)
-_lib.seccomp_release.argtypes = [
-    ctypes.c_void_p,
-]
-
+_lib.seccomp_init.argtypes = [ctypes.c_uint32]
+_lib.seccomp_init.restype = ctypes.c_void_p
+_lib.seccomp_release.argtypes = [ctypes.c_void_p]
 _lib.seccomp_release.restype = None
-
-
-# int seccomp_syscall_resolve_name(const char *name)
-_lib.seccomp_syscall_resolve_name.argtypes = [
-    ctypes.c_char_p,
-]
-
-_lib.seccomp_syscall_resolve_name.restype = (
-    ctypes.c_int
-)
-
-
-# int seccomp_rule_add(
-#     scmp_filter_ctx ctx,
-#     uint32_t action,
-#     int syscall,
-#     unsigned int arg_cnt,
-#     ...
-# )
+_lib.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]
+_lib.seccomp_syscall_resolve_name.restype = ctypes.c_int
 _lib.seccomp_rule_add.argtypes = [
     ctypes.c_void_p,
     ctypes.c_uint32,
     ctypes.c_int,
     ctypes.c_uint,
 ]
-
-_lib.seccomp_rule_add.restype = (
-    ctypes.c_int
-)
-
-
-# int seccomp_load(scmp_filter_ctx ctx)
-_lib.seccomp_load.argtypes = [
-    ctypes.c_void_p,
-]
-
-_lib.seccomp_load.restype = (
-    ctypes.c_int
-)
+_lib.seccomp_rule_add.restype = ctypes.c_int
+_lib.seccomp_load.argtypes = [ctypes.c_void_p]
+_lib.seccomp_load.restype = ctypes.c_int
 
 
-def _check(
-    rc: int,
-    operation: str,
-) -> None:
-
-    # libseccomp returns negative errno values.
+def _check(rc: int, operation: str) -> None:
     if rc < 0:
         value = -rc
-
         raise SeccompError(
-            f"{operation} failed: "
-            f"[errno {value}] "
+            f"{operation} failed: [errno {value}] "
             f"{errno.errorcode.get(value, 'UNKNOWN')}"
         )
 
 
+def _resolve(name: str) -> int | None:
+    number = _lib.seccomp_syscall_resolve_name(name.encode("ascii"))
+    if number < 0:
+        return None
+    return number
+
+
 def install_bull_seccomp(
     *,
+    profile: str = "compat",
     denied_syscalls=DENIED_SYSCALLS,
+    allowed_syscalls=STRICT_ALLOWED_SYSCALLS,
     errno_value: int = errno.EPERM,
 ) -> tuple[str, ...]:
-    """
-    Install the BULL v1 syscall policy on the CURRENT PROCESS.
+    """Install BULL's seccomp policy on the current process.
 
-    Default behavior:
-        ALLOW
-
-    Explicit high-risk syscalls:
-        return EPERM without executing.
-
-    Filters are inherited by children and across exec.
+    ``compat`` keeps the historical default-ALLOW blacklist for development.
+    ``strict`` is the production profile: default EPERM with an explicit
+    userland allowlist. Both policies are inherited across exec and children.
     """
 
-    ctx = _lib.seccomp_init(
+    profile = str(profile).strip().lower()
+    if profile not in {"compat", "strict"}:
+        raise SeccompError(f"unknown seccomp profile: {profile}")
+
+    default_action = (
         SCMP_ACT_ALLOW
+        if profile == "compat"
+        else SCMP_ACT_ERRNO(errno_value)
     )
-
+    ctx = _lib.seccomp_init(default_action)
     if not ctx:
-        raise SeccompError(
-            "seccomp_init returned NULL"
-        )
+        raise SeccompError("seccomp_init returned NULL")
 
     installed: list[str] = []
-
     try:
-        action = SCMP_ACT_ERRNO(
-            errno_value
-        )
+        if profile == "compat":
+            action = SCMP_ACT_ERRNO(errno_value)
+            names = denied_syscalls
+        else:
+            action = SCMP_ACT_ALLOW
+            names = allowed_syscalls
 
-        for name in denied_syscalls:
-
-            number = (
-                _lib
-                .seccomp_syscall_resolve_name(
-                    name.encode("ascii")
-                )
-            )
-
-            # Unknown syscall on this architecture.
-            # Skip instead of guessing syscall numbers.
-            if number < 0:
+        for name in names:
+            number = _resolve(name)
+            if number is None:
                 continue
-
-            rc = _lib.seccomp_rule_add(
-                ctx,
-                action,
-                number,
-                0,
-            )
-
             _check(
-                rc,
+                _lib.seccomp_rule_add(ctx, action, number, 0),
                 f"seccomp_rule_add({name})",
             )
-
             installed.append(name)
 
-        rc = _lib.seccomp_load(
-            ctx
-        )
-
-        _check(
-            rc,
-            "seccomp_load",
-        )
-
+        _check(_lib.seccomp_load(ctx), "seccomp_load")
     finally:
-        _lib.seccomp_release(
-            ctx
-        )
+        _lib.seccomp_release(ctx)
 
-    return tuple(
-        installed
-    )
+    return tuple(installed)
