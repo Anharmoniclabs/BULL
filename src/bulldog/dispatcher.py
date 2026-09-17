@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Sequence
 
@@ -19,6 +19,7 @@ from .secret_broker import SecretBroker, SecretGrant, request_secret
 from .security_domain import (
     SecurityDomainError,
     SecurityDomainRegistry,
+    hash_command,
 )
 
 
@@ -28,13 +29,19 @@ class DispatchDenied(RuntimeError):
 
 @dataclass(frozen=True)
 class DispatchRequest:
-    """Trusted wrapper around an untrusted model proposal."""
+    """Trusted wrapper around an untrusted model proposal.
+
+    ``authorized_command`` is host-controlled. For process execution it must
+    contain the exact argv the host approved; model-provided argv is not a
+    substitute for this trusted binding.
+    """
 
     proposal: dict
     trusted: TrustedExecutionContext
     granted_capabilities: frozenset[Capability]
     parent_capabilities: frozenset[Capability] | None = None
     domain_id: str | None = None
+    authorized_command: tuple[str, ...] | None = None
 
 
 class CapabilityDispatcher:
@@ -51,8 +58,8 @@ class CapabilityDispatcher:
       - domain lifecycle/broker/dispatch events can share the runtime ledger
 
     All process launches and broker operations are bound to the authority
-    being exercised. Filesystem read authority cannot drive a command, and
-    legacy broker calls cannot bypass policy by omitting a DispatchRequest.
+    being exercised. Filesystem read authority cannot drive a command, exact
+    argv must be host-authorized, and legacy broker calls cannot bypass policy.
     """
 
     def __init__(
@@ -77,8 +84,6 @@ class CapabilityDispatcher:
         self.production_mode = bool(production_mode)
         self.freeze_on_violation = bool(freeze_on_violation)
 
-        # One registry ledger should also receive policy evaluations so the
-        # complete domain history is cryptographically ordered in one chain.
         if self.domain_registry is not None and self.domain_registry.ledger is not None:
             engine = getattr(self.runtime, "engine", None)
             if engine is not None:
@@ -126,26 +131,59 @@ class CapabilityDispatcher:
         )
 
     @staticmethod
-    def _bind_executable(action, command: Sequence[str]) -> None:
+    def _bind_command(
+        action,
+        request: DispatchRequest,
+        command: Sequence[str],
+    ) -> str:
         if action.capability != Capability.PROCESS_EXEC:
             raise DispatchDenied(
                 "command dispatch requires process.exec authority"
             )
         if not command:
             raise DispatchDenied("command cannot be empty")
+        if request.authorized_command is None:
+            raise DispatchDenied(
+                "process.exec requires host-authorized full argv"
+            )
+
+        actual = tuple(str(part) for part in command)
+        authorized = tuple(str(part) for part in request.authorized_command)
+
+        if not authorized:
+            raise DispatchDenied("authorized command cannot be empty")
+        if any("\x00" in part for part in actual + authorized):
+            raise DispatchDenied("NUL byte in command argv")
 
         try:
-            executable = canonicalize_filesystem_resource(str(command[0]))
+            executable = canonicalize_filesystem_resource(actual[0])
+            authorized_executable = canonicalize_filesystem_resource(
+                authorized[0]
+            )
         except ActionCanonicalizationError as exc:
             raise DispatchDenied(
                 "invalid command executable: " + str(exc)
             ) from exc
 
+        if authorized_executable != action.resource:
+            raise DispatchDenied(
+                "authorized argv executable does not match action resource: "
+                f"{authorized_executable} != {action.resource}"
+            )
         if executable != action.resource:
             raise DispatchDenied(
                 "command executable does not match authorized resource: "
                 f"{executable} != {action.resource}"
             )
+        if actual != authorized:
+            raise DispatchDenied(
+                "command argv does not match host-authorized argv"
+            )
+
+        digest = hash_command(actual)
+        if digest is None:
+            raise DispatchDenied("failed to hash authorized command")
+        return digest
 
     def _authorize_legacy_broker_action(
         self,
@@ -154,10 +192,11 @@ class CapabilityDispatcher:
         expected_capability: Capability,
         expected_resource: str,
     ):
-        """
-        Authorize a non-domain broker operation through the same deterministic
-        reference monitor used by execution. The broker receives the exact
-        canonical resource that was evaluated, closing check/use divergence.
+        """Authorize a non-domain broker operation through BULL policy.
+
+        Host-side brokers have no later sandbox transition. Therefore only an
+        explicit ALLOW may reach the broker. SANDBOX, ESCALATE, and DENY all
+        fail closed rather than silently becoming host-side permission.
         """
         if request is None:
             raise DispatchDenied(
@@ -192,9 +231,10 @@ class CapabilityDispatcher:
             )
 
         evaluation = evaluate(action)
-        if evaluation.decision in {Decision.DENY, Decision.ESCALATE}:
+        if evaluation.decision != Decision.ALLOW:
             raise DispatchDenied(
-                "broker operation denied by BULL policy: "
+                "broker operation requires explicit ALLOW; got "
+                f"{evaluation.decision.value}: "
                 + "; ".join(evaluation.reasons)
             )
 
@@ -209,7 +249,18 @@ class CapabilityDispatcher:
         timeout: float = 30.0,
     ):
         action = self.canonicalize(request)
-        self._bind_executable(action, command)
+        authorized_command_hash = self._bind_command(
+            action,
+            request,
+            command,
+        )
+        action = replace(
+            action,
+            metadata={
+                **action.metadata,
+                "authorized_command_hash": authorized_command_hash,
+            },
+        )
 
         if self.domain_registry is not None:
             assert request.domain_id is not None
