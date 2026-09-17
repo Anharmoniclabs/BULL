@@ -25,12 +25,7 @@ class DispatchDenied(RuntimeError):
 
 @dataclass(frozen=True)
 class DispatchRequest:
-    """
-    Trusted wrapper around an untrusted model proposal.
-
-    Security-critical identity and provenance live in
-    TrustedExecutionContext, not in model-controlled proposal fields.
-    """
+    """Trusted wrapper around an untrusted model proposal."""
 
     proposal: dict
     trusted: TrustedExecutionContext
@@ -42,10 +37,9 @@ class CapabilityDispatcher:
     """
     Central BULL reference-monitor entry point.
 
-    Model-provided actor/provenance/security-context metadata is ignored by
-    the trusted canonicalizer. In multi-agent mode, the registry owns agent
-    identity, sandbox identity, lineage, initial intent, bootstrap command,
-    and parent authority. Callers provide only the untrusted proposal.
+    In multi-agent mode, agent identity, sandbox identity, lineage, initial
+    intent, bootstrap command, parent authority, and broker identity are all
+    taken from the trusted registry rather than model-controlled fields.
     """
 
     def __init__(
@@ -67,6 +61,20 @@ class CapabilityDispatcher:
         self.egress_broker = egress_broker
         self.agent_registry = agent_registry
         self.production_mode = bool(production_mode)
+
+        # If the registry has a tamper-evident ledger, bind runtime action
+        # decisions to the same chain when possible. Refuse two different
+        # ledgers because that would split the audit history.
+        if self.agent_registry is not None and self.agent_registry.ledger is not None:
+            engine = getattr(self.runtime, "engine", None)
+            if engine is not None:
+                existing = getattr(engine, "ledger", None)
+                if existing is None:
+                    engine.ledger = self.agent_registry.ledger
+                elif existing is not self.agent_registry.ledger:
+                    raise DispatchDenied(
+                        "runtime and agent registry must share one audit ledger"
+                    )
 
     def canonicalize(self, request: DispatchRequest):
         return canonicalize_action(
@@ -121,12 +129,6 @@ class CapabilityDispatcher:
         project_root: str | Path,
         timeout: float = 30.0,
     ):
-        """
-        Execute an agent proposal using only host-registered identity.
-
-        Agent-controlled identity, provenance, sandbox, lineage, and initial
-        intent fields in the proposal are ignored by canonicalization.
-        """
         request = self._request_for_agent(
             agent_id=agent_id,
             proposal=proposal,
@@ -146,6 +148,10 @@ class CapabilityDispatcher:
         sandbox_id: str | None = None,
         timeout: float = 3.0,
     ) -> str:
+        if self.agent_registry is not None:
+            raise DispatchDenied(
+                "unscoped secret access is disabled in multi-agent mode"
+            )
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
 
@@ -165,7 +171,6 @@ class CapabilityDispatcher:
         name: str,
         timeout: float = 3.0,
     ) -> str:
-        """Use the registry-owned sandbox identity; callers cannot spoof it."""
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
         if self.agent_registry is None:
@@ -176,13 +181,35 @@ class CapabilityDispatcher:
         except AgentIsolationError as exc:
             raise DispatchDenied(str(exc)) from exc
 
-        return request_secret(
-            socket_path=self.secret_broker.socket_path,
-            token=token,
-            name=name,
-            sandbox_id=envelope.sandbox_id,
-            timeout=timeout,
+        try:
+            value = request_secret(
+                socket_path=self.secret_broker.socket_path,
+                token=token,
+                name=name,
+                sandbox_id=envelope.sandbox_id,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            self.agent_registry.record_event(
+                agent_id=agent_id,
+                event_type="agent_secret_access",
+                data={
+                    "name": str(name),
+                    "allowed": False,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            raise
+
+        self.agent_registry.record_event(
+            agent_id=agent_id,
+            event_type="agent_secret_access",
+            data={
+                "name": str(name),
+                "allowed": True,
+            },
         )
+        return value
 
     def fetch_egress(
         self,
@@ -190,6 +217,10 @@ class CapabilityDispatcher:
         url: str,
         method: str = "GET",
     ) -> EgressResponse:
+        if self.agent_registry is not None:
+            raise DispatchDenied(
+                "unscoped egress is disabled in multi-agent mode"
+            )
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
         return self.egress_broker.fetch(
@@ -204,7 +235,6 @@ class CapabilityDispatcher:
         url: str,
         method: str = "GET",
     ) -> EgressResponse:
-        """Require agent-scoped network authority before brokered egress."""
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
         if self.agent_registry is None:
@@ -221,11 +251,46 @@ class CapabilityDispatcher:
             else Capability.NETWORK_OUTBOUND
         )
         if required not in envelope.granted_capabilities:
+            self.agent_registry.record_event(
+                agent_id=agent_id,
+                event_type="agent_egress",
+                data={
+                    "method": method.upper(),
+                    "url": str(url),
+                    "allowed": False,
+                    "reason": f"missing {required.value}",
+                },
+            )
             raise DispatchDenied(
                 f"agent lacks {required.value} capability"
             )
 
-        return self.egress_broker.fetch(
-            method=method,
-            url=url,
+        try:
+            response = self.egress_broker.fetch(
+                method=method,
+                url=url,
+            )
+        except Exception as exc:
+            self.agent_registry.record_event(
+                agent_id=agent_id,
+                event_type="agent_egress",
+                data={
+                    "method": method.upper(),
+                    "url": str(url),
+                    "allowed": False,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            raise
+
+        self.agent_registry.record_event(
+            agent_id=agent_id,
+            event_type="agent_egress",
+            data={
+                "method": method.upper(),
+                "url": str(url),
+                "allowed": True,
+                "status": response.status,
+            },
         )
+        return response
