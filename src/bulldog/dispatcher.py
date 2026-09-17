@@ -5,11 +5,14 @@ from pathlib import Path
 from typing import Sequence
 
 from .canonicalizer import (
+    ActionCanonicalizationError,
     TrustedExecutionContext,
     canonicalize_action,
+    canonicalize_filesystem_resource,
+    canonicalize_resource,
 )
 from .egress_proxy import EgressBroker, EgressResponse
-from .models import Capability
+from .models import Capability, Decision
 from .production_gate import verify_production_environment
 from .runtime import BulldogRuntime
 from .secret_broker import SecretBroker, SecretGrant, request_secret
@@ -46,6 +49,10 @@ class CapabilityDispatcher:
       - egress requires network authority AND an exact-host domain grant
       - hard policy violations freeze the whole cooperating domain tree
       - domain lifecycle/broker/dispatch events can share the runtime ledger
+
+    All process launches and broker operations are bound to the authority
+    being exercised. Filesystem read authority cannot drive a command, and
+    legacy broker calls cannot bypass policy by omitting a DispatchRequest.
     """
 
     def __init__(
@@ -118,6 +125,81 @@ class CapabilityDispatcher:
             parent_capabilities=parent_capabilities,
         )
 
+    @staticmethod
+    def _bind_executable(action, command: Sequence[str]) -> None:
+        if action.capability != Capability.PROCESS_EXEC:
+            raise DispatchDenied(
+                "command dispatch requires process.exec authority"
+            )
+        if not command:
+            raise DispatchDenied("command cannot be empty")
+
+        try:
+            executable = canonicalize_filesystem_resource(str(command[0]))
+        except ActionCanonicalizationError as exc:
+            raise DispatchDenied(
+                "invalid command executable: " + str(exc)
+            ) from exc
+
+        if executable != action.resource:
+            raise DispatchDenied(
+                "command executable does not match authorized resource: "
+                f"{executable} != {action.resource}"
+            )
+
+    def _authorize_legacy_broker_action(
+        self,
+        *,
+        request: DispatchRequest | None,
+        expected_capability: Capability,
+        expected_resource: str,
+    ):
+        """
+        Authorize a non-domain broker operation through the same deterministic
+        reference monitor used by execution. The broker receives the exact
+        canonical resource that was evaluated, closing check/use divergence.
+        """
+        if request is None:
+            raise DispatchDenied(
+                "broker operation requires an authorized DispatchRequest"
+            )
+
+        action = self.canonicalize(request)
+        if action.capability != expected_capability:
+            raise DispatchDenied(
+                "broker request capability mismatch: expected "
+                f"{expected_capability.value}, got {action.capability.value}"
+            )
+
+        try:
+            canonical_expected = canonicalize_resource(
+                action.operation,
+                expected_resource,
+            )
+        except ActionCanonicalizationError as exc:
+            raise DispatchDenied(str(exc)) from exc
+
+        if action.resource != canonical_expected:
+            raise DispatchDenied(
+                "broker resource does not match authorized resource"
+            )
+
+        engine = getattr(self.runtime, "engine", None)
+        evaluate = getattr(engine, "evaluate", None)
+        if not callable(evaluate):
+            raise DispatchDenied(
+                "broker authorization requires the BULL policy engine"
+            )
+
+        evaluation = evaluate(action)
+        if evaluation.decision in {Decision.DENY, Decision.ESCALATE}:
+            raise DispatchDenied(
+                "broker operation denied by BULL policy: "
+                + "; ".join(evaluation.reasons)
+            )
+
+        return action
+
     def execute(
         self,
         request: DispatchRequest,
@@ -127,6 +209,7 @@ class CapabilityDispatcher:
         timeout: float = 30.0,
     ):
         action = self.canonicalize(request)
+        self._bind_executable(action, command)
 
         if self.domain_registry is not None:
             assert request.domain_id is not None
@@ -220,10 +303,13 @@ class CapabilityDispatcher:
         name: str,
         sandbox_id: str | None = None,
         domain_id: str | None = None,
+        request: DispatchRequest | None = None,
         timeout: float = 3.0,
     ) -> str:
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
+
+        authorized_name = str(name)
 
         if self.domain_registry is not None:
             if not domain_id:
@@ -244,12 +330,19 @@ class CapabilityDispatcher:
                     "caller cannot select another domain's sandbox identity"
                 )
             sandbox_id = domain_id
+        else:
+            action = self._authorize_legacy_broker_action(
+                request=request,
+                expected_capability=Capability.CREDENTIAL_READ,
+                expected_resource=name,
+            )
+            authorized_name = action.resource
 
         try:
             value = request_secret(
                 socket_path=self.secret_broker.socket_path,
                 token=token,
-                name=name,
+                name=authorized_name,
                 sandbox_id=sandbox_id,
                 timeout=timeout,
             )
@@ -283,9 +376,17 @@ class CapabilityDispatcher:
         url: str,
         method: str = "GET",
         domain_id: str | None = None,
+        request: DispatchRequest | None = None,
     ) -> EgressResponse:
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
+
+        authorized_url = str(url)
+        required = (
+            Capability.NETWORK_OUTBOUND
+            if method.upper() in {"GET", "HEAD"}
+            else Capability.NETWORK_POST
+        )
 
         if self.domain_registry is not None:
             if not domain_id:
@@ -293,11 +394,6 @@ class CapabilityDispatcher:
                     "domain-enabled dispatcher requires domain_id for egress"
                 )
 
-            required = (
-                Capability.NETWORK_OUTBOUND
-                if method.upper() in {"GET", "HEAD"}
-                else Capability.NETWORK_POST
-            )
             try:
                 domain = self.domain_registry.require_active(domain_id)
                 if required not in domain.capability_ceiling:
@@ -320,11 +416,18 @@ class CapabilityDispatcher:
                 except SecurityDomainError:
                     pass
                 raise DispatchDenied(str(exc)) from exc
+        else:
+            action = self._authorize_legacy_broker_action(
+                request=request,
+                expected_capability=required,
+                expected_resource=url,
+            )
+            authorized_url = action.resource
 
         try:
             response = self.egress_broker.fetch(
                 method=method,
-                url=url,
+                url=authorized_url,
             )
         except Exception as exc:
             if self.domain_registry is not None and domain_id is not None:
