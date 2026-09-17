@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -36,7 +36,12 @@ jobs:
 
       - name: Model-check BULL runtime invariants
         run: |
+          # BullRuntime contains intentional terminal states such as review,
+          # blocked, and completed execution/broker states. TLC's -deadlock
+          # flag disables deadlock-as-error while still checking every
+          # configured invariant across the reachable state graph.
           timeout 180s java -cp /tmp/tla2tools.jar tlc2.TLC \
+            -deadlock \
             -workers 1 \
             -config formal/tla/BullRuntime.cfg \
             formal/tla/BullRuntime.tla
