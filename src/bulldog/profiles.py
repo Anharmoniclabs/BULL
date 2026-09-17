@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import hmac
+import json
 import os
 from pathlib import Path
 import secrets
@@ -13,6 +14,7 @@ import warnings
 from .audit import AuditLedger
 from .dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
 from .engine import BulldogEngine
+from .integrity import verify_integrity_manifest
 from .malware_scanner import MalwareScanner
 from .models import ActionRequest
 from .namespace_sandbox import NamespaceSandbox
@@ -104,9 +106,19 @@ class ProductionRuntime(BulldogRuntime):
         package_root = Path(__file__).resolve().parent
         verify_production_environment(package_root=package_root)
 
+        self._package_root = package_root
+        self._integrity_manifest_path = Path(
+            os.environ["BULL_INTEGRITY_MANIFEST"]
+        ).resolve(strict=True)
+        self._integrity_key = os.environ["BULL_INTEGRITY_MANIFEST_KEY"]
+        self._policy_bundle_path = Path(
+            os.environ["BULL_POLICY_BUNDLE"]
+        ).resolve(strict=True)
+        self._policy_key = os.environ["BULL_POLICY_BUNDLE_KEY"]
+
         policy_bundle = load_policy_bundle(
-            os.environ["BULL_POLICY_BUNDLE"],
-            os.environ["BULL_POLICY_BUNDLE_KEY"],
+            self._policy_bundle_path,
+            self._policy_key,
         )
         policy = DeterministicPolicy(
             project_root=policy_bundle.project_root,
@@ -139,6 +151,30 @@ class ProductionRuntime(BulldogRuntime):
             snapshot_root=production_snapshot_root(),
         )
         self._permit_key = secrets.token_bytes(32)
+
+    def verify_trusted_state(self) -> None:
+        """Reverify installed BULL and signed policy before privileged use."""
+        manifest = json.loads(
+            self._integrity_manifest_path.read_text(encoding="utf-8")
+        )
+        verify_integrity_manifest(
+            self._package_root,
+            manifest,
+            signature_key=self._integrity_key,
+            require_signature=True,
+        )
+        bundle = load_policy_bundle(self._policy_bundle_path, self._policy_key)
+        policy = getattr(self.engine, "policy", None)
+        if policy is None:
+            raise DispatchDenied("production runtime policy disappeared")
+        if bundle.project_root != getattr(policy, "project_root", None):
+            raise DispatchDenied("signed policy project root changed after startup")
+        if bundle.capability_ceiling != getattr(
+            policy,
+            "global_capability_ceiling",
+            None,
+        ):
+            raise DispatchDenied("signed policy capability ceiling changed after startup")
 
     def _mint_dispatch_permit(
         self,
@@ -223,6 +259,10 @@ class ProductionDispatcher(CapabilityDispatcher):
             **kwargs,
         )
 
+    def _evaluate_broker_action(self, action: ActionRequest) -> ActionRequest:
+        self.runtime.verify_trusted_state()
+        return super()._evaluate_broker_action(action)
+
     def execute(
         self,
         request: DispatchRequest,
@@ -231,6 +271,7 @@ class ProductionDispatcher(CapabilityDispatcher):
         project_root: str | Path,
         timeout: float = 30.0,
     ):
+        self.runtime.verify_trusted_state()
         action = self._bind_execution(
             self.canonicalize(request),
             command,
