@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import PurePosixPath
-from urllib.parse import urlsplit
+import posixpath
+from urllib.parse import unquote, urlsplit
 
 from .models import (
     ActionRequest,
@@ -20,6 +20,14 @@ SENSITIVE_MARKERS = (
     "/etc/sudoers",
 )
 
+_PATH_OPERATIONS = {
+    "read",
+    "inspect",
+    "write",
+    "create",
+    "modify",
+}
+
 
 @dataclass(frozen=True)
 class TrustedExecutionContext:
@@ -27,25 +35,95 @@ class TrustedExecutionContext:
     provenance: tuple[Provenance, ...]
     security_context_id: str
 
+    # Optional host-issued multi-agent security-domain metadata.
+    # These values are never accepted from a model proposal.
+    domain_id: str | None = None
+    root_domain_id: str | None = None
+    parent_domain_id: str | None = None
+    initial_intent_hash: str | None = None
+    initial_command_hash: str | None = None
+    spawn_depth: int = 0
 
-class ActionCanonicalizationError(
-    RuntimeError
-):
+
+class ActionCanonicalizationError(RuntimeError):
     pass
 
 
-def derive_capability(
-    operation: str,
-    resource: str,
-) -> Capability:
+def _decode_resource(value: str) -> str:
+    """
+    Decode percent-encoding repeatedly so nested encodings cannot hide
+    path traversal from the security classifier. The result is bounded to
+    a few rounds; deeply nested encodings are rejected as ambiguous.
+    """
 
+    if "\x00" in value:
+        raise ActionCanonicalizationError("NUL byte in resource")
+
+    decoded = value
+    for _ in range(3):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            return decoded
+        decoded = next_value
+
+    if unquote(decoded) != decoded:
+        raise ActionCanonicalizationError(
+            "resource contains excessively nested percent-encoding"
+        )
+
+    return decoded
+
+
+def canonicalize_filesystem_resource(resource: str) -> str:
+    decoded = _decode_resource(resource).replace("\\", "/")
+
+    if not decoded.startswith("/"):
+        raise ActionCanonicalizationError(
+            "filesystem resource must be an absolute path"
+        )
+
+    # Reject traversal rather than silently normalizing it. This makes the
+    # audit record preserve the fact that a boundary-crossing path was asked
+    # for instead of converting it into an apparently benign target.
+    if any(part == ".." for part in decoded.split("/")):
+        raise ActionCanonicalizationError(
+            "parent-directory traversal in filesystem resource"
+        )
+
+    normalized = posixpath.normpath(decoded)
+
+    if not normalized.startswith("/"):
+        raise ActionCanonicalizationError(
+            "filesystem resource escaped absolute path namespace"
+        )
+
+    return normalized
+
+
+def canonicalize_resource(operation: str, resource: str) -> str:
     op = operation.lower().strip()
-    resource_lower = resource.lower()
+    raw = str(resource).strip()
 
-    if any(
-        marker in resource_lower
-        for marker in SENSITIVE_MARKERS
-    ):
+    if not raw:
+        raise ActionCanonicalizationError("missing resource")
+
+    # Filesystem operations always use canonical absolute POSIX paths.
+    # Absolute path-like resources on other operations are canonicalized too
+    # so sensitive-path detection cannot be bypassed by traversal/encoding.
+    if op in _PATH_OPERATIONS or raw.startswith(("/", "\\")):
+        return canonicalize_filesystem_resource(raw)
+
+    # URLs and logical non-path resources are not path-normalized here; their
+    # authority is enforced by the dedicated egress/process policy layers.
+    return _decode_resource(raw)
+
+
+def derive_capability(operation: str, resource: str) -> Capability:
+    op = operation.lower().strip()
+    canonical_resource = canonicalize_resource(op, resource)
+    resource_lower = canonical_resource.lower()
+
+    if any(marker in resource_lower for marker in SENSITIVE_MARKERS):
         return Capability.CREDENTIAL_READ
 
     if op in {
@@ -83,33 +161,27 @@ def derive_capability(
         "get",
         "head",
     }:
+        parsed = urlsplit(canonical_resource)
+        if parsed.scheme and parsed.scheme not in {"http", "https"}:
+            raise ActionCanonicalizationError(
+                "unsupported network resource scheme"
+            )
         return Capability.NETWORK_OUTBOUND
 
-    path = PurePosixPath(
-        resource
-    )
-
-    if op in {
-        "write",
-        "create",
-        "modify",
-    }:
-        if str(path).startswith(
-            "/workspace/"
-        ) or str(path) == "/workspace":
+    if op in {"write", "create", "modify"}:
+        if (
+            canonical_resource == "/workspace"
+            or canonical_resource.startswith("/workspace/")
+        ):
             return Capability.FS_WRITE_PROJECT
-
         return Capability.FS_WRITE_HOME
 
-    if op in {
-        "read",
-        "inspect",
-    }:
-        if str(path).startswith(
-            "/workspace/"
-        ) or str(path) == "/workspace":
+    if op in {"read", "inspect"}:
+        if (
+            canonical_resource == "/workspace"
+            or canonical_resource.startswith("/workspace/")
+        ):
             return Capability.FS_READ_PROJECT
-
         return Capability.FS_READ_HOME
 
     raise ActionCanonicalizationError(
@@ -125,58 +197,51 @@ def canonicalize_action(
     parent_capabilities: frozenset[Capability] | None = None,
 ) -> ActionRequest:
     """
-    Security-critical identity/provenance fields come ONLY
-    from TrustedExecutionContext.
+    Convert an untrusted model proposal into a trusted ActionRequest.
 
-    Model-provided actor/provenance/security_context_id values
+    Security-critical identity, provenance and security-domain fields come
+    ONLY from TrustedExecutionContext. Model-provided values for those fields
     are ignored.
     """
 
-    operation = str(
-        proposal.get(
-            "operation",
-            "",
-        )
-    )
-
-    resource = str(
-        proposal.get(
-            "resource",
-            "",
-        )
-    )
+    operation = str(proposal.get("operation", "")).strip()
+    resource = str(proposal.get("resource", "")).strip()
 
     if not operation:
-        raise ActionCanonicalizationError(
-            "missing operation"
-        )
+        raise ActionCanonicalizationError("missing operation")
 
-    if not resource:
-        raise ActionCanonicalizationError(
-            "missing resource"
-        )
+    canonical_resource = canonicalize_resource(operation, resource)
+    capability = derive_capability(operation, canonical_resource)
 
-    capability = derive_capability(
-        operation,
-        resource,
+    metadata = {
+        "security_context_id": trusted.security_context_id,
+    }
+
+    trusted_metadata = {
+        "domain_id": trusted.domain_id,
+        "root_domain_id": trusted.root_domain_id,
+        "parent_domain_id": trusted.parent_domain_id,
+        "initial_intent_hash": trusted.initial_intent_hash,
+        "initial_command_hash": trusted.initial_command_hash,
+        "spawn_depth": str(trusted.spawn_depth),
+    }
+
+    metadata.update(
+        {
+            key: str(value)
+            for key, value in trusted_metadata.items()
+            if value is not None
+        }
     )
 
     return ActionRequest(
         actor=trusted.actor,
-        task=str(
-            proposal.get(
-                "task",
-                "model proposal",
-            )
-        ),
+        task=str(proposal.get("task", "model proposal")),
         operation=operation,
-        resource=resource,
+        resource=canonical_resource,
         capability=capability,
         granted_capabilities=granted_capabilities,
         provenance=trusted.provenance,
         parent_capabilities=parent_capabilities,
-        metadata={
-            "security_context_id":
-                trusted.security_context_id
-        },
+        metadata=metadata,
     )
