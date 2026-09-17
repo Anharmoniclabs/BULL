@@ -34,6 +34,35 @@ class ProjectSnapshot:
     snapshot_hash: str
 
 
+def _force_remove_tree(path: Path) -> None:
+    """Remove a snapshot even after it has deliberately been made read-only."""
+    if not path.exists():
+        return
+    for root, dirs, files in os.walk(path, topdown=False, followlinks=False):
+        root_path = Path(root)
+        try:
+            os.chmod(root_path, 0o700)
+        except OSError:
+            pass
+        for name in files:
+            target = root_path / name
+            try:
+                os.chmod(target, 0o600, follow_symlinks=False)
+            except (OSError, NotImplementedError):
+                pass
+        for name in dirs:
+            target = root_path / name
+            try:
+                os.chmod(target, 0o700, follow_symlinks=False)
+            except (OSError, NotImplementedError):
+                pass
+    try:
+        os.chmod(path, 0o700)
+    except OSError:
+        pass
+    shutil.rmtree(path, ignore_errors=False)
+
+
 def _content_hash(manifest: FilesystemManifest) -> str:
     digest = hashlib.sha256()
     for entry in manifest.entries:
@@ -202,7 +231,6 @@ def create_snapshot(
 
     try:
         with trusted_root_fd(source_root) as root_fd:
-            # Create directories first in depth order.
             directories = [
                 entry for entry in source_before.entries if entry.kind == "directory"
             ]
@@ -227,7 +255,6 @@ def create_snapshot(
                     deadline=snapshot_deadline,
                 )
 
-        # Make the snapshot tree non-writable before any scanner or sandbox sees it.
         for entry in sorted(
             directories,
             key=lambda item: (item.path.count("/"), item.path),
@@ -273,9 +300,12 @@ def create_snapshot(
             snapshot_hash=snapshot_hash,
         )
     except Exception:
-        shutil.rmtree(snapshot_parent, ignore_errors=True)
+        try:
+            _force_remove_tree(snapshot_parent)
+        except OSError:
+            pass
         raise
 
 
 def destroy_snapshot(snapshot: ProjectSnapshot) -> None:
-    shutil.rmtree(snapshot.snapshot_root.parent, ignore_errors=True)
+    _force_remove_tree(snapshot.snapshot_root.parent)
