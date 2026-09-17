@@ -36,6 +36,7 @@ CRITICAL_FILES = (
     "security_domain.py",
     "session_guard.py",
     "snapshot.py",
+    "snapshot_worker.py",
     "trace_model.py",
     "trace_runtime.py",
     "workspace_limits.py",
