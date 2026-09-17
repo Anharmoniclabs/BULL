@@ -29,6 +29,7 @@ from .namespace_sandbox import (
     SandboxResult,
 )
 from .resource_limits import ResourceBudget
+from .security_domain import hash_command
 from .snapshot import (
     SnapshotViolation,
     create_snapshot,
@@ -64,8 +65,9 @@ class BulldogRuntime:
     into the namespace sandbox.
 
     The runtime is also a defense-in-depth execution reference monitor:
-    launching an OS command requires PROCESS_EXEC authority, and the
-    authorized executable resource must match command[0].
+    launching an OS command requires PROCESS_EXEC authority, the authorized
+    executable resource must match command[0], and hardened mode additionally
+    requires the entire argv vector to match a host-authorized hash.
     """
 
     def __init__(
@@ -77,6 +79,7 @@ class BulldogRuntime:
         malware_scan_required: bool = True,
         trace_verifier: RuntimeTraceVerifier | None = None,
         resource_budget: ResourceBudget | None = None,
+        require_full_argv_binding: bool = False,
     ):
         self.engine = engine if engine is not None else BulldogEngine()
         self.sandbox = sandbox if sandbox is not None else NamespaceSandbox()
@@ -90,6 +93,7 @@ class BulldogRuntime:
             if resource_budget is not None
             else ResourceBudget()
         )
+        self.require_full_argv_binding = bool(require_full_argv_binding)
 
         self.malware_scan_required = bool(malware_scan_required)
 
@@ -112,9 +116,7 @@ class BulldogRuntime:
         command: Sequence[str],
     ) -> str | None:
         if action.capability != Capability.PROCESS_EXEC:
-            return (
-                "runtime command execution requires process.exec capability"
-            )
+            return "runtime command execution requires process.exec capability"
 
         if not command:
             return "runtime command cannot be empty"
@@ -134,6 +136,15 @@ class BulldogRuntime:
                 "runtime executable does not match authorized resource: "
                 f"{requested_executable} != {authorized_executable}"
             )
+
+        expected_argv_hash = action.metadata.get("authorized_argv_hash")
+        if self.require_full_argv_binding and not expected_argv_hash:
+            return "runtime requires a host-authorized full argv binding"
+
+        if expected_argv_hash:
+            actual_hash = hash_command(tuple(str(part) for part in command))
+            if actual_hash != expected_argv_hash:
+                return "runtime argv does not match host-authorized argv"
 
         return None
 
@@ -155,9 +166,6 @@ class BulldogRuntime:
         )
         self.trace.emit("ResolveDeny")
 
-        # Binding denial occurs before the policy engine because the command
-        # is not part of ActionRequest. Preserve the denial in the same audit
-        # ledger when one is configured.
         ledger = getattr(self.engine, "ledger", None)
         if ledger is not None:
             ledger.append(action, evaluation)
@@ -348,13 +356,8 @@ class BulldogRuntime:
                     trace_state=self.trace.snapshot(),
                 )
 
-            # Process execution receives a read-only project snapshot. Writes
-            # must be exposed through an explicit mediated filesystem API, not
-            # smuggled through a command launch.
             writable = False
 
-            # Only host-minted non-secret identity/hashes are propagated to the
-            # isolated workload. Raw prompts and secret values remain host-side.
             environment_bindings = {
                 "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
                 "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
@@ -368,6 +371,9 @@ class BulldogRuntime:
                 "BULL_MODEL_ID_HASH": action.metadata.get("model_id_hash"),
                 "BULL_DOMAIN_FINGERPRINT": action.metadata.get(
                     "domain_fingerprint"
+                ),
+                "BULL_AUTHORIZED_ARGV_HASH": action.metadata.get(
+                    "authorized_argv_hash"
                 ),
             }
             sandbox_env = {
