@@ -7,10 +7,9 @@ import os
 from urllib.parse import urlsplit
 
 from .host_certify import certify_host
-from .integrity import (
-    IntegrityViolation,
-    verify_integrity_manifest,
-)
+from .integrity import IntegrityViolation, verify_integrity_manifest
+from .policy_bundle import PolicyBundleError, load_policy_bundle
+from .workspace_limits import WorkspaceBudget, WorkspaceLimitViolation
 
 
 class ProductionGateFailure(RuntimeError):
@@ -25,6 +24,10 @@ class ProductionRequirements:
     require_integrity_manifest: bool = True
     require_signed_integrity_manifest: bool = True
     require_strict_seccomp: bool = True
+    require_signed_policy_bundle: bool = True
+    require_snapshot_scratch: bool = True
+    require_audit_ledger_path: bool = True
+    require_delegated_cgroup: bool = True
 
 
 def _validate_remote_anchor(failures: list[str]) -> None:
@@ -32,19 +35,91 @@ def _validate_remote_anchor(failures: list[str]) -> None:
     if not raw:
         failures.append("remote audit anchor is not configured")
         return
-
     try:
         parsed = urlsplit(raw)
     except Exception as exc:
         failures.append("remote audit anchor URL is invalid: " + str(exc))
         return
-
     if parsed.scheme != "https" or not parsed.hostname:
         failures.append("remote audit anchor must be an absolute HTTPS URL")
     if parsed.username or parsed.password:
         failures.append("remote audit anchor URL credentials are forbidden")
     if not os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_KEY"):
         failures.append("remote audit anchor authentication key is not configured")
+
+
+def _validate_policy_bundle(failures: list[str]) -> None:
+    path = os.environ.get("BULL_POLICY_BUNDLE", "").strip()
+    key = os.environ.get("BULL_POLICY_BUNDLE_KEY", "")
+    if not path:
+        failures.append("signed production policy bundle is not configured")
+        return
+    if not key:
+        failures.append("production policy verification key is not configured")
+        return
+    try:
+        load_policy_bundle(path, key)
+    except (OSError, ValueError, PolicyBundleError) as exc:
+        failures.append("policy bundle verification failed: " + str(exc))
+
+
+def _validate_snapshot_scratch(failures: list[str]) -> None:
+    raw = os.environ.get("BULL_SNAPSHOT_ROOT", "").strip()
+    if not raw:
+        failures.append("production snapshot scratch root is not configured")
+        return
+    try:
+        path = Path(raw).resolve(strict=True)
+        if not path.is_dir():
+            raise WorkspaceLimitViolation("snapshot scratch root is not a directory")
+        if not os.access(path, os.W_OK | os.X_OK):
+            raise WorkspaceLimitViolation("snapshot scratch root is not writable")
+        budget = WorkspaceBudget.from_environment()
+        statvfs = os.statvfs(path)
+        free = statvfs.f_bavail * statvfs.f_frsize
+        if free < budget.snapshot_min_free_bytes:
+            raise WorkspaceLimitViolation(
+                "snapshot scratch root lacks the configured free-space reserve"
+            )
+    except (OSError, ValueError, WorkspaceLimitViolation) as exc:
+        failures.append("snapshot scratch validation failed: " + str(exc))
+
+
+def _validate_audit_ledger_path(failures: list[str]) -> None:
+    raw = os.environ.get("BULL_AUDIT_LEDGER", "").strip()
+    if not raw:
+        failures.append("production audit ledger path is not configured")
+        return
+    path = Path(raw)
+    if not path.is_absolute():
+        failures.append("production audit ledger path must be absolute")
+        return
+    try:
+        parent = path.parent.resolve(strict=True)
+    except OSError as exc:
+        failures.append("production audit ledger parent is unavailable: " + str(exc))
+        return
+    if not os.access(parent, os.W_OK | os.X_OK):
+        failures.append("production audit ledger parent is not writable")
+
+
+def _validate_cgroup_parent(failures: list[str]) -> None:
+    raw = os.environ.get("BULL_CGROUP_PARENT", "").strip()
+    if not raw:
+        failures.append("delegated cgroup v2 parent is not configured")
+        return
+    try:
+        path = Path(raw).resolve(strict=True)
+    except OSError as exc:
+        failures.append("delegated cgroup parent is unavailable: " + str(exc))
+        return
+    if not path.is_dir():
+        failures.append("delegated cgroup parent is not a directory")
+        return
+    if not os.access(path, os.W_OK | os.X_OK):
+        failures.append("delegated cgroup parent is not writable")
+    if not (path / "cgroup.procs").exists():
+        failures.append("delegated cgroup parent does not expose cgroup.procs")
 
 
 def verify_production_environment(
@@ -56,13 +131,19 @@ def verify_production_environment(
 
     if requirements.require_remote_audit_anchor:
         _validate_remote_anchor(failures)
+    if requirements.require_signed_policy_bundle:
+        _validate_policy_bundle(failures)
+    if requirements.require_snapshot_scratch:
+        _validate_snapshot_scratch(failures)
+    if requirements.require_audit_ledger_path:
+        _validate_audit_ledger_path(failures)
+    if requirements.require_delegated_cgroup:
+        _validate_cgroup_parent(failures)
 
     if requirements.require_strict_seccomp:
         profile = os.environ.get("BULL_SECCOMP_PROFILE", "").strip().lower()
         if profile != "strict":
-            failures.append(
-                "production requires BULL_SECCOMP_PROFILE=strict"
-            )
+            failures.append("production requires BULL_SECCOMP_PROFILE=strict")
 
     if requirements.require_backend_certification:
         host = certify_host(
@@ -86,24 +167,15 @@ def verify_production_environment(
             else:
                 try:
                     manifest_path = Path(manifest_path_raw).resolve(strict=True)
-                    manifest = json.loads(
-                        manifest_path.read_text(encoding="utf-8")
-                    )
+                    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                     verify_integrity_manifest(
                         package_root,
                         manifest,
                         signature_key=signature_key,
                         require_signature=requirements.require_signed_integrity_manifest,
                     )
-                except (
-                    OSError,
-                    ValueError,
-                    KeyError,
-                    IntegrityViolation,
-                ) as exc:
-                    failures.append(
-                        "integrity verification failed: " + str(exc)
-                    )
+                except (OSError, ValueError, KeyError, IntegrityViolation) as exc:
+                    failures.append("integrity verification failed: " + str(exc))
 
     if failures:
         raise ProductionGateFailure("; ".join(failures))

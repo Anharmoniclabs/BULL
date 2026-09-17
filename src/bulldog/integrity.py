@@ -14,25 +14,32 @@ class IntegrityViolation(RuntimeError):
 CRITICAL_FILES = (
     "audit.py",
     "canonicalizer.py",
+    "cgroup_scope.py",
     "dispatcher.py",
     "egress_proxy.py",
     "engine.py",
     "filesystem_manifest.py",
     "host_certify.py",
     "integrity.py",
+    "landlock_policy.py",
     "malware_scanner.py",
     "namespace_sandbox.py",
     "policy.py",
+    "policy_bundle.py",
     "production_gate.py",
+    "profiles.py",
     "resource_limits.py",
     "runtime.py",
     "seccomp_policy.py",
     "secret_broker.py",
+    "secure_fs.py",
     "security_domain.py",
     "session_guard.py",
     "snapshot.py",
+    "snapshot_worker.py",
     "trace_model.py",
     "trace_runtime.py",
+    "workspace_limits.py",
     "_namespace_launcher.sh",
 )
 
@@ -64,13 +71,11 @@ def _canonical_manifest_bytes(manifest: dict) -> bytes:
 def build_integrity_manifest(package_root: str | Path) -> dict:
     package_root = Path(package_root)
     files = {}
-
     for name in CRITICAL_FILES:
         path = package_root / name
         if not path.exists():
             raise IntegrityViolation(f"critical file missing: {name}")
         files[name] = sha256_file(path)
-
     return {
         "format": "bull-integrity-v2",
         "platform": platform.platform(),
@@ -85,13 +90,6 @@ def sign_integrity_manifest(
     *,
     key_id: str = "deployment",
 ) -> dict:
-    """Return a copy of ``manifest`` with an HMAC-SHA256 authenticity tag.
-
-    Production keeps the HMAC key outside the package/repository. Replacing both
-    BULL code and the manifest is therefore insufficient without the deployment
-    secret as well.
-    """
-
     if isinstance(key, str):
         key = key.encode("utf-8")
     if not key:
@@ -110,10 +108,7 @@ def sign_integrity_manifest(
     return signed
 
 
-def verify_manifest_signature(
-    manifest: dict,
-    key: bytes | str,
-) -> None:
+def verify_manifest_signature(manifest: dict, key: bytes | str) -> None:
     if isinstance(key, str):
         key = key.encode("utf-8")
     if not key:

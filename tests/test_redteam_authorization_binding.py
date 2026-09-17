@@ -17,6 +17,7 @@ from bulldog.models import (
     Provenance,
 )
 from bulldog.namespace_sandbox import NamespaceSandbox, SandboxResult
+from bulldog.profiles import ProductionDispatcher
 from bulldog.runtime import BulldogRuntime
 
 
@@ -149,15 +150,31 @@ def test_production_full_argv_binding_rejects_semantic_argument_drift(monkeypatc
         seccomp_profile="strict",
         require_attestation=True,
     )
-    runtime = BulldogRuntime(
-        sandbox=sandbox,
-        malware_scanner=CleanScanner(),
+    runtime = SimpleNamespace(
+        production_boundary=True,
+        malware_scan_required=True,
+        malware_scanner=SimpleNamespace(bounded_scan=True),
         require_full_argv_binding=True,
+        workspace_budget=object(),
+        snapshot_root="/tmp",
+        trace=object(),
+        engine=SimpleNamespace(
+            evaluate=lambda action: Evaluation(
+                Decision.ALLOW,
+                0.0,
+                ("test allow",),
+            ),
+            policy=SimpleNamespace(
+                global_capability_ceiling=frozenset({Capability.PROCESS_EXEC})
+            ),
+            ledger=SimpleNamespace(
+                remote_anchor_url="https://audit.example/",
+                remote_anchor_key=b"key",
+            ),
+        ),
+        sandbox=sandbox,
     )
-    dispatcher = CapabilityDispatcher(
-        runtime=runtime,
-        production_mode=True,
-    )
+    dispatcher = ProductionDispatcher(runtime=runtime)
 
     request = DispatchRequest(
         proposal={

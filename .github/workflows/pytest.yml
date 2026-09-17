@@ -13,6 +13,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.13"]
     steps:
@@ -24,7 +25,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e . pytest
-      - name: Compile
+      - name: Compile trusted runtime
         run: python -m compileall -q src/bulldog
-      - name: Test
+      - name: Local-host red-team boundary
+        run: python -m pytest -q tests/redteam_local_host
+      - name: Full regression suite
         run: python -m pytest -q

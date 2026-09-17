@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -10,10 +11,8 @@ import subprocess
 import tempfile
 from typing import Sequence
 
-from .resource_limits import (
-    ResourceBudget,
-    apply_resource_budget,
-)
+from .cgroup_scope import CgroupV2Scope
+from .resource_limits import ResourceBudget, apply_resource_budget
 
 
 @dataclass(frozen=True)
@@ -24,6 +23,8 @@ class SandboxAttestation:
     seccomp: bool
     seccomp_profile: str
     seccomp_rules: int
+    landlock: bool
+    landlock_abi: int
     network_interfaces: tuple[str, ...]
     network_isolated: bool
     python: str
@@ -51,35 +52,25 @@ def _detect_sandbox_python() -> str:
     candidates = []
     if override:
         candidates.append(str(override))
-    candidates.extend(
-        [
-            "/usr/bin/python3.13",
-            "/usr/bin/python3.12",
-            "/usr/bin/python3.11",
-            "/usr/bin/python3.10",
-            "/usr/bin/python3",
-        ]
-    )
-
+    candidates.extend([
+        "/usr/bin/python3.13",
+        "/usr/bin/python3.12",
+        "/usr/bin/python3.11",
+        "/usr/bin/python3.10",
+        "/usr/bin/python3",
+    ])
     for candidate in candidates:
         path = Path(candidate)
         if path.is_absolute() and path.is_file() and os.access(path, os.X_OK):
             if str(path).startswith(("/usr/", "/bin/")):
                 return str(path)
-
     raise SandboxUnavailable(
         "no sandbox Python interpreter is available under /usr or /bin"
     )
 
 
 class NamespaceSandbox:
-    """BULL Linux namespace execution backend.
-
-    Security bootstrap code is mounted read-only from BULL's own installed
-    package and never imported from the agent-controlled project. The trusted
-    parent also requires a nonce-bound attestation from inside the new
-    PID/network/mount namespace after no_new_privs and seccomp are installed.
-    """
+    """BULL Linux namespace execution backend with live backend attestation."""
 
     def __init__(
         self,
@@ -105,24 +96,21 @@ class NamespaceSandbox:
         required = ("unshare", "mount", "chroot", "bash")
         missing = [tool for tool in required if shutil.which(tool) is None]
         if missing:
-            raise SandboxUnavailable(
-                "missing sandbox tools: " + ", ".join(missing)
-            )
+            raise SandboxUnavailable("missing sandbox tools: " + ", ".join(missing))
 
         self.launcher = Path(__file__).with_name("_namespace_launcher.sh")
         if not self.launcher.exists():
-            raise SandboxUnavailable(
-                "missing namespace launcher: " + f"{self.launcher}"
-            )
+            raise SandboxUnavailable("missing namespace launcher: " + str(self.launcher))
 
         self.sandbox_python = sandbox_python or _detect_sandbox_python()
         self.runtime_root = Path(
             runtime_root if runtime_root is not None else Path(__file__).resolve().parent
         ).resolve(strict=True)
-        if not (self.runtime_root / "seccomp_policy.py").is_file():
-            raise SandboxUnavailable(
-                "trusted runtime root does not contain seccomp_policy.py"
-            )
+        for required_file in ("seccomp_policy.py", "landlock_policy.py"):
+            if not (self.runtime_root / required_file).is_file():
+                raise SandboxUnavailable(
+                    "trusted runtime root does not contain " + required_file
+                )
 
     @staticmethod
     def _parse_attestation(
@@ -135,25 +123,20 @@ class NamespaceSandbox:
             raise SandboxAttestationError("sandbox emitted no backend attestation")
         if len(raw) > 16384:
             raise SandboxAttestationError("sandbox attestation exceeded size limit")
-
         try:
             lines = [line for line in raw.decode("utf-8").splitlines() if line.strip()]
             if len(lines) != 1:
                 raise ValueError("expected exactly one attestation record")
             data = json.loads(lines[0])
         except Exception as exc:
-            raise SandboxAttestationError(
-                "invalid sandbox attestation: " + str(exc)
-            ) from exc
+            raise SandboxAttestationError("invalid sandbox attestation: " + str(exc)) from exc
 
-        if data.get("format") != "bull-sandbox-attestation-v1":
+        if data.get("format") != "bull-sandbox-attestation-v2":
             raise SandboxAttestationError("unknown sandbox attestation format")
         if not secrets.compare_digest(str(data.get("nonce", "")), expected_nonce):
             raise SandboxAttestationError("sandbox attestation nonce mismatch")
         if int(data.get("pid", -1)) != 1:
-            raise SandboxAttestationError(
-                "PID namespace attestation failed: bootstrap is not PID 1"
-            )
+            raise SandboxAttestationError("PID namespace attestation failed: bootstrap is not PID 1")
         if data.get("no_new_privs") is not True:
             raise SandboxAttestationError("no_new_privs attestation failed")
         if data.get("seccomp") is not True:
@@ -162,6 +145,10 @@ class NamespaceSandbox:
             raise SandboxAttestationError("seccomp profile attestation mismatch")
         if int(data.get("seccomp_rules", 0)) < 1:
             raise SandboxAttestationError("seccomp installed no rules")
+        if expected_profile == "strict" and data.get("landlock") is not True:
+            raise SandboxAttestationError("Landlock attestation failed")
+        if expected_profile == "strict" and int(data.get("landlock_abi", 0)) < 1:
+            raise SandboxAttestationError("Landlock ABI attestation failed")
         if data.get("network_isolated") is not True:
             raise SandboxAttestationError("network namespace attestation failed")
         if str(data.get("runtime_root", "")) != "/bull_runtime":
@@ -180,6 +167,8 @@ class NamespaceSandbox:
             seccomp=True,
             seccomp_profile=expected_profile,
             seccomp_rules=int(data["seccomp_rules"]),
+            landlock=bool(data.get("landlock")),
+            landlock_abi=int(data.get("landlock_abi", 0)),
             network_interfaces=interfaces,
             network_isolated=True,
             python=str(data.get("python", "")),
@@ -198,16 +187,28 @@ class NamespaceSandbox:
     ) -> SandboxResult:
         if not command:
             raise ValueError("sandbox command cannot be empty")
-
         project_root = Path(project_root).resolve(strict=True)
         if not project_root.is_dir():
             raise ValueError("project_root must be a directory")
 
         rootfs = Path(tempfile.mkdtemp(prefix="bull_rootfs_", dir="/tmp"))
         mode = "rw" if writable else "ro"
-        outer_env = os.environ.copy()
+        outer_env = {
+            "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+            "LANG": "C.UTF-8",
+            "HOME": "/nonexistent",
+            "TMPDIR": "/tmp",
+            "PYTHONNOUSERSITE": "1",
+            "PYTHONSAFEPATH": "1",
+        }
         if env:
-            outer_env.update({str(key): str(value) for key, value in env.items()})
+            for key, value in env.items():
+                key = str(key)
+                if not key.startswith("BULL_"):
+                    raise ValueError(f"sandbox environment key is not host-approved: {key}")
+                if key in {"BULL_ATTEST_FD", "BULL_ATTEST_NONCE", "BULL_SECCOMP_PROFILE"}:
+                    raise ValueError(f"sandbox environment key is reserved: {key}")
+                outer_env[key] = str(value)
 
         nonce = secrets.token_urlsafe(32)
         read_fd, write_fd = os.pipe()
@@ -215,42 +216,55 @@ class NamespaceSandbox:
         outer_env["BULL_ATTEST_NONCE"] = nonce
         outer_env["BULL_SECCOMP_PROFILE"] = self.seccomp_profile
 
-        preexec_fn = None
+        scope = None
         if resource_budget is not None:
-            def _apply_limits() -> None:
-                apply_resource_budget(resource_budget)
-            preexec_fn = _apply_limits
+            scope = CgroupV2Scope.from_environment(
+                memory_bytes=int(resource_budget.memory_bytes),
+                processes=int(resource_budget.processes),
+                cpu_quota_us=100_000,
+                name_prefix="bull-workload",
+            )
+        context = scope if scope is not None else nullcontext(None)
 
         proc = None
         try:
-            try:
-                proc = subprocess.run(
-                    [
-                        "unshare",
-                        "--user",
-                        "--map-root-user",
-                        "--mount",
-                        "--pid",
-                        "--fork",
-                        "--net",
-                        str(self.launcher),
-                        str(rootfs),
-                        str(project_root),
-                        mode,
-                        self.sandbox_python,
-                        str(self.runtime_root),
-                        *map(str, command),
-                    ],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=timeout,
-                    env=outer_env,
-                    preexec_fn=preexec_fn,
-                    pass_fds=(write_fd,),
-                )
-            finally:
-                os.close(write_fd)
+            with context as active_scope:
+                preexec_fn = None
+                if resource_budget is not None:
+                    def _apply_limits() -> None:
+                        apply_resource_budget(resource_budget)
+                        if active_scope is not None:
+                            active_scope.attach_current()
+                    preexec_fn = _apply_limits
+
+                try:
+                    proc = subprocess.run(
+                        [
+                            shutil.which("unshare") or "unshare",
+                            "--user",
+                            "--map-root-user",
+                            "--mount",
+                            "--pid",
+                            "--fork",
+                            "--net",
+                            str(self.launcher),
+                            str(rootfs),
+                            str(project_root),
+                            mode,
+                            self.sandbox_python,
+                            str(self.runtime_root),
+                            *map(str, command),
+                        ],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        timeout=timeout,
+                        env=outer_env,
+                        preexec_fn=preexec_fn,
+                        pass_fds=(write_fd,),
+                    )
+                finally:
+                    os.close(write_fd)
 
             chunks = []
             total = 0
@@ -260,9 +274,7 @@ class NamespaceSandbox:
                     break
                 total += len(chunk)
                 if total > 16384:
-                    raise SandboxAttestationError(
-                        "sandbox attestation exceeded size limit"
-                    )
+                    raise SandboxAttestationError("sandbox attestation exceeded size limit")
                 chunks.append(chunk)
             raw_attestation = b"".join(chunks)
 
@@ -282,12 +294,9 @@ class NamespaceSandbox:
                 attestation=attestation,
             )
         finally:
-            try:
-                os.close(read_fd)
-            except OSError:
-                pass
-            try:
-                os.close(write_fd)
-            except OSError:
-                pass
+            for fd in (read_fd, write_fd):
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
             shutil.rmtree(rootfs, ignore_errors=True)

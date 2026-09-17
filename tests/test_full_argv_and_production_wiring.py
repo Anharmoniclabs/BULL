@@ -4,14 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
-import bulldog.dispatcher as dispatcher_module
 from bulldog.dispatcher import CapabilityDispatcher, DispatchDenied
-from bulldog.models import (
-    ActionRequest,
-    Capability,
-    Provenance,
-)
+from bulldog.models import ActionRequest, Capability, Provenance
 from bulldog.namespace_sandbox import SandboxResult
+from bulldog.profiles import ProductionDispatcher
 from bulldog.runtime import BulldogRuntime
 from bulldog.security_domain import hash_command
 
@@ -100,51 +96,34 @@ def test_runtime_full_argv_binding_allows_exact_authorized_vector(tmp_path):
     assert sandbox.command == argv
 
 
-def test_production_dispatcher_rejects_runtime_without_hardened_wiring(monkeypatch):
-    monkeypatch.setattr(
-        dispatcher_module,
-        "verify_production_environment",
-        lambda **kwargs: None,
-    )
-
-    insecure_runtime = SimpleNamespace(
+def test_legacy_production_boolean_is_never_a_production_boundary():
+    hardened_looking_runtime = SimpleNamespace(
+        production_boundary=True,
         malware_scan_required=True,
-        malware_scanner=object(),
-        require_full_argv_binding=False,
-        trace=object(),
-        sandbox=SimpleNamespace(
-            seccomp_profile="strict",
-            require_attestation=True,
-        ),
-    )
-
-    with pytest.raises(DispatchDenied, match="full argv"):
-        CapabilityDispatcher(
-            runtime=insecure_runtime,
-            production_mode=True,
-        )
-
-
-def test_production_dispatcher_rejects_compat_seccomp_runtime(monkeypatch):
-    monkeypatch.setattr(
-        dispatcher_module,
-        "verify_production_environment",
-        lambda **kwargs: None,
-    )
-
-    insecure_runtime = SimpleNamespace(
-        malware_scan_required=True,
-        malware_scanner=object(),
+        malware_scanner=SimpleNamespace(bounded_scan=True),
         require_full_argv_binding=True,
+        workspace_budget=object(),
+        snapshot_root="/tmp",
         trace=object(),
-        sandbox=SimpleNamespace(
-            seccomp_profile="compat",
-            require_attestation=True,
+        engine=SimpleNamespace(
+            evaluate=lambda action: None,
+            policy=SimpleNamespace(global_capability_ceiling=frozenset({Capability.PROCESS_EXEC})),
+            ledger=SimpleNamespace(
+                remote_anchor_url="https://audit.example/",
+                remote_anchor_key=b"key",
+            ),
         ),
+        sandbox=SimpleNamespace(seccomp_profile="strict", require_attestation=True),
     )
 
-    with pytest.raises(DispatchDenied, match="strict seccomp"):
+    with pytest.raises(DispatchDenied, match="ProductionDispatcher"):
         CapabilityDispatcher(
-            runtime=insecure_runtime,
+            runtime=hardened_looking_runtime,
             production_mode=True,
         )
+
+
+def test_production_dispatcher_rejects_nonproduction_runtime_marker():
+    fake_runtime = SimpleNamespace(production_boundary=False)
+    with pytest.raises(DispatchDenied, match="ProductionRuntime"):
+        ProductionDispatcher(runtime=fake_runtime)
