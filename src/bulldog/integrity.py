@@ -10,6 +10,7 @@ class IntegrityViolation(RuntimeError):
 
 
 CRITICAL_FILES = (
+    "agent_isolation.py",
     "audit.py",
     "canonicalizer.py",
     "dispatcher.py",
