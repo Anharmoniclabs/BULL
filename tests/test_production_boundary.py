@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 import bulldog.audit as audit_module
 import bulldog.integrity as integrity_module
+import bulldog.namespace_sandbox as namespace_module
 import bulldog.production_gate as production_gate
 from bulldog.audit import AuditIntegrityError, AuditLedger
 from bulldog.integrity import (
@@ -58,6 +58,14 @@ def _attestation(nonce="NONCE", profile="strict") -> bytes:
     ).encode("utf-8")
 
 
+def test_security_bootstrap_never_imports_from_agent_workspace():
+    launcher = Path(namespace_module.__file__).with_name("_namespace_launcher.sh")
+    text = launcher.read_text(encoding="utf-8")
+    assert "/workspace/.bull_runtime" not in text
+    assert 'sys.path[:] = ["/bull_runtime"]' in text
+    assert 'mount --bind "$RUNTIME_ROOT" "$ROOTFS/bull_runtime"' in text
+
+
 def test_backend_attestation_is_nonce_bound_and_strict():
     att = NamespaceSandbox._parse_attestation(
         _attestation(),
@@ -91,7 +99,6 @@ def test_strict_seccomp_is_default_deny_surface_not_blacklist():
     assert "execve" in STRICT_ALLOWED_SYSCALLS
     assert "openat" in STRICT_ALLOWED_SYSCALLS
     assert "socket" in STRICT_ALLOWED_SYSCALLS
-    # Kernel-control primitives must not appear in the strict allowlist.
     for syscall in (
         "mount",
         "ptrace",
@@ -191,8 +198,6 @@ def test_remote_audit_anchor_is_monotonic_and_fail_closed(tmp_path, monkeypatch)
     with pytest.raises(AuditIntegrityError, match="delivery failed"):
         ledger.append(_action(), _evaluation())
 
-    # Local append happened, but remote checkpoint did not advance. Future
-    # writes are now blocked until the missing remote anchor is reconciled.
     verification = ledger.verify()
     assert verification.valid is False
     assert "remote audit checkpoint" in str(verification.error)
