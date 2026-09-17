@@ -2,7 +2,9 @@
 
 Every message is delivered only to registered agents, every delivery is
 written to an in-memory trace that can be streamed into bulldog's audit
-layer, and a hop limit stops runaway forwarding loops.
+layer, and a hop limit stops runaway forwarding loops. An optional host-owned
+boundary guard can inspect both envelopes and handler results before they are
+allowed to continue through the bus.
 """
 
 from __future__ import annotations
@@ -30,7 +32,16 @@ class MessageBus:
         self._handlers: Dict[str, Callable[[Envelope], Any]] = {}
         self._trace: List[TraceEvent] = []
         self._lock = threading.Lock()
+        self._boundary_guard: Optional[Callable[[str, Envelope, Any], None]] = None
         self.max_hops = max_hops
+
+    def set_boundary_guard(
+        self,
+        guard: Optional[Callable[[str, Envelope, Any], None]],
+    ) -> None:
+        """Install one host-owned guard for envelope/result boundaries."""
+        with self._lock:
+            self._boundary_guard = guard
 
     def register(
         self, identity: AgentIdentity, handler: Callable[[Envelope], Any]
@@ -69,6 +80,9 @@ class MessageBus:
                 envelope.trace_id,
             )
             raise DeliveryError(f"loop guard tripped after {envelope.hops} hops")
+
+        self._apply_boundary_guard("envelope", envelope, None)
+
         with self._lock:
             handler = self._handlers.get(envelope.recipient)
         if handler is None:
@@ -80,6 +94,7 @@ class MessageBus:
             envelope.trace_id,
         )
         result = handler(envelope)
+        self._apply_boundary_guard("result", envelope, result)
         self._record(
             envelope.recipient,
             "handled",
@@ -113,6 +128,32 @@ class MessageBus:
         if trace_id is None:
             return events
         return [event for event in events if event.trace_id == trace_id]
+
+    def _apply_boundary_guard(
+        self,
+        phase: str,
+        envelope: Envelope,
+        result: Any,
+    ) -> None:
+        with self._lock:
+            guard = self._boundary_guard
+        if guard is None:
+            return
+        try:
+            guard(phase, envelope, result)
+        except Exception as exc:
+            # Never put exception text in the bus trace: a security guard may
+            # intentionally protect a secret marker. Record only type/stage.
+            self._record(
+                envelope.sender,
+                "dropped.boundary-guard",
+                {
+                    "stage": phase,
+                    "error_type": type(exc).__name__,
+                },
+                envelope.trace_id,
+            )
+            raise
 
     def _record(
         self,
