@@ -62,6 +62,38 @@ class HoneyTokenBoundaryTests(unittest.TestCase):
             bus.deliver(leaked)
         self.assertTrue(guard.is_tripped(trace_id))
 
+    def test_initial_canary_exposure_is_message_bound_and_one_shot(self):
+        bus, guard = self._guarded_bus()
+        recipient = AgentIdentity.new("receiver", [])
+        bus.register(recipient, lambda envelope: "ok")
+
+        initial = Envelope(
+            trace_id="trace-message-bound",
+            recipient=recipient.agent_id,
+            message_type="task",
+            payload={},
+        )
+        guard.mint(
+            initial.trace_id,
+            allowed_recipient=recipient.agent_id,
+            allowed_message_id=initial.message_id,
+        )
+        initial.payload = {
+            "trusted_context": guard.trusted_context(initial.trace_id),
+            "task": {"x": 1},
+        }
+        self.assertEqual(bus.deliver(initial), "ok")
+
+        forged = Envelope(
+            trace_id=initial.trace_id,
+            recipient=recipient.agent_id,
+            message_type="task",
+            payload={"trusted_context": guard.trusted_context(initial.trace_id)},
+            hops=0,
+        )
+        with self.assertRaises(HoneyTokenLeak):
+            bus.deliver(forged)
+
     def test_base64_encoded_canary_is_blocked(self):
         bus, guard = self._guarded_bus()
         recipient = AgentIdentity.new("receiver", [])
