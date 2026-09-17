@@ -72,10 +72,22 @@ SECRET_HINTS = (
 @dataclass
 class DeterministicPolicy:
     project_root: str = "/workspace"
+    global_capability_ceiling: frozenset[Capability] | None = None
 
     def evaluate(self, action: ActionRequest) -> Evaluation:
         reasons: list[str] = []
         risk = 0.0
+
+        if (
+            self.global_capability_ceiling is not None
+            and action.capability not in self.global_capability_ceiling
+        ):
+            return Evaluation(
+                Decision.DENY,
+                1.0,
+                ("capability is outside the signed deployment policy ceiling",),
+                hard_block=True,
+            )
 
         if action.capability not in action.granted_capabilities:
             return Evaluation(
@@ -182,11 +194,6 @@ class DeterministicPolicy:
             )
             risk += 0.25
 
-        # A brokered secret read is not raw host filesystem credential access.
-        # It is a narrow, named secret lookup through SecretBroker, which adds
-        # TTL, use limits and optional sandbox/domain binding. Give that
-        # mediated operation an explicit ALLOW path only when provenance is
-        # trusted. External influence remains a hard deny below.
         if (
             action.capability == Capability.CREDENTIAL_READ
             and action.operation.lower().strip() in BROKERED_SECRET_OPERATIONS
