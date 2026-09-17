@@ -8,6 +8,7 @@ import threading
 from typing import Callable, Iterable, Sequence
 from urllib.parse import urlsplit
 
+from .audit import AuditLedger
 from .models import Capability, Provenance
 
 
@@ -26,13 +27,7 @@ class GoalTransition:
 
 @dataclass
 class SecurityDomain:
-    """
-    Host-issued authority boundary for one agent/model execution identity.
-
-    `root_domain_id` groups collaborating agents under one behavioral history.
-    Children may only reduce authority; they may never mint capabilities or
-    egress destinations absent from the parent domain.
-    """
+    """Host-issued authority boundary for one agent/model execution identity."""
 
     domain_id: str
     root_domain_id: str
@@ -44,6 +39,9 @@ class SecurityDomain:
     initial_intent_hash: str
     current_intent_hash: str
     initial_command_hash: str | None
+    model_id: str | None
+    model_id_hash: str | None
+    domain_fingerprint: str
     spawn_depth: int
     frozen: bool = False
     freeze_reason: str | None = None
@@ -60,7 +58,6 @@ def hash_intent(text: str) -> str:
 def hash_command(command: Sequence[str] | None) -> str | None:
     if command is None:
         return None
-
     encoded = json.dumps(
         [str(item) for item in command],
         ensure_ascii=False,
@@ -69,18 +66,62 @@ def hash_command(command: Sequence[str] | None) -> str | None:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def hash_model_id(model_id: str | None) -> str | None:
+    if model_id is None:
+        return None
+    normalized = str(model_id).strip()
+    if not normalized:
+        raise SecurityDomainError("model_id cannot be empty")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _domain_fingerprint(
+    *,
+    domain_id: str,
+    root_domain_id: str,
+    parent_domain_id: str | None,
+    actor: str,
+    model_id_hash: str | None,
+    initial_intent_hash: str,
+    initial_command_hash: str | None,
+    capability_ceiling: frozenset[Capability],
+    egress_hosts: frozenset[str],
+) -> str:
+    payload = json.dumps(
+        {
+            "domain_id": domain_id,
+            "root_domain_id": root_domain_id,
+            "parent_domain_id": parent_domain_id,
+            "actor": actor,
+            "model_id_hash": model_id_hash,
+            "initial_intent_hash": initial_intent_hash,
+            "initial_command_hash": initial_command_hash,
+            "capability_ceiling": sorted(
+                capability.value for capability in capability_ceiling
+            ),
+            "egress_hosts": sorted(egress_hosts),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 class SecurityDomainRegistry:
     """
     Trusted host-side registry for multi-agent authority and lineage.
 
     Security properties:
       - domain IDs are host generated and non-model-controlled
+      - children require explicit `agent.spawn` authority
       - children can only receive subsets of parent capabilities/egress hosts
       - all agents in one root domain share one behavioral security context
+      - model ID, initial intent and initial command can be bound into a domain
+        fingerprint for complete execution-lineage auditing
       - domains can be frozen individually or root-wide
       - goal changes require an explicit trusted transition record
-      - the raw initial prompt is not copied into security metadata; hashes bind
-        audit records to the host-retained prompt without leaking it downstream
+      - optional AuditLedger writes lifecycle/dispatch/broker events into the
+        same tamper-evident chain used by BULL policy decisions
     """
 
     def __init__(
@@ -88,12 +129,16 @@ class SecurityDomainRegistry:
         *,
         max_spawn_depth: int = 8,
         audit: Callable[[dict], None] | None = None,
+        ledger: AuditLedger | None = None,
+        strict_identity_binding: bool = False,
     ):
         if max_spawn_depth < 0:
             raise ValueError("max_spawn_depth must be >= 0")
 
         self.max_spawn_depth = int(max_spawn_depth)
         self.audit = audit
+        self.ledger = ledger
+        self.strict_identity_binding = bool(strict_identity_binding)
         self._domains: dict[str, SecurityDomain] = {}
         self._lock = threading.RLock()
 
@@ -115,6 +160,23 @@ class SecurityDomainRegistry:
     def _new_id() -> str:
         return secrets.token_urlsafe(24)
 
+    def _validate_identity_binding(
+        self,
+        *,
+        model_id: str | None,
+        initial_command: Sequence[str] | None,
+    ) -> None:
+        if not self.strict_identity_binding:
+            return
+        if model_id is None or not str(model_id).strip():
+            raise SecurityDomainError(
+                "strict identity binding requires model_id"
+            )
+        if initial_command is None or len(initial_command) == 0:
+            raise SecurityDomainError(
+                "strict identity binding requires initial_command"
+            )
+
     def create_root(
         self,
         *,
@@ -124,41 +186,53 @@ class SecurityDomainRegistry:
         provenance: tuple[Provenance, ...] = (Provenance.HUMAN,),
         egress_hosts: Iterable[str] = (),
         initial_command: Sequence[str] | None = None,
+        model_id: str | None = None,
     ) -> SecurityDomain:
+        self._validate_identity_binding(
+            model_id=model_id,
+            initial_command=initial_command,
+        )
+
         intent_hash = hash_intent(initial_prompt)
+        command_hash = hash_command(initial_command)
+        normalized_model = None if model_id is None else str(model_id).strip()
+        model_hash = hash_model_id(normalized_model)
         domain_id = self._new_id()
+        capabilities = frozenset(capability_ceiling)
+        hosts = self._normalize_hosts(egress_hosts)
+        fingerprint = _domain_fingerprint(
+            domain_id=domain_id,
+            root_domain_id=domain_id,
+            parent_domain_id=None,
+            actor=str(actor),
+            model_id_hash=model_hash,
+            initial_intent_hash=intent_hash,
+            initial_command_hash=command_hash,
+            capability_ceiling=capabilities,
+            egress_hosts=hosts,
+        )
 
         domain = SecurityDomain(
             domain_id=domain_id,
             root_domain_id=domain_id,
             parent_domain_id=None,
             actor=str(actor),
-            capability_ceiling=frozenset(capability_ceiling),
-            egress_hosts=self._normalize_hosts(egress_hosts),
+            capability_ceiling=capabilities,
+            egress_hosts=hosts,
             provenance=tuple(provenance),
             initial_intent_hash=intent_hash,
             current_intent_hash=intent_hash,
-            initial_command_hash=hash_command(initial_command),
+            initial_command_hash=command_hash,
+            model_id=normalized_model,
+            model_id_hash=model_hash,
+            domain_fingerprint=fingerprint,
             spawn_depth=0,
         )
 
         with self._lock:
             self._domains[domain.domain_id] = domain
 
-        self._emit({
-            "event": "security_domain_created",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "parent_domain_id": None,
-            "actor": domain.actor,
-            "capability_ceiling": sorted(
-                cap.value for cap in domain.capability_ceiling
-            ),
-            "egress_hosts": sorted(domain.egress_hosts),
-            "initial_intent_hash": domain.initial_intent_hash,
-            "initial_command_hash": domain.initial_command_hash,
-            "spawn_depth": 0,
-        })
+        self._emit(self._domain_event("security_domain_created", domain))
         return domain
 
     def spawn_child(
@@ -171,9 +245,20 @@ class SecurityDomainRegistry:
         egress_hosts: Iterable[str] = (),
         provenance_append: tuple[Provenance, ...] = (),
         initial_command: Sequence[str] | None = None,
+        model_id: str | None = None,
     ) -> SecurityDomain:
+        self._validate_identity_binding(
+            model_id=model_id,
+            initial_command=initial_command,
+        )
+
         with self._lock:
             parent = self.require_active(parent_domain_id)
+
+            if Capability.AGENT_SPAWN not in parent.capability_ceiling:
+                raise SecurityDomainError(
+                    "parent domain lacks agent.spawn authority"
+                )
 
             child_capabilities = frozenset(capability_ceiling)
             if not child_capabilities.issubset(parent.capability_ceiling):
@@ -192,7 +277,21 @@ class SecurityDomainRegistry:
                 raise SecurityDomainError("maximum agent spawn depth exceeded")
 
             intent_hash = hash_intent(initial_prompt)
+            command_hash = hash_command(initial_command)
+            normalized_model = None if model_id is None else str(model_id).strip()
+            model_hash = hash_model_id(normalized_model)
             domain_id = self._new_id()
+            fingerprint = _domain_fingerprint(
+                domain_id=domain_id,
+                root_domain_id=parent.root_domain_id,
+                parent_domain_id=parent.domain_id,
+                actor=str(actor),
+                model_id_hash=model_hash,
+                initial_intent_hash=intent_hash,
+                initial_command_hash=command_hash,
+                capability_ceiling=child_capabilities,
+                egress_hosts=child_hosts,
+            )
             domain = SecurityDomain(
                 domain_id=domain_id,
                 root_domain_id=parent.root_domain_id,
@@ -203,25 +302,15 @@ class SecurityDomainRegistry:
                 provenance=parent.provenance + tuple(provenance_append),
                 initial_intent_hash=intent_hash,
                 current_intent_hash=intent_hash,
-                initial_command_hash=hash_command(initial_command),
+                initial_command_hash=command_hash,
+                model_id=normalized_model,
+                model_id_hash=model_hash,
+                domain_fingerprint=fingerprint,
                 spawn_depth=depth,
             )
             self._domains[domain_id] = domain
 
-        self._emit({
-            "event": "security_domain_spawned",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "parent_domain_id": domain.parent_domain_id,
-            "actor": domain.actor,
-            "capability_ceiling": sorted(
-                cap.value for cap in domain.capability_ceiling
-            ),
-            "egress_hosts": sorted(domain.egress_hosts),
-            "initial_intent_hash": domain.initial_intent_hash,
-            "initial_command_hash": domain.initial_command_hash,
-            "spawn_depth": domain.spawn_depth,
-        })
+        self._emit(self._domain_event("security_domain_spawned", domain))
         return domain
 
     def get(self, domain_id: str) -> SecurityDomain:
@@ -265,23 +354,21 @@ class SecurityDomainRegistry:
         return self.get(domain.parent_domain_id).capability_ceiling
 
     def trusted_context(self, domain_id: str):
-        # Local import avoids making the canonicalizer depend on this module.
         from .canonicalizer import TrustedExecutionContext
 
         domain = self.require_active(domain_id)
         return TrustedExecutionContext(
             actor=domain.actor,
             provenance=domain.provenance,
-            # All sibling/descendant agents share root behavior history, which
-            # closes the "split a suspicious sequence across many agents" gap.
-            security_context_id=(
-                "root-domain:" + domain.root_domain_id
-            ),
+            security_context_id="root-domain:" + domain.root_domain_id,
             domain_id=domain.domain_id,
             root_domain_id=domain.root_domain_id,
             parent_domain_id=domain.parent_domain_id,
             initial_intent_hash=domain.initial_intent_hash,
             initial_command_hash=domain.initial_command_hash,
+            model_id=domain.model_id,
+            model_id_hash=domain.model_id_hash,
+            domain_fingerprint=domain.domain_fingerprint,
             spawn_depth=domain.spawn_depth,
         )
 
@@ -314,6 +401,7 @@ class SecurityDomainRegistry:
             "event": "security_domain_goal_transition",
             "domain_id": domain.domain_id,
             "root_domain_id": domain.root_domain_id,
+            "domain_fingerprint": domain.domain_fingerprint,
             "sequence": transition.sequence,
             "previous_intent_hash": transition.previous_intent_hash,
             "next_intent_hash": transition.next_intent_hash,
@@ -340,6 +428,7 @@ class SecurityDomainRegistry:
             "event": "security_domain_frozen",
             "domain_id": domain.domain_id,
             "root_domain_id": domain.root_domain_id,
+            "domain_fingerprint": domain.domain_fingerprint,
             "reason": domain.freeze_reason,
         })
 
@@ -372,6 +461,8 @@ class SecurityDomainRegistry:
             "event": "security_domain_dispatch",
             "domain_id": domain.domain_id,
             "root_domain_id": domain.root_domain_id,
+            "domain_fingerprint": domain.domain_fingerprint,
+            "model_id_hash": domain.model_id_hash,
             "current_intent_hash": domain.current_intent_hash,
             "initial_command_hash": domain.initial_command_hash,
             "command_hash": hash_command(command),
@@ -379,6 +470,52 @@ class SecurityDomainRegistry:
             "resource": str(resource),
         })
 
+    def record_broker_event(
+        self,
+        domain_id: str,
+        *,
+        broker: str,
+        operation: str,
+        allowed: bool,
+        detail: dict | None = None,
+    ) -> None:
+        domain = self.require_active(domain_id)
+        self._emit({
+            "event": "security_domain_broker",
+            "domain_id": domain.domain_id,
+            "root_domain_id": domain.root_domain_id,
+            "domain_fingerprint": domain.domain_fingerprint,
+            "model_id_hash": domain.model_id_hash,
+            "broker": str(broker),
+            "operation": str(operation),
+            "allowed": bool(allowed),
+            "detail": dict(detail or {}),
+        })
+
+    @staticmethod
+    def _domain_event(event: str, domain: SecurityDomain) -> dict:
+        return {
+            "event": event,
+            "domain_id": domain.domain_id,
+            "root_domain_id": domain.root_domain_id,
+            "parent_domain_id": domain.parent_domain_id,
+            "actor": domain.actor,
+            "model_id": domain.model_id,
+            "model_id_hash": domain.model_id_hash,
+            "domain_fingerprint": domain.domain_fingerprint,
+            "capability_ceiling": sorted(
+                cap.value for cap in domain.capability_ceiling
+            ),
+            "egress_hosts": sorted(domain.egress_hosts),
+            "initial_intent_hash": domain.initial_intent_hash,
+            "initial_command_hash": domain.initial_command_hash,
+            "spawn_depth": domain.spawn_depth,
+        }
+
     def _emit(self, event: dict) -> None:
+        payload = dict(event)
+        if self.ledger is not None:
+            event_type = str(payload.get("event", "security_domain_event"))
+            self.ledger.append_event(event_type, payload)
         if self.audit is not None:
-            self.audit(dict(event))
+            self.audit(payload)
