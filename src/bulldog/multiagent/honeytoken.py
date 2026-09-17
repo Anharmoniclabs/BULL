@@ -33,6 +33,8 @@ class HoneyTokenState:
     token: str
     fingerprint: str
     allowed_recipient: str
+    allowed_message_id: Optional[str] = None
+    exposure_used: bool = False
     tripped: bool = False
     completed: bool = False
     finding: Optional[Finding] = None
@@ -49,14 +51,15 @@ class HoneyTokenLeak(RuntimeError):
 class HoneyTokenAgent:
     """Mint and monitor per-run canaries without trusting model semantics.
 
-    The token is allowed only at:
+    The token is allowed exactly once at:
         system -> coordinator, message_type=task, hops=0,
         payload["trusted_context"]["canary"]
 
-    Every other appearance is a hard leak signal. The guard scans both bus
-    envelopes and returned AgentResult objects, which covers plans, tool args,
-    executor results, auditor/verifier output, and adapter-mediated writes that
-    are explicitly passed through ``inspect_external_write``.
+    ``MultiAgentSystem`` additionally binds that one exposure to the exact
+    initial message ID. Every other appearance is a hard leak signal. The guard
+    scans both bus envelopes and returned AgentResult objects, which covers
+    plans, tool args, executor results, auditor/verifier output, and
+    adapter-mediated writes explicitly passed through ``inspect_external_write``.
     """
 
     def __init__(
@@ -83,7 +86,13 @@ class HoneyTokenAgent:
     def agent_id(self) -> str:
         return self.identity.agent_id
 
-    def mint(self, trace_id: str, *, allowed_recipient: str) -> str:
+    def mint(
+        self,
+        trace_id: str,
+        *,
+        allowed_recipient: str,
+        allowed_message_id: Optional[str] = None,
+    ) -> str:
         """Mint a high-entropy marker for one run.
 
         The raw token is returned only so the trusted model adapter can insert it
@@ -103,6 +112,9 @@ class HoneyTokenAgent:
                 token=token,
                 fingerprint=fingerprint,
                 allowed_recipient=str(allowed_recipient),
+                allowed_message_id=(
+                    str(allowed_message_id) if allowed_message_id is not None else None
+                ),
             )
             return token
 
@@ -211,13 +223,23 @@ class HoneyTokenAgent:
         allowed_path: Optional[Tuple[str, ...]] = None
         with self._lock:
             state = self._states.get(trace_id)
+            message_matches = bool(
+                state is not None
+                and (
+                    state.allowed_message_id is None
+                    or envelope.message_id == state.allowed_message_id
+                )
+            )
             if (
                 state is not None
+                and not state.exposure_used
+                and message_matches
                 and envelope.sender == "system"
                 and envelope.recipient == state.allowed_recipient
                 and envelope.message_type == "task"
                 and envelope.hops == 0
             ):
+                state.exposure_used = True
                 allowed_path = ("trusted_context", "canary")
 
         self._inspect_value(
