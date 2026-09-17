@@ -22,6 +22,7 @@ from bulldog.secret_broker import SecretBroker, SecretBrokerError
 from bulldog.security_domain import (
     SecurityDomainError,
     SecurityDomainRegistry,
+    hash_command,
 )
 
 
@@ -243,6 +244,7 @@ def test_dispatcher_uses_registry_identity_not_request_identity():
         domain_registry=registry,
     )
 
+    command = ("/bin/cat", "/workspace/README.md")
     request = DispatchRequest(
         proposal={
             "task": "run approved reader",
@@ -255,17 +257,19 @@ def test_dispatcher_uses_registry_identity_not_request_identity():
         trusted=_legacy_trusted(),
         granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         domain_id=root.domain_id,
+        authorized_command=command,
     )
 
     dispatcher.execute(
         request,
-        ["/bin/cat", "/workspace/README.md"],
+        command,
         project_root="/tmp",
     )
 
     assert runtime.last_action.actor == "host-planner"
     assert runtime.last_action.metadata["domain_id"] == root.domain_id
     assert runtime.last_action.metadata["root_domain_id"] == root.domain_id
+    assert runtime.last_action.metadata["authorized_command_hash"] == hash_command(command)
 
 
 def test_dispatcher_rejects_authority_outside_domain_ceiling():
@@ -289,6 +293,7 @@ def test_dispatcher_rejects_authority_outside_domain_ceiling():
         trusted=_legacy_trusted(),
         granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         domain_id=root.domain_id,
+        authorized_command=("/bin/sh",),
     )
 
     with pytest.raises(DispatchDenied):
@@ -404,6 +409,7 @@ def test_hard_block_freezes_entire_cooperating_domain_tree():
         domain_registry=registry,
     )
 
+    command = ("/bin/cat", "/workspace/a.txt")
     request = DispatchRequest(
         proposal={
             "task": "execute cat",
@@ -413,11 +419,12 @@ def test_hard_block_freezes_entire_cooperating_domain_tree():
         trusted=_legacy_trusted(),
         granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         domain_id=root.domain_id,
+        authorized_command=command,
     )
 
     dispatcher.execute(
         request,
-        ["/bin/cat", "/workspace/a.txt"],
+        command,
         project_root="/tmp",
     )
 
@@ -439,6 +446,9 @@ def test_runtime_propagates_security_domain_binding_into_sandbox(tmp_path):
         malware_scanner=_CleanScanner(),
     )
 
+    command = ("/bin/cat", "/workspace/a.txt")
+    command_hash = hash_command(command)
+    assert command_hash is not None
     action = ActionRequest(
         actor="agent",
         task="execute cat",
@@ -453,12 +463,13 @@ def test_runtime_propagates_security_domain_binding_into_sandbox(tmp_path):
             "parent_domain_id": "PARENT",
             "initial_intent_hash": "INTENT",
             "initial_command_hash": "COMMAND",
+            "authorized_command_hash": command_hash,
         },
     )
 
     result = runtime.execute(
         action,
-        ["/bin/cat", "/workspace/a.txt"],
+        command,
         project_root=project,
     )
 
@@ -469,4 +480,5 @@ def test_runtime_propagates_security_domain_binding_into_sandbox(tmp_path):
         "BULL_PARENT_DOMAIN_ID": "PARENT",
         "BULL_INITIAL_INTENT_HASH": "INTENT",
         "BULL_INITIAL_COMMAND_HASH": "COMMAND",
+        "BULL_AUTHORIZED_COMMAND_HASH": command_hash,
     }
