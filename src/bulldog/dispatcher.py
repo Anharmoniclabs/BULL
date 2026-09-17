@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Sequence
+import warnings
 
 from .canonicalizer import (
     ActionCanonicalizationError,
@@ -39,6 +40,14 @@ class DispatchRequest:
 
 
 class CapabilityDispatcher:
+    """Compatibility/development dispatcher.
+
+    Security-sensitive callers must use ``ProductionDispatcher``. The old
+    ``production_mode=True`` switch is intentionally rejected for direct
+    CapabilityDispatcher construction so a Boolean can no longer silently
+    select the security model.
+    """
+
     def __init__(
         self,
         *,
@@ -50,14 +59,30 @@ class CapabilityDispatcher:
         freeze_on_violation: bool = True,
     ):
         self.production_mode = bool(production_mode)
+
+        if type(self) is CapabilityDispatcher and self.production_mode:
+            raise DispatchDenied(
+                "legacy production_mode cannot establish a production boundary; "
+                "use ProductionDispatcher"
+            )
+        if type(self) is CapabilityDispatcher and not self.production_mode:
+            warnings.warn(
+                "CapabilityDispatcher is a development/compatibility API, not a "
+                "production enforcement boundary; use ProductionDispatcher",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
         if self.production_mode:
+            if runtime is None or getattr(runtime, "production_boundary", False) is not True:
+                raise DispatchDenied(
+                    "production dispatch requires an explicit ProductionRuntime boundary"
+                )
             verify_production_environment(
                 package_root=Path(__file__).resolve().parent,
             )
 
-        self.runtime = runtime if runtime is not None else BulldogRuntime(
-            require_full_argv_binding=self.production_mode,
-        )
+        self.runtime = runtime if runtime is not None else BulldogRuntime()
         self.secret_broker = secret_broker
         self.egress_broker = egress_broker
         self.domain_registry = domain_registry
@@ -91,15 +116,37 @@ class CapabilityDispatcher:
 
     def _verify_actual_production_runtime(self) -> None:
         sandbox = getattr(self.runtime, "sandbox", None)
+        engine = getattr(self.runtime, "engine", None)
+        policy = getattr(engine, "policy", None)
+        ledger = getattr(engine, "ledger", None)
         failures = []
-        if not callable(getattr(getattr(self.runtime, "engine", None), "evaluate", None)):
+
+        if getattr(self.runtime, "production_boundary", False) is not True:
+            failures.append("runtime is not an explicit ProductionRuntime boundary")
+        if not callable(getattr(engine, "evaluate", None)):
             failures.append("runtime policy engine is unavailable")
+        if getattr(policy, "global_capability_ceiling", None) is None:
+            failures.append("runtime lacks signed deployment capability ceiling")
+        if ledger is None:
+            failures.append("runtime audit ledger is unavailable")
+        else:
+            if not getattr(ledger, "remote_anchor_url", None):
+                failures.append("runtime remote audit anchoring is unavailable")
+            if not getattr(ledger, "remote_anchor_key", None):
+                failures.append("runtime remote audit authentication is unavailable")
         if not getattr(self.runtime, "malware_scan_required", False):
             failures.append("runtime malware scanning is not required")
-        if getattr(self.runtime, "malware_scanner", None) is None:
+        scanner = getattr(self.runtime, "malware_scanner", None)
+        if scanner is None:
             failures.append("runtime malware scanner is unavailable")
+        elif getattr(scanner, "bounded_scan", False) is not True:
+            failures.append("runtime malware scanner is not resource bounded")
         if not getattr(self.runtime, "require_full_argv_binding", False):
             failures.append("runtime full argv binding is disabled")
+        if getattr(self.runtime, "workspace_budget", None) is None:
+            failures.append("runtime workspace admission budget is unavailable")
+        if getattr(self.runtime, "snapshot_root", None) is None:
+            failures.append("runtime snapshot scratch root is not pinned")
         if getattr(self.runtime, "trace", None) is None:
             failures.append("runtime transition verifier is unavailable")
         if sandbox is None:
@@ -109,6 +156,7 @@ class CapabilityDispatcher:
                 failures.append("actual runtime sandbox is not using strict seccomp")
             if getattr(sandbox, "require_attestation", False) is not True:
                 failures.append("actual runtime sandbox attestation is disabled")
+
         if failures:
             raise DispatchDenied(
                 "production runtime wiring rejected: " + "; ".join(failures)
