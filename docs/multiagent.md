@@ -59,13 +59,18 @@ result.
 
 For every run, the host mints a high-entropy marker such as a
 `BULL-CANARY-v1:...` value. It is not a credential and grants no authority.
-The raw value is permitted only in the initial trusted context delivered to
-the coordinator/model adapter:
+The raw value is permitted exactly once in the initial trusted context
+delivered to the coordinator/model adapter:
 
 ```text
 system -> coordinator
+specific initial message ID
+hops = 0
 payload.trusted_context.canary
 ```
+
+That exposure is message-bound and one-shot. Replaying the same trace through
+a new "system" envelope does not create another permitted canary channel.
 
 The `MessageBus` invokes the honeytoken guard:
 
