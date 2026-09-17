@@ -2,9 +2,9 @@
 
 A per-run high-entropy canary is exposed exactly once through a trusted-context
 field intended for the model adapter. The canary is never treated as authority.
-If the marker (or a small set of common encodings) appears anywhere else on the
-message bus or in an agent result, the trace is permanently tripped and future
-deliveries for that trace fail closed.
+If the marker (or a bounded set of common encodings) appears anywhere else on
+the message bus or in an agent result, the trace is permanently tripped and
+future deliveries for that trace fail closed.
 
 The raw canary is never written to BULL findings or bus trace records.
 """
@@ -248,10 +248,19 @@ class HoneyTokenAgent:
             self._trip(trace_id, finding)
             raise HoneyTokenLeak(finding)
 
-        candidates: List[Tuple[Tuple[str, ...], str]] = list(strings)
+        candidates: List[Tuple[Any, str]] = list(strings)
         if strings:
-            # Also catch a marker split across adjacent structured string fields.
-            candidates.append(("<joined>" , "".join(text for _, text in strings)))
+            # Scan concatenated values too so splitting a marker into adjacent
+            # structured values does not evade an exact-marker detector. Dict
+            # keys are still scanned individually, but they are not injected
+            # between values for this reconstruction.
+            value_texts = [
+                text
+                for path, text in strings
+                if not (path and path[-1] == "<key>")
+            ]
+            if value_texts:
+                candidates.append(("<joined-values>", "".join(value_texts)))
 
         with self._lock:
             states = list(self._states.values())
@@ -319,11 +328,15 @@ class HoneyTokenAgent:
     def _representations(token: str) -> Iterable[Tuple[str, str]]:
         raw = token.encode("utf-8")
         body = token.split(":", 1)[-1]
+        body_raw = body.encode("utf-8")
         yield "raw", token
         yield "body", body
         yield "base64", base64.b64encode(raw).decode("ascii")
         yield "base64url", base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+        yield "body-base64", base64.b64encode(body_raw).decode("ascii")
+        yield "body-base64url", base64.urlsafe_b64encode(body_raw).decode("ascii").rstrip("=")
         yield "hex", raw.hex()
+        yield "body-hex", body_raw.hex()
         yield "urlencoded", urllib.parse.quote(token, safe="")
 
     @classmethod
