@@ -165,7 +165,12 @@ class BaseAgent(abc.ABC):
         try:
             result = self.process(envelope)
         except Exception as exc:  # agents must never take down the bus
-            logger.exception("agent %s failed", self.agent_id)
+            # Let the host boundary inspect exception content before anything
+            # can log or summarize it. A canary-bearing exception therefore
+            # trips the trace without first leaking through a traceback.
+            self.bus.inspect_handler_exception(envelope, exc)
+            error_type = type(exc).__name__
+            logger.error("agent %s failed (%s)", self.agent_id, error_type)
             result = AgentResult(
                 agent_id=self.agent_id,
                 success=False,
@@ -175,7 +180,7 @@ class BaseAgent(abc.ABC):
                         self.agent_id,
                         Severity.HIGH,
                         "agent.error",
-                        f"{type(exc).__name__}: {exc}",
+                        f"{error_type}: agent handler failed",
                     )
                 ],
             )
