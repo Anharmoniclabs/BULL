@@ -100,7 +100,10 @@ class MultiAgentSystem:
             AgentIdentity.new("policy", [CAP_POLICY]), self.bus, rules=policy_rules
         )
         self.executor = ExecutorAgent(
-            AgentIdentity.new("executor", [CAP_EXECUTE]), self.bus, actions=actions
+            AgentIdentity.new("executor", [CAP_EXECUTE]),
+            self.bus,
+            actions=actions,
+            approver=self.policy,
         )
         self.auditor = AuditorAgent(AgentIdentity.new("auditor", [CAP_AUDIT]), self.bus)
         self.verifier = VerifierAgent(AgentIdentity.new("verifier", [CAP_VERIFY]), self.bus)
@@ -160,7 +163,7 @@ class MultiAgentSystem:
                 {
                     "action": action,
                     "args": args,
-                    "policy_verdict": policy_result.verdict.value,
+                    "approval_token": policy_result.output.get("token"),
                 },
             )
         )
@@ -173,7 +176,8 @@ class MultiAgentSystem:
                 self.auditor.agent_id,
                 "result.audit",
                 {"action": action, "output": str(execution_result.output)},
-            )
+            ),
+            capability=CAP_AUDIT.name,
         )
         for result in audit_results:
             report.findings.extend(result.findings)
