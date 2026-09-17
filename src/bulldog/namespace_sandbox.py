@@ -27,6 +27,7 @@ class SandboxAttestation:
     network_interfaces: tuple[str, ...]
     network_isolated: bool
     python: str
+    runtime_root: str
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,6 @@ def _detect_sandbox_python() -> str:
     for candidate in candidates:
         path = Path(candidate)
         if path.is_absolute() and path.is_file() and os.access(path, os.X_OK):
-            # The launcher mirrors /usr, /bin, /lib and /lib64 into the chroot.
             if str(path).startswith(("/usr/", "/bin/")):
                 return str(path)
 
@@ -75,10 +75,10 @@ def _detect_sandbox_python() -> str:
 class NamespaceSandbox:
     """BULL Linux namespace execution backend.
 
-    The trusted parent requires a nonce-bound attestation from inside the
-    newly-created PID/network/mount namespace after no_new_privs and seccomp
-    have been installed. The attestation file descriptor is closed before the
-    untrusted workload is executed, preventing the workload from forging it.
+    Security bootstrap code is mounted read-only from BULL's own installed
+    package and never imported from the agent-controlled project. The trusted
+    parent also requires a nonce-bound attestation from inside the new
+    PID/network/mount namespace after no_new_privs and seccomp are installed.
     """
 
     def __init__(
@@ -88,6 +88,7 @@ class NamespaceSandbox:
         seccomp_profile: str | None = None,
         sandbox_python: str | None = None,
         require_attestation: bool = True,
+        runtime_root: str | Path | None = None,
     ):
         self.workspace_mount = workspace_mount
         self.seccomp_profile = (
@@ -115,6 +116,13 @@ class NamespaceSandbox:
             )
 
         self.sandbox_python = sandbox_python or _detect_sandbox_python()
+        self.runtime_root = Path(
+            runtime_root if runtime_root is not None else Path(__file__).resolve().parent
+        ).resolve(strict=True)
+        if not (self.runtime_root / "seccomp_policy.py").is_file():
+            raise SandboxUnavailable(
+                "trusted runtime root does not contain seccomp_policy.py"
+            )
 
     @staticmethod
     def _parse_attestation(
@@ -156,6 +164,8 @@ class NamespaceSandbox:
             raise SandboxAttestationError("seccomp installed no rules")
         if data.get("network_isolated") is not True:
             raise SandboxAttestationError("network namespace attestation failed")
+        if str(data.get("runtime_root", "")) != "/bull_runtime":
+            raise SandboxAttestationError("trusted runtime mount attestation failed")
 
         interfaces = tuple(str(x) for x in data.get("network_interfaces", ()))
         if any(name != "lo" for name in interfaces):
@@ -173,6 +183,7 @@ class NamespaceSandbox:
             network_interfaces=interfaces,
             network_isolated=True,
             python=str(data.get("python", "")),
+            runtime_root="/bull_runtime",
         )
 
     def run(
@@ -192,9 +203,7 @@ class NamespaceSandbox:
         if not project_root.is_dir():
             raise ValueError("project_root must be a directory")
 
-        rootfs = Path(
-            tempfile.mkdtemp(prefix="bull_rootfs_", dir="/tmp")
-        )
+        rootfs = Path(tempfile.mkdtemp(prefix="bull_rootfs_", dir="/tmp"))
         mode = "rw" if writable else "ro"
         outer_env = os.environ.copy()
         if env:
@@ -229,6 +238,7 @@ class NamespaceSandbox:
                         str(project_root),
                         mode,
                         self.sandbox_python,
+                        str(self.runtime_root),
                         *map(str, command),
                     ],
                     stdout=subprocess.PIPE,
