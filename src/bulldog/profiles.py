@@ -6,6 +6,7 @@ import hmac
 import os
 from pathlib import Path
 import secrets
+import stat
 from typing import Sequence
 import warnings
 
@@ -50,6 +51,34 @@ def _action_hash(action: ActionRequest) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _verify_broker_boundary(label: str, broker: object | None) -> None:
+    if broker is None:
+        return
+    if getattr(broker, "peer_auth_enforced", False) is not True:
+        raise DispatchDenied(
+            f"production {label} broker must enforce Unix peer credentials"
+        )
+    raw = getattr(broker, "socket_path", None)
+    if raw is None:
+        raise DispatchDenied(f"production {label} broker has no Unix socket path")
+    path = Path(raw)
+    if not path.is_absolute():
+        raise DispatchDenied(
+            f"production {label} broker socket path must be absolute"
+        )
+    try:
+        parent = path.parent.resolve(strict=True)
+        mode = parent.stat().st_mode
+    except OSError as exc:
+        raise DispatchDenied(
+            f"production {label} broker socket parent is unavailable: {exc}"
+        ) from exc
+    if mode & (stat.S_IWGRP | stat.S_IWOTH):
+        raise DispatchDenied(
+            f"production {label} broker socket parent is group/world writable"
+        )
+
+
 class DevelopmentRuntime(BulldogRuntime):
     """Explicitly weak/development runtime."""
 
@@ -61,6 +90,8 @@ class DevelopmentRuntime(BulldogRuntime):
 
 class ProductionRuntime(BulldogRuntime):
     """Fail-closed production runtime assembled from verified host state."""
+
+    production_boundary = True
 
     def __init__(self, **kwargs):
         if kwargs:
@@ -180,6 +211,12 @@ class DevelopmentDispatcher(CapabilityDispatcher):
 class ProductionDispatcher(CapabilityDispatcher):
     def __init__(self, *, runtime: ProductionRuntime | None = None, **kwargs):
         production_runtime = runtime if runtime is not None else ProductionRuntime()
+        if getattr(production_runtime, "production_boundary", False) is not True:
+            raise DispatchDenied(
+                "ProductionDispatcher requires a ProductionRuntime boundary"
+            )
+        _verify_broker_boundary("secret", kwargs.get("secret_broker"))
+        _verify_broker_boundary("egress", kwargs.get("egress_broker"))
         super().__init__(
             runtime=production_runtime,
             production_mode=True,
