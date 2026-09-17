@@ -41,6 +41,10 @@ jobs:
       - name: Model-check BULL invariants
         working-directory: formal/tla
         run: |
+          # BullRuntime intentionally has terminal blocked/review/executed states.
+          # -deadlock disables TLC's deadlock error while all configured
+          # invariants remain active and are still exhaustively checked.
           java -cp ../../.tools/tla2tools-1.7.4.jar tlc2.TLC \
+            -deadlock \
             -config BullRuntime.cfg \
             BullRuntime.tla
