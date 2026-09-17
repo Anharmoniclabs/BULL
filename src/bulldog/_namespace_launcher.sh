@@ -121,9 +121,12 @@ if result != 0:
     err = ctypes.get_errno()
     raise OSError(err, os.strerror(err))
 
-# Import only the read-only BULL-owned security bootstrap.
+# Import only the read-only BULL-owned security bootstrap. Drop every path
+# inside the agent-controlled workspace, not merely one historical path.
 sys.path[:] = ["/bull_runtime"] + [
-    entry for entry in sys.path if entry not in {"", "/workspace", "/workspace/.bull_runtime"}
+    entry
+    for entry in sys.path
+    if entry and not entry.startswith("/workspace")
 ]
 from seccomp_policy import install_bull_seccomp
 
