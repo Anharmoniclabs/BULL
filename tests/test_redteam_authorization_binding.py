@@ -10,7 +10,12 @@ from bulldog.dispatcher import (
     DispatchRequest,
 )
 from bulldog.engine import BulldogEngine
-from bulldog.models import Capability, Provenance
+from bulldog.models import (
+    Capability,
+    Decision,
+    Evaluation,
+    Provenance,
+)
 from bulldog.namespace_sandbox import SandboxResult
 from bulldog.runtime import BulldogRuntime
 
@@ -38,6 +43,24 @@ class RecordingSandbox:
         return SandboxResult(returncode=0, stdout="ran", stderr="")
 
 
+class AllowEngine:
+    def evaluate(self, action):
+        return Evaluation(
+            Decision.ALLOW,
+            0.0,
+            ("explicit test allow",),
+        )
+
+
+class SandboxEngine:
+    def evaluate(self, action):
+        return Evaluation(
+            Decision.SANDBOX,
+            0.60,
+            ("sandbox required",),
+        )
+
+
 def trusted_context(*, provenance=(Provenance.HUMAN,)):
     return TrustedExecutionContext(
         actor="trusted-host-agent",
@@ -59,7 +82,6 @@ def benign_read_request():
 
 
 def test_redteam_benign_read_authority_cannot_drive_unbound_command(tmp_path):
-    """A read capability must not authorize an unrelated executable command."""
     project = tmp_path / "project"
     project.mkdir()
     (project / "README.md").write_text("hello", encoding="utf-8")
@@ -81,7 +103,54 @@ def test_redteam_benign_read_authority_cannot_drive_unbound_command(tmp_path):
     assert sandbox.command is None
 
 
-def test_redteam_authorized_executable_must_match_actual_command(tmp_path):
+def test_redteam_full_argv_must_match_host_authorization(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+
+    request = DispatchRequest(
+        proposal={
+            "task": "run echo",
+            "operation": "execute",
+            "resource": "/bin/echo",
+        },
+        trusted=trusted_context(),
+        granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
+        authorized_command=("/bin/echo", "bound"),
+    )
+
+    sandbox = RecordingSandbox()
+    dispatcher = CapabilityDispatcher(
+        runtime=BulldogRuntime(
+            engine=AllowEngine(),
+            sandbox=sandbox,
+            malware_scanner=CleanScanner(),
+        )
+    )
+
+    with pytest.raises(DispatchDenied):
+        dispatcher.execute(
+            request,
+            ["/bin/sh", "-c", "echo mismatch"],
+            project_root=project,
+        )
+
+    with pytest.raises(DispatchDenied):
+        dispatcher.execute(
+            request,
+            ["/bin/echo", "different-argument"],
+            project_root=project,
+        )
+
+    result = dispatcher.execute(
+        request,
+        ["/bin/echo", "bound"],
+        project_root=project,
+    )
+    assert result.executed is True
+    assert sandbox.command == ("/bin/echo", "bound")
+
+
+def test_redteam_process_exec_requires_host_authorized_argv(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
 
@@ -95,33 +164,23 @@ def test_redteam_authorized_executable_must_match_actual_command(tmp_path):
         granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
     )
 
-    sandbox = RecordingSandbox()
     dispatcher = CapabilityDispatcher(
         runtime=BulldogRuntime(
-            sandbox=sandbox,
+            engine=AllowEngine(),
+            sandbox=RecordingSandbox(),
             malware_scanner=CleanScanner(),
         )
     )
 
-    with pytest.raises(DispatchDenied):
+    with pytest.raises(DispatchDenied, match="full argv"):
         dispatcher.execute(
             request,
-            ["/bin/sh", "-c", "echo mismatch"],
+            ["/bin/echo", "unbound"],
             project_root=project,
         )
 
-    result = dispatcher.execute(
-        request,
-        ["/bin/echo", "bound"],
-        project_root=project,
-    )
-    assert result.executed is True
-    assert sandbox.command == ("/bin/echo", "bound")
-
 
 def test_redteam_egress_dispatch_requires_authorized_request():
-    """Broker egress must pass through capability authorization."""
-
     class FakeEgressBroker:
         def __init__(self):
             self.calls = []
@@ -163,9 +222,41 @@ def test_redteam_egress_dispatch_requires_authorized_request():
     assert broker.calls == [("GET", "https://example.com/")]
 
 
-def test_redteam_secret_dispatch_requires_authorized_request(monkeypatch, tmp_path):
-    """Secret retrieval must require credential capability authorization."""
+def test_redteam_sandbox_decision_cannot_reach_egress_broker():
+    class FakeEgressBroker:
+        def __init__(self):
+            self.calls = []
 
+        def fetch(self, *, method, url):
+            self.calls.append((method, url))
+            return SimpleNamespace(status=200, headers={}, body=b"ok")
+
+    broker = FakeEgressBroker()
+    dispatcher = CapabilityDispatcher(
+        runtime=SimpleNamespace(engine=SandboxEngine()),
+        egress_broker=broker,
+    )
+    request = DispatchRequest(
+        proposal={
+            "task": "fetch URL",
+            "operation": "fetch",
+            "resource": "https://example.com/",
+        },
+        trusted=trusted_context(),
+        granted_capabilities=frozenset({Capability.NETWORK_OUTBOUND}),
+    )
+
+    with pytest.raises(DispatchDenied, match="explicit ALLOW"):
+        dispatcher.fetch_egress(
+            url="https://example.com/",
+            method="GET",
+            request=request,
+        )
+
+    assert broker.calls == []
+
+
+def test_redteam_secret_dispatch_requires_authorized_request(monkeypatch, tmp_path):
     class FakeSecretBroker:
         socket_path = tmp_path / "secret.sock"
 
@@ -182,7 +273,7 @@ def test_redteam_secret_dispatch_requires_authorized_request(monkeypatch, tmp_pa
     )
 
     dispatcher = CapabilityDispatcher(
-        runtime=SimpleNamespace(engine=BulldogEngine()),
+        runtime=SimpleNamespace(engine=AllowEngine()),
         secret_broker=FakeSecretBroker(),
     )
 
@@ -214,6 +305,38 @@ def test_redteam_secret_dispatch_requires_authorized_request(monkeypatch, tmp_pa
     assert value == "TOPSECRET"
     assert len(calls) == 1
     assert calls[0]["name"] == "API_KEY"
+
+
+def test_redteam_sandbox_decision_cannot_reach_secret_broker(monkeypatch, tmp_path):
+    class FakeSecretBroker:
+        socket_path = tmp_path / "secret.sock"
+
+    monkeypatch.setattr(
+        dispatcher_module,
+        "request_secret",
+        lambda **kwargs: pytest.fail("secret broker should not be reached"),
+    )
+
+    dispatcher = CapabilityDispatcher(
+        runtime=SimpleNamespace(engine=SandboxEngine()),
+        secret_broker=FakeSecretBroker(),
+    )
+    request = DispatchRequest(
+        proposal={
+            "task": "retrieve credential",
+            "operation": "secret.get",
+            "resource": "API_KEY",
+        },
+        trusted=trusted_context(),
+        granted_capabilities=frozenset({Capability.CREDENTIAL_READ}),
+    )
+
+    with pytest.raises(DispatchDenied, match="explicit ALLOW"):
+        dispatcher.get_secret(
+            token="grant-token",
+            name="API_KEY",
+            request=request,
+        )
 
 
 def test_redteam_external_content_cannot_authorize_credential_broker(monkeypatch, tmp_path):
