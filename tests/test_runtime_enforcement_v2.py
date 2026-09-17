@@ -46,6 +46,7 @@ class CapturingSandbox:
     def __init__(self):
         self.project_root = None
         self.resource_budget = None
+        self.command = None
 
     def run(
         self,
@@ -59,6 +60,7 @@ class CapturingSandbox:
     ):
         self.project_root = Path(project_root)
         self.resource_budget = resource_budget
+        self.command = tuple(command)
         content = (self.project_root / "payload.txt").read_text(
             encoding="utf-8"
         )
@@ -69,7 +71,21 @@ class CapturingSandbox:
         )
 
 
-def _action():
+def _exec_action():
+    return ActionRequest(
+        actor="host-agent",
+        task="inspect project payload with cat",
+        operation="execute",
+        resource="/bin/cat",
+        capability=Capability.PROCESS_EXEC,
+        granted_capabilities=frozenset({
+            Capability.PROCESS_EXEC,
+        }),
+        provenance=(Provenance.HUMAN,),
+    )
+
+
+def _read_action():
     return ActionRequest(
         actor="host-agent",
         task="read project",
@@ -81,6 +97,55 @@ def _action():
         }),
         provenance=(Provenance.HUMAN,),
     )
+
+
+def test_runtime_rejects_command_launch_without_process_exec(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "payload.txt").write_text("CLEAN", encoding="utf-8")
+
+    sandbox = CapturingSandbox()
+    runtime = BulldogRuntime(
+        engine=AllowEngine(),
+        sandbox=sandbox,
+        malware_scanner=SimpleNamespace(),
+    )
+
+    result = runtime.execute(
+        _read_action(),
+        ["/bin/cat", "/workspace/payload.txt"],
+        project_root=project,
+    )
+
+    assert result.executed is False
+    assert result.evaluation.decision == Decision.DENY
+    assert result.evaluation.hard_block is True
+    assert "process.exec" in result.stderr
+    assert sandbox.command is None
+
+
+def test_runtime_rejects_executable_resource_mismatch(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "payload.txt").write_text("CLEAN", encoding="utf-8")
+
+    sandbox = CapturingSandbox()
+    runtime = BulldogRuntime(
+        engine=AllowEngine(),
+        sandbox=sandbox,
+        malware_scanner=SimpleNamespace(),
+    )
+
+    result = runtime.execute(
+        _exec_action(),
+        ["/bin/sh", "-c", "echo mismatch"],
+        project_root=project,
+    )
+
+    assert result.executed is False
+    assert result.evaluation.decision == Decision.DENY
+    assert "does not match authorized resource" in result.stderr
+    assert sandbox.command is None
 
 
 def test_runtime_scans_and_executes_same_immutable_snapshot(tmp_path):
@@ -98,8 +163,8 @@ def test_runtime_scans_and_executes_same_immutable_snapshot(tmp_path):
     )
 
     result = runtime.execute(
-        _action(),
-        ["ignored"],
+        _exec_action(),
+        ["/bin/cat", "/workspace/payload.txt"],
         project_root=project,
     )
 
@@ -129,8 +194,8 @@ def test_runtime_passes_resource_budget_to_sandbox(tmp_path):
     )
 
     runtime.execute(
-        _action(),
-        ["ignored"],
+        _exec_action(),
+        ["/bin/cat", "/workspace/payload.txt"],
         project_root=project,
     )
 
@@ -154,8 +219,8 @@ def test_runtime_rejects_special_files_before_execution(tmp_path):
     )
 
     result = runtime.execute(
-        _action(),
-        ["ignored"],
+        _exec_action(),
+        ["/bin/cat", "/workspace/payload.txt"],
         project_root=project,
     )
 

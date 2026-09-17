@@ -28,6 +28,12 @@ _PATH_OPERATIONS = {
     "modify",
 }
 
+_SECRET_OPERATIONS = {
+    "secret.get",
+    "credential.get",
+    "credential.read",
+}
+
 
 @dataclass(frozen=True)
 class TrustedExecutionContext:
@@ -119,6 +125,9 @@ def derive_capability(operation: str, resource: str) -> Capability:
     resource_lower = canonical_resource.lower()
 
     if any(marker in resource_lower for marker in SENSITIVE_MARKERS):
+        return Capability.CREDENTIAL_READ
+
+    if op in _SECRET_OPERATIONS:
         return Capability.CREDENTIAL_READ
 
     if op in {

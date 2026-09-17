@@ -4,6 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from .canonicalizer import (
+    ActionCanonicalizationError,
+    canonicalize_filesystem_resource,
+)
 from .engine import BulldogEngine
 from .filesystem_manifest import (
     FilesystemManifestViolation,
@@ -16,6 +20,7 @@ from .malware_scanner import (
 )
 from .models import (
     ActionRequest,
+    Capability,
     Decision,
     Evaluation,
 )
@@ -57,6 +62,10 @@ class BulldogRuntime:
     Security-critical execution uses an immutable snapshot. The exact
     snapshot that is scanned and hash-verified is the directory mounted
     into the namespace sandbox.
+
+    The runtime is also a defense-in-depth execution reference monitor:
+    launching an OS command requires PROCESS_EXEC authority, and the
+    authorized executable resource must match command[0].
     """
 
     def __init__(
@@ -97,6 +106,73 @@ class BulldogRuntime:
         else:
             self.malware_scanner = None
 
+    def _binding_failure(
+        self,
+        action: ActionRequest,
+        command: Sequence[str],
+    ) -> str | None:
+        if action.capability != Capability.PROCESS_EXEC:
+            return (
+                "runtime command execution requires process.exec capability"
+            )
+
+        if not command:
+            return "runtime command cannot be empty"
+
+        try:
+            authorized_executable = canonicalize_filesystem_resource(
+                action.resource
+            )
+            requested_executable = canonicalize_filesystem_resource(
+                str(command[0])
+            )
+        except ActionCanonicalizationError as exc:
+            return "invalid execution binding: " + str(exc)
+
+        if requested_executable != authorized_executable:
+            return (
+                "runtime executable does not match authorized resource: "
+                f"{requested_executable} != {authorized_executable}"
+            )
+
+        return None
+
+    def _deny_binding(
+        self,
+        action: ActionRequest,
+        reason: str,
+    ) -> ExecutionResult:
+        evaluation = Evaluation(
+            decision=Decision.DENY,
+            risk=1.0,
+            reasons=(reason,),
+            hard_block=True,
+        )
+
+        self.trace.emit(
+            "Evaluate",
+            decision=Decision.DENY.value,
+        )
+        self.trace.emit("ResolveDeny")
+
+        # Binding denial occurs before the policy engine because the command
+        # is not part of ActionRequest. Preserve the denial in the same audit
+        # ledger when one is configured.
+        ledger = getattr(self.engine, "ledger", None)
+        if ledger is not None:
+            ledger.append(action, evaluation)
+
+        return ExecutionResult(
+            evaluation=evaluation,
+            executed=False,
+            sandboxed=False,
+            review_required=False,
+            returncode=None,
+            stdout="",
+            stderr=reason,
+            trace_state=self.trace.snapshot(),
+        )
+
     def execute(
         self,
         action: ActionRequest,
@@ -110,6 +186,10 @@ class BulldogRuntime:
             and action.capability in action.parent_capabilities
         )
         self.trace.reset(parent_has_capability=parent_has)
+
+        binding_failure = self._binding_failure(action, command)
+        if binding_failure is not None:
+            return self._deny_binding(action, binding_failure)
 
         evaluation = self.engine.evaluate(action)
         self.trace.emit(
@@ -268,9 +348,10 @@ class BulldogRuntime:
                     trace_state=self.trace.snapshot(),
                 )
 
-            writable = action.capability.value == "fs.write.project"
-            if action.capability.value == "process.exec":
-                writable = False
+            # Process execution receives a read-only project snapshot. Writes
+            # must be exposed through an explicit mediated filesystem API, not
+            # smuggled through a command launch.
+            writable = False
 
             # Only host-minted non-secret identity/hashes are propagated to the
             # isolated workload. Raw prompts and secret values remain host-side.
