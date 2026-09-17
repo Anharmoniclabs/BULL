@@ -30,14 +30,7 @@ def _command_text(command: Sequence[str]) -> str:
 
 @dataclass(frozen=True)
 class AgentExecutionEnvelope:
-    """
-    Host-owned immutable identity for one isolated agent.
-
-    The model cannot choose or mutate this object. Its initial intent and
-    bootstrap command are cryptographically bound into the lineage and sandbox
-    identity so later audit records can be traced back to the authority that
-    created the agent.
-    """
+    """Host-owned immutable identity for one isolated agent."""
 
     agent_id: str
     model_id: str
@@ -85,7 +78,7 @@ class AgentIsolationRegistry:
       - child capabilities can never exceed the parent capability set
       - creating a child requires AGENT_SPAWN authority in the parent
       - model identity, initial intent, and bootstrap command are immutable
-      - all registrations/revocations can enter the tamper-evident AuditLedger
+      - agent lifecycle and scoped broker activity can share one audit chain
     """
 
     def __init__(
@@ -129,7 +122,6 @@ class AgentIsolationRegistry:
                     f"agent already registered: {agent_id}"
                 )
 
-            parent = None
             parent_caps = None
             parent_lineage = "ROOT"
 
@@ -167,9 +159,7 @@ class AgentIsolationRegistry:
             lineage_hash = _sha256_text(lineage_payload)
 
             nonce = secrets.token_hex(16)
-            sandbox_digest = _sha256_text(
-                lineage_hash + ":" + nonce
-            )
+            sandbox_digest = _sha256_text(lineage_hash + ":" + nonce)
             sandbox_id = "bull-agent-" + sandbox_digest[:24]
             security_context_id = (
                 "agent:" + agent_id + ":" + lineage_hash[:20]
@@ -234,6 +224,27 @@ class AgentIsolationRegistry:
         ):
             raise AgentIsolationError("initial command drift detected")
         return envelope
+
+    def record_event(
+        self,
+        *,
+        agent_id: str,
+        event_type: str,
+        data: dict | None = None,
+    ) -> str | None:
+        """Append an agent-scoped event without logging bearer tokens/secrets."""
+        with self._lock:
+            envelope = self._get_active_unlocked(agent_id)
+            if self.ledger is None:
+                return None
+            payload = {
+                "agent": self._audit_data(envelope),
+                "event": dict(data or {}),
+            }
+            return self.ledger.append_event(
+                event_type,
+                payload,
+            )
 
     def _get_active_unlocked(
         self,
