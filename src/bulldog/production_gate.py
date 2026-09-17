@@ -7,10 +7,7 @@ import os
 from urllib.parse import urlsplit
 
 from .host_certify import certify_host
-from .integrity import (
-    IntegrityViolation,
-    verify_integrity_manifest,
-)
+from .integrity import IntegrityViolation, verify_integrity_manifest
 from .policy_bundle import PolicyBundleError, load_policy_bundle
 from .workspace_limits import WorkspaceBudget, WorkspaceLimitViolation
 
@@ -30,6 +27,7 @@ class ProductionRequirements:
     require_signed_policy_bundle: bool = True
     require_snapshot_scratch: bool = True
     require_audit_ledger_path: bool = True
+    require_delegated_cgroup: bool = True
 
 
 def _validate_remote_anchor(failures: list[str]) -> None:
@@ -105,6 +103,25 @@ def _validate_audit_ledger_path(failures: list[str]) -> None:
         failures.append("production audit ledger parent is not writable")
 
 
+def _validate_cgroup_parent(failures: list[str]) -> None:
+    raw = os.environ.get("BULL_CGROUP_PARENT", "").strip()
+    if not raw:
+        failures.append("delegated cgroup v2 parent is not configured")
+        return
+    try:
+        path = Path(raw).resolve(strict=True)
+    except OSError as exc:
+        failures.append("delegated cgroup parent is unavailable: " + str(exc))
+        return
+    if not path.is_dir():
+        failures.append("delegated cgroup parent is not a directory")
+        return
+    if not os.access(path, os.W_OK | os.X_OK):
+        failures.append("delegated cgroup parent is not writable")
+    if not (path / "cgroup.procs").exists():
+        failures.append("delegated cgroup parent does not expose cgroup.procs")
+
+
 def verify_production_environment(
     requirements: ProductionRequirements = ProductionRequirements(),
     *,
@@ -120,6 +137,8 @@ def verify_production_environment(
         _validate_snapshot_scratch(failures)
     if requirements.require_audit_ledger_path:
         _validate_audit_ledger_path(failures)
+    if requirements.require_delegated_cgroup:
+        _validate_cgroup_parent(failures)
 
     if requirements.require_strict_seccomp:
         profile = os.environ.get("BULL_SECCOMP_PROFILE", "").strip().lower()
@@ -155,12 +174,7 @@ def verify_production_environment(
                         signature_key=signature_key,
                         require_signature=requirements.require_signed_integrity_manifest,
                     )
-                except (
-                    OSError,
-                    ValueError,
-                    KeyError,
-                    IntegrityViolation,
-                ) as exc:
+                except (OSError, ValueError, KeyError, IntegrityViolation) as exc:
                     failures.append("integrity verification failed: " + str(exc))
 
     if failures:
