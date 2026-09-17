@@ -6,6 +6,7 @@ import unittest
 from bulldog.multiagent import (
     CAP_HONEYTOKEN,
     AgentIdentity,
+    BaseAgent,
     Envelope,
     HoneyTokenAgent,
     HoneyTokenLeak,
@@ -13,6 +14,15 @@ from bulldog.multiagent import (
     MultiAgentSystem,
     Verdict,
 )
+
+
+class _ExplodingAgent(BaseAgent):
+    def __init__(self, identity, bus, message):
+        self.message = message
+        super().__init__(identity, bus)
+
+    def process(self, envelope):
+        raise RuntimeError(self.message)
 
 
 class HoneyTokenBoundaryTests(unittest.TestCase):
@@ -165,6 +175,59 @@ class HoneyTokenBoundaryTests(unittest.TestCase):
                 {"memory": f"model remembered {token}"},
                 channel="conversation-memory",
             )
+
+    def test_canary_in_agent_exception_trips_before_logging(self):
+        bus, guard = self._guarded_bus()
+        identity = AgentIdentity.new("exploder", [])
+        initial = Envelope(
+            trace_id="trace-exception-canary",
+            recipient=identity.agent_id,
+            message_type="task",
+            payload={},
+        )
+        token = guard.mint(
+            initial.trace_id,
+            allowed_recipient=identity.agent_id,
+            allowed_message_id=initial.message_id,
+        )
+        _ExplodingAgent(identity, bus, token)
+        initial.payload = {
+            "trusted_context": guard.trusted_context(initial.trace_id),
+            "task": {"x": 1},
+        }
+
+        with self.assertNoLogs("bulldog.multiagent.agents", level="ERROR"):
+            with self.assertRaises(HoneyTokenLeak):
+                bus.deliver(initial)
+        self.assertNotIn(token, str(bus.trace(initial.trace_id)))
+        self.assertTrue(guard.is_tripped(initial.trace_id))
+
+    def test_ordinary_agent_exception_redacts_message_from_log_and_result(self):
+        bus, guard = self._guarded_bus()
+        identity = AgentIdentity.new("exploder", [])
+        initial = Envelope(
+            trace_id="trace-exception-redaction",
+            recipient=identity.agent_id,
+            message_type="task",
+            payload={},
+        )
+        guard.mint(
+            initial.trace_id,
+            allowed_recipient=identity.agent_id,
+            allowed_message_id=initial.message_id,
+        )
+        sensitive = "SENSITIVE-EXCEPTION-MESSAGE"
+        _ExplodingAgent(identity, bus, sensitive)
+        initial.payload = {
+            "trusted_context": guard.trusted_context(initial.trace_id),
+            "task": {"x": 1},
+        }
+
+        with self.assertLogs("bulldog.multiagent.agents", level="ERROR") as captured:
+            result = bus.deliver(initial)
+        self.assertIs(result.verdict, Verdict.DENY)
+        self.assertNotIn(sensitive, "\n".join(captured.output))
+        self.assertNotIn(sensitive, str(result))
 
     def test_uninspectably_large_boundary_fails_closed(self):
         bus, guard = self._guarded_bus()
