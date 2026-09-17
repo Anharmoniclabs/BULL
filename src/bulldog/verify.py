@@ -37,7 +37,6 @@ def verify_audit(path: Path | None) -> dict:
 
     ledger = AuditLedger(path)
     result = ledger.verify()
-
     return {
         "checked": True,
         "valid": result.valid,
@@ -46,6 +45,23 @@ def verify_audit(path: Path | None) -> dict:
         "error": result.error,
         "head_hash": result.head_hash,
     }
+
+
+def verify_production(package_root: Path, enabled: bool) -> dict:
+    if not enabled:
+        return {"checked": False, "passed": None, "error": None}
+
+    try:
+        from .production_gate import verify_production_environment
+
+        verify_production_environment(package_root=package_root)
+        return {"checked": True, "passed": True, "error": None}
+    except Exception as exc:
+        return {
+            "checked": True,
+            "passed": False,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
 
 
 def main() -> int:
@@ -64,14 +80,24 @@ def main() -> int:
         default=None,
         help="Optional path to write JSON certification report.",
     )
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help=(
+            "Also require the production security gate: strict seccomp, "
+            "dynamic backend attestation, signed integrity manifest, and "
+            "authenticated HTTPS remote audit anchoring."
+        ),
+    )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]
+    package_root = Path(__file__).resolve().parent
     timestamp = datetime.now(timezone.utc).isoformat()
 
     report = {
         "product": "BULL",
-        "verification_version": 1,
+        "verification_version": 2,
         "timestamp_utc": timestamp,
         "python": sys.version,
         "platform": platform.platform(),
@@ -100,7 +126,6 @@ def main() -> int:
         "passed": import_ok,
         "error": import_error,
     }
-
     print()
     print("IMPORT CHECK:", "PASS" if import_ok else "FAIL")
     if import_error:
@@ -111,13 +136,11 @@ def main() -> int:
     tests = run_pytest(root)
     report["tests"] = tests
     print(tests["output"])
-
     print()
     print("TEST SUITE:", "PASS" if tests["passed"] else "FAIL")
 
     audit = verify_audit(args.audit)
     report["audit"] = audit
-
     if audit["checked"]:
         print()
         print("AUDIT LEDGER:", "PASS" if audit["valid"] else "FAIL")
@@ -128,10 +151,22 @@ def main() -> int:
         print()
         print("AUDIT LEDGER: NOT REQUESTED")
 
+    production = verify_production(package_root, args.production)
+    report["production"] = production
+    if production["checked"]:
+        print()
+        print(
+            "PRODUCTION BOUNDARY:",
+            "PASS" if production["passed"] else "FAIL",
+        )
+        if production["error"]:
+            print("error:", production["error"])
+
     overall = (
         import_ok
         and tests["passed"]
         and (not audit["checked"] or audit["valid"])
+        and (not production["checked"] or production["passed"])
     )
     report["overall_pass"] = overall
 
@@ -148,7 +183,6 @@ def main() -> int:
     print("=" * 80)
     print("BULL VERIFICATION: PASS" if overall else "BULL VERIFICATION: FAIL")
     print("=" * 80)
-
     return 0 if overall else 1
 
 
