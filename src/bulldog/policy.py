@@ -36,6 +36,12 @@ HIGH_RISK_CAPABILITIES = {
     Capability.AGENT_SPAWN,
 }
 
+BROKERED_SECRET_OPERATIONS = {
+    "secret.get",
+    "credential.get",
+    "credential.read",
+}
+
 PERSISTENCE_PATHS = (
     "/.bashrc",
     "/.zshrc",
@@ -175,6 +181,36 @@ class DeterministicPolicy:
                 "action is downstream of untrusted external content"
             )
             risk += 0.25
+
+        # A brokered secret read is not raw host filesystem credential access.
+        # It is a narrow, named secret lookup through SecretBroker, which adds
+        # TTL, use limits and optional sandbox/domain binding. Give that
+        # mediated operation an explicit ALLOW path only when provenance is
+        # trusted. External influence remains a hard deny below.
+        if (
+            action.capability == Capability.CREDENTIAL_READ
+            and action.operation.lower().strip() in BROKERED_SECRET_OPERATIONS
+        ):
+            if external:
+                return Evaluation(
+                    Decision.DENY,
+                    1.0,
+                    tuple(
+                        reasons
+                        + [
+                            "externally influenced credential access is forbidden"
+                        ]
+                    ),
+                    hard_block=True,
+                )
+            return Evaluation(
+                Decision.ALLOW,
+                max(risk, 0.20),
+                (
+                    "credential access is mediated by the scoped secret broker",
+                ),
+                hard_block=False,
+            )
 
         if action.capability in HIGH_RISK_CAPABILITIES:
             reasons.append("high-risk capability")
