@@ -97,6 +97,25 @@ class BulldogRuntime:
         else:
             self.malware_scanner = None
 
+    @staticmethod
+    def _sandbox_identity_env(action: ActionRequest) -> dict[str, str]:
+        """Expose only non-secret trusted identity/hashes to the workload."""
+        mapping = {
+            "agent_id": "BULL_AGENT_ID",
+            "sandbox_id": "BULL_SANDBOX_ID",
+            "security_context_id": "BULL_SECURITY_CONTEXT_ID",
+            "model_id": "BULL_MODEL_ID",
+            "parent_agent_id": "BULL_PARENT_AGENT_ID",
+            "intent_hash": "BULL_INTENT_HASH",
+            "initial_command_hash": "BULL_INITIAL_COMMAND_HASH",
+            "lineage_hash": "BULL_LINEAGE_HASH",
+        }
+        return {
+            env_name: str(action.metadata[key])
+            for key, env_name in mapping.items()
+            if key in action.metadata
+        }
+
     def execute(
         self,
         action: ActionRequest,
@@ -105,7 +124,6 @@ class BulldogRuntime:
         project_root: str | Path,
         timeout: float | None = 30.0,
     ) -> ExecutionResult:
-        # Fresh execution trace for each runtime invocation.
         parent_has = (
             action.parent_capabilities is not None
             and action.capability in action.parent_capabilities
@@ -146,8 +164,6 @@ class BulldogRuntime:
 
         project_root = Path(project_root).resolve(strict=True)
 
-        # Reject unsupported filesystem objects and mount/device boundaries
-        # before copying anything into the trusted execution snapshot.
         try:
             build_manifest(project_root)
         except FilesystemManifestViolation as exc:
@@ -179,8 +195,6 @@ class BulldogRuntime:
         execution_root = snapshot.snapshot_root
 
         try:
-            # The copied tree must independently satisfy the same filesystem
-            # contract before it can become executable state.
             try:
                 build_manifest(execution_root)
             except FilesystemManifestViolation as exc:
@@ -213,8 +227,6 @@ class BulldogRuntime:
                     )
 
                 try:
-                    # IMPORTANT: scan the immutable execution snapshot, not
-                    # the mutable source project.
                     scan = self.malware_scanner.scan_project(execution_root)
                 except Exception as exc:
                     self.trace.emit("ScanMalware")
@@ -260,8 +272,6 @@ class BulldogRuntime:
                     "formal runtime instrumentation requires malware scanning"
                 )
 
-            # Bind the exact bytes admitted by the malware scanner to the
-            # execution decision. A mutation after scanning fails closed.
             current_snapshot_hash = hash_tree(execution_root)
             if current_snapshot_hash != snapshot.snapshot_hash:
                 return ExecutionResult(
@@ -281,13 +291,12 @@ class BulldogRuntime:
             if action.capability.value == "process.exec":
                 writable = False
 
-            # IMPORTANT: the sandbox mounts execution_root. The mutable source
-            # project is never mounted after admission.
             result: SandboxResult = self.sandbox.run(
                 command,
                 project_root=execution_root,
                 writable=writable,
                 timeout=timeout,
+                env=self._sandbox_identity_env(action),
                 resource_budget=self.resource_budget,
             )
 
