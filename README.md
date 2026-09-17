@@ -40,7 +40,7 @@ Linux namespace + seccomp sandbox
      +---- pinned egress broker
      |
      v
-tamper-evident audit trail
+tamper-evident + remotely anchored audit trail
 ```
 
 ## Current security controls
@@ -58,14 +58,19 @@ tamper-evident audit trail
 - immutable scan-to-execute project snapshots
 - filesystem manifest validation
 - Linux user, mount, PID, and network namespaces
-- `no_new_privs` and seccomp syscall restrictions
+- `no_new_privs`
+- development seccomp compatibility profile
+- production default-deny seccomp allowlist profile
+- nonce-bound live backend attestation before workload exec
+- trusted read-only `/bull_runtime` security bootstrap, separate from `/workspace`
 - per-execution resource limits
 - pre-execution malware scanning
 - scoped secret grants with TTL, sandbox binding, revocation, and use limits
 - broker operations bound to network or credential authority
 - DNS-pinned egress with TLS verification against the original hostname
 - tamper-evident hash-chained audit records and trusted runtime events
-- optional authenticated external audit anchor
+- fail-closed authenticated HTTPS remote audit anchoring
+- HMAC-authenticated trusted-computing-base integrity manifests
 - TLA+ runtime state-machine model
 - CI-enforced SANY parsing and TLC invariant checking
 - Python regression tests on Python 3.11 and 3.13
@@ -84,15 +89,43 @@ An approved filesystem action is not permission to launch an arbitrary command. 
 
 Likewise, egress and secret access do not bypass the reference monitor. Domain-mode broker operations require the domain's host-issued authority. Legacy/non-domain broker operations require an authorized `DispatchRequest` and are evaluated by BULL policy before the broker is reached.
 
+## Production profile
+
+Production mode fails closed unless the deployment supplies:
+
+- `BULL_SECCOMP_PROFILE=strict`
+- a signed TCB integrity manifest plus an out-of-package signing key
+- an authenticated HTTPS remote audit-anchor endpoint
+- a successful live namespace/seccomp backend certification
+
+The live attestation is sent over a parent-created nonce-bound pipe that is closed before the untrusted workload begins. It verifies that the sandbox bootstrap is PID 1, `no_new_privs` and the requested seccomp profile are active, only loopback networking is visible, and BULL security code was loaded from the read-only `/bull_runtime` mount rather than the agent workspace.
+
+Generate a signed deployment manifest with:
+
+```bash
+export BULL_INTEGRITY_MANIFEST_KEY='use-a-host-secret-manager'
+bull manifest --output /etc/bull/integrity.json
+```
+
+Then validate a configured host with:
+
+```bash
+bull verify --production
+```
+
+See [`docs/PRODUCTION_SECURITY.md`](docs/PRODUCTION_SECURITY.md) for the complete trust model and deployment checklist.
+
 ## Security boundary
 
 BULL's untrusted-workload boundary is the sandboxed agent process. The host Python process, the BULL trusted computing base, and the Linux kernel remain trusted components.
 
-BULL does **not** claim to protect against a compromised kernel, arbitrary hostile co-tenants with host-level access, hardware attacks, or every possible autonomous-agent failure mode. The formal model proves properties of the modeled state machine; it is not a formal proof of the entire Python/Linux implementation.
+For mutually hostile tenants, use a separate VM or microVM for each root trust tenant in addition to BULL's internal namespace/seccomp isolation. BULL does **not** claim to protect against a compromised kernel/hypervisor, a malicious host administrator, hardware attacks, or every possible autonomous-agent failure mode. The formal model proves properties of the modeled state machine; it is not a formal proof of the entire Python/Linux implementation.
 
 ## Status
 
-Research prototype with real Linux enforcement and substantial defensive hardening. It is **not yet a production-hardened endpoint-security or multi-tenant isolation product**, and it should not be the sole security control protecting production systems.
+BULL now has a **production-oriented hardened profile** with live backend attestation, default-deny syscall filtering, authenticated code-integrity state, remote audit anchoring, and permanent adversarial regression tests. It has **not** undergone an independent third-party security audit and should not be described as vulnerability-free or universally safe.
+
+Repository governance is also part of the boundary: production release use should require GitHub branch protection/rulesets so the regression and formal checks cannot be bypassed.
 
 ## Research direction
 
