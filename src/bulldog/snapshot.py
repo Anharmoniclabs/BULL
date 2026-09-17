@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 import hashlib
+import json
+import math
 import os
+import resource
 import shutil
+import subprocess
+import sys
 import tempfile
 
+from .cgroup_scope import CgroupV2Scope
 from .filesystem_manifest import (
     FilesystemManifest,
     FilesystemManifestViolation,
@@ -32,10 +39,10 @@ class ProjectSnapshot:
     snapshot_root: Path
     source_hash: str
     snapshot_hash: str
+    cleanup_root: Path | None = None
 
 
 def _force_remove_tree(path: Path) -> None:
-    """Remove a snapshot even after it has deliberately been made read-only."""
     if not path.exists():
         return
     for root, dirs, files in os.walk(path, topdown=False, followlinks=False):
@@ -223,9 +230,7 @@ def create_snapshot(
             "snapshot scratch filesystem lacks required free-space reserve"
         )
 
-    snapshot_parent = Path(
-        tempfile.mkdtemp(prefix="bull_snapshot_", dir=str(scratch))
-    )
+    snapshot_parent = Path(tempfile.mkdtemp(prefix="bull_snapshot_", dir=str(scratch)))
     snapshot_root = snapshot_parent / "project"
     snapshot_root.mkdir(mode=0o700)
 
@@ -273,9 +278,7 @@ def create_snapshot(
             raise SnapshotViolation(str(exc)) from exc
 
         if _identity_index(source_after) != _identity_index(source_before):
-            raise SnapshotViolation(
-                "source tree changed while snapshot was created"
-            )
+            raise SnapshotViolation("source tree changed while snapshot was created")
 
         try:
             snapshot_manifest = build_manifest(
@@ -298,6 +301,7 @@ def create_snapshot(
             snapshot_root=snapshot_root,
             source_hash=source_hash,
             snapshot_hash=snapshot_hash,
+            cleanup_root=snapshot_parent,
         )
     except Exception:
         try:
@@ -307,5 +311,115 @@ def create_snapshot(
         raise
 
 
+def _worker_environment(budget: WorkspaceBudget) -> dict[str, str]:
+    return {
+        "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+        "LANG": "C.UTF-8",
+        "HOME": "/nonexistent",
+        "TMPDIR": "/tmp",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONSAFEPATH": "1",
+        "BULL_MAX_WORKSPACE_FILES": str(budget.max_files),
+        "BULL_MAX_WORKSPACE_BYTES": str(budget.max_total_bytes),
+        "BULL_MAX_WORKSPACE_FILE_BYTES": str(budget.max_file_bytes),
+        "BULL_MAX_WORKSPACE_DEPTH": str(budget.max_depth),
+        "BULL_MAX_WORKSPACE_PATH_BYTES": str(budget.max_path_bytes),
+        "BULL_MANIFEST_TIMEOUT_SECONDS": str(budget.manifest_timeout_seconds),
+        "BULL_SNAPSHOT_TIMEOUT_SECONDS": str(budget.snapshot_timeout_seconds),
+        "BULL_MALWARE_SCAN_TIMEOUT_SECONDS": str(budget.malware_scan_timeout_seconds),
+        "BULL_SNAPSHOT_MIN_FREE_BYTES": str(budget.snapshot_min_free_bytes),
+    }
+
+
+def create_snapshot_isolated(
+    source_root: str | Path,
+    *,
+    budget: WorkspaceBudget,
+    scratch_root: str | Path,
+) -> ProjectSnapshot:
+    """Run hostile tree admission/copying in a killable cgroup/rlimit worker."""
+
+    source = Path(source_root).resolve(strict=True)
+    scratch = Path(scratch_root).resolve(strict=True)
+    worker_root = Path(tempfile.mkdtemp(prefix="bull_admission_", dir=str(scratch)))
+
+    scope = CgroupV2Scope.from_environment(
+        memory_bytes=768 * 1024 * 1024,
+        processes=8,
+        cpu_quota_us=100_000,
+        name_prefix="bull-admission",
+    )
+    context = scope if scope is not None else nullcontext(None)
+
+    def _limits(active_scope: CgroupV2Scope | None) -> None:
+        memory = 768 * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (memory, memory))
+        cpu = max(1, int(math.ceil(budget.snapshot_timeout_seconds)) + 2)
+        resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu))
+        resource.setrlimit(resource.RLIMIT_NOFILE, (256, 256))
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        if active_scope is not None:
+            active_scope.attach_current()
+
+    try:
+        with context as active_scope:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    "-m",
+                    "bulldog.snapshot_worker",
+                    str(source),
+                    str(worker_root),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=budget.snapshot_timeout_seconds + 5.0,
+                env=_worker_environment(budget),
+                cwd="/",
+                preexec_fn=(lambda: _limits(active_scope)) if os.name == "posix" else None,
+            )
+        if proc.returncode != 0:
+            raise SnapshotViolation(
+                "isolated snapshot worker failed: " + (proc.stderr.strip()[-2000:] or "unknown error")
+            )
+
+        lines = [line for line in proc.stdout.splitlines() if line.strip()]
+        if len(lines) != 1:
+            raise SnapshotViolation("isolated snapshot worker returned invalid output")
+        data = json.loads(lines[0])
+        snapshot_path = Path(str(data["snapshot_root"])).resolve(strict=True)
+        try:
+            snapshot_path.relative_to(worker_root)
+        except ValueError as exc:
+            raise SnapshotViolation("snapshot worker returned path outside scratch scope") from exc
+        if Path(str(data["source_root"])).resolve(strict=True) != source:
+            raise SnapshotViolation("snapshot worker source identity mismatch")
+
+        return ProjectSnapshot(
+            source_root=source,
+            snapshot_root=snapshot_path,
+            source_hash=str(data["source_hash"]),
+            snapshot_hash=str(data["snapshot_hash"]),
+            cleanup_root=worker_root,
+        )
+    except (subprocess.TimeoutExpired, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        try:
+            _force_remove_tree(worker_root)
+        except OSError:
+            pass
+        if isinstance(exc, SnapshotViolation):
+            raise
+        raise SnapshotViolation(f"isolated snapshot worker failed: {exc}") from exc
+    except Exception:
+        try:
+            _force_remove_tree(worker_root)
+        except OSError:
+            pass
+        raise
+
+
 def destroy_snapshot(snapshot: ProjectSnapshot) -> None:
-    _force_remove_tree(snapshot.snapshot_root.parent)
+    root = snapshot.cleanup_root or snapshot.snapshot_root.parent
+    _force_remove_tree(root)
