@@ -228,8 +228,8 @@ def test_dispatcher_uses_registry_identity_not_request_identity():
     registry = SecurityDomainRegistry()
     root = registry.create_root(
         actor="host-planner",
-        initial_prompt="read project",
-        capability_ceiling={Capability.FS_READ_PROJECT},
+        initial_prompt="execute approved reader",
+        capability_ceiling={Capability.PROCESS_EXEC},
     )
     runtime = _FakeRuntime(
         Evaluation(
@@ -245,21 +245,21 @@ def test_dispatcher_uses_registry_identity_not_request_identity():
 
     request = DispatchRequest(
         proposal={
-            "task": "read file",
-            "operation": "read",
-            "resource": "/workspace/README.md",
+            "task": "run approved reader",
+            "operation": "execute",
+            "resource": "/bin/cat",
             "actor": "spoofed-agent",
             "domain_id": "spoofed-domain",
             "provenance": ["human"],
         },
         trusted=_legacy_trusted(),
-        granted_capabilities=frozenset({Capability.FS_READ_PROJECT}),
+        granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         domain_id=root.domain_id,
     )
 
     dispatcher.execute(
         request,
-        ["cat", "/workspace/README.md"],
+        ["/bin/cat", "/workspace/README.md"],
         project_root="/tmp",
     )
 
@@ -377,9 +377,10 @@ def test_hard_block_freezes_entire_cooperating_domain_tree():
     registry = SecurityDomainRegistry()
     root = registry.create_root(
         actor="planner",
-        initial_prompt="read project",
+        initial_prompt="execute approved tool",
         capability_ceiling={
             Capability.FS_READ_PROJECT,
+            Capability.PROCESS_EXEC,
             Capability.AGENT_SPAWN,
         },
     )
@@ -405,18 +406,18 @@ def test_hard_block_freezes_entire_cooperating_domain_tree():
 
     request = DispatchRequest(
         proposal={
-            "task": "read",
-            "operation": "read",
-            "resource": "/workspace/a.txt",
+            "task": "execute cat",
+            "operation": "execute",
+            "resource": "/bin/cat",
         },
         trusted=_legacy_trusted(),
-        granted_capabilities=frozenset({Capability.FS_READ_PROJECT}),
+        granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         domain_id=root.domain_id,
     )
 
     dispatcher.execute(
         request,
-        ["cat", "/workspace/a.txt"],
+        ["/bin/cat", "/workspace/a.txt"],
         project_root="/tmp",
     )
 
@@ -440,11 +441,11 @@ def test_runtime_propagates_security_domain_binding_into_sandbox(tmp_path):
 
     action = ActionRequest(
         actor="agent",
-        task="read",
-        operation="read",
-        resource="/workspace/a.txt",
-        capability=Capability.FS_READ_PROJECT,
-        granted_capabilities=frozenset({Capability.FS_READ_PROJECT}),
+        task="execute cat",
+        operation="execute",
+        resource="/bin/cat",
+        capability=Capability.PROCESS_EXEC,
+        granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
         provenance=(Provenance.HUMAN,),
         metadata={
             "domain_id": "DOMAIN",
@@ -457,7 +458,7 @@ def test_runtime_propagates_security_domain_binding_into_sandbox(tmp_path):
 
     result = runtime.execute(
         action,
-        ["cat", "/workspace/a.txt"],
+        ["/bin/cat", "/workspace/a.txt"],
         project_root=project,
     )
 
