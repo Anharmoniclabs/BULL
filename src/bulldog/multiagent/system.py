@@ -154,6 +154,7 @@ class MultiAgentSystem:
         self.honeytoken.mint(
             envelope.trace_id,
             allowed_recipient=self.coordinator.agent_id,
+            allowed_message_id=envelope.message_id,
         )
         envelope.payload = {
             "task": task,
