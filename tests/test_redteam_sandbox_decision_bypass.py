@@ -1,12 +1,4 @@
-"""Red-team probe: Decision.SANDBOX must not pass the legacy broker gate.
-
-The deterministic policy returns Decision.SANDBOX for actions scored in
-the 0.55-0.84 risk band. In the runtime execution path that verdict
-means "run inside the namespace sandbox". The legacy broker paths have
-no sandbox step, so a SANDBOX verdict must be treated as a denial there.
-This probe fails if a mid-risk verdict silently becomes an approved
-broker operation.
-"""
+"""Regression: Decision.SANDBOX must not pass the legacy broker gate."""
 
 from types import SimpleNamespace
 
@@ -14,13 +6,15 @@ import pytest
 
 import bulldog.dispatcher as dispatcher_module
 from bulldog.canonicalizer import TrustedExecutionContext
-from bulldog.dispatcher import CapabilityDispatcher, DispatchRequest
+from bulldog.dispatcher import (
+    CapabilityDispatcher,
+    DispatchDenied,
+    DispatchRequest,
+)
 from bulldog.models import Capability, Decision, Evaluation, Provenance
 
 
 class MidRiskSandboxEngine:
-    """Returns the SANDBOX verdict the policy produces for mid-risk actions."""
-
     def evaluate(self, action):
         return Evaluation(
             decision=Decision.SANDBOX,
@@ -61,7 +55,7 @@ def secret_request():
     )
 
 
-def test_redteam_sandbox_verdict_must_not_pass_egress_broker():
+def test_redteam_sandbox_verdict_cannot_pass_egress_broker():
     class FakeEgressBroker:
         def __init__(self):
             self.calls = []
@@ -76,29 +70,27 @@ def test_redteam_sandbox_verdict_must_not_pass_egress_broker():
         egress_broker=broker,
     )
 
-    dispatcher.fetch_egress(
-        url="https://example.com/",
-        method="GET",
-        request=egress_request(),
-    )
-
-    if broker.calls:
-        pytest.fail(
-            "BYPASS CONFIRMED: Decision.SANDBOX passed the legacy broker "
-            "authorization gate; a mid-risk fetch executed on the host "
-            "without sandbox mediation: " + repr(broker.calls)
+    with pytest.raises(DispatchDenied, match="explicit ALLOW"):
+        dispatcher.fetch_egress(
+            url="https://example.com/",
+            method="GET",
+            request=egress_request(),
         )
 
+    assert broker.calls == []
 
-def test_redteam_sandbox_verdict_must_not_reach_secret_broker(monkeypatch, tmp_path):
+
+def test_redteam_sandbox_verdict_cannot_reach_secret_broker(
+    monkeypatch, tmp_path
+):
     class FakeSecretBroker:
         socket_path = tmp_path / "secret.sock"
 
+    calls = []
+
     def fake_request_secret(**kwargs):
-        pytest.fail(
-            "BYPASS CONFIRMED: Decision.SANDBOX passed the legacy broker "
-            "authorization gate; a mid-risk credential was released."
-        )
+        calls.append(dict(kwargs))
+        return "should-not-be-released"
 
     monkeypatch.setattr(
         dispatcher_module,
@@ -111,8 +103,11 @@ def test_redteam_sandbox_verdict_must_not_reach_secret_broker(monkeypatch, tmp_p
         secret_broker=FakeSecretBroker(),
     )
 
-    dispatcher.get_secret(
-        token="grant-token",
-        name="API_KEY",
-        request=secret_request(),
-    )
+    with pytest.raises(DispatchDenied, match="explicit ALLOW"):
+        dispatcher.get_secret(
+            token="grant-token",
+            name="API_KEY",
+            request=secret_request(),
+        )
+
+    assert calls == []
