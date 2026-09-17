@@ -16,6 +16,10 @@ from bulldog.models import (
 from bulldog.namespace_sandbox import SandboxResult
 from bulldog.runtime import BulldogRuntime
 from bulldog.secret_broker import SecretBroker, SecretBrokerError
+from bulldog.security_domain import hash_command
+
+
+EXEC_COMMAND = ("/bin/cat", "/workspace/payload.txt")
 
 
 class AllowEngine:
@@ -34,7 +38,6 @@ class MutatingCleanScanner:
 
     def scan_project(self, root):
         self.scanned_root = Path(root)
-        # Mutate the original source after BULL has taken its snapshot.
         self.source_file.write_text("MALICIOUS", encoding="utf-8")
         return SimpleNamespace(
             clean=True,
@@ -71,7 +74,9 @@ class CapturingSandbox:
         )
 
 
-def _exec_action():
+def _exec_action(command=EXEC_COMMAND):
+    digest = hash_command(command)
+    assert digest is not None
     return ActionRequest(
         actor="host-agent",
         task="inspect project payload with cat",
@@ -82,6 +87,7 @@ def _exec_action():
             Capability.PROCESS_EXEC,
         }),
         provenance=(Provenance.HUMAN,),
+        metadata={"authorized_command_hash": digest},
     )
 
 
@@ -113,7 +119,7 @@ def test_runtime_rejects_command_launch_without_process_exec(tmp_path):
 
     result = runtime.execute(
         _read_action(),
-        ["/bin/cat", "/workspace/payload.txt"],
+        EXEC_COMMAND,
         project_root=project,
     )
 
@@ -148,6 +154,64 @@ def test_runtime_rejects_executable_resource_mismatch(tmp_path):
     assert sandbox.command is None
 
 
+def test_runtime_rejects_same_executable_with_changed_argv(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "payload.txt").write_text("CLEAN", encoding="utf-8")
+
+    sandbox = CapturingSandbox()
+    runtime = BulldogRuntime(
+        engine=AllowEngine(),
+        sandbox=sandbox,
+        malware_scanner=SimpleNamespace(),
+    )
+
+    result = runtime.execute(
+        _exec_action(),
+        ["/bin/cat", "/workspace/other.txt"],
+        project_root=project,
+    )
+
+    assert result.executed is False
+    assert result.evaluation.decision == Decision.DENY
+    assert "argv" in result.stderr
+    assert sandbox.command is None
+
+
+def test_runtime_rejects_missing_full_argv_hash(tmp_path):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "payload.txt").write_text("CLEAN", encoding="utf-8")
+
+    action = _exec_action()
+    action = ActionRequest(
+        actor=action.actor,
+        task=action.task,
+        operation=action.operation,
+        resource=action.resource,
+        capability=action.capability,
+        granted_capabilities=action.granted_capabilities,
+        provenance=action.provenance,
+    )
+
+    sandbox = CapturingSandbox()
+    runtime = BulldogRuntime(
+        engine=AllowEngine(),
+        sandbox=sandbox,
+        malware_scanner=SimpleNamespace(),
+    )
+
+    result = runtime.execute(
+        action,
+        EXEC_COMMAND,
+        project_root=project,
+    )
+
+    assert result.executed is False
+    assert "full-argv authorization" in result.stderr
+    assert sandbox.command is None
+
+
 def test_runtime_scans_and_executes_same_immutable_snapshot(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -164,7 +228,7 @@ def test_runtime_scans_and_executes_same_immutable_snapshot(tmp_path):
 
     result = runtime.execute(
         _exec_action(),
-        ["/bin/cat", "/workspace/payload.txt"],
+        EXEC_COMMAND,
         project_root=project,
     )
 
@@ -172,11 +236,8 @@ def test_runtime_scans_and_executes_same_immutable_snapshot(tmp_path):
     assert result.stdout == "CLEAN"
     assert source_file.read_text(encoding="utf-8") == "MALICIOUS"
 
-    # The scanner and sandbox must receive the exact same snapshot root.
     assert scanner.scanned_root == sandbox.project_root
     assert scanner.scanned_root != project.resolve()
-
-    # Snapshot cleanup must happen even after successful execution.
     assert not sandbox.project_root.exists()
 
 
@@ -195,7 +256,7 @@ def test_runtime_passes_resource_budget_to_sandbox(tmp_path):
 
     runtime.execute(
         _exec_action(),
-        ["/bin/cat", "/workspace/payload.txt"],
+        EXEC_COMMAND,
         project_root=project,
     )
 
@@ -220,7 +281,7 @@ def test_runtime_rejects_special_files_before_execution(tmp_path):
 
     result = runtime.execute(
         _exec_action(),
-        ["/bin/cat", "/workspace/payload.txt"],
+        EXEC_COMMAND,
         project_root=project,
     )
 
