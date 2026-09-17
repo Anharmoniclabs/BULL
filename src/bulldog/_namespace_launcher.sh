@@ -84,7 +84,7 @@ do
     fi
 done
 
-mount -t tmpfs -o size=64m,nosuid,nodev tmpfs "$ROOTFS/tmp"
+mount -t tmpfs -o size=64m,nosuid,nodev,noexec tmpfs "$ROOTFS/tmp"
 chmod 1777 "$ROOTFS/tmp"
 
 mount --bind "$PROJECT" "$ROOTFS/workspace"
@@ -92,13 +92,13 @@ if [ "$PROJECT_MODE" = "ro" ]; then
     mount -o remount,bind,ro "$ROOTFS/workspace"
 fi
 
-# Security bootstrap code must never come from the agent-controlled project.
-# Mount BULL's installed runtime package separately and read-only.
+# Security bootstrap code never comes from the agent-controlled project.
 mount --bind "$RUNTIME_ROOT" "$ROOTFS/bull_runtime"
 mount -o remount,bind,ro "$ROOTFS/bull_runtime"
 
-# /proc is intentionally omitted. PID isolation is supplied by unshare --pid
-# --fork, and the attestation below requires the bootstrap to observe PID 1.
+# /proc, /sys, host home, /run/user, Docker/container sockets and package caches
+# are intentionally absent from the chroot.
+export BULL_WORKSPACE_MODE="$PROJECT_MODE"
 
 exec \
     chroot \
@@ -113,7 +113,6 @@ import sys
 
 PR_SET_NO_NEW_PRIVS = 38
 PR_GET_NO_NEW_PRIVS = 39
-
 libc = ctypes.CDLL(None, use_errno=True)
 
 result = libc.prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
@@ -121,18 +120,22 @@ if result != 0:
     err = ctypes.get_errno()
     raise OSError(err, os.strerror(err))
 
-# Import only the read-only BULL-owned security bootstrap. Drop every path
-# inside the agent-controlled workspace, not merely one historical path.
+# Import only BULL-owned read-only security bootstrap code.
 sys.path[:] = ["/bull_runtime"] + [
     entry
     for entry in sys.path
     if entry and not entry.startswith("/workspace")
 ]
+from landlock_policy import install_bull_landlock
 from seccomp_policy import install_bull_seccomp
+
+workspace_writable = os.environ.get("BULL_WORKSPACE_MODE") == "rw"
+landlock_abi = install_bull_landlock(workspace_writable=workspace_writable)
+os.environ["BULL_LANDLOCK_ACTIVE"] = "1"
+os.environ["BULL_LANDLOCK_ABI"] = str(landlock_abi)
 
 profile = os.environ.get("BULL_SECCOMP_PROFILE", "compat").strip().lower()
 installed = install_bull_seccomp(profile=profile)
-
 os.environ["BULL_SECCOMP_ACTIVE"] = "1"
 os.environ["BULL_SECCOMP_PROFILE"] = profile
 os.environ["BULL_SECCOMP_RULES"] = ",".join(installed)
@@ -148,13 +151,15 @@ interfaces = sorted(name for _, name in socket.if_nameindex())
 network_isolated = all(name == "lo" for name in interfaces)
 
 attestation = {
-    "format": "bull-sandbox-attestation-v1",
+    "format": "bull-sandbox-attestation-v2",
     "nonce": attest_nonce,
     "pid": os.getpid(),
     "no_new_privs": no_new_privs,
     "seccomp": os.environ.get("BULL_SECCOMP_ACTIVE") == "1",
     "seccomp_profile": profile,
     "seccomp_rules": len(installed),
+    "landlock": os.environ.get("BULL_LANDLOCK_ACTIVE") == "1",
+    "landlock_abi": landlock_abi,
     "network_interfaces": interfaces,
     "network_isolated": network_isolated,
     "python": sys.executable,
@@ -166,10 +171,33 @@ os.write(
 )
 os.close(attest_fd)
 
+# Remove common environment-based bootstrap/configuration injection surfaces
+# before the untrusted command is executed.
+for key in (
+    "PYTHONPATH",
+    "PYTHONHOME",
+    "LD_PRELOAD",
+    "LD_LIBRARY_PATH",
+    "BASH_ENV",
+    "ENV",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_TEMPLATE_DIR",
+    "GIT_EXEC_PATH",
+    "XDG_CONFIG_HOME",
+    "XDG_CACHE_HOME",
+    "SSH_AUTH_SOCK",
+    "DOCKER_HOST",
+):
+    os.environ.pop(key, None)
+os.environ["HOME"] = "/nonexistent"
+os.environ["TMPDIR"] = "/tmp"
+os.environ["PYTHONNOUSERSITE"] = "1"
+os.environ["PYTHONSAFEPATH"] = "1"
+
 command = sys.argv[1:]
 if not command:
     raise SystemExit("missing sandbox command")
-
 os.execvp(command[0], command)
 ' \
     "$@"
