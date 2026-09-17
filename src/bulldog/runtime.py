@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import hmac
 from typing import Sequence
 
 from .canonicalizer import (
@@ -29,6 +30,7 @@ from .namespace_sandbox import (
     SandboxResult,
 )
 from .resource_limits import ResourceBudget
+from .security_domain import hash_command
 from .snapshot import (
     SnapshotViolation,
     create_snapshot,
@@ -64,8 +66,9 @@ class BulldogRuntime:
     into the namespace sandbox.
 
     The runtime is also a defense-in-depth execution reference monitor:
-    launching an OS command requires PROCESS_EXEC authority, and the
-    authorized executable resource must match command[0].
+    launching an OS command requires PROCESS_EXEC authority, the authorized
+    executable must match command[0], and the exact argv must match a trusted
+    command hash minted by the dispatcher/host boundary.
     """
 
     def __init__(
@@ -135,6 +138,16 @@ class BulldogRuntime:
                 f"{requested_executable} != {authorized_executable}"
             )
 
+        expected_hash = action.metadata.get("authorized_command_hash")
+        if not expected_hash:
+            return "runtime command missing trusted full-argv authorization"
+
+        actual_hash = hash_command(tuple(str(part) for part in command))
+        if actual_hash is None:
+            return "runtime failed to hash command argv"
+        if not hmac.compare_digest(str(expected_hash), actual_hash):
+            return "runtime command argv does not match authorized argv"
+
         return None
 
     def _deny_binding(
@@ -155,9 +168,6 @@ class BulldogRuntime:
         )
         self.trace.emit("ResolveDeny")
 
-        # Binding denial occurs before the policy engine because the command
-        # is not part of ActionRequest. Preserve the denial in the same audit
-        # ledger when one is configured.
         ledger = getattr(self.engine, "ledger", None)
         if ledger is not None:
             ledger.append(action, evaluation)
@@ -348,13 +358,8 @@ class BulldogRuntime:
                     trace_state=self.trace.snapshot(),
                 )
 
-            # Process execution receives a read-only project snapshot. Writes
-            # must be exposed through an explicit mediated filesystem API, not
-            # smuggled through a command launch.
             writable = False
 
-            # Only host-minted non-secret identity/hashes are propagated to the
-            # isolated workload. Raw prompts and secret values remain host-side.
             environment_bindings = {
                 "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
                 "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
@@ -368,6 +373,9 @@ class BulldogRuntime:
                 "BULL_MODEL_ID_HASH": action.metadata.get("model_id_hash"),
                 "BULL_DOMAIN_FINGERPRINT": action.metadata.get(
                     "domain_fingerprint"
+                ),
+                "BULL_AUTHORIZED_COMMAND_HASH": action.metadata.get(
+                    "authorized_command_hash"
                 ),
             }
             sandbox_env = {
