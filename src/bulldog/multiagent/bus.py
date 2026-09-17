@@ -43,6 +43,16 @@ class MessageBus:
         with self._lock:
             self._boundary_guard = guard
 
+    def inspect_handler_exception(self, envelope: Envelope, error: BaseException) -> None:
+        """Inspect an exception before an agent is allowed to log or summarize it.
+
+        This gives the host boundary guard a chance to detect protected canary
+        material in exception text/representation before any lower-trust logging
+        path can expose it. Ordinary exceptions pass through this check and are
+        then sanitized by ``BaseAgent``.
+        """
+        self._apply_boundary_guard("result", envelope, error)
+
     def register(
         self, identity: AgentIdentity, handler: Callable[[Envelope], Any]
     ) -> None:
