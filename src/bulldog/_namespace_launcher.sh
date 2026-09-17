@@ -6,8 +6,9 @@ ROOTFS="$1"
 PROJECT="$2"
 PROJECT_MODE="$3"
 SANDBOX_PYTHON="$4"
+RUNTIME_ROOT="$5"
 
-shift 4
+shift 5
 
 mount --make-rprivate /
 
@@ -23,7 +24,8 @@ mkdir -p \
     "$ROOTFS/dev" \
     "$ROOTFS/proc" \
     "$ROOTFS/tmp" \
-    "$ROOTFS/workspace"
+    "$ROOTFS/workspace" \
+    "$ROOTFS/bull_runtime"
 
 mirror_runtime_path () {
     SRC="$1"
@@ -60,13 +62,7 @@ mirror_runtime_path /sbin sbin
 mirror_runtime_path /lib lib
 mirror_runtime_path /lib64 lib64
 
-for FILE in \
-    passwd \
-    group \
-    nsswitch.conf \
-    hosts \
-    resolv.conf \
-    localtime
+for FILE in passwd group nsswitch.conf hosts resolv.conf localtime
 do
     SRC="/etc/$FILE"
     DST="$ROOTFS/etc/$FILE"
@@ -88,11 +84,7 @@ do
     fi
 done
 
-mount \
-    -t tmpfs \
-    -o size=64m,nosuid,nodev \
-    tmpfs \
-    "$ROOTFS/tmp"
+mount -t tmpfs -o size=64m,nosuid,nodev tmpfs "$ROOTFS/tmp"
 chmod 1777 "$ROOTFS/tmp"
 
 mount --bind "$PROJECT" "$ROOTFS/workspace"
@@ -100,9 +92,13 @@ if [ "$PROJECT_MODE" = "ro" ]; then
     mount -o remount,bind,ro "$ROOTFS/workspace"
 fi
 
+# Security bootstrap code must never come from the agent-controlled project.
+# Mount BULL's installed runtime package separately and read-only.
+mount --bind "$RUNTIME_ROOT" "$ROOTFS/bull_runtime"
+mount -o remount,bind,ro "$ROOTFS/bull_runtime"
+
 # /proc is intentionally omitted. PID isolation is supplied by unshare --pid
-# --fork, and the attestation emitted below requires the workload bootstrap to
-# observe PID 1 inside the new namespace.
+# --fork, and the attestation below requires the bootstrap to observe PID 1.
 
 exec \
     chroot \
@@ -125,7 +121,10 @@ if result != 0:
     err = ctypes.get_errno()
     raise OSError(err, os.strerror(err))
 
-sys.path.insert(0, "/workspace/.bull_runtime")
+# Import only the read-only BULL-owned security bootstrap.
+sys.path[:] = ["/bull_runtime"] + [
+    entry for entry in sys.path if entry not in {"", "/workspace", "/workspace/.bull_runtime"}
+]
 from seccomp_policy import install_bull_seccomp
 
 profile = os.environ.get("BULL_SECCOMP_PROFILE", "compat").strip().lower()
@@ -135,9 +134,6 @@ os.environ["BULL_SECCOMP_ACTIVE"] = "1"
 os.environ["BULL_SECCOMP_PROFILE"] = profile
 os.environ["BULL_SECCOMP_RULES"] = ",".join(installed)
 
-# Produce a one-way attestation over a pipe created by the trusted parent.
-# The descriptor is closed before workload exec, so the workload cannot forge
-# a second attestation after it starts.
 attest_fd_raw = os.environ.pop("BULL_ATTEST_FD", None)
 attest_nonce = os.environ.pop("BULL_ATTEST_NONCE", None)
 if attest_fd_raw is None or attest_nonce is None:
@@ -159,6 +155,7 @@ attestation = {
     "network_interfaces": interfaces,
     "network_isolated": network_isolated,
     "python": sys.executable,
+    "runtime_root": "/bull_runtime",
 }
 os.write(
     attest_fd,
