@@ -25,14 +25,7 @@ class DispatchDenied(RuntimeError):
 
 @dataclass(frozen=True)
 class DispatchRequest:
-    """
-    Trusted wrapper around an untrusted model proposal.
-
-    In legacy mode, security-critical identity/provenance comes from `trusted`.
-    When a SecurityDomainRegistry is configured, `domain_id` becomes the
-    authority key and the registry supplies the trusted context; model/request
-    metadata cannot replace it.
-    """
+    """Trusted wrapper around an untrusted model proposal."""
 
     proposal: dict
     trusted: TrustedExecutionContext
@@ -49,9 +42,10 @@ class CapabilityDispatcher:
       - capabilities must fit the domain ceiling
       - child authority is derived from the registered parent
       - siblings/descendants share root behavioral history
-      - secrets are automatically bound to the calling domain
-      - egress is intersected with a per-domain exact-host allowlist
+      - secrets require credential authority and are bound to the domain
+      - egress requires network authority AND an exact-host domain grant
       - hard policy violations freeze the whole cooperating domain tree
+      - domain lifecycle/broker/dispatch events can share the runtime ledger
     """
 
     def __init__(
@@ -69,24 +63,30 @@ class CapabilityDispatcher:
                 package_root=Path(__file__).resolve().parent,
             )
 
-        self.runtime = (
-            runtime
-            if runtime is not None
-            else BulldogRuntime()
-        )
+        self.runtime = runtime if runtime is not None else BulldogRuntime()
         self.secret_broker = secret_broker
         self.egress_broker = egress_broker
         self.domain_registry = domain_registry
         self.production_mode = bool(production_mode)
         self.freeze_on_violation = bool(freeze_on_violation)
 
+        # One registry ledger should also receive policy evaluations so the
+        # complete domain history is cryptographically ordered in one chain.
+        if self.domain_registry is not None and self.domain_registry.ledger is not None:
+            engine = getattr(self.runtime, "engine", None)
+            if engine is not None:
+                existing = getattr(engine, "ledger", None)
+                if existing is None:
+                    engine.ledger = self.domain_registry.ledger
+                elif existing is not self.domain_registry.ledger:
+                    raise DispatchDenied(
+                        "runtime and security-domain registry must share one audit ledger"
+                    )
+
     def _trusted_context_for(
         self,
         request: DispatchRequest,
-    ) -> tuple[
-        TrustedExecutionContext,
-        frozenset[Capability] | None,
-    ]:
+    ) -> tuple[TrustedExecutionContext, frozenset[Capability] | None]:
         if self.domain_registry is None:
             return request.trusted, request.parent_capabilities
 
@@ -100,9 +100,7 @@ class CapabilityDispatcher:
                 request.domain_id,
                 request.granted_capabilities,
             )
-            trusted = self.domain_registry.trusted_context(
-                request.domain_id
-            )
+            trusted = self.domain_registry.trusted_context(request.domain_id)
             parent_capabilities = self.domain_registry.parent_capabilities(
                 request.domain_id
             )
@@ -189,16 +187,31 @@ class CapabilityDispatcher:
             )
 
         try:
-            self.domain_registry.require_active(domain_id)
+            domain = self.domain_registry.require_active(domain_id)
+            if Capability.CREDENTIAL_READ not in domain.capability_ceiling:
+                raise SecurityDomainError(
+                    "domain lacks credential.read authority"
+                )
         except SecurityDomainError as exc:
             raise DispatchDenied(str(exc)) from exc
 
-        return self.secret_broker.issue_grant(
+        grant = self.secret_broker.issue_grant(
             allowed_names=allowed_names,
             ttl_seconds=ttl_seconds,
             sandbox_id=domain_id,
             max_uses=max_uses,
         )
+        self.domain_registry.record_broker_event(
+            domain_id,
+            broker="secret",
+            operation="grant",
+            allowed=True,
+            detail={
+                "allowed_names": sorted(str(name) for name in allowed_names),
+                "max_uses": int(max_uses),
+            },
+        )
+        return grant
 
     def get_secret(
         self,
@@ -218,7 +231,11 @@ class CapabilityDispatcher:
                     "domain-enabled dispatcher requires domain_id for secrets"
                 )
             try:
-                self.domain_registry.require_active(domain_id)
+                domain = self.domain_registry.require_active(domain_id)
+                if Capability.CREDENTIAL_READ not in domain.capability_ceiling:
+                    raise SecurityDomainError(
+                        "domain lacks credential.read authority"
+                    )
             except SecurityDomainError as exc:
                 raise DispatchDenied(str(exc)) from exc
 
@@ -228,13 +245,37 @@ class CapabilityDispatcher:
                 )
             sandbox_id = domain_id
 
-        return request_secret(
-            socket_path=self.secret_broker.socket_path,
-            token=token,
-            name=name,
-            sandbox_id=sandbox_id,
-            timeout=timeout,
-        )
+        try:
+            value = request_secret(
+                socket_path=self.secret_broker.socket_path,
+                token=token,
+                name=name,
+                sandbox_id=sandbox_id,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            if self.domain_registry is not None and domain_id is not None:
+                self.domain_registry.record_broker_event(
+                    domain_id,
+                    broker="secret",
+                    operation="get",
+                    allowed=False,
+                    detail={
+                        "name": str(name),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+            raise
+
+        if self.domain_registry is not None and domain_id is not None:
+            self.domain_registry.record_broker_event(
+                domain_id,
+                broker="secret",
+                operation="get",
+                allowed=True,
+                detail={"name": str(name)},
+            )
+        return value
 
     def fetch_egress(
         self,
@@ -251,12 +292,63 @@ class CapabilityDispatcher:
                 raise DispatchDenied(
                     "domain-enabled dispatcher requires domain_id for egress"
                 )
+
+            required = (
+                Capability.NETWORK_OUTBOUND
+                if method.upper() in {"GET", "HEAD"}
+                else Capability.NETWORK_POST
+            )
             try:
+                domain = self.domain_registry.require_active(domain_id)
+                if required not in domain.capability_ceiling:
+                    raise SecurityDomainError(
+                        f"domain lacks {required.value} authority"
+                    )
                 self.domain_registry.assert_egress(domain_id, url)
             except SecurityDomainError as exc:
+                try:
+                    self.domain_registry.record_broker_event(
+                        domain_id,
+                        broker="egress",
+                        operation=method.upper(),
+                        allowed=False,
+                        detail={
+                            "url": str(url),
+                            "reason": str(exc),
+                        },
+                    )
+                except SecurityDomainError:
+                    pass
                 raise DispatchDenied(str(exc)) from exc
 
-        return self.egress_broker.fetch(
-            method=method,
-            url=url,
-        )
+        try:
+            response = self.egress_broker.fetch(
+                method=method,
+                url=url,
+            )
+        except Exception as exc:
+            if self.domain_registry is not None and domain_id is not None:
+                self.domain_registry.record_broker_event(
+                    domain_id,
+                    broker="egress",
+                    operation=method.upper(),
+                    allowed=False,
+                    detail={
+                        "url": str(url),
+                        "error_type": type(exc).__name__,
+                    },
+                )
+            raise
+
+        if self.domain_registry is not None and domain_id is not None:
+            self.domain_registry.record_broker_event(
+                domain_id,
+                broker="egress",
+                operation=method.upper(),
+                allowed=True,
+                detail={
+                    "url": str(url),
+                    "status": int(response.status),
+                },
+            )
+        return response

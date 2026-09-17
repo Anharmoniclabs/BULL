@@ -102,6 +102,7 @@ def test_child_authority_and_egress_are_strict_subsets():
         capability_ceiling={
             Capability.FS_READ_PROJECT,
             Capability.PROCESS_EXEC,
+            Capability.AGENT_SPAWN,
         },
         egress_hosts={"example.com", "docs.python.org"},
     )
@@ -142,7 +143,10 @@ def test_sibling_agents_share_root_behavior_context_but_not_domain_identity():
     root = registry.create_root(
         actor="planner",
         initial_prompt="coordinate work",
-        capability_ceiling={Capability.FS_READ_PROJECT},
+        capability_ceiling={
+            Capability.FS_READ_PROJECT,
+            Capability.AGENT_SPAWN,
+        },
     )
     a = registry.spawn_child(
         parent_domain_id=root.domain_id,
@@ -200,7 +204,10 @@ def test_freezing_root_stops_all_sibling_agents():
     root = registry.create_root(
         actor="planner",
         initial_prompt="coordinate work",
-        capability_ceiling={Capability.FS_READ_PROJECT},
+        capability_ceiling={
+            Capability.FS_READ_PROJECT,
+            Capability.AGENT_SPAWN,
+        },
     )
     child = registry.spawn_child(
         parent_domain_id=root.domain_id,
@@ -371,7 +378,10 @@ def test_hard_block_freezes_entire_cooperating_domain_tree():
     root = registry.create_root(
         actor="planner",
         initial_prompt="read project",
-        capability_ceiling={Capability.FS_READ_PROJECT},
+        capability_ceiling={
+            Capability.FS_READ_PROJECT,
+            Capability.AGENT_SPAWN,
+        },
     )
     sibling = registry.spawn_child(
         parent_domain_id=root.domain_id,

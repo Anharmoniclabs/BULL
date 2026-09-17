@@ -105,7 +105,6 @@ class BulldogRuntime:
         project_root: str | Path,
         timeout: float | None = 30.0,
     ) -> ExecutionResult:
-        # Fresh execution trace for each runtime invocation.
         parent_has = (
             action.parent_capabilities is not None
             and action.capability in action.parent_capabilities
@@ -146,8 +145,6 @@ class BulldogRuntime:
 
         project_root = Path(project_root).resolve(strict=True)
 
-        # Reject unsupported filesystem objects and mount/device boundaries
-        # before copying anything into the trusted execution snapshot.
         try:
             build_manifest(project_root)
         except FilesystemManifestViolation as exc:
@@ -179,8 +176,6 @@ class BulldogRuntime:
         execution_root = snapshot.snapshot_root
 
         try:
-            # The copied tree must independently satisfy the same filesystem
-            # contract before it can become executable state.
             try:
                 build_manifest(execution_root)
             except FilesystemManifestViolation as exc:
@@ -213,8 +208,6 @@ class BulldogRuntime:
                     )
 
                 try:
-                    # IMPORTANT: scan the immutable execution snapshot, not
-                    # the mutable source project.
                     scan = self.malware_scanner.scan_project(execution_root)
                 except Exception as exc:
                     self.trace.emit("ScanMalware")
@@ -260,8 +253,6 @@ class BulldogRuntime:
                     "formal runtime instrumentation requires malware scanning"
                 )
 
-            # Bind the exact bytes admitted by the malware scanner to the
-            # execution decision. A mutation after scanning fails closed.
             current_snapshot_hash = hash_tree(execution_root)
             if current_snapshot_hash != snapshot.snapshot_hash:
                 return ExecutionResult(
@@ -281,11 +272,8 @@ class BulldogRuntime:
             if action.capability.value == "process.exec":
                 writable = False
 
-            # Domain identity is trusted metadata minted by the host-side
-            # canonicalizer. Propagate only those values into the isolated
-            # workload so audit/broker clients can bind activity to the exact
-            # security domain without accepting model-provided identities.
-            sandbox_env: dict[str, str] = {}
+            # Only host-minted non-secret identity/hashes are propagated to the
+            # isolated workload. Raw prompts and secret values remain host-side.
             environment_bindings = {
                 "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
                 "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
@@ -296,17 +284,17 @@ class BulldogRuntime:
                 "BULL_INITIAL_COMMAND_HASH": action.metadata.get(
                     "initial_command_hash"
                 ),
+                "BULL_MODEL_ID_HASH": action.metadata.get("model_id_hash"),
+                "BULL_DOMAIN_FINGERPRINT": action.metadata.get(
+                    "domain_fingerprint"
+                ),
             }
-            sandbox_env.update(
-                {
-                    key: str(value)
-                    for key, value in environment_bindings.items()
-                    if value is not None
-                }
-            )
+            sandbox_env = {
+                key: str(value)
+                for key, value in environment_bindings.items()
+                if value is not None
+            }
 
-            # IMPORTANT: the sandbox mounts execution_root. The mutable source
-            # project is never mounted after admission.
             result: SandboxResult = self.sandbox.run(
                 command,
                 project_root=execution_root,
