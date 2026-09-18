@@ -2,12 +2,25 @@
 
 This directory is the static GitHub Pages surface for BULL. It is deliberately outside the trusted BULL runtime and must never receive deployment secrets, cloud credentials, a Docker socket, or the ability to execute uploaded code.
 
-## Routes
+## One public console
 
-- `index.html`: existing BULL Playground landing experience.
-- `control-center.html`: browser-only security decision laboratory.
+- `index.html` is the BULL Control dashboard and Playground.
+- `control-center.html` only redirects to `index.html` so old links do not open a second, conflicting implementation.
 
-The control center evaluates deterministic scenario requests in the visitor's browser and generates a local SHA-256 hash of each report. It is a policy-model simulation, not a remote sandbox attestation or live security telemetry.
+There is no separate hand-written policy simulator. The public Playground loads the exact deployed copies of:
+
+- `src/bulldog/models.py`
+- `src/bulldog/canonicalizer.py`
+- `src/bulldog/policy.py`
+- `src/bulldog/session_guard.py`
+
+Pyodide executes those Python sources locally in the visitor's browser.
+
+Dashboard counters, alerts, charts, and event rows start at zero and are populated only by decisions actually evaluated during that browser session. GitHub Actions build evidence is generated during deployment.
+
+## Linux enforcement boundary
+
+GitHub Pages does not claim to run namespaces, seccomp, Landlock, cgroups, malware scanning, secret brokers, pinned egress, or arbitrary visitor code. Those require a separately deployed BULL Linux host boundary.
 
 ## Preview locally
 
@@ -16,12 +29,8 @@ cd site
 python -m http.server 8080
 ```
 
-Open `http://localhost:8080/control-center.html`.
+Open `http://localhost:8080/`.
 
-## GitHub Pages deployment
+## Deployment
 
-The workflow `.github/workflows/pages.yml` publishes `site/` after a successful push to `main`. In repository settings, open **Settings → Pages** and choose **GitHub Actions** as the source.
-
-## Live runner boundary
-
-A live workload runner must be hosted separately. It needs independently managed authentication, quotas, rate limits, disposable compute, no ambient credentials, no default network egress, bounded output, and BULL strict Linux inside the outer isolation boundary. Do not add arbitrary-code execution to GitHub Pages.
+`.github/workflows/pages.yml` verifies BULL before publishing. The Pages artifact is uploaded only after the regression suite, local-host red-team tests, TLA+ model check, frontend contract checks, exact-source copy checks, and browser-core self-tests succeed.
