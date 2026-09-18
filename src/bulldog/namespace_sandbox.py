@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 import os
+import selectors
+import signal
 import secrets
 import shutil
 import subprocess
@@ -45,6 +47,116 @@ class SandboxUnavailable(RuntimeError):
 
 class SandboxAttestationError(RuntimeError):
     pass
+
+
+class SandboxOutputLimitExceeded(RuntimeError):
+    pass
+
+
+# Maximum retained and permitted output per stream. This is intentionally
+# separate from the child cgroup budget: pipes are buffered by the host.
+DEFAULT_MAX_OUTPUT_BYTES = 1 << 20  # 1 MiB per stdout/stderr stream
+_OUTPUT_LIMIT_MARKER = b"\n[BULL: output limit exceeded; sandbox process group terminated]\n"
+
+
+def _terminate_process_group(proc: subprocess.Popen[bytes]) -> None:
+    """Terminate the sandbox launcher and all descendants, best-effort."""
+    if proc.poll() is not None:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+        try:
+            proc.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
+def _run_bounded(
+    argv: list[str],
+    *,
+    env: dict[str, str],
+    timeout: float | None,
+    pass_fds: tuple[int, ...],
+    preexec_fn,
+    max_output_bytes: int,
+) -> tuple[int, str, str]:
+    """Run argv with bounded concurrent stdout/stderr capture.
+
+    A single stream exceeding ``max_output_bytes`` terminates the entire
+    process group. This prevents a sandbox workload from exhausting host
+    memory through PIPE buffering while retaining a useful diagnostic prefix.
+    """
+    if max_output_bytes < 1:
+        raise ValueError("max_output_bytes must be positive")
+
+    proc = subprocess.Popen(
+        argv,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=False,
+        env=env,
+        preexec_fn=preexec_fn,
+        pass_fds=pass_fds,
+        start_new_session=True,
+    )
+    assert proc.stdout is not None
+    assert proc.stderr is not None
+
+    selector = selectors.DefaultSelector()
+    selector.register(proc.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(proc.stderr, selectors.EVENT_READ, "stderr")
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    exceeded = False
+    deadline = None if timeout is None else __import__("time").monotonic() + timeout
+
+    try:
+        while selector.get_map():
+            if deadline is not None and __import__("time").monotonic() >= deadline:
+                _terminate_process_group(proc)
+                raise subprocess.TimeoutExpired(argv, timeout)
+
+            events = selector.select(
+                None if deadline is None else max(0.0, deadline - __import__("time").monotonic())
+            )
+            for key, _ in events:
+                chunk = os.read(key.fileobj.fileno(), 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    key.fileobj.close()
+                    continue
+
+                buffer = buffers[key.data]
+                remaining = max_output_bytes - len(buffer)
+                if remaining > 0:
+                    buffer.extend(chunk[:remaining])
+                if len(chunk) > remaining:
+                    exceeded = True
+                    _terminate_process_group(proc)
+
+            if exceeded:
+                # Drain pipes after group termination so the child cannot block
+                # during teardown and selector registrations close cleanly.
+                continue
+
+        returncode = proc.wait()
+    finally:
+        if proc.poll() is None:
+            _terminate_process_group(proc)
+        selector.close()
+
+    stdout = bytes(buffers["stdout"])
+    stderr = bytes(buffers["stderr"])
+    if exceeded:
+        # Place the marker on stderr even when stdout triggered the cap, so a
+        # caller that logs only error output still sees why execution stopped.
+        stderr = (stderr[:max_output_bytes - len(_OUTPUT_LIMIT_MARKER)] + _OUTPUT_LIMIT_MARKER)
+    return (
+        returncode,
+        stdout.decode("utf-8", errors="replace"),
+        stderr.decode("utf-8", errors="replace"),
+    )
 
 
 def _detect_sandbox_python() -> str:
@@ -184,6 +296,7 @@ class NamespaceSandbox:
         timeout: float | None = 30.0,
         env: dict[str, str] | None = None,
         resource_budget: ResourceBudget | None = None,
+        max_output_bytes: int = DEFAULT_MAX_OUTPUT_BYTES,
     ) -> SandboxResult:
         if not command:
             raise ValueError("sandbox command cannot be empty")
@@ -238,7 +351,7 @@ class NamespaceSandbox:
                     preexec_fn = _apply_limits
 
                 try:
-                    proc = subprocess.run(
+                    returncode, stdout, stderr = _run_bounded(
                         [
                             shutil.which("unshare") or "unshare",
                             "--user",
@@ -256,13 +369,11 @@ class NamespaceSandbox:
                             str(self.runtime_root),
                             *map(str, command),
                         ],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        timeout=timeout,
                         env=outer_env,
+                        timeout=timeout,
                         preexec_fn=preexec_fn,
                         pass_fds=(write_fd,),
+                        max_output_bytes=max_output_bytes,
                     )
                 finally:
                     os.close(write_fd)
@@ -287,11 +398,10 @@ class NamespaceSandbox:
                     expected_profile=self.seccomp_profile,
                 )
 
-            assert proc is not None
             return SandboxResult(
-                returncode=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
+                returncode=returncode,
+                stdout=stdout,
+                stderr=stderr,
                 attestation=attestation,
             )
         finally:

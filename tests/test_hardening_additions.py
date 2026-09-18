@@ -154,3 +154,19 @@ def test_unshare_invocation_includes_ipc_namespace():
     src = Path(inspect.getsourcefile(namespace_sandbox)).read_text()
     assert '"--ipc",' in src
     assert src.index('"--ipc",') < src.index("str(self.launcher),")
+
+
+def test_bounded_sandbox_output_kills_flooding_workload(tmp_path):
+    from bulldog.namespace_sandbox import NamespaceSandbox
+
+    sandbox = NamespaceSandbox(seccomp_profile="compat")
+    result = sandbox.run(
+        ["sh", "-c", "yes X"],
+        project_root=tmp_path,
+        timeout=15,
+        max_output_bytes=32 * 1024,
+    )
+
+    assert len(result.stdout.encode("utf-8")) <= 32 * 1024
+    assert "output limit exceeded" in result.stderr
+    assert result.returncode != 0
