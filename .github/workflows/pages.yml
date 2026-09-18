@@ -1,37 +1,310 @@
-name: Deploy BULL Pages
+name: Deploy BULL Lab to Pages
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "src/bulldog/**"
+      - "tests/**"
+      - "formal/**"
+      - "pyproject.toml"
+      - ".github/workflows/pages.yml"
   push:
     branches: [main]
     paths:
-      - 'site/**'
-      - '.github/workflows/pages.yml'
+      - "site/**"
+      - "src/bulldog/**"
+      - "tests/**"
+      - "formal/**"
+      - "pyproject.toml"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: bull-pages
   cancel-in-progress: false
 
 jobs:
+  verify-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install BULL and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Enable user namespaces for live sandbox tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if sysctl -n kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          unshare --user --map-root-user --mount --pid --fork --net --ipc true
+
+      - name: Compile trusted runtime
+        run: python -m compileall -q src/bulldog
+
+      - name: Local-host red-team boundary
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q tests/redteam_local_host | tee /tmp/bull-redteam.log
+
+      - name: Full regression suite
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q | tee /tmp/bull-pytest.log
+
+      - name: Validate dashboard frontend assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check site/app.js
+          python - <<'PY'
+          from collections import Counter
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          required = {
+              "runtime-banner",
+              "runtime-state",
+              "runtime-detail",
+              "view-overview",
+              "view-playground",
+              "view-rules",
+              "view-verification",
+              "view-architecture",
+              "request-form",
+              "actor",
+              "operation",
+              "provenance",
+              "resource",
+              "grants",
+              "parent-grants",
+              "evaluate-button",
+              "reset-button",
+              "decision",
+              "events-table",
+              "decision-chart",
+              "browser-status",
+              "build-sha",
+              "pytest-status",
+              "redteam-status",
+              "formal-status",
+              "built-at",
+              "source-hashes",
+          }
+
+          class IdParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if "id" in values:
+                      self.ids.append(values["id"])
+
+          parser = IdParser()
+          parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+          counts = Counter(parser.ids)
+          duplicates = sorted(key for key, value in counts.items() if value > 1)
+          missing = sorted(required - set(parser.ids))
+
+          if duplicates:
+              raise SystemExit("duplicate DOM ids: " + ", ".join(duplicates))
+          if missing:
+              raise SystemExit("missing required DOM ids: " + ", ".join(missing))
+
+          print(f"frontend DOM validation passed: {len(parser.ids)} unique ids")
+          PY
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Fetch pinned TLA+ tools
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar \
+            --output /tmp/tla2tools.jar
+          echo "bee4a54f3ee3d4afc347c3240ec2d9e93b075104  /tmp/tla2tools.jar" \
+            | sha1sum --check --strict
+
+      - name: Parse TLA+ specification
+        shell: bash
+        run: |
+          set -o pipefail
+          java -cp /tmp/tla2tools.jar tla2sany.SANY \
+            formal/tla/BullRuntime.tla | tee /tmp/bull-tla-sany.log
+
+      - name: Model-check BULL runtime invariants
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout 180s java -cp /tmp/tla2tools.jar tlc2.TLC \
+            -deadlock \
+            -workers 1 \
+            -config formal/tla/BullRuntime.cfg \
+            formal/tla/BullRuntime.tla | tee /tmp/bull-tla-tlc.log
+
+      - name: Build static BULL Lab
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp -a site/. _site/
+
+          mkdir -p _site/runtime/bull_core
+          cp site/runtime/lab_api.py _site/runtime/bull_core/lab_api.py
+          rm -f _site/runtime/lab_api.py
+
+          cp src/bulldog/models.py _site/runtime/bull_core/models.py
+          cp src/bulldog/canonicalizer.py _site/runtime/bull_core/canonicalizer.py
+          cp src/bulldog/policy.py _site/runtime/bull_core/policy.py
+          cp src/bulldog/session_guard.py _site/runtime/bull_core/session_guard.py
+
+          cat > _site/runtime/bull_core/__init__.py <<'PY'
+          """BULL browser core assembled from exact repository policy sources."""
+          PY
+
+          touch _site/.nojekyll
+
+          cmp src/bulldog/models.py _site/runtime/bull_core/models.py
+          cmp src/bulldog/canonicalizer.py _site/runtime/bull_core/canonicalizer.py
+          cmp src/bulldog/policy.py _site/runtime/bull_core/policy.py
+          cmp src/bulldog/session_guard.py _site/runtime/bull_core/session_guard.py
+
+      - name: Smoke-test exact browser policy package
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_site/runtime
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from bull_core.lab_api import self_test_json
+
+          result = json.loads(self_test_json())
+          print(json.dumps(result, indent=2, sort_keys=True))
+          Path("/tmp/bull-browser-selftest.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True),
+              encoding="utf-8",
+          )
+          if not result.get("passed"):
+              raise SystemExit("BULL browser core self-test failed")
+          PY
+
+      - name: Generate immutable build evidence
+        env:
+          BULL_COMMIT: ${{ github.sha }}
+          BULL_RUN_ID: ${{ github.run_id }}
+          BULL_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def sha256(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          def test_summary(path):
+              lines = [
+                  line.strip()
+                  for line in Path(path).read_text(
+                      encoding="utf-8", errors="replace"
+                  ).splitlines()
+                  if line.strip()
+              ]
+              for line in reversed(lines):
+                  if "passed" in line or "failed" in line or "error" in line.lower():
+                      return line
+              return lines[-1] if lines else "completed"
+
+          browser = json.loads(
+              Path("/tmp/bull-browser-selftest.json").read_text(encoding="utf-8")
+          )
+
+          evidence = {
+              "repository": "Anharmoniclabs/BULL",
+              "commit": os.environ["BULL_COMMIT"],
+              "run_id": os.environ["BULL_RUN_ID"],
+              "run_number": os.environ["BULL_RUN_NUMBER"],
+              "built_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+              "pyodide_version": "314.0.7",
+              "pytest_summary": test_summary("/tmp/bull-pytest.log"),
+              "redteam_summary": test_summary("/tmp/bull-redteam.log"),
+              "browser_self_test": browser,
+              "gates": {
+                  "compileall": True,
+                  "redteam": True,
+                  "pytest": True,
+                  "tla_parse": True,
+                  "tla_model_check": True,
+                  "browser_core_smoke": True,
+              },
+              "source_hashes": {
+                  "src/bulldog/models.py": sha256("src/bulldog/models.py"),
+                  "src/bulldog/canonicalizer.py": sha256("src/bulldog/canonicalizer.py"),
+                  "src/bulldog/policy.py": sha256("src/bulldog/policy.py"),
+                  "src/bulldog/session_guard.py": sha256("src/bulldog/session_guard.py"),
+                  "site/runtime/lab_api.py": sha256("site/runtime/lab_api.py"),
+              },
+          }
+
+          output = Path("_site/data/verification.json")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(
+              json.dumps(evidence, indent=2, sort_keys=True),
+              encoding="utf-8",
+          )
+          print(output.read_text(encoding="utf-8"))
+          PY
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verify-build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - name: Deploy
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy verified BULL Lab
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
