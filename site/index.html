@@ -8,8 +8,10 @@
   <title>BULL Control — Agent Execution Firewall</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./model-connector.css">
   <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
   <script type="module" src="./app.js"></script>
+  <script defer src="./model-connector.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -185,6 +187,85 @@
           <div class="playground-toolbar">
             <div class="preset-row" id="presets" aria-label="Attack presets"></div>
           </div>
+
+
+          <section class="card hosted-model-card" id="hosted-model">
+            <div class="card-header">
+              <div>
+                <h3>Hosted Open Model Test</h3>
+                <span>
+                  Ask an externally hosted open-weight model for one action proposal,
+                  then evaluate that proposal through BULL's real browser Python core.
+                </span>
+              </div>
+              <span class="tiny-badge">BROWSER DIRECT</span>
+            </div>
+
+            <div class="hosted-model-notice">
+              The model response is untrusted data. BULL evaluates it locally.
+              This page never executes a proposed shell command, persists a key,
+              or sends your key to GitHub Pages.
+            </div>
+
+            <div class="hosted-model-grid">
+              <label>
+                Hosted endpoint
+                <input
+                  id="model-endpoint"
+                  type="url"
+                  placeholder="https://model.example.com/v1"
+                  autocomplete="off"
+                >
+              </label>
+
+              <label>
+                Model ID
+                <input
+                  id="model-id"
+                  type="text"
+                  placeholder="qwen2.5:7b-instruct"
+                  autocomplete="off"
+                >
+              </label>
+
+              <label>
+                Optional visitor API key
+                <input
+                  id="model-api-key"
+                  type="password"
+                  placeholder="Held in memory only"
+                  autocomplete="off"
+                >
+              </label>
+            </div>
+
+            <div class="form-actions hosted-model-actions">
+              <a
+                class="text-button"
+                href="../docs/HOSTED_OPEN_MODEL_CONNECTOR.md"
+                target="_blank"
+                rel="noreferrer"
+              >Connector requirements ↗</a>
+
+              <div>
+                <button id="model-test-button" class="button ghost" type="button">
+                  Test connection
+                </button>
+                <button id="model-run-button" class="button primary" type="button">
+                  Run selected BULL preset with model
+                </button>
+              </div>
+            </div>
+
+            <p id="model-status" class="hosted-model-status" data-kind="idle">
+              Configure an OpenAI-compatible hosted model endpoint.
+            </p>
+
+            <details class="model-proposal-details">
+              <summary>Model action proposal</summary>
+              <pre id="model-proposal-output">No model proposal received.</pre>
+            </details>
+          </section>
 
           <div class="lab-grid">
             <form class="card request-panel" id="request-form">

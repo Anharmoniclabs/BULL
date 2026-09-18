@@ -1,0 +1,114 @@
+
+/* Hosted open-weight model panel */
+.hosted-model-card {
+  margin: 0 0 16px;
+}
+
+.hosted-model-notice {
+  margin: 14px 0;
+  border-left: 2px solid var(--amber);
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.hosted-model-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 10px;
+}
+
+.hosted-model-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.hosted-model-grid input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 9px 10px;
+  background: #080c10;
+  color: var(--text);
+  font: .78rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.hosted-model-grid input:focus {
+  outline: 1px solid var(--blue);
+  border-color: var(--blue);
+}
+
+.hosted-model-actions {
+  align-items: center;
+  margin-top: 12px;
+}
+
+.hosted-model-actions > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hosted-model-status {
+  margin: 14px 0 0;
+  border-left: 2px solid #46515d;
+  padding: 9px 11px;
+  background: #0b1015;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.hosted-model-status[data-kind="running"] {
+  border-color: var(--amber);
+  color: #ffd197;
+}
+
+.hosted-model-status[data-kind="success"] {
+  border-color: var(--green);
+  color: #92efc1;
+}
+
+.hosted-model-status[data-kind="error"] {
+  border-color: var(--red);
+  color: #ff9cab;
+}
+
+.model-proposal-details {
+  margin-top: 12px;
+}
+
+.model-proposal-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .8rem;
+}
+
+.model-proposal-details pre {
+  overflow: auto;
+  max-height: 180px;
+  margin: 9px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px;
+  background: #070a0e;
+  color: #b8d6f6;
+  font: .75rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 850px) {
+  .hosted-model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hosted-model-actions {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+}
