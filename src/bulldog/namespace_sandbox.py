@@ -247,6 +247,7 @@ class NamespaceSandbox:
                             "--pid",
                             "--fork",
                             "--net",
+                            "--ipc",
                             str(self.launcher),
                             str(rootfs),
                             str(project_root),

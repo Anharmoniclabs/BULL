@@ -7,7 +7,9 @@ import json
 import os
 import secrets
 import socket
-from .socket_hardening import accept_authenticated, bind_private_unix_socket
+from .socket_hardening import (
+    HardeningError, accept_authenticated, bind_private_unix_socket,
+)
 import struct
 import threading
 import time
@@ -158,11 +160,13 @@ class SecretBroker:
         assert self._server is not None
         while not self._stop.is_set():
             try:
-                conn, _ = self._server.accept()
+                conn = accept_authenticated(self._server)
             except socket.timeout:
                 continue
             except OSError:
                 break
+            except HardeningError:
+                continue
             with conn:
                 self._handle(conn)
 

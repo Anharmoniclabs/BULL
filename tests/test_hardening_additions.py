@@ -145,3 +145,12 @@ def test_sentinel_on_verdict_fires_on_agent(tmp_path):
     report = sentinel.evaluate()
     assert report.verdict == "agent"
     assert seen and seen[0].verdict == "agent"
+
+
+def test_unshare_invocation_includes_ipc_namespace():
+    import inspect
+    from pathlib import Path
+    from bulldog import namespace_sandbox
+    src = Path(inspect.getsourcefile(namespace_sandbox)).read_text()
+    assert '"--ipc",' in src
+    assert src.index('"--ipc",') < src.index("str(self.launcher),")

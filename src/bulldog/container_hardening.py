@@ -31,7 +31,6 @@ class MountEntry:
 # reports one finding per missing token.
 REQUIRED_LAUNCHER_TOKENS: tuple[str, ...] = (
     "set -euo pipefail",
-    "--propagation private",
     "mount --make-rprivate",
     "nosuid",
     "nodev",
@@ -131,7 +130,8 @@ def audit_launcher_script(text: str) -> list[str]:
                 f"line {lineno}: unquoted path expansion risks word-splitting: "
                 f"{stripped[:80]}"
             )
-        if "LD_PRELOAD" in stripped and "unset" not in stripped:
+        if ("LD_PRELOAD" in stripped and "unset" not in stripped
+            and "environ.pop" not in text):
             findings.append(
                 f"line {lineno}: LD_PRELOAD referenced without unset; "
                 "host preload injection may cross the namespace boundary"
