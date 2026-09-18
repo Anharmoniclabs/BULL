@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from urllib.parse import unquote, urlsplit
 
+from .canonicalizer import is_sensitive_filesystem_resource
 from .models import (
     ActionRequest,
     Capability,
@@ -12,15 +13,6 @@ from .models import (
     has_external_provenance,
 )
 
-
-SENSITIVE_PATH_MARKERS = (
-    "/.ssh/",
-    "/.gnupg/",
-    "/.aws/",
-    "/.config/gcloud/",
-    "/etc/shadow",
-    "/etc/sudoers",
-)
 
 CANARY_MARKERS = (
     "AI_CANARY_KEY",
@@ -32,6 +24,7 @@ CANARY_MARKERS = (
 HIGH_RISK_CAPABILITIES = {
     Capability.CREDENTIAL_READ,
     Capability.SECURITY_CONTROL_WRITE,
+    Capability.FS_WRITE_HOST,
     Capability.PACKAGE_INSTALL,
     Capability.AGENT_SPAWN,
 }
@@ -47,9 +40,18 @@ PERSISTENCE_PATHS = (
     "/.zshrc",
     "/.profile",
     "/.bash_profile",
+    "/.ssh/authorized_keys",
     "/.config/autostart/",
     "/.config/systemd/",
     "/etc/systemd/",
+    "/etc/init.d/",
+    "/etc/rc.local",
+    "/etc/profile",
+    "/etc/profile.d/",
+    "/etc/environment",
+    "/etc/ld.so.preload",
+    "/etc/modules-load.d/",
+    "/etc/sysctl.d/",
     "/etc/cron",
     "/crontab",
 )
@@ -164,7 +166,7 @@ class DeterministicPolicy:
                 hard_block=True,
             )
 
-        if any(marker in normalized for marker in SENSITIVE_PATH_MARKERS):
+        if is_sensitive_filesystem_resource(normalized):
             reasons.append("resource is security-sensitive")
             risk += 0.70
 
@@ -178,6 +180,7 @@ class DeterministicPolicy:
             and action.capability
             in {
                 Capability.FS_WRITE_HOME,
+                Capability.FS_WRITE_HOST,
                 Capability.SECURITY_CONTROL_WRITE,
             }
         ):
@@ -193,6 +196,28 @@ class DeterministicPolicy:
                 "action is downstream of untrusted external content"
             )
             risk += 0.25
+
+        # An externally influenced agent should not silently gain visibility
+        # into the host or user home merely because a broad capability was
+        # accidentally granted. Require explicit review.
+        if external and action.capability in {
+            Capability.FS_READ_HOME,
+            Capability.FS_READ_HOST,
+        }:
+            reasons.append(
+                "externally influenced non-project filesystem read requires review"
+            )
+            risk = max(risk, 0.90)
+
+        if external and action.capability in {
+            Capability.FS_WRITE_HOME,
+            Capability.FS_WRITE_HOST,
+            Capability.SECURITY_CONTROL_WRITE,
+        }:
+            reasons.append(
+                "externally influenced non-project filesystem write requires review"
+            )
+            risk = max(risk, 0.95)
 
         if (
             action.capability == Capability.CREDENTIAL_READ

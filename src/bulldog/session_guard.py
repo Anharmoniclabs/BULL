@@ -13,6 +13,13 @@ _DECISION_ORDER = {
 }
 
 
+RESTRICTED_DECISIONS = {
+    Decision.SANDBOX,
+    Decision.ESCALATE,
+    Decision.DENY,
+}
+
+
 PROJECT_CAPABILITIES = {
     Capability.FS_READ_PROJECT,
     Capability.FS_WRITE_PROJECT,
@@ -20,6 +27,10 @@ PROJECT_CAPABILITIES = {
 
 
 PRIVILEGED_CAPABILITIES = {
+    Capability.FS_READ_HOME,
+    Capability.FS_WRITE_HOME,
+    Capability.FS_READ_HOST,
+    Capability.FS_WRITE_HOST,
     Capability.CREDENTIAL_READ,
     Capability.PROCESS_EXEC,
     Capability.NETWORK_POST,
@@ -38,7 +49,19 @@ class SessionEvent:
 @dataclass
 class SessionGuard:
     max_history: int = 32
+    restricted_window: int = 6
+    restricted_threshold: int = 3
     history: dict[str, list[SessionEvent]] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.max_history < 1:
+            raise ValueError("max_history must be positive")
+        if self.restricted_threshold < 2:
+            raise ValueError("restricted_threshold must be >= 2")
+        if self.restricted_window < self.restricted_threshold:
+            raise ValueError(
+                "restricted_window must be >= restricted_threshold"
+            )
 
     def session_key(self, action: ActionRequest) -> str:
         """
@@ -109,15 +132,29 @@ class SessionGuard:
             previous = previous_results[-1]
             previous_action = previous_actions[-1]
 
-            if (
-                previous.decision in {
-                    Decision.SANDBOX,
-                    Decision.ESCALATE,
-                    Decision.DENY,
-                }
-                and action.capability != previous_action.capability
-            ):
-                flags.append("ALTERNATE_PATH_AFTER_RESTRICTION")
+            if previous.decision in RESTRICTED_DECISIONS:
+                if action.capability != previous_action.capability:
+                    flags.append("ALTERNATE_PATH_AFTER_RESTRICTION")
+                else:
+                    flags.append("RETRY_AFTER_RESTRICTION")
+
+        recent_restricted = sum(
+            result.decision in RESTRICTED_DECISIONS
+            for result in previous_results[-self.restricted_window:]
+        )
+
+        # Any session-behavior flag will itself cause at least ESCALATE,
+        # therefore it counts as a restricted attempt for pressure tracking.
+        current_is_restricted = (
+            evaluation.decision in RESTRICTED_DECISIONS
+            or bool(flags)
+        )
+
+        if current_is_restricted:
+            recent_restricted += 1
+
+        if recent_restricted >= self.restricted_threshold:
+            flags.append("REPEATED_RESTRICTED_ATTEMPT")
 
         recent_caps = [
             a.capability
@@ -130,7 +167,15 @@ class SessionGuard:
         result = evaluation
 
         if flags:
-            behavioral_decision = Decision.ESCALATE
+            repeated_restriction = (
+                "REPEATED_RESTRICTED_ATTEMPT" in flags
+            )
+
+            behavioral_decision = (
+                Decision.DENY
+                if repeated_restriction
+                else Decision.ESCALATE
+            )
 
             decision = max(
                 evaluation.decision,
@@ -138,7 +183,11 @@ class SessionGuard:
                 key=lambda d: _DECISION_ORDER[d],
             )
 
-            risk = max(evaluation.risk, 0.90)
+            risk = (
+                1.0
+                if repeated_restriction
+                else max(evaluation.risk, 0.90)
+            )
 
             reasons = evaluation.reasons + tuple(
                 f"session behavior: {flag}"
@@ -149,7 +198,10 @@ class SessionGuard:
                 decision=decision,
                 risk=risk,
                 reasons=reasons,
-                hard_block=evaluation.hard_block,
+                hard_block=(
+                    evaluation.hard_block
+                    or repeated_restriction
+                ),
             )
 
         self._remember(events, action, result)

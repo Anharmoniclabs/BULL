@@ -26,6 +26,8 @@ class Capability(str, Enum):
     FS_WRITE_PROJECT = "fs.write.project"
     FS_READ_HOME = "fs.read.home"
     FS_WRITE_HOME = "fs.write.home"
+    FS_READ_HOST = "fs.read.host"
+    FS_WRITE_HOST = "fs.write.host"
     CREDENTIAL_READ = "credential.read"
     PROCESS_EXEC = "process.exec"
     NETWORK_OUTBOUND = "network.outbound"
