@@ -73,6 +73,69 @@ jobs:
           set -o pipefail
           python -m pytest -q | tee /tmp/bull-pytest.log
 
+      - name: Validate dashboard frontend assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check site/app.js
+          python - <<'PY'
+          from collections import Counter
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          required = {
+              "runtime-banner",
+              "runtime-state",
+              "runtime-detail",
+              "view-overview",
+              "view-playground",
+              "view-rules",
+              "view-verification",
+              "view-architecture",
+              "request-form",
+              "actor",
+              "operation",
+              "provenance",
+              "resource",
+              "grants",
+              "parent-grants",
+              "evaluate-button",
+              "reset-button",
+              "decision",
+              "events-table",
+              "decision-chart",
+              "browser-status",
+              "build-sha",
+              "pytest-status",
+              "redteam-status",
+              "formal-status",
+              "built-at",
+              "source-hashes",
+          }
+
+          class IdParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  if "id" in values:
+                      self.ids.append(values["id"])
+
+          parser = IdParser()
+          parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+          counts = Counter(parser.ids)
+          duplicates = sorted(key for key, value in counts.items() if value > 1)
+          missing = sorted(required - set(parser.ids))
+
+          if duplicates:
+              raise SystemExit("duplicate DOM ids: " + ", ".join(duplicates))
+          if missing:
+              raise SystemExit("missing required DOM ids: " + ", ".join(missing))
+
+          print(f"frontend DOM validation passed: {len(parser.ids)} unique ids")
+          PY
+
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
