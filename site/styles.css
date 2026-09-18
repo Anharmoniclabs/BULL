@@ -1701,3 +1701,23 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .domain-card.root { margin-bottom: 10px; }
   .site-footer { flex-direction: column; }
 }
+
+
+@media (max-width: 650px) {
+  html { scroll-padding-top: 70px; }
+  .longform-sidebar { overflow: hidden; }
+  .longform-sidebar .side-nav {
+    min-width: 0;
+    max-width: calc(100vw - 58px);
+    margin-left: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .longform-sidebar .side-nav::-webkit-scrollbar { display: none; }
+  .longform-sidebar .nav-item {
+    flex: 0 0 34px;
+    width: 34px;
+    min-height: 34px;
+  }
+}
