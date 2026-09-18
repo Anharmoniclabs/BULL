@@ -3,18 +3,18 @@ from __future__ import annotations
 import ctypes
 import errno
 import os
+import stat
 from pathlib import Path
 
 
 class LandlockUnavailable(RuntimeError):
-    pass
+    """Raised when the kernel does not make Landlock available."""
 
 
 class LandlockError(RuntimeError):
-    pass
+    """Raised when BULL's Landlock policy cannot be installed safely."""
 
 
-# Linux UAPI constants.
 LANDLOCK_CREATE_RULESET_VERSION = 1
 LANDLOCK_RULE_PATH_BENEATH = 1
 
@@ -64,7 +64,6 @@ class _PathBeneathAttr(ctypes.Structure):
 
 libc = ctypes.CDLL(None, use_errno=True)
 
-# landlock syscall numbers are defined in asm-generic and match x86_64/aarch64.
 _SYS_CREATE_RULESET = 444
 _SYS_ADD_RULE = 445
 _SYS_RESTRICT_SELF = 446
@@ -72,12 +71,15 @@ _SYS_RESTRICT_SELF = 446
 
 def _syscall(number: int, *args) -> int:
     result = int(libc.syscall(number, *args))
-    if result < 0:
-        err = ctypes.get_errno()
-        if err in {errno.ENOSYS, errno.EOPNOTSUPP, errno.EINVAL}:
-            raise LandlockUnavailable(os.strerror(err))
-        raise LandlockError(f"landlock syscall failed: [errno {err}] {os.strerror(err)}")
-    return result
+    if result >= 0:
+        return result
+
+    err = ctypes.get_errno()
+    if err in {errno.ENOSYS, errno.EOPNOTSUPP}:
+        raise LandlockUnavailable(os.strerror(err))
+    raise LandlockError(
+        f"landlock syscall {number} failed: [errno {err}] {os.strerror(err)}"
+    )
 
 
 def _handled_access(abi: int) -> int:
@@ -93,33 +95,58 @@ def _add_path_rule(ruleset_fd: int, path: str, allowed: int) -> None:
     target = Path(path)
     if not target.exists():
         return
-    path_fd = os.open(
-        target,
-        getattr(os, "O_PATH", os.O_RDONLY) | os.O_CLOEXEC | os.O_NOFOLLOW,
-    )
+
+    flags = getattr(os, "O_PATH", os.O_RDONLY) | os.O_CLOEXEC | os.O_NOFOLLOW
+    path_fd = os.open(target, flags)
     try:
+        # Use fstat on the opened descriptor; do not re-resolve the pathname.
+        # Directory-only rights are invalid for a regular-file parent FD.
+        is_directory = stat.S_ISDIR(os.fstat(path_fd).st_mode)
+        if not is_directory:
+            allowed &= ~(
+                ACCESS_READ_DIR
+                | ACCESS_REMOVE_DIR
+                | ACCESS_MAKE_CHAR
+                | ACCESS_MAKE_DIR
+                | ACCESS_MAKE_REG
+                | ACCESS_MAKE_SOCK
+                | ACCESS_MAKE_FIFO
+                | ACCESS_MAKE_BLOCK
+                | ACCESS_MAKE_SYM
+                | ACCESS_REFER
+            )
+
+        if allowed == 0:
+            return
+
         attr = _PathBeneathAttr(
             allowed_access=allowed,
             parent_fd=path_fd,
         )
-        _syscall(
-            _SYS_ADD_RULE,
-            ruleset_fd,
-            LANDLOCK_RULE_PATH_BENEATH,
-            ctypes.byref(attr),
-            0,
-        )
+        try:
+            _syscall(
+                _SYS_ADD_RULE,
+                ruleset_fd,
+                LANDLOCK_RULE_PATH_BENEATH,
+                ctypes.byref(attr),
+                0,
+            )
+        except (LandlockError, LandlockUnavailable) as exc:
+            raise LandlockError(
+                f"failed Landlock rule for {path!r}, "
+                f"allowed_access=0x{allowed:x}: {exc}"
+            ) from exc
     finally:
         os.close(path_fd)
 
 
 def install_bull_landlock(*, workspace_writable: bool = False) -> int:
-    """Restrict filesystem access to the sandbox root's explicit mounts.
+    """Install BULL's least-privilege filesystem Landlock policy.
 
-    Landlock is layered after chroot/mount isolation and before seccomp. Strict
-    production treats absence of Landlock as a backend-certification failure.
+    The caller is already inside BULL's private mount namespace and chroot.
+    This policy is additive: it limits access to explicit runtime, workspace,
+    temporary, and device roots. Failure raises; strict mode must not degrade.
     """
-
     abi = _syscall(
         _SYS_CREATE_RULESET,
         0,
@@ -127,17 +154,52 @@ def install_bull_landlock(*, workspace_writable: bool = False) -> int:
         LANDLOCK_CREATE_RULESET_VERSION,
     )
     handled = _handled_access(abi)
-    attr = _RulesetAttr(handled_access_fs=handled)
+
+    ruleset_attr = _RulesetAttr(handled_access_fs=handled)
     ruleset_fd = _syscall(
         _SYS_CREATE_RULESET,
-        ctypes.byref(attr),
-        ctypes.sizeof(attr),
+        ctypes.byref(ruleset_attr),
+        ctypes.sizeof(ruleset_attr),
         0,
     )
+
     try:
-        read_only = ACCESS_EXECUTE | ACCESS_READ_FILE | ACCESS_READ_DIR
-        read_write = handled
-        device_access = ACCESS_READ_FILE | ACCESS_WRITE_FILE | ACCESS_READ_DIR
+        read_only = (
+            ACCESS_EXECUTE
+            | ACCESS_READ_FILE
+            | ACCESS_READ_DIR
+        ) & handled
+
+        workspace_write = (
+            ACCESS_EXECUTE
+            | ACCESS_READ_FILE
+            | ACCESS_READ_DIR
+            | ACCESS_WRITE_FILE
+            | ACCESS_REMOVE_FILE
+            | ACCESS_REMOVE_DIR
+            | ACCESS_MAKE_DIR
+            | ACCESS_MAKE_REG
+            | ACCESS_MAKE_SYM
+            | ACCESS_TRUNCATE
+        ) & handled
+
+        tmp_write = (
+            ACCESS_READ_FILE
+            | ACCESS_READ_DIR
+            | ACCESS_WRITE_FILE
+            | ACCESS_REMOVE_FILE
+            | ACCESS_REMOVE_DIR
+            | ACCESS_MAKE_DIR
+            | ACCESS_MAKE_REG
+            | ACCESS_MAKE_SYM
+            | ACCESS_TRUNCATE
+        ) & handled
+
+        device_access = (
+            ACCESS_READ_FILE
+            | ACCESS_WRITE_FILE
+            | ACCESS_READ_DIR
+        ) & handled
 
         for path in (
             "/usr",
@@ -148,15 +210,15 @@ def install_bull_landlock(*, workspace_writable: bool = False) -> int:
             "/etc",
             "/bull_runtime",
         ):
-            _add_path_rule(ruleset_fd, path, read_only & handled)
+            _add_path_rule(ruleset_fd, path, read_only)
 
         _add_path_rule(
             ruleset_fd,
             "/workspace",
-            (read_write if workspace_writable else read_only) & handled,
+            workspace_write if workspace_writable else read_only,
         )
-        _add_path_rule(ruleset_fd, "/tmp", read_write & handled)
-        _add_path_rule(ruleset_fd, "/dev", device_access & handled)
+        _add_path_rule(ruleset_fd, "/tmp", tmp_write)
+        _add_path_rule(ruleset_fd, "/dev", device_access)
 
         _syscall(_SYS_RESTRICT_SELF, ruleset_fd, 0)
     finally:
