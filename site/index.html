@@ -3,226 +3,356 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="BULL is an open-source execution-governance runtime for AI agents. Run the real deterministic BULL policy engine in your browser.">
-  <meta name="theme-color" content="#090b0d">
-  <title>BULL Lab — Open AI Agent Execution Governance</title>
+  <meta name="description" content="BULL is an open-source execution-governance runtime for AI agents. Test the real deterministic BULL policy engine in your browser.">
+  <meta name="theme-color" content="#070809">
+  <title>BULL Control — Agent Execution Firewall</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="./styles.css">
   <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
   <script type="module" src="./app.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#top" aria-label="BULL home"><span>BULL</span><b>_</b></a>
-    <nav aria-label="Primary navigation">
-      <a href="#lab">Playground</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#verification">Verification</a>
-      <a href="https://github.com/Anharmoniclabs/BULL">GitHub ↗</a>
-    </nav>
-  </header>
-
-  <main id="top">
-    <section class="hero shell">
-      <div class="eyebrow">OPEN-SOURCE EXECUTION GOVERNANCE</div>
-      <h1>Untrusted input should not become <em>execution authority.</em></h1>
-      <p class="hero-copy">
-        BULL sits between an AI agent and sensitive host capabilities. This site runs
-        BULL's real deterministic canonicalization, policy, and session-behavior code
-        locally in your browser.
-      </p>
-      <div class="hero-actions">
-        <a class="button primary" href="#lab">Run BULL</a>
-        <a class="button" href="https://github.com/Anharmoniclabs/BULL">Inspect source</a>
-      </div>
-      <div class="runtime-banner" id="runtime-banner">
-        <span class="pulse" aria-hidden="true"></span>
-        <strong id="runtime-state">BULL browser runtime: booting</strong>
-        <span id="runtime-detail">Loading Python/WebAssembly and repository policy sources…</span>
-      </div>
-    </section>
-
-    <section class="truth shell" aria-label="Runtime truth boundary">
-      <article>
-        <span class="tag real">RUNS HERE</span>
-        <h2>Real BULL policy path</h2>
-        <p>The Pages build copies the exact repository versions of <code>models.py</code>, <code>canonicalizer.py</code>, <code>policy.py</code>, and <code>session_guard.py</code>. Pyodide executes those Python files in-browser.</p>
-      </article>
-      <article>
-        <span class="tag host">HOST-ONLY</span>
-        <h2>No fake kernel claims</h2>
-        <p>GitHub Pages cannot run Linux namespaces, seccomp, Landlock, cgroups, malware scanning, secret brokers, or pinned egress. Those controls are clearly marked host-only and are not simulated here.</p>
-      </article>
-    </section>
-
-    <section class="lab-section shell" id="lab">
-      <div class="section-head">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark">B</div>
         <div>
-          <div class="eyebrow">BULL PLAYGROUND</div>
-          <h2>Try to cross the boundary.</h2>
+          <strong>BULL</strong>
+          <span>CONTROL</span>
         </div>
-        <p>The requested capability is derived by BULL's canonicalizer. You cannot manually choose the requested capability and bypass derivation.</p>
       </div>
 
-      <div class="preset-row" id="presets" aria-label="Attack presets"></div>
+      <div class="sidebar-runtime" id="runtime-banner">
+        <span class="status-dot"></span>
+        <div>
+          <strong id="runtime-state">Booting policy runtime</strong>
+          <span id="runtime-detail">Loading repository Python…</span>
+        </div>
+      </div>
 
-      <div class="lab-grid">
-        <form class="panel request-panel" id="request-form">
-          <div class="panel-title">
-            <span>01</span>
-            <h3>Action proposal</h3>
+      <nav class="side-nav" aria-label="BULL console">
+        <button class="nav-item active" data-view="overview" type="button">
+          <span class="nav-icon">⌂</span><span>Overview</span>
+        </button>
+        <button class="nav-item" data-view="playground" type="button">
+          <span class="nav-icon">⌁</span><span>Playground</span>
+        </button>
+        <button class="nav-item" data-view="rules" type="button">
+          <span class="nav-icon">⌘</span><span>Rules</span>
+        </button>
+        <button class="nav-item" data-view="verification" type="button">
+          <span class="nav-icon">✓</span><span>Verification</span>
+        </button>
+        <button class="nav-item" data-view="architecture" type="button">
+          <span class="nav-icon">◇</span><span>Architecture</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <a href="https://github.com/Anharmoniclabs/BULL">GitHub ↗</a>
+        <span>Apache-2.0</span>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="breadcrumb">BULL / <span id="view-label">Overview</span></div>
+          <h1 id="view-title">Security Overview</h1>
+          <p id="view-subtitle">Real decisions from this browser session. No fabricated traffic.</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="button ghost" data-view-target="verification" type="button">Build evidence</button>
+          <button class="button primary" data-view-target="playground" type="button">Run a test</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="view active" id="view-overview" data-title="Security Overview" data-subtitle="Real decisions from this browser session. No fabricated traffic.">
+          <div class="overview-grid">
+            <article class="card protection-card">
+              <div class="shield-wrap">
+                <div class="shield-icon">✓</div>
+              </div>
+              <h2>Policy engine active</h2>
+              <p>Repository Python is running locally in this browser.</p>
+
+              <div class="status-list">
+                <div><span>Browser policy core</span><strong class="ok" id="overview-browser-status">BOOTING</strong></div>
+                <div><span>Linux enforcement</span><strong class="warn">HOST ONLY</strong></div>
+                <div><span>Session events</span><strong id="overview-session-count">0</strong></div>
+              </div>
+            </article>
+
+            <article class="card traffic-card">
+              <div class="metric-strip">
+                <div class="metric-cell">
+                  <span>All decisions</span>
+                  <strong id="metric-all">0</strong>
+                </div>
+                <div class="metric-cell">
+                  <span class="metric-key allow"></span><span>Allowed</span>
+                  <strong id="metric-allow">0</strong>
+                </div>
+                <div class="metric-cell">
+                  <span class="metric-key restrict"></span><span>Restricted</span>
+                  <strong id="metric-restrict">0</strong>
+                </div>
+                <div class="metric-cell">
+                  <span class="metric-key deny"></span><span>Denied</span>
+                  <strong id="metric-deny">0</strong>
+                </div>
+              </div>
+              <div class="chart-head">
+                <div>
+                  <strong>Decision activity</strong>
+                  <span>Cumulative outcomes · current browser session</span>
+                </div>
+                <span class="tiny-badge">LIVE SESSION</span>
+              </div>
+              <div class="chart-shell">
+                <div class="chart-y-labels"><span>max</span><span>0</span></div>
+                <svg id="decision-chart" viewBox="0 0 760 240" preserveAspectRatio="none" role="img" aria-label="Decision activity chart">
+                  <line x1="0" y1="30" x2="760" y2="30" class="grid-line"/>
+                  <line x1="0" y1="90" x2="760" y2="90" class="grid-line"/>
+                  <line x1="0" y1="150" x2="760" y2="150" class="grid-line"/>
+                  <line x1="0" y1="210" x2="760" y2="210" class="grid-line"/>
+                  <path id="chart-all" class="chart-line all" d=""/>
+                  <path id="chart-allow" class="chart-line allow" d=""/>
+                  <path id="chart-restrict" class="chart-line restrict" d=""/>
+                  <path id="chart-deny" class="chart-line deny" d=""/>
+                </svg>
+                <div class="chart-empty" id="chart-empty">
+                  Run a Playground test to generate real session telemetry.
+                </div>
+              </div>
+            </article>
           </div>
 
-          <label>
-            Agent / session
-            <input id="actor" name="actor" value="browser-agent" autocomplete="off">
-          </label>
+          <div class="dashboard-row">
+            <article class="card panel-card">
+              <div class="card-header">
+                <div><h3>Alerts</h3><span>Non-allow outcomes from this session</span></div>
+                <button class="text-button" data-view-target="playground" type="button">Test BULL →</button>
+              </div>
+              <div class="feed-list" id="alert-feed">
+                <div class="empty-row">No alerts yet.</div>
+              </div>
+            </article>
 
-          <div class="two-col">
-            <label>
-              Operation
-              <select id="operation" name="operation">
-                <option value="read">read</option>
-                <option value="write">write</option>
-                <option value="exec">exec</option>
-                <option value="credential.read">credential.read</option>
-                <option value="fetch">fetch</option>
-                <option value="post">post</option>
-                <option value="spawn">spawn</option>
-                <option value="message">message</option>
-              </select>
-            </label>
-            <label>
-              Provenance
-              <select id="provenance" name="provenance">
-                <option value="human">human</option>
-                <option value="local_trusted">local_trusted</option>
-                <option value="repository">repository</option>
-                <option value="internet" selected>internet</option>
-                <option value="external_agent">external_agent</option>
-                <option value="unknown">unknown</option>
-              </select>
-            </label>
+            <article class="card panel-card">
+              <div class="card-header">
+                <div><h3>Active policy controls</h3><span>Controls executed by the browser-safe BULL core</span></div>
+                <button class="text-button" data-view-target="rules" type="button">View rules →</button>
+              </div>
+              <div class="rule-list compact">
+                <div><span>Capability grants</span><b class="badge core">CORE</b></div>
+                <div><span>Project-root containment</span><b class="badge core">CORE</b></div>
+                <div><span>Parent authority ceiling</span><b class="badge core">CORE</b></div>
+                <div><span>External credential block</span><b class="badge core">CORE</b></div>
+                <div><span>Session behavior guard</span><b class="badge core">CORE</b></div>
+                <div><span>Namespace / seccomp / Landlock</span><b class="badge host">HOST</b></div>
+              </div>
+            </article>
           </div>
 
-          <label>
-            Resource
-            <input id="resource" name="resource" value="/workspace/README.md" autocomplete="off" spellcheck="false">
-          </label>
-
-          <fieldset>
-            <legend>Explicitly granted capability envelope</legend>
-            <div class="cap-grid" id="grants"></div>
-          </fieldset>
-
-          <label class="switch-row">
-            <input type="checkbox" id="parent-enabled">
-            <span>Enforce a parent-agent capability ceiling</span>
-          </label>
-
-          <fieldset id="parent-fieldset" disabled>
-            <legend>Parent capability ceiling</legend>
-            <div class="cap-grid" id="parent-grants"></div>
-          </fieldset>
-
-          <div class="form-actions">
-            <button class="button primary" id="evaluate-button" type="submit" disabled>Evaluate through BULL</button>
-            <button class="button" id="reset-button" type="button" disabled>Reset session history</button>
-          </div>
-
-          <p class="microcopy">SessionGuard remembers behavior for the current agent until you reset it or change the agent name.</p>
-        </form>
-
-        <section class="panel result-panel" aria-live="polite">
-          <div class="panel-title">
-            <span>02</span>
-            <h3>Decision trace</h3>
-          </div>
-
-          <div class="decision idle" id="decision">
-            <small>DECISION</small>
-            <strong>WAITING</strong>
-          </div>
-
-          <dl class="facts">
-            <div><dt>Stage</dt><dd id="stage">—</dd></div>
-            <div><dt>Derived capability</dt><dd id="derived-capability">—</dd></div>
-            <div><dt>Canonical resource</dt><dd id="canonical-resource">—</dd></div>
-            <div><dt>Risk</dt><dd id="risk">—</dd></div>
-            <div><dt>Hard block</dt><dd id="hard-block">—</dd></div>
-          </dl>
-
-          <div class="reason-box">
-            <h4>Why</h4>
-            <ol id="reasons"><li>Submit an action to execute BULL.</li></ol>
-          </div>
-
-          <details>
-            <summary>Raw evaluation JSON</summary>
-            <pre id="raw-output">{}</pre>
-          </details>
+          <article class="card events-card">
+            <div class="card-header">
+              <div><h3>Decision events</h3><span>Only actions actually evaluated during this browser session</span></div>
+              <button class="text-button" id="clear-dashboard" type="button">Clear session UI</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Agent</th>
+                    <th>Action</th>
+                    <th>Capability</th>
+                    <th>Decision</th>
+                    <th>Risk</th>
+                  </tr>
+                </thead>
+                <tbody id="events-table">
+                  <tr><td colspan="6" class="empty-cell">No decision events yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
         </section>
-      </div>
-    </section>
 
-    <section class="architecture shell" id="architecture">
-      <div class="section-head">
-        <div>
-          <div class="eyebrow">TRUST PIPELINE</div>
-          <h2>What the browser proves — and where it stops.</h2>
-        </div>
-      </div>
-      <div class="pipeline">
-        <div class="node live"><b>Action proposal</b><span>visitor input</span></div>
-        <i>→</i>
-        <div class="node live"><b>Canonicalization</b><span>real BULL Python</span></div>
-        <i>→</i>
-        <div class="node live"><b>Capability policy</b><span>real BULL Python</span></div>
-        <i>→</i>
-        <div class="node live"><b>Session guard</b><span>real BULL Python</span></div>
-        <i>→</i>
-        <div class="node host"><b>Host enforcement</b><span>Linux deployment only</span></div>
-      </div>
-      <div class="host-controls">
-        <span>namespace isolation</span><span>seccomp</span><span>Landlock</span><span>cgroups</span>
-        <span>immutable snapshots</span><span>malware scanning</span><span>secret broker</span><span>pinned egress</span>
-      </div>
-    </section>
+        <section class="view" id="view-playground" data-title="BULL Playground" data-subtitle="Run an action through BULL's actual canonicalizer, deterministic policy, and session guard.">
+          <div class="playground-toolbar">
+            <div class="preset-row" id="presets" aria-label="Attack presets"></div>
+          </div>
 
-    <section class="verification shell" id="verification">
-      <div class="section-head">
-        <div>
-          <div class="eyebrow">BUILD EVIDENCE</div>
-          <h2>Deployed only after verification gates pass.</h2>
-        </div>
-        <a class="text-link" href="https://github.com/Anharmoniclabs/BULL/actions">Open Actions ↗</a>
-      </div>
+          <div class="lab-grid">
+            <form class="card request-panel" id="request-form">
+              <div class="card-header">
+                <div><h3>Action proposal</h3><span>BULL derives the requested capability from this proposal.</span></div>
+                <span class="tiny-badge">INPUT</span>
+              </div>
 
-      <div class="verification-grid">
-        <article class="metric"><span>Commit</span><strong id="build-sha">loading…</strong></article>
-        <article class="metric"><span>Regression suite</span><strong id="pytest-status">loading…</strong></article>
-        <article class="metric"><span>Local-host red team</span><strong id="redteam-status">loading…</strong></article>
-        <article class="metric"><span>TLA+ model check</span><strong id="formal-status">loading…</strong></article>
-        <article class="metric"><span>Browser core self-test</span><strong id="browser-status">loading…</strong></article>
-        <article class="metric"><span>Built</span><strong id="built-at">loading…</strong></article>
-      </div>
+              <label>
+                Agent / session
+                <input id="actor" name="actor" value="browser-agent" autocomplete="off">
+              </label>
 
-      <details class="evidence">
-        <summary>Exact source hashes used by this browser build</summary>
-        <pre id="source-hashes">loading…</pre>
-      </details>
-    </section>
+              <div class="two-col">
+                <label>
+                  Operation
+                  <select id="operation" name="operation">
+                    <option value="read">read</option>
+                    <option value="write">write</option>
+                    <option value="exec">exec</option>
+                    <option value="credential.read">credential.read</option>
+                    <option value="fetch">fetch</option>
+                    <option value="post">post</option>
+                    <option value="spawn">spawn</option>
+                    <option value="message">message</option>
+                  </select>
+                </label>
+                <label>
+                  Provenance
+                  <select id="provenance" name="provenance">
+                    <option value="human">human</option>
+                    <option value="local_trusted">local_trusted</option>
+                    <option value="repository">repository</option>
+                    <option value="internet" selected>internet</option>
+                    <option value="external_agent">external_agent</option>
+                    <option value="unknown">unknown</option>
+                  </select>
+                </label>
+              </div>
 
-    <section class="limits shell">
-      <div class="eyebrow">SECURITY BOUNDARY</div>
-      <h2>What this site does not claim.</h2>
-      <p>This browser lab demonstrates deterministic BULL policy behavior. It is not a Linux enforcement boundary and does not execute arbitrary visitor code. Production BULL still depends on the trusted host Python process, BULL trusted computing base, and Linux kernel. The project has not undergone an independent third-party security audit.</p>
-    </section>
-  </main>
+              <label>
+                Resource
+                <input id="resource" name="resource" value="/workspace/README.md" autocomplete="off" spellcheck="false">
+              </label>
 
-  <footer class="shell footer">
-    <div><strong>BULL</strong> — Blocking Unauthorized Logic Loopholes</div>
-    <div>Apache-2.0 · <a href="https://github.com/Anharmoniclabs/BULL">source</a> · <a href="https://github.com/Anharmoniclabs/BULL/security">security</a></div>
-  </footer>
+              <fieldset>
+                <legend>Granted capability envelope</legend>
+                <div class="cap-grid" id="grants"></div>
+              </fieldset>
+
+              <label class="switch-row">
+                <input type="checkbox" id="parent-enabled">
+                <span>Apply parent-agent authority ceiling</span>
+              </label>
+
+              <fieldset id="parent-fieldset" disabled>
+                <legend>Parent capability ceiling</legend>
+                <div class="cap-grid" id="parent-grants"></div>
+              </fieldset>
+
+              <div class="form-actions">
+                <button class="button primary" id="evaluate-button" type="submit" disabled>Evaluate through BULL</button>
+                <button class="button ghost" id="reset-button" type="button" disabled>Reset agent history</button>
+              </div>
+            </form>
+
+            <section class="card result-panel" aria-live="polite">
+              <div class="card-header">
+                <div><h3>Decision trace</h3><span>Direct result from the BULL Python core.</span></div>
+                <span class="tiny-badge">OUTPUT</span>
+              </div>
+
+              <div class="decision idle" id="decision">
+                <small>DECISION</small>
+                <strong>WAITING</strong>
+              </div>
+
+              <dl class="facts">
+                <div><dt>Stage</dt><dd id="stage">—</dd></div>
+                <div><dt>Derived capability</dt><dd id="derived-capability">—</dd></div>
+                <div><dt>Canonical resource</dt><dd id="canonical-resource">—</dd></div>
+                <div><dt>Risk</dt><dd id="risk">—</dd></div>
+                <div><dt>Hard block</dt><dd id="hard-block">—</dd></div>
+              </dl>
+
+              <div class="reason-box">
+                <h4>Why BULL returned this decision</h4>
+                <ol id="reasons"><li>Submit an action to execute BULL.</li></ol>
+              </div>
+
+              <details>
+                <summary>Raw evaluation JSON</summary>
+                <pre id="raw-output">{}</pre>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-rules" data-title="Policy Rules" data-subtitle="A clean map of what runs in-browser versus what requires a Linux BULL deployment.">
+          <div class="rules-grid">
+            <article class="card">
+              <div class="card-header"><div><h3>Browser core</h3><span>Executed by the real deployed Python sources.</span></div><b class="badge core">LIVE HERE</b></div>
+              <div class="rule-detail-list">
+                <div><strong>Explicit capability grant</strong><p>DENY when the derived capability was not explicitly granted.</p></div>
+                <div><strong>Parent authority ceiling</strong><p>DENY when a child exercises authority its parent does not hold.</p></div>
+                <div><strong>Project-root containment</strong><p>Reject or deny traversal and project-scoped access outside <code>/workspace</code>.</p></div>
+                <div><strong>Canary / honeypot resources</strong><p>Hard block access to BULL canary markers.</p></div>
+                <div><strong>External credential access</strong><p>Hard block credential reads downstream of untrusted external content.</p></div>
+                <div><strong>External execution review</strong><p>Escalate externally influenced process execution.</p></div>
+                <div><strong>Session behavior guard</strong><p>Detect goal drift, authority shifts, alternate paths, and tool shopping across actions.</p></div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-header"><div><h3>Linux host enforcement</h3><span>Real BULL controls, but not executable on GitHub Pages.</span></div><b class="badge host">HOST ONLY</b></div>
+              <div class="rule-detail-list">
+                <div><strong>Linux namespaces</strong><p>User, mount, PID, network, and IPC isolation.</p></div>
+                <div><strong>Seccomp + Landlock</strong><p>Syscall filtering and filesystem enforcement.</p></div>
+                <div><strong>Immutable execution snapshots</strong><p>Scan-to-execute filesystem binding.</p></div>
+                <div><strong>Scoped secrets + pinned egress</strong><p>Brokered credentials and authority-bound outbound networking.</p></div>
+                <div><strong>Resource limits</strong><p>CPU, process, output, and memory constraints.</p></div>
+                <div><strong>Tamper-evident audit trail</strong><p>Hash-chained records and remote audit anchoring in production deployments.</p></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-verification" data-title="Verification" data-subtitle="Evidence generated by the exact GitHub Actions build that deployed this site.">
+          <div class="verification-grid">
+            <article class="card metric-card"><span>Commit</span><strong id="build-sha">loading…</strong></article>
+            <article class="card metric-card"><span>Regression suite</span><strong id="pytest-status">loading…</strong></article>
+            <article class="card metric-card"><span>Local-host red team</span><strong id="redteam-status">loading…</strong></article>
+            <article class="card metric-card"><span>TLA+ model check</span><strong id="formal-status">loading…</strong></article>
+            <article class="card metric-card"><span>Browser core self-test</span><strong id="browser-status">loading…</strong></article>
+            <article class="card metric-card"><span>Built</span><strong id="built-at">loading…</strong></article>
+          </div>
+          <article class="card evidence-card">
+            <div class="card-header"><div><h3>Exact browser source hashes</h3><span>SHA-256 values generated during deployment.</span></div><a class="text-button" href="https://github.com/Anharmoniclabs/BULL/actions">Actions ↗</a></div>
+            <pre id="source-hashes">loading…</pre>
+          </article>
+        </section>
+
+        <section class="view" id="view-architecture" data-title="Trust Architecture" data-subtitle="The browser lab stops exactly where Linux enforcement begins.">
+          <article class="card architecture-card">
+            <div class="pipeline">
+              <div class="node live"><b>Action proposal</b><span>visitor input</span></div>
+              <i>→</i>
+              <div class="node live"><b>Canonicalizer</b><span>real Python</span></div>
+              <i>→</i>
+              <div class="node live"><b>Policy</b><span>real Python</span></div>
+              <i>→</i>
+              <div class="node live"><b>Session guard</b><span>real Python</span></div>
+              <i>→</i>
+              <div class="node host"><b>Host boundary</b><span>Linux deployment</span></div>
+            </div>
+            <div class="host-controls">
+              <span>namespaces</span><span>seccomp</span><span>Landlock</span><span>cgroups</span>
+              <span>snapshots</span><span>malware scan</span><span>secret broker</span><span>pinned egress</span>
+            </div>
+          </article>
+
+          <article class="card boundary-card">
+            <h3>Security boundary</h3>
+            <p>This GitHub Pages console demonstrates deterministic BULL policy behavior. It is not a Linux enforcement boundary and does not execute arbitrary visitor code. Production BULL still depends on the trusted host Python process, the BULL trusted computing base, and the Linux kernel. BULL has not undergone an independent third-party security audit.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+  </div>
 </body>
 </html>
