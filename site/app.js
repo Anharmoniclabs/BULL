@@ -13,6 +13,8 @@ const CAPABILITIES = [
   "fs.write.project",
   "fs.read.home",
   "fs.write.home",
+  "fs.read.host",
+  "fs.write.host",
   "credential.read",
   "process.exec",
   "network.outbound",

@@ -10,3 +10,4 @@ build/
 # Downloaded verification tooling
 .tools/*.jar
 poetry.lock
+.bull-lab/
