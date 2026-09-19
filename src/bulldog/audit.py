@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from .models import ActionRequest, Evaluation
+from .audit_transport import HTTPSAnchorTransport, RelayAnchorTransport
 
 
 @dataclass(frozen=True)
@@ -48,8 +49,14 @@ class AuditLedger:
         remote_anchor_url: str | None = None,
         remote_anchor_key: bytes | str | None = None,
         remote_timeout: float = 5.0,
+        transport: HTTPSAnchorTransport | RelayAnchorTransport | None = None,
+        max_ledger_bytes: int = 256 * 1024 * 1024,
     ):
         self.path = Path(path)
+        self.transport = transport
+        if type(max_ledger_bytes) is not int or max_ledger_bytes < 1:
+            raise ValueError("audit storage budget must be a positive integer")
+        self.max_ledger_bytes = max_ledger_bytes
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
         self.head_path = (
@@ -85,6 +92,10 @@ class AuditLedger:
                 remote_anchor_key = env_remote_key.encode("utf-8")
         self.remote_anchor_key = remote_anchor_key
         self.remote_timeout = float(remote_timeout)
+        if transport is not None:
+            # Transport configuration is independent of the legacy URL API.
+            self.remote_anchor_url = None
+            self.remote_anchor_key = None
 
         if self.anchor_path is not None:
             self.anchor_path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +181,11 @@ class AuditLedger:
                 fh.flush()
                 os.fsync(fh.fileno())
             os.replace(tmp_name, path)
+            directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
         finally:
             try:
                 os.unlink(tmp_name)
@@ -192,7 +208,21 @@ class AuditLedger:
             ".bull-anchor-",
         )
 
-    def _write_remote_anchor(self, *, sequence: int, head_hash: str) -> None:
+    @property
+    def production_anchor_ready(self) -> bool:
+        return isinstance(self.transport, (HTTPSAnchorTransport, RelayAnchorTransport)) and self.transport.production_ready
+
+    def _write_remote_anchor(self, *, sequence: int, head_hash: str, record: dict | None = None) -> None:
+        if self.transport is not None:
+            try:
+                if record is None:
+                    raise AuditIntegrityError("transport requires the complete audit record")
+                ack = self.transport.submit(sequence, record)
+                self.transport.identity.check_ack(ack, sequence, head_hash)
+                self._write_atomic_json(self.remote_checkpoint_path, ack, ".bull-remote-anchor-")
+            except Exception as exc:
+                raise AuditIntegrityError("remote audit anchor delivery failed: " + str(exc)) from exc
+            return
         if self.remote_anchor_url is None:
             return
 
@@ -247,6 +277,15 @@ class AuditLedger:
         records: int,
         head_hash: str | None,
     ) -> str | None:
+        if self.transport is not None:
+            if records == 0 and not self.remote_checkpoint_path.exists():
+                return None
+            try:
+                data = json.loads(self.remote_checkpoint_path.read_text())
+                self.transport.identity.check_ack(data, records, head_hash or "")
+            except Exception as exc:
+                return "remote audit checkpoint invalid: " + str(exc)
+            return None
         if self.remote_anchor_url is None:
             return None
         if records == 0 and not self.remote_checkpoint_path.exists():
@@ -298,6 +337,8 @@ class AuditLedger:
 
         previous_hash = None
         records = 0
+        if self.path.stat().st_size > self.max_ledger_bytes:
+            return AuditVerification(False, 0, error="audit storage budget exceeded")
         with self.path.open("r", encoding="utf-8") as fh:
             for index, raw in enumerate(fh):
                 line = raw.strip()
@@ -421,9 +462,15 @@ class AuditLedger:
                 record["previous_hash"] = existing.head_hash
                 record_hash = self._calculate_hash(record)
                 record["record_hash"] = record_hash
+                encoded_record = json.dumps(record, sort_keys=True) + "\n"
+                if self.transport is not None and len(encoded_record.encode()) > 60 * 1024:
+                    raise AuditIntegrityError("audit record exceeds transport framing budget")
+                existing_bytes = self.path.stat().st_size if self.path.exists() else 0
+                if existing_bytes + len(encoded_record.encode()) > self.max_ledger_bytes:
+                    raise AuditIntegrityError("audit storage budget exhausted")
 
                 with self.path.open("a", encoding="utf-8") as fh:
-                    fh.write(json.dumps(record, sort_keys=True) + "\n")
+                    fh.write(encoded_record)
                     fh.flush()
                     os.fsync(fh.fileno())
 
@@ -434,10 +481,31 @@ class AuditLedger:
 
                 sequence = existing.records + 1
                 self._write_anchor(sequence=sequence, head_hash=record_hash)
-                self._write_remote_anchor(sequence=sequence, head_hash=record_hash)
+                self._write_remote_anchor(sequence=sequence, head_hash=record_hash, record=record)
                 return record_hash
             finally:
                 fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+
+    def reconcile_remote(self) -> None:
+        """Explicitly retry the latest audit checkpoint; never replay execution."""
+        if self.transport is None:
+            raise AuditIntegrityError("recovery requires a versioned audit transport")
+        self.lock_path.touch(exist_ok=True)
+        with self.lock_path.open("r+") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                result = self._verify_unlocked(verify_anchor=False)
+                if not result.valid or result.records == 0:
+                    raise AuditIntegrityError("cannot recover an empty or invalid local ledger")
+                last = None
+                with self.path.open() as stream:
+                    for line in stream:
+                        if line.strip():
+                            last = json.loads(line)
+                assert last is not None
+                self._write_remote_anchor(sequence=result.records, head_hash=result.head_hash or "", record=last)
+            finally:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
     def append(
         self,
