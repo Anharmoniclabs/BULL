@@ -11,11 +11,32 @@ special-file, symlink, and source-mutation checks. No live host tree is attached
 unless the deployment explicitly enables development 9P mode. QEMU gets no
 network device, no monitor, minimal devices, and its Linux seccomp sandbox.
 
-Copy `config/defaults.env` to an owner-controlled deployment file and add:
+## Local-only deployment assets
+
+Keep guest images, kernels, prepared rootfs trees, and real deployment
+configuration outside this repository. The repository contains source code
+and templates, not your local VM or its filesystem contents. All host paths
+below are placeholders; replace them only in your private deployment file or
+local shell commands, not in committed documentation.
+
+The repository ignore rules exclude common VM image formats, local MicroVM
+asset directories, and private deployment configuration files. Do not use
+`git add --force` for these assets. Before committing or pushing, run:
+
+```sh
+python -m unittest discover -s tests -p test_repository_artifacts.py -v
+```
+
+The same check runs in MicroVM CI and rejects tracked local assets, including
+force-added files. Ignore rules and CI do not erase files from earlier commits;
+CI runs after a push and is not a server-side upload prevention mechanism.
+
+Copy `config/defaults.env` to an owner-controlled deployment file outside the
+repository and add your real absolute approved roots. For example:
 
 ```text
-BULL_MICROVM_APPROVED_WORKSPACE_ROOT=/srv/bull/projects
-BULL_MICROVM_APPROVED_RUNTIME_ROOT=/srv/bull/runtime
+BULL_MICROVM_APPROVED_WORKSPACE_ROOT=/absolute/path/to/private/projects
+BULL_MICROVM_APPROVED_RUNTIME_ROOT=/absolute/path/to/private/runtime
 ```
 
 Both directories must exist. These approvals can only come from the explicitly
@@ -35,11 +56,11 @@ the configuration when `--config` is absent.
 
 ```sh
 microvm/run-bull-microvm.sh \
-  --config /srv/bull/deployment.env \
-  --kernel /srv/bull/assets/vmlinux \
-  --rootfs /srv/bull/assets/rootfs.ext4 \
-  --workspace /srv/bull/projects/example \
-  --bull-runtime /srv/bull/runtime/release
+  --config /absolute/path/to/private/deployment.env \
+  --kernel /absolute/path/to/private/assets/vmlinux \
+  --rootfs /absolute/path/to/private/images/guest.ext4 \
+  --workspace /absolute/path/to/private/projects/example \
+  --bull-runtime /absolute/path/to/private/runtime/release
 ```
 
 The engine defaults to `/bull_runtime/bin/bull-engine`. Every relative engine
@@ -65,10 +86,13 @@ host trees and is not a production image-isolation substitute.
 
 ## Building rootfs images
 
+Build into an existing private directory outside the checkout. The output
+below is the same local image passed to `--rootfs` in the launch example:
+
 ```sh
 microvm/rootfs/build-ext4.sh \
-  --source /srv/bull/assets/rootfs-tree \
-  --output /srv/bull/images/rootfs.ext4
+  --source /absolute/path/to/private/rootfs-tree \
+  --output /absolute/path/to/private/images/guest.ext4
 ```
 
 The existing output parent must be owned by the builder and not group/world
