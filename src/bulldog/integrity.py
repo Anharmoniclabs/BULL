@@ -27,6 +27,7 @@ CRITICAL_FILES = (
     "malware_scanner.py",
     "microvm.py",
     "microvm_image.py",
+    "microvm_session.py",
     "namespace_sandbox.py",
     "policy.py",
     "policy_bundle.py",

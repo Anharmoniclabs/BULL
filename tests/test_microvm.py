@@ -80,6 +80,8 @@ def fixture_values(tmp_path):
         f"BULL_MICROVM_RUNTIME_DIR={tmp_path / 'runtime'}",
         f"BULL_MICROVM_KERNEL={tmp_path / 'kernel'}",
         f"BULL_MICROVM_ROOTFS={tmp_path / 'rootfs'}",
+        "BULL_MICROVM_QEMU=qemu-system-x86_64",
+        "BULL_MICROVM_ENGINE_GUEST=/bull_runtime/bin/bull-engine",
         "BULL_MICROVM_CPUS=2",
     ]))
     return config
@@ -88,6 +90,7 @@ def fixture_values(tmp_path):
 def test_diagnostic_is_side_effect_free_and_precedence(tmp_path, monkeypatch, capsys):
     config = fixture_values(tmp_path)
     monkeypatch.setenv("BULL_MICROVM_CPUS", "3")
+    monkeypatch.setenv("BULL_MICROVM_OUTPUT_DIR", str(tmp_path / "project_outputs"))
     def forbidden(*args, **kwargs):
         pytest.fail("diagnostic performed a side effect")
     monkeypatch.setattr(subprocess, "Popen", forbidden)
@@ -96,15 +99,96 @@ def test_diagnostic_is_side_effect_free_and_precedence(tmp_path, monkeypatch, ca
     assert "-smp 3" in capsys.readouterr().out
     assert microvm.main(["--config", str(config), "--cpus", "4", "--print-command"]) == 0
     assert "-smp 4" in capsys.readouterr().out
+    assert not (tmp_path / "project_outputs").exists()
+
+
+def test_deployment_pins_trusted_vm_assets(tmp_path, monkeypatch, capsys):
+    config = fixture_values(tmp_path)
+    monkeypatch.setenv("BULL_MICROVM_ROOTFS", str(tmp_path / "other-rootfs"))
+    with pytest.raises(SystemExit):
+        microvm.main(["--config", str(config), "--print-command"])
+    assert "deployment-pinned" in capsys.readouterr().err
 
 
 def test_images_are_default_and_no_network(tmp_path):
     values = dict(microvm.DEFAULTS, KERNEL="/kernel", ROOTFS="/rootfs.ext4")
     command = microvm.qemu_command(values, tmp_path / "workspace", tmp_path / "runtime", tmp_path)
-    assert "-fsdev" not in command
+    assert command.count("-fsdev") == 1
+    assert any("id=bull_outputs" in item and "readonly=off" in item and "mapped-xattr" in item for item in command)
     assert command.count("virtio-blk-device,drive=workspace") == 1
     assert command[command.index("-net") + 1] == "none"
     assert sum("readonly=on" in part for part in command) == 3
+
+
+def test_output_directory_private_empty_and_pinned(tmp_path):
+    target = tmp_path / "project_outputs"
+    with microvm.output_directory(target, [], create=False) as fd:
+        assert fd is None
+    assert not target.exists()
+    with microvm.output_directory(target, [], create=True) as fd:
+        assert target.stat().st_mode & 0o777 == 0o700
+        with pytest.raises(BlockingIOError):
+            with microvm.output_directory(target, [], create=True):
+                pass
+        target.rename(tmp_path / "moved")
+        target.symlink_to(tmp_path / "other")
+        assert os.readlink(f"/proc/self/fd/{fd}") == str(tmp_path / "moved")
+
+
+def test_output_rejects_links_overlap_permissions_and_existing_files(tmp_path):
+    target = tmp_path / "project_outputs"
+    target.mkdir(mode=0o700)
+    for protected in ([target], [target / "input"], [tmp_path]):
+        with pytest.raises(microvm.MicroVMError, match="overlap"):
+            with microvm.output_directory(target, protected):
+                pass
+    alias = tmp_path / "alias"
+    alias.symlink_to(target)
+    with pytest.raises(RuntimeError):
+        with microvm.output_directory(alias, []):
+            pass
+    target.chmod(0o755)
+    with pytest.raises(microvm.MicroVMError, match="0700"):
+        with microvm.output_directory(target, []):
+            pass
+    target.chmod(0o700)
+    (target / "summary.json").write_text("keep")
+    with pytest.raises(microvm.MicroVMError, match="empty"):
+        with microvm.output_directory(target, [], create=True):
+            pass
+    assert (target / "summary.json").read_text() == "keep"
+
+
+def test_output_rejects_symlinked_parent(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(real)
+    with pytest.raises(RuntimeError):
+        with microvm.output_directory(alias / "outputs", [], create=True):
+            pass
+    assert not (real / "outputs").exists()
+
+
+def test_output_directory_enforces_byte_budget(tmp_path):
+    target = tmp_path / "outputs"
+    with pytest.raises(microvm.MicroVMError, match="byte budget"):
+        with microvm.output_directory(target, [], create=True, max_bytes=4096):
+            (target / "report").write_bytes(b"x" * 4097)
+
+
+def test_supervisor_passes_only_explicit_output_fd(tmp_path):
+    with microvm.output_directory(tmp_path / "outputs", [], create=True) as fd:
+        code = "import os; fd=os.open('child',os.O_CREAT|os.O_WRONLY,0o600,dir_fd=%d); os.close(fd)" % fd
+        assert microvm.supervise([sys.executable, "-c", code], 5, pass_fds=(fd,)) == 0
+    assert (tmp_path / "outputs/child").is_file()
+
+
+def test_guest_init_cannot_run_as_host_script():
+    script = Path(__file__).resolve().parents[1] / "microvm/guest/init"
+    result = subprocess.run(["sh", str(script)], capture_output=True, text=True)
+    assert result.returncode == 78
+    assert "PID 1" in result.stderr
 
 
 def test_image_rejects_existing_and_parent_symlink(tmp_path):
@@ -167,3 +251,21 @@ def test_real_image_contains_mountpoints_and_does_not_overwrite(tmp_path):
     with pytest.raises(microvm.MicroVMError, match="exists"):
         microvm.build_image(source, image, init=init)
     assert image.stat().st_ino == before.st_ino
+
+
+@pytest.mark.skipif(not shutil.which("mkfs.ext4") or not shutil.which("debugfs"), reason="e2fsprogs required")
+def test_workspace_mountpoint_added_only_to_image(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    destination = tmp_path / "images"
+    destination.mkdir(mode=0o700)
+    image = destination / "workspace.ext4"
+    microvm.build_image(source, image, workspace_outputs=True)
+    result = subprocess.run(["debugfs", "-R", "stat /outputs", str(image)], capture_output=True, text=True, check=True)
+    assert "Inode:" in result.stdout
+    assert not (source / "outputs").exists()
+    (source / "outputs").mkdir()
+    (source / "outputs/file").write_text("keep")
+    with pytest.raises(microvm.MicroVMError, match="empty"):
+        microvm.build_image(source, destination / "rejected.ext4", workspace_outputs=True)
+    assert not (destination / "rejected.ext4").exists()

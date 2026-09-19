@@ -2,6 +2,9 @@
 
 set -eu
 
+# Never run guest mount or shutdown commands from an ordinary host shell.
+[ "$$" -eq 1 ] || { echo 'bull-init must run as guest PID 1' >&2; exit 78; }
+
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
 
@@ -9,15 +12,25 @@ log() {
     printf '%s\n' "[bull-microvm] $*" >/dev/console
 }
 
-fail() {
-    log "FATAL: $*"
+shutdown() {
+    sync || true
     if command -v poweroff >/dev/null 2>&1; then
         poweroff -f >/dev/null 2>&1 || true
-    elif command -v reboot >/dev/null 2>&1; then
+    fi
+    if command -v reboot >/dev/null 2>&1; then
         reboot -f >/dev/null 2>&1 || true
     fi
-    exit 1
+    # Returning from PID 1 would panic the kernel if shutdown failed.
+    while :; do sleep 1; done
 }
+
+fail() {
+    log "FATAL: $*"
+    shutdown
+}
+
+# Unexpected setup failures also halt rather than returning from PID 1.
+trap shutdown EXIT
 
 # These mountpoints must exist in the immutable rootfs before boot.
 for directory in /dev /proc /sys /run /tmp /workspace /bull_runtime; do
@@ -63,6 +76,23 @@ else
     mount -t ext4 -o ro,noload,nosuid,nodev /dev/vdc /bull_runtime || fail "runtime image mount failed"
 fi
 
+# A non-recursive private bind preserves the immutable input view without the
+# nested output mount. Admission must continue rejecting filesystem crossings.
+mount --make-rprivate / || fail "cannot make guest mounts private"
+mkdir /run/bull-input
+mount --bind /workspace /run/bull-input || fail "input bind failed"
+mount -o remount,bind,ro,nosuid,nodev,noexec /run/bull-input || fail "input bind is not read-only"
+[ -d /workspace/outputs ] && [ ! -L /workspace/outputs ] || fail "missing output mountpoint"
+[ "$(readlink -f /workspace/outputs)" = /workspace/outputs ] || fail "output path is not canonical"
+mount -t 9p -o trans=virtio,version=9p2000.L,rw,nosuid,nodev,noexec,cache=none bull_outputs /workspace/outputs \
+    || fail "output export mount failed"
+awk '$1 == "bull_outputs" && $2 == "/workspace/outputs" && $3 == "9p" && ("," $4 ",") ~ /,rw,/ { found=1 } END { exit !found }' /proc/mounts \
+    || fail "output export is not mounted read-write"
+probe=$(mktemp /workspace/outputs/.bull-probe.XXXXXXXX) || fail "output export is not writable"
+printf 'bull-output-probe\n' >"$probe" || fail "output write failed"
+[ "$(cat "$probe")" = bull-output-probe ] || fail "output readback failed"
+rm -- "$probe" || fail "output probe cleanup failed"
+
 engine="$(cmdline_value bull.engine || true)"
 case "$engine" in
     /bull_runtime/*) ;;
@@ -89,9 +119,23 @@ IFS=$old_ifs
 [ "$(readlink -f "$engine")" = "$engine" ] || fail "engine canonical path mismatch"
 
 export BULL_MICROVM=1
-export BULL_WORKSPACE=/workspace
+export BULL_WORKSPACE=/run/bull-input
 export BULL_RUNTIME=/bull_runtime
+export BULL_OUTPUTS=/workspace/outputs
 
 log "read-only workspace and trusted runtime mounted"
 log "starting trusted engine $engine"
-exec "$engine" --workspace /workspace --runtime /bull_runtime
+child=
+stop_engine() {
+    if [ -n "$child" ]; then kill -TERM "$child" 2>/dev/null || true; fi
+}
+trap stop_engine TERM INT HUP
+"$engine" --workspace /run/bull-input --runtime /bull_runtime --outputs /workspace/outputs &
+child=$!
+status=0
+wait "$child" || status=$?
+log "trusted engine exited with status $status"
+# PID 1 inherits orphaned descendants.  Reap every remaining child before
+# shutdown so a failed adapter cannot leave guest zombies behind.
+while wait -n 2>/dev/null; do :; done
+shutdown

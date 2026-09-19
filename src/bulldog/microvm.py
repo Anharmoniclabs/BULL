@@ -2,18 +2,22 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
+import fcntl
 import json
 import os
 from pathlib import Path
 import platform
 import pwd
 import re
+import resource
 import shlex
 import shutil
 import signal
 import stat
 import subprocess
 import tempfile
+import uuid
 
 from .secure_fs import open_beneath, trusted_root_fd
 from .snapshot import create_snapshot, destroy_snapshot
@@ -28,9 +32,11 @@ DEFAULTS = {
     "MEMORY_MIB": "4096", "CPUS": "2", "ACCEL": "kvm",
     "QEMU": "qemu-system-x86_64", "ENGINE_GUEST": "/bull_runtime/bin/bull-engine",
     "WORKSPACE": "", "RUNTIME_DIR": "", "KERNEL": "", "ROOTFS": "",
-    "TIMEOUT_SECONDS": "3600", "DEV_9P": "false",
+    "TIMEOUT_SECONDS": "3600", "DEV_9P": "false", "OUTPUT_DIR": "./project_outputs",
+    "OUTPUT_MAX_BYTES": "1048576",
 }
 ROOT_KEYS = {"APPROVED_WORKSPACE_ROOT", "APPROVED_RUNTIME_ROOT"}
+PINNED_KEYS = {"KERNEL", "ROOTFS", "QEMU", "ENGINE_GUEST"}
 PREFIX = "BULL_MICROVM_"
 
 
@@ -63,16 +69,16 @@ def overlap(a: Path, b: Path) -> bool:
     return a.is_relative_to(b) or b.is_relative_to(a)
 
 
-def restricted_root(raw: str) -> Path:
+def restricted_root(raw: str, *, must_exist: bool = True) -> Path:
     if not raw or not Path(raw).is_absolute():
         raise MicroVMError("export and approved roots must be explicit absolute paths")
-    path = Path(raw).resolve(strict=True)
+    path = Path(raw).resolve(strict=must_exist)
     homes = {Path(p.pw_dir).resolve() for p in pwd.getpwall() if p.pw_dir}
     broad = {Path(p) for p in ("/", "/home", "/Users", "/root", "/tmp", "/var", "/var/tmp", "/var/lib", "/var/log", "/var/cache", "/var/spool", "/var/backups", "/var/www", "/srv", "/opt", "/mnt", "/media")}
     forbidden = ("/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64", "/dev", "/proc", "/sys", "/boot", "/run")
     if path in broad or path in homes or path.parent in {Path("/home"), Path("/Users")} or any(path.is_relative_to(Path(p).resolve()) for p in forbidden):
         raise MicroVMError("broad system and home-directory roots are forbidden")
-    if not path.is_dir():
+    if must_exist and not path.is_dir():
         raise MicroVMError("export root is not a directory")
     return path
 
@@ -121,7 +127,67 @@ def safe_qemu_path(path: Path) -> str:
     return value
 
 
-def build_image(source: Path, output: Path, *, init: Path | None = None) -> None:
+def _directory_size(fd: int) -> int:
+    total = 0
+    for _root, dirs, files, directory in os.fwalk(".", dir_fd=fd, follow_symlinks=False):
+        for name in (*dirs, *files):
+            info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+            if stat.S_ISLNK(info.st_mode):
+                raise MicroVMError("output directory may not contain symlinks")
+            if stat.S_ISREG(info.st_mode):
+                total += info.st_size
+    return total
+
+
+@contextmanager
+def output_directory(path: Path, protected: list[Path], *, create: bool = False,
+                     max_bytes: int | None = None):
+    """Pin an empty private export. Diagnostics never create or lock it."""
+    path = path.absolute()
+    restricted_root(str(path), must_exist=False)
+    if any(overlap(path.resolve(), item.resolve()) for item in protected):
+        raise MicroVMError("output directory must not overlap workspace, runtime or deployment assets")
+    with trusted_root_fd(Path("/")) as root_fd:
+        parent = open_beneath(root_fd, str(path.parent).lstrip("/") or ".", directory=True)
+    fd = None
+    try:
+        info = os.fstat(parent)
+        if info.st_uid != os.getuid() or info.st_mode & 0o022:
+            raise MicroVMError("output parent must be owner-controlled and not group/world writable")
+        if create:
+            try:
+                os.mkdir(path.name, mode=0o700, dir_fd=parent)
+            except FileExistsError:
+                pass
+        try:
+            os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+        except FileNotFoundError:
+            if create:
+                raise
+        else:
+            fd = open_beneath(parent, path.name, directory=True)
+            info = os.fstat(fd)
+            if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+                raise MicroVMError("output directory must be owned by launcher user with mode 0700")
+            restricted_root(str(path))
+            if create:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if os.listdir(fd):
+                raise MicroVMError("output directory must be empty; existing artifacts are never overwritten")
+            if create:
+                attribute = "user.bull_probe_" + uuid.uuid4().hex
+                os.setxattr(fd, attribute, b"1", flags=os.XATTR_CREATE)
+                os.removexattr(fd, attribute)
+        yield fd
+        if create and fd is not None and max_bytes is not None and _directory_size(fd) > max_bytes:
+            raise MicroVMError("output directory exceeded its configured byte budget")
+    finally:
+        if fd is not None:
+            os.close(fd)
+        os.close(parent)
+
+
+def build_image(source: Path, output: Path, *, init: Path | None = None, workspace_outputs: bool = False) -> None:
     """Admit to private scratch; publish a complete image without overwriting."""
     source = source.resolve(strict=True)
     output = output.absolute()
@@ -145,6 +211,12 @@ def build_image(source: Path, output: Path, *, init: Path | None = None) -> None
             snapshot = create_snapshot(source, budget=WorkspaceBudget(), scratch_root=scratch)
             try:
                 stage = snapshot.snapshot_root
+                if workspace_outputs:
+                    os.chmod(stage, 0o700)
+                    target = stage / "outputs"
+                    if target.exists() and (not target.is_dir() or any(target.iterdir())):
+                        raise MicroVMError("workspace outputs mountpoint must be an empty directory")
+                    target.mkdir(exist_ok=True)
                 if init is not None:
                     os.chmod(stage, 0o700)
                     for name in ("sbin", "dev", "proc", "sys", "run", "tmp", "workspace", "bull_runtime"):
@@ -174,7 +246,7 @@ def build_image(source: Path, output: Path, *, init: Path | None = None) -> None
         os.close(parent_fd)
 
 
-def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Path) -> list[str]:
+def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Path, *, output_fd: int | None = None) -> list[str]:
     cmd = [values["QEMU"], "-M", "microvm,x-option-roms=off", "-accel", "kvm", "-cpu", "host",
            "-m", values["MEMORY_MIB"] + "M", "-smp", values["CPUS"],
            "-nodefaults", "-no-user-config", "-nographic", "-display", "none", "-monitor", "none", "-no-reboot",
@@ -191,11 +263,15 @@ def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Pa
     for name, path in disks:
         cmd += ["-drive", f"id={name},file={safe_qemu_path(path)},format=raw,if=none,readonly=on",
                 "-device", f"virtio-blk-device,drive={name}"]
+    output = Path(values["OUTPUT_DIR"]).absolute() if output_fd is None else Path(f"/proc/self/fd/{output_fd}")
+    cmd += ["-fsdev", f"local,id=bull_outputs,path={safe_qemu_path(output)},security_model=mapped-xattr,readonly=off,fmode=0600,dmode=0700,multidevs=forbid",
+            "-device", "virtio-9p-device,fsdev=bull_outputs,mount_tag=bull_outputs"]
     return cmd + ["-net", "none", "-serial", "stdio", "-sandbox",
                   "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny"]
 
 
-def supervise(command: list[str], timeout: int) -> int:
+def supervise(command: list[str], timeout: int, *, pass_fds: tuple[int, ...] = (),
+              file_size_limit: int | None = None) -> int:
     """Signal only our exact child, never a process name or the caller's group."""
     signals = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
     original_mask = signal.pthread_sigmask(signal.SIG_BLOCK, signals)
@@ -208,8 +284,12 @@ def supervise(command: list[str], timeout: int) -> int:
     try:
         # The launcher is single-threaded. Block signals across spawn/handler
         # installation so a signal cannot leave an untracked child behind.
-        child = subprocess.Popen(command, start_new_session=True,
-                                 preexec_fn=lambda: signal.pthread_sigmask(signal.SIG_SETMASK, original_mask))
+        def prepare_child():
+            signal.pthread_sigmask(signal.SIG_SETMASK, original_mask)
+            if file_size_limit is not None:
+                resource.setrlimit(resource.RLIMIT_FSIZE, (file_size_limit, file_size_limit))
+        child = subprocess.Popen(command, start_new_session=True, pass_fds=pass_fds,
+                                 preexec_fn=prepare_child)
         for signum in signals:
             previous[signum] = signal.signal(signum, forward)
         signal.pthread_sigmask(signal.SIG_SETMASK, original_mask)
@@ -236,7 +316,8 @@ def main(argv=None) -> int:
     parser.add_argument("--config", default=os.environ.get(PREFIX + "CONFIG_FILE"))
     flags = {"workspace": "WORKSPACE", "bull-runtime": "RUNTIME_DIR", "kernel": "KERNEL", "rootfs": "ROOTFS",
              "engine": "ENGINE_GUEST", "memory-mib": "MEMORY_MIB", "cpus": "CPUS", "qemu": "QEMU",
-             "accel": "ACCEL", "timeout-seconds": "TIMEOUT_SECONDS"}
+             "accel": "ACCEL", "timeout-seconds": "TIMEOUT_SECONDS", "output-dir": "OUTPUT_DIR",
+             "output-max-bytes": "OUTPUT_MAX_BYTES"}
     for flag, key in flags.items():
         parser.add_argument("--" + flag, dest=key)
     parser.add_argument("--dev-9p", action="store_true", default=None)
@@ -247,7 +328,17 @@ def main(argv=None) -> int:
     old_handlers = {s: signal.signal(s, interrupted) for s in (signal.SIGTERM, signal.SIGHUP)}
     try:
         trusted = config_file(Path(args.config)) if args.config else {}
-        values = {key: os.environ.get(PREFIX + key, trusted.get(key, default)) for key, default in DEFAULTS.items()}
+        if not args.config:
+            raise MicroVMError("a trusted deployment configuration is required")
+        missing_pins = sorted(PINNED_KEYS.difference(trusted))
+        if missing_pins:
+            raise MicroVMError("trusted deployment configuration must pin: " + ", ".join(missing_pins))
+        overridden = [key for key in PINNED_KEYS
+                      if os.environ.get(PREFIX + key) is not None or getattr(args, key) is not None]
+        if overridden:
+            raise MicroVMError("deployment-pinned settings cannot be overridden: " + ", ".join(sorted(overridden)))
+        values = {key: (trusted[key] if key in PINNED_KEYS else os.environ.get(PREFIX + key, trusted.get(key, default)))
+                  for key, default in DEFAULTS.items()}
         values.update({key: getattr(args, key) for key in flags.values() if getattr(args, key) is not None})
         if args.dev_9p:
             values["DEV_9P"] = "true"
@@ -256,6 +347,7 @@ def main(argv=None) -> int:
         bounded(values["MEMORY_MIB"], "memory MiB", 4096, 65536)
         bounded(values["CPUS"], "CPUs", 1, 64)
         timeout = bounded(values["TIMEOUT_SECONDS"], "timeout seconds", 1, 86400)
+        output_max_bytes = bounded(values["OUTPUT_MAX_BYTES"], "output bytes", 4096, 64 * 1024 * 1024)
         if values["ACCEL"] not in {"auto", "kvm"} or platform.system() != "Linux" or platform.machine() != "x86_64":
             raise MicroVMError("only Linux x86-64/KVM is supported; HVF and ARM are experimental and disabled")
         workspace, runtime = roots(values, trusted)
@@ -269,6 +361,16 @@ def main(argv=None) -> int:
             if not path.is_file() and not (key == "ROOTFS" and path.is_dir()):
                 raise MicroVMError(key + " must be a regular image or rootfs directory")
             values[key] = safe_qemu_path(path)
+        output = Path(values["OUTPUT_DIR"]).absolute()
+        protected = [workspace, runtime, Path(values["KERNEL"]), Path(values["ROOTFS"])]
+        if args.config:
+            protected.append(Path(args.config))
+        with output_directory(output, protected):
+            pass
+        if values["DEV_9P"] == "true":
+            target = workspace / "outputs"
+            if target.is_symlink() or not target.is_dir() or any(target.iterdir()):
+                raise MicroVMError("development workspace requires an existing empty outputs directory")
         if args.print_command:
             print(json.dumps({"hardware_checked": False, "command": shlex.join(qemu_command(values, workspace, runtime, Path("/PRIVATE_RUN_DIRECTORY")))}, indent=2))
             return 0
@@ -276,15 +378,16 @@ def main(argv=None) -> int:
             raise MicroVMError("KVM unavailable: require read/write /dev/kvm; software fallback is forbidden")
         if not shutil.which(values["QEMU"]):
             raise MicroVMError("QEMU is unavailable")
-        with tempfile.TemporaryDirectory(prefix="bull-microvm-") as directory:
+        with output_directory(output, protected, create=True, max_bytes=output_max_bytes) as output_fd, tempfile.TemporaryDirectory(prefix="bull-microvm-") as directory:
             run = Path(directory)
             if Path(values["ROOTFS"]).is_dir():
                 init = Path(__file__).resolve().parents[2] / "microvm/guest/init"
                 build_image(Path(values["ROOTFS"]), run / "rootfs.ext4", init=init)
             if values["DEV_9P"] != "true":
-                build_image(workspace, run / "workspace.ext4")
+                build_image(workspace, run / "workspace.ext4", workspace_outputs=True)
                 build_image(runtime, run / "runtime.ext4")
-            return supervise(qemu_command(values, workspace, runtime, run), timeout)
+            return supervise(qemu_command(values, workspace, runtime, run, output_fd=output_fd), timeout,
+                             pass_fds=(output_fd,), file_size_limit=output_max_bytes)
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         parser.exit(2, f"bull microvm: {exc}\n")
     finally:

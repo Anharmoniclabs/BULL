@@ -10,6 +10,11 @@ Implemented and locally verified:
 - Private admitted immutable workspace/runtime images by default, explicit
   development 9P, safe image publication, and read-only guest mountpoints.
 - Side-effect-free diagnostics and exact-child supervision with bounded cleanup.
+- Private read-write output 9P export, immutable input view, one-shot governed
+  adapter and bounded no-clobber `summary.json`. Guest init checks writability
+  and reaps remaining children before shutdown. The host applies a bounded
+  output budget. These are host-tested changes,
+  not hardware boot evidence; guest production bootstrap is still incomplete.
 - Authenticated session-bound HTTPS audit transport, durable bounded SQLite
   service, host relay components, exact-last retries, conflict rejection,
   explicit checkpoint recovery, and a real local TLS fixture.
@@ -22,8 +27,9 @@ Implemented and locally verified:
   verification. Existing runtime model: 405 distinct states. New design model:
   57 distinct states. Neither is a hypervisor proof.
 
-Local verification: 186 tests pass, including 26 launcher/image regressions and
-10 audit-service tests. Tests requiring Unix sockets and namespaces ran outside
+Local verification after the output bridge: 213 tests pass, including 53
+launcher/image/adapter regressions and 10 audit-service tests. Tests requiring
+Unix sockets and namespaces ran outside
 the development tool sandbox. A real ext4 fixture and real localhost TLS were
 used. No QEMU process or guest VM was used in those tests.
 
@@ -32,16 +38,16 @@ Remaining implementation and release work:
 1. Install a real persistent `bull-engine` and `bull microvm session` interface;
    provision trusted signed session authority separately from model requests.
 2. Dedicated virtio protocol/audit ports, host socket supervision, bounded
-   protocol transitions, disconnect/cancellation handling, and guest PID-1
-   supervision with cgroup-controller setup.
+   protocol transitions, disconnect/cancellation handling, and guest
+   cgroup-controller setup beyond one-shot shutdown.
 3. Signed writable authority, validated post-execution snapshot promotion,
    bounded artifact export, and the complete guest memory/storage budget.
 4. Trusted guest bootstrap and credentials; activate and verify relay mode
    without fabricating direct HTTPS settings.
 5. A pinned reproducible guest/kernel build, dependency inventory, hashes, and
-   integrity coverage of deployed shell/init assets. The current strict image
-   builder requires a prepared tree without symlinks; it is not a guest build
-   recipe.
+   integrity coverage of deployed shell/init assets. The Arch bootstrap now
+   derives the installed Python site-packages path, while the strict image
+   builder still requires a prepared tree without symlinks.
 6. A real KVM integration workflow with mandatory hardware preflight, actual
    boot/dispatcher execution, containment and failure tests, cleanup checks,
    and per-test evidence tied to the commit, QEMU, kernel, and image hashes.
@@ -53,7 +59,12 @@ Remaining implementation and release work:
 8. Provision and validate a production HTTPS anchor with deployment credentials.
    Local test certificates/keys are not production deployment evidence.
 
-The local machine has no `/dev/kvm` or QEMU. GitHub runner hardware capability
+The tool sandbox hides `/dev/kvm`; a subsequent check outside it confirmed the
+host KVM device exists and is accessible. QEMU is still absent: the host setup
+attempt stopped because sudo requires a local password. The new CachyOS/Arch
+`microvm/setup-host-deps.sh` supports installation and read-only checks without
+restarting any session. Guest assets and production bootstrap remain unprovisioned.
+GitHub runner hardware capability
 still needs an actual boot test. Linux x86-64/KVM is the intended first release;
 macOS/HVF and ARM remain disabled/experimental. HVF certification and independent
 hypervisor assessment remain prerequisites for their respective claims.
