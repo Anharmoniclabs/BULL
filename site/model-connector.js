@@ -296,8 +296,14 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function wireModelControls() {
     byId("model-run-button")?.addEventListener("click", runModelAgainstBULL);
     byId("model-test-button")?.addEventListener("click", testConnection);
-  });
+  }
+  // Dynamic imports run after DOMContentLoaded; support both loading paths.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireModelControls, { once: true });
+  } else {
+    wireModelControls();
+  }
 })();

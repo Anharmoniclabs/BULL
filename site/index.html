@@ -1,371 +1,40 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="BULL is an open-source execution firewall for AI agents. See the trust model, Linux enforcement boundary, deterministic policy engine, and real browser policy lab.">
-  <meta name="theme-color" content="#070809">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>BULL — Agent Execution Firewall</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./model-connector.css">
-  <script defer src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
-  <script type="module" src="./app.js"></script>
-  <script defer src="./model-connector.js"></script>
-</head>
-<body>
-  <div class="app-shell longform-shell">
-    <aside class="sidebar longform-sidebar">
-      <a class="sidebar-brand" href="#view-overview" aria-label="BULL home">
-        <div class="brand-mark">B</div>
-        <div><strong>BULL</strong><span>AGENT FIREWALL</span></div>
-      </a>
-
-      <div class="sidebar-runtime" id="runtime-banner">
-        <span class="status-dot"></span>
-        <div><strong id="runtime-state">Booting policy runtime</strong><span id="runtime-detail">Loading repository Python…</span></div>
-      </div>
-
-      <nav class="side-nav longform-nav" aria-label="BULL page sections">
-        <a class="nav-item active" href="#view-overview"><span class="nav-icon">01</span><span>What BULL is</span></a>
-        <a class="nav-item" href="#examples"><span class="nav-icon">02</span><span>Real examples</span></a>
-        <a class="nav-item" href="#view-architecture"><span class="nav-icon">03</span><span>Architecture</span></a>
-        <a class="nav-item" href="#view-rules"><span class="nav-icon">04</span><span>Controls</span></a>
-        <a class="nav-item" href="#view-playground"><span class="nav-icon">05</span><span>Live policy lab</span></a>
-        <a class="nav-item" href="#multi-agent"><span class="nav-icon">06</span><span>Multi-agent</span></a>
-        <a class="nav-item" href="#brokers"><span class="nav-icon">07</span><span>Secrets + network</span></a>
-        <a class="nav-item" href="#view-verification"><span class="nav-icon">08</span><span>Evidence</span></a>
-        <a class="nav-item" href="#limitations"><span class="nav-icon">09</span><span>Limits</span></a>
-        <a class="nav-item" href="#developers"><span class="nav-icon">10</span><span>Developers</span></a>
-      </nav>
-
-      <div class="sidebar-foot"><a href="https://github.com/Anharmoniclabs/BULL">GitHub ↗</a><span>Apache-2.0</span></div>
-    </aside>
-
-    <div class="workspace longform-workspace">
-      <div hidden>
-        <span id="view-label">Overview</span>
-        <span id="view-title">BULL</span>
-        <span id="view-subtitle">Agent execution firewall</span>
-      </div>
-
-      <main class="main-content longform-content">
-        <section class="view active long-section hero-section" id="view-overview" data-title="BULL" data-subtitle="The agent can ask. BULL decides whether it gets to act.">
-          <div class="hero-eyebrow">OPEN SOURCE · MODEL AGNOSTIC · LINUX ENFORCEMENT</div>
-          <div class="hero-grid">
-            <div class="hero-copy">
-              <h1>The agent can ask.<br><span>BULL decides whether it gets to act.</span></h1>
-              <p class="hero-lede">BULL sits between an AI agent and sensitive host capabilities: files, shell execution, credentials, network egress, repositories, APIs, and other agents. Model output is a request. Authority stays with the host.</p>
-              <p class="hero-plain">The basic rule is simple: <strong>untrusted information can influence what an agent wants to do. It should not automatically become permission to do it.</strong></p>
-              <div class="hero-actions">
-                <a class="button primary" href="#view-playground">Try the real policy core</a>
-                <a class="button ghost" href="https://github.com/Anharmoniclabs/BULL">Read the source ↗</a>
-              </div>
-            </div>
-
-            <div class="hero-flow" aria-label="BULL authority flow">
-              <div class="flow-step"><small>01</small><strong>Agent proposes an action</strong><span>Read a file. Run a command. Request a secret. Send data.</span></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-step emphasis"><small>02</small><strong>BULL derives the real capability</strong><span>The model does not get to label its own authority.</span></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-step"><small>03</small><strong>Host-owned policy checks authority</strong><span>Capability, provenance, parent ceiling, behavior and resource.</span></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-outcomes"><b class="allow">ALLOW</b><b class="restrict">SANDBOX</b><b class="review">REVIEW</b><b class="deny">DENY</b></div>
-            </div>
-          </div>
-
-          <div class="statement-card">
-            <span>WHY THIS EXISTS</span>
-            <p>Do not make the thing that was just influenced by a webpage, repository, message, or another model decide whether that same input deserves shell access. BULL separates <em>influence</em> from <em>authority</em>.</p>
-          </div>
-        </section>
-
-        <section class="long-section" id="examples">
-          <div class="section-intro">
-            <span class="section-kicker">REAL EXAMPLES</span>
-            <h2>What BULL is trying to stop</h2>
-            <p>No fake “17,000 threats blocked” counter. These are concrete authority problems the policy model handles.</p>
-          </div>
-          <div class="story-grid">
-            <article class="story-card">
-              <div class="story-number">01</div><h3>Webpage → shell command</h3>
-              <p>An agent reads an external page telling it to execute <code>/bin/bash</code>.</p>
-              <div class="story-trace"><span>internet</span><i>→</i><span>process.exec</span><i>→</i><b class="review">REVIEW</b></div>
-              <small>Externally influenced process execution is escalated instead of silently launched.</small>
-            </article>
-            <article class="story-card">
-              <div class="story-number">02</div><h3>Webpage → credential</h3>
-              <p>External content convinces an agent to request a token or credential.</p>
-              <div class="story-trace"><span>internet</span><i>→</i><span>credential.read</span><i>→</i><b class="deny">DENY</b></div>
-              <small>External credential access is a hard block in the deterministic policy.</small>
-            </article>
-            <article class="story-card">
-              <div class="story-number">03</div><h3>Child agent escalation</h3>
-              <p>A parent only has project-read authority. Its child asks for credential access.</p>
-              <div class="story-trace"><span>parent ceiling</span><i>→</i><span>child request</span><i>→</i><b class="deny">DENY</b></div>
-              <small>Authority cannot appear just because another agent was spawned.</small>
-            </article>
-            <article class="story-card">
-              <div class="story-number">04</div><h3>Goal drift</h3>
-              <p>An agent spends several actions reading a project, then abruptly pivots toward credentials.</p>
-              <div class="story-trace"><span>project work</span><i>→</i><span>privilege shift</span><i>→</i><b class="review">GOAL_DRIFT</b></div>
-              <small>The session guard raises scrutiny across the action sequence, not only one request at a time.</small>
-            </article>
-          </div>
-        </section>
-
-        <section class="view long-section" id="view-architecture" data-title="Trust Architecture" data-subtitle="The browser lab stops exactly where Linux enforcement begins.">
-          <div class="section-intro">
-            <span class="section-kicker">TRUST ARCHITECTURE</span>
-            <h2>The whole path from model output to host execution</h2>
-            <p>BULL is not one classifier. It is a chain of authority checks and enforcement layers.</p>
-          </div>
-
-          <div class="architecture-stack">
-            <div class="arch-node untrusted"><small>UNTRUSTED</small><strong>Model / agent action proposal</strong><span>Prompt, webpage, repository content, another agent, model output</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node"><strong>Canonicalization + trusted provenance</strong><span>Decode paths, reject traversal, derive the capability, attach host-owned identity.</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node"><strong>Deterministic capability policy</strong><span>Explicit grants, deployment ceiling, parent authority, sensitive resources, side effects.</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node"><strong>Session + security-domain guard</strong><span>Goal drift, tool shopping, alternate paths, agent lineage, root-domain freezes.</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node"><strong>Command/resource authorization binding</strong><span>Approved executable and production argv must match what actually launches.</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node"><strong>Workspace admission → immutable snapshot → malware scan</strong><span>Validate, copy, validate again, scan, re-hash, then execute that admitted snapshot.</span></div>
-            <div class="arch-connector">↓</div>
-            <div class="arch-node host-node">
-              <small>LINUX HOST ENFORCEMENT</small><strong>Namespaces + seccomp + Landlock + resource controls</strong>
-              <div class="host-controls"><span>user namespace</span><span>mount namespace</span><span>PID namespace</span><span>network namespace</span><span>IPC namespace</span><span>no_new_privs</span><span>strict seccomp</span><span>Landlock</span><span>cgroups / RLIMIT</span></div>
-            </div>
-            <div class="arch-connector split">↙ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↘</div>
-            <div class="arch-bottom-grid">
-              <div class="arch-node compact"><strong>Scoped secret broker</strong><span>TTL, domain binding, use limits.</span></div>
-              <div class="arch-node compact"><strong>Tamper-evident audit</strong><span>Hash chain + remote authenticated anchor.</span></div>
-              <div class="arch-node compact"><strong>Pinned egress broker</strong><span>Host allowlist, DNS/IP validation, TLS verification.</span></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="view long-section" id="view-rules" data-title="Controls" data-subtitle="What the browser proves versus what requires a Linux host.">
-          <div class="section-intro">
-            <span class="section-kicker">BROWSER VS HOST</span>
-            <h2>What this website really runs — and what it does not pretend to run</h2>
-            <p>The public lab demonstrates BULL's decision brain. Linux is the enforcement muscle.</p>
-          </div>
-
-          <div class="boundary-columns">
-            <article class="boundary-panel live">
-              <div class="boundary-title"><b>LIVE IN THIS BROWSER</b><span><strong class="ok" id="overview-browser-status">BOOTING</strong> <span class="badge core">REAL PYTHON</span></span></div>
-              <p>The deployed page loads repository Python into Pyodide and evaluates actions locally.</p>
-              <ul class="plain-checks">
-                <li><code>models.py</code> — decisions, provenance and capabilities</li>
-                <li><code>canonicalizer.py</code> — normalization and capability derivation</li>
-                <li><code>policy.py</code> — deterministic authority policy</li>
-                <li><code>session_guard.py</code> — behavioral history and escalation</li>
-              </ul>
-              <p class="boundary-note">Counters below start at zero. They only change after you actually run policy evaluations in this tab.</p>
-            </article>
-            <article class="boundary-panel host">
-              <div class="boundary-title"><b>LINUX HOST ONLY</b><span class="badge host">NOT SIMULATED</span></div>
-              <p>GitHub Pages cannot honestly provide these controls, so the site does not claim that it does.</p>
-              <ul class="plain-checks">
-                <li>user / mount / PID / network / IPC namespaces</li>
-                <li>strict seccomp and Landlock filesystem enforcement</li>
-                <li>cgroup and process resource constraints</li>
-                <li>immutable snapshots and ClamAV admission scanning</li>
-                <li>scoped secret broker and pinned egress broker</li>
-                <li>live sandbox attestation and production integrity gates</li>
-              </ul>
-              <p class="boundary-note">Real workload execution belongs on a separately deployed BULL Linux boundary.</p>
-            </article>
-          </div>
-
-          <div class="rule-detail-list expanded-rules">
-            <div><strong>Explicit capability grants</strong><p>DENY when the capability derived by BULL was never explicitly granted.</p></div>
-            <div><strong>Signed deployment ceiling</strong><p>Production can impose a signed global capability ceiling above per-agent grants.</p></div>
-            <div><strong>Parent authority ceiling</strong><p>A child cannot exercise authority that its parent did not possess.</p></div>
-            <div><strong>Project-root containment</strong><p>Traversal, encoded traversal and project-scoped escape attempts fail closed.</p></div>
-            <div><strong>Canary resources</strong><p>Known honeypot markers hard-block access rather than relying on a risk score.</p></div>
-            <div><strong>External credential block</strong><p>Credential requests downstream of untrusted external content are forbidden.</p></div>
-            <div><strong>External execution review</strong><p>Externally influenced process execution is elevated for review.</p></div>
-            <div><strong>Persistence awareness</strong><p>Writes to shell startup, systemd, cron and other persistence surfaces receive elevated risk.</p></div>
-            <div><strong>Behavioral history</strong><p>Goal drift, authority shifts, alternate paths and tool shopping can tighten a decision.</p></div>
-          </div>
-        </section>
-
-        <section class="view long-section playground-section" id="view-playground" data-title="BULL Policy Lab" data-subtitle="Run actions through the actual deployed canonicalizer, deterministic policy and session guard.">
-          <div class="section-intro">
-            <span class="section-kicker">LIVE POLICY LAB</span>
-            <h2>Run an action through the real browser-safe BULL core</h2>
-            <p>Pick a preset or edit the request yourself. This runs BULL's repository Python in your browser. It does <strong>not</strong> execute the proposed shell command.</p>
-          </div>
-
-          <div class="playground-toolbar"><div class="preset-row" id="presets" aria-label="BULL security presets"></div></div>
-
-          <div class="lab-grid">
-            <form class="card request-panel" id="request-form">
-              <div class="card-header"><div><h3>Action proposal</h3><span>BULL derives the requested capability. The proposal does not choose it.</span></div><span class="tiny-badge">INPUT</span></div>
-              <label>Agent / session<input id="actor" name="actor" value="browser-agent" autocomplete="off"></label>
-              <div class="two-col">
-                <label>Operation<select id="operation" name="operation"><option value="read">read</option><option value="write">write</option><option value="exec">exec</option><option value="credential.read">credential.read</option><option value="fetch">fetch</option><option value="post">post</option><option value="spawn">spawn</option><option value="message">message</option></select></label>
-                <label>Provenance<select id="provenance" name="provenance"><option value="human">human</option><option value="local_trusted">local_trusted</option><option value="repository">repository</option><option value="internet" selected>internet</option><option value="external_agent">external_agent</option><option value="unknown">unknown</option></select></label>
-              </div>
-              <label>Resource<input id="resource" name="resource" value="/workspace/README.md" autocomplete="off" spellcheck="false"></label>
-              <fieldset><legend>Granted capability envelope</legend><div class="cap-grid" id="grants"></div></fieldset>
-              <label class="switch-row"><input type="checkbox" id="parent-enabled"><span>Apply parent-agent authority ceiling</span></label>
-              <fieldset id="parent-fieldset" disabled><legend>Parent capability ceiling</legend><div class="cap-grid" id="parent-grants"></div></fieldset>
-              <div class="form-actions"><button class="button primary" id="evaluate-button" type="submit" disabled>Evaluate through BULL</button><button class="button ghost" id="reset-button" type="button" disabled>Reset agent history</button></div>
-            </form>
-
-            <section class="card result-panel" aria-live="polite">
-              <div class="card-header"><div><h3>Decision trace</h3><span>Direct result from the BULL Python core.</span></div><span class="tiny-badge">OUTPUT</span></div>
-              <div class="decision idle" id="decision"><small>DECISION</small><strong>WAITING</strong></div>
-              <dl class="facts">
-                <div><dt>Stage</dt><dd id="stage">—</dd></div>
-                <div><dt>Derived capability</dt><dd id="derived-capability">—</dd></div>
-                <div><dt>Canonical resource</dt><dd id="canonical-resource">—</dd></div>
-                <div><dt>Risk</dt><dd id="risk">—</dd></div>
-                <div><dt>Hard block</dt><dd id="hard-block">—</dd></div>
-              </dl>
-              <div class="reason-box"><h4>Why BULL returned this decision</h4><ol id="reasons"><li>Submit an action to execute BULL.</li></ol></div>
-              <details><summary>Raw evaluation JSON</summary><pre id="raw-output">{}</pre></details>
-            </section>
-          </div>
-
-          <section class="card hosted-model-card" id="hosted-model">
-            <div class="card-header"><div><h3>Bring your own hosted open model</h3><span>Let an OpenAI-compatible model propose one action, then send that proposal through the same BULL browser core.</span></div><span class="tiny-badge">OPTIONAL</span></div>
-            <div class="hosted-model-notice">The model response remains untrusted data. This page never executes the proposed command. If you provide a key, the current connector keeps it in page memory rather than browser storage. Treat browser API keys as temporary test credentials.</div>
-            <div class="hosted-model-grid">
-              <label>Hosted endpoint<input id="model-endpoint" type="url" placeholder="https://model.example.com/v1" autocomplete="off"></label>
-              <label>Model ID<input id="model-id" type="text" placeholder="qwen2.5:7b-instruct" autocomplete="off"></label>
-              <label>Optional visitor API key<input id="model-api-key" type="password" placeholder="Temporary test key" autocomplete="off"></label>
-            </div>
-            <div class="form-actions hosted-model-actions">
-              <a class="text-button" href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/HOSTED_OPEN_MODEL_CONNECTOR.md" target="_blank" rel="noreferrer">Connector requirements ↗</a>
-              <div><button id="model-test-button" class="button ghost" type="button">Test connection</button><button id="model-run-button" class="button primary" type="button">Run selected preset with model</button></div>
-            </div>
-            <p id="model-status" class="hosted-model-status" data-kind="idle">Configure an OpenAI-compatible hosted model endpoint.</p>
-            <details class="model-proposal-details"><summary>Model action proposal</summary><pre id="model-proposal-output">No model proposal received.</pre></details>
-          </section>
-
-          <div class="session-heading"><span class="section-kicker">THIS TAB ONLY</span><h3>What actually happened in your browser session</h3><p>No prerecorded alerts. No fake traffic. Run tests above and this section fills itself.</p></div>
-          <div class="metric-strip standalone-metrics">
-            <div class="metric-cell"><span>All decisions</span><strong id="metric-all">0</strong></div>
-            <div class="metric-cell"><span class="metric-key allow"></span><span>Allowed</span><strong id="metric-allow">0</strong></div>
-            <div class="metric-cell"><span class="metric-key restrict"></span><span>Restricted</span><strong id="metric-restrict">0</strong></div>
-            <div class="metric-cell"><span class="metric-key deny"></span><span>Denied</span><strong id="metric-deny">0</strong></div>
-          </div>
-
-          <div class="telemetry-grid">
-            <article class="card traffic-card">
-              <div class="chart-head"><div><strong>Decision activity</strong><span>Cumulative outcomes · current browser session</span></div><span class="tiny-badge"><span id="overview-session-count">0</span> EVENTS</span></div>
-              <div class="chart-shell">
-                <div class="chart-y-labels"><span>max</span><span>0</span></div>
-                <svg id="decision-chart" viewBox="0 0 760 240" preserveAspectRatio="none" role="img" aria-label="Decision activity chart">
-                  <line x1="0" y1="30" x2="760" y2="30" class="grid-line"/><line x1="0" y1="90" x2="760" y2="90" class="grid-line"/><line x1="0" y1="150" x2="760" y2="150" class="grid-line"/><line x1="0" y1="210" x2="760" y2="210" class="grid-line"/>
-                  <path id="chart-all" class="chart-line all" d=""/><path id="chart-allow" class="chart-line allow" d=""/><path id="chart-restrict" class="chart-line restrict" d=""/><path id="chart-deny" class="chart-line deny" d=""/>
-                </svg>
-                <div class="chart-empty" id="chart-empty">Run a policy test to generate real session telemetry.</div>
-              </div>
-            </article>
-            <article class="card panel-card"><div class="card-header"><div><h3>Non-allow outcomes</h3><span>Only from this browser session</span></div></div><div class="feed-list" id="alert-feed"><div class="empty-row">No alerts yet.</div></div></article>
-          </div>
-
-          <article class="card events-card">
-            <div class="card-header"><div><h3>Decision events</h3><span>Actions actually evaluated in this tab</span></div><button class="text-button" id="clear-dashboard" type="button">Clear session UI</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Capability</th><th>Decision</th><th>Risk</th></tr></thead><tbody id="events-table"><tr><td colspan="6" class="empty-cell">No decision events yet.</td></tr></tbody></table></div>
-          </article>
-        </section>
-
-        <section class="long-section" id="multi-agent">
-          <div class="section-intro"><span class="section-kicker">MULTI-AGENT AUTHORITY</span><h2>Spawning another agent does not create new permission</h2><p>BULL can issue host-owned security domains with lineage, capability ceilings and egress ceilings.</p></div>
-          <div class="domain-diagram">
-            <div class="domain-card root"><small>ROOT AGENT</small><strong>read · write · execute · spawn</strong><span>Shared root behavioral history</span></div>
-            <div class="domain-branches">
-              <article class="domain-card"><small>CHILD A</small><strong>read</strong><span>subset of parent authority</span></article>
-              <article class="domain-card"><small>CHILD B</small><strong>read · execute</strong><span>subset of parent authority</span></article>
-              <article class="domain-card denied-domain"><small>CHILD REQUEST</small><strong>credential.read</strong><span>DENY — parent never granted it</span></article>
-            </div>
-          </div>
-          <div class="text-columns">
-            <p><strong>Identity comes from the host.</strong> Model-provided domain IDs, provenance or authority metadata are not accepted as trusted context.</p>
-            <p><strong>Siblings do not reset history.</strong> Agents keep distinct identities while sharing their root domain's behavioral security context.</p>
-            <p><strong>Serious violations can freeze the tree.</strong> A hard block or cross-agent behavioral violation can freeze the entire root domain.</p>
-          </div>
-        </section>
-
-        <section class="long-section" id="brokers">
-          <div class="section-intro"><span class="section-kicker">SCOPED BROKERS</span><h2>Secrets and network access stay outside the raw workload</h2><p>Instead of handing a sandbox every credential and a normal network stack, BULL mediates privileged access through host-side brokers.</p></div>
-          <div class="broker-grid">
-            <article class="broker-card">
-              <small>SECRET BROKER</small><h3>Give the action the secret it earned — not the whole environment</h3>
-              <div class="mini-pipeline"><span>policy authorization</span><i>→</i><span>scoped token</span><i>→</i><span>Unix broker</span><i>→</i><span>specific secret</span></div>
-              <ul class="plain-checks"><li>allowed secret names</li><li>TTL expiration</li><li>sandbox/domain binding</li><li>maximum-use limits</li><li>revocation and peer authentication</li></ul>
-            </article>
-            <article class="broker-card">
-              <small>EGRESS BROKER</small><h3>Outbound access is a capability, not a default network socket</h3>
-              <div class="mini-pipeline"><span>host allowlist</span><i>→</i><span>DNS validation</span><i>→</i><span>IP pin</span><i>→</i><span>TLS hostname check</span></div>
-              <ul class="plain-checks"><li>private / loopback / metadata-style destinations fail closed</li><li>mixed public/private DNS answers fail closed</li><li>HTTP method restrictions</li><li>response-size limits</li><li>redirects require reauthorization</li></ul>
-            </article>
-          </div>
-        </section>
-
-        <section class="view long-section" id="view-verification" data-title="Verification" data-subtitle="Evidence generated by the build that deployed this site.">
-          <div class="section-intro"><span class="section-kicker">BUILD EVIDENCE</span><h2>Show the proof. Also show what the proof does not mean.</h2><p>The deployment workflow verifies the code before publishing the Pages artifact.</p></div>
-          <div class="verification-grid">
-            <article class="card metric-card"><span>Commit</span><strong id="build-sha">loading…</strong></article>
-            <article class="card metric-card"><span>Regression suite</span><strong id="pytest-status">loading…</strong></article>
-            <article class="card metric-card"><span>Local-host red team</span><strong id="redteam-status">loading…</strong></article>
-            <article class="card metric-card"><span>TLA+ model check</span><strong id="formal-status">loading…</strong></article>
-            <article class="card metric-card"><span>Browser core self-test</span><strong id="browser-status">loading…</strong></article>
-            <article class="card metric-card"><span>Built</span><strong id="built-at">loading…</strong></article>
-          </div>
-          <div class="evidence-layout">
-            <article class="card evidence-card"><div class="card-header"><div><h3>Exact browser source hashes</h3><span>SHA-256 values generated during deployment.</span></div><a class="text-button" href="https://github.com/Anharmoniclabs/BULL/actions">Actions ↗</a></div><pre id="source-hashes">loading…</pre></article>
-            <article class="card proof-limits"><h3>What a green build does not prove</h3><p>Passing CI does not mean BULL is vulnerability-free.</p><p>TLA+ checks the modeled state machine, not the full Python/Linux implementation.</p><p>Host certification proves requested controls were observed on that host; it is not a proof against kernel or hypervisor compromise.</p><p>BULL has not undergone an independent third-party security audit.</p></article>
-          </div>
-        </section>
-
-        <section class="long-section" id="limitations">
-          <div class="section-intro"><span class="section-kicker">SECURITY BOUNDARY</span><h2>What BULL does not claim to solve</h2><p>Security software gets more credible when it states the boundary plainly.</p></div>
-          <div class="limit-grid">
-            <div><strong>Compromised kernel / hypervisor</strong><span>BULL trusts the Linux kernel and outer host boundary.</span></div>
-            <div><strong>Malicious host administrator</strong><span>The host and BULL trusted computing base remain trusted components.</span></div>
-            <div><strong>Hardware attacks</strong><span>This is not a hardware-rooted confidential-computing system.</span></div>
-            <div><strong>All side channels</strong><span>Separate mutually hostile tenants into separate VMs or microVMs.</span></div>
-            <div><strong>Bad actions inside granted authority</strong><span>If you explicitly grant an ability, policy cannot magically make every use harmless.</span></div>
-            <div><strong>Unknown implementation bugs</strong><span>Tests and formal models cover the cases they actually encode, not every future bug.</span></div>
-          </div>
-          <article class="card boundary-card"><h3>Current platform reality</h3><p><strong>Linux strict enforcement is implemented.</strong> macOS and Windows have backend contracts but deliberately fail closed until native enforcement exists. BULL does not silently fall back to an unrestricted subprocess and call that “portable security.”</p></article>
-        </section>
-
-        <section class="long-section" id="developers">
-          <div class="section-intro"><span class="section-kicker">DEVELOPERS</span><h2>Use the runtime, inspect it, break it, verify it</h2><p>BULL is still early. The public interface today is a Python package/runtime, production Linux boundary, verification CLI and browser policy lab.</p></div>
-          <div class="dev-grid">
-            <article class="code-card"><small>INSTALL FROM SOURCE</small><pre><code>git clone https://github.com/Anharmoniclabs/BULL.git
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BULL — A clear boundary for AI agents</title><meta name="description" content="The story behind BULL, what its agent-permission controls do, what is implemented, and what is still unfinished. Try the real policy demo.">
+<meta name="theme-color" content="#202830"><meta name="referrer" content="strict-origin-when-cross-origin">
+<meta property="og:title" content="BULL — A clear boundary for AI agents"><meta property="og:description" content="The agent can ask. Permission stays with you. Explore the project, its implementation and an honest account of its limits."><meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="./assets/brand/bull-favicon.svg"><link rel="stylesheet" href="./styles.css"><script type="module" src="./story.js"></script></head><body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><a class="brand" href="#view-overview" aria-label="BULL home"><img src="./assets/brand/bull-mark.svg" width="48" height="46" alt=""><span>BULL<small>BY ANHARMONICLABS</small></span></a><nav aria-label="Main navigation"><a href="#story">The story</a><a href="#view-rules">What’s built</a><a href="#view-playground">Try it</a><a href="https://github.com/Anharmoniclabs/BULL">GitHub ↗</a></nav></header>
+<main id="main"><div hidden><span id="view-label">Overview</span><span id="view-title">BULL</span><span id="view-subtitle">Agent permissions</span></div>
+<section class="hero section" id="view-overview"><div class="hero-copy"><span class="eyebrow">Blocking Unauthorized Logic Loopholes</span><h1>The agent can ask.<br>Permission stays<br>with you.</h1><p class="lede">An AI agent can read a page, write a file or suggest a command. BULL is being built to keep those suggestions from becoming permission to do anything it wants.</p><p>It is an open-source project that puts explicit checks between an agent and the tools you give it. Not another chatbot. Not a promise that AI is suddenly risk-free.</p><a class="button primary" href="#view-playground">See how a decision works <span aria-hidden="true">↓</span></a><p class="small">Experimental software · Linux enforcement · Independent audit still needed</p></div><div class="hero-art"><img src="./assets/brand/bull-stacked.svg" width="474" height="425" alt="BULL bulldog logo. Blocking Unauthorized Logic Loopholes."><p>A guard dog for the tools.<br>Not a replacement for your judgment.</p></div></section>
+<section class="section story" id="story"><div><span class="eyebrow">Why this project exists</span><h2>Useful agents need limits.<br>Those limits should be yours.</h2></div><div class="prose"><p>Giving an agent a job often means giving it access: a project folder, a shell, a service or another agent. The difficult part is keeping that access tied to the job.</p><p>An instruction in a webpage is still just a webpage. A request from a child agent is still just a request. Neither should be able to grant itself access to your credentials or computer.</p><p>That is the idea behind BULL. The project starts with explicit permission checks, adds memory of suspicious behavior across a session, and connects those decisions to a separate Linux execution boundary. The MicroVM work adds another layer under development, not a finished product claim.</p><p>The bulldog fits the job: watch the boundary, make the reason for a decision clear, and do not let a convincing request rewrite the rules.</p><p class="source-note">Project rationale and scope: <a href="https://github.com/Anharmoniclabs/BULL/blob/main/README.md">repository overview</a> and <a href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/PRODUCTION_SECURITY.md">security design</a>.</p></div></section>
+<section class="section" id="view-architecture"><span class="eyebrow">The basic idea</span><h2>Ask. Check. Then act—within the boundary.</h2><div class="steps"><article><span>01</span><h3>The agent asks</h3><p>“Read this file.” “Run this program.” “Contact this service.” A proposed action is treated as untrusted input.</p></article><article><span>02</span><h3>BULL checks the request</h3><p>What permission does it really require? Who granted it? What influenced it? Does it fit the agent’s authority and recent behavior?</p></article><article><span>03</span><h3>The host enforces the decision</h3><p>An allowed request is not a free pass. Real execution needs a configured host, an approved command and the required isolation controls.</p></article></div><div class="outcomes"><p><b>ALLOW</b><span>The policy permits the request.</span></p><p><b>SANDBOX</b><span>It needs a restricted environment.</span></p><p><b>REVIEW</b><span>It needs additional approval.</span></p><p><b>DENY</b><span>It must not proceed.</span></p></div><p class="small">The website demonstrates the checking step. It does not start a Linux sandbox or a virtual machine.</p></section>
+<section class="section" id="view-rules"><div class="section-intro"><span class="eyebrow">What is implemented</span><h2>Here is what is actually in the project.</h2><p>“Implemented” means there is code and a defined role for it. It does not mean a feature is independently audited or ready on every machine.</p></div><div class="implementation-list">
+<article><div><span class="status">Implemented</span><h3>Permission checks that the model cannot grant itself</h3></div><p>Paths are normalized, the required capability is derived from the action, and requests are checked against explicit grants and parent authority. <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/policy.py">Policy</a> · <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/canonicalizer.py">Request normalization</a></p></article>
+<article><div><span class="status">Implemented</span><h3>Session history and agent-family limits</h3></div><p>The session guard can tighten decisions when behavior shifts. Host-issued security domains limit children to their parent’s authority and share behavioral history across the agent family. <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/session_guard.py">Session guard</a> · <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/security_domain.py">Security domains</a></p></article>
+<article><div><span class="status">Requires a configured Linux host</span><h3>An execution boundary, not just a warning</h3></div><p>The host runtime binds approval to the command, admits a project snapshot, and applies namespace isolation, syscall filtering, filesystem restrictions and resource limits. Missing production prerequisites must fail closed. <a href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/PRODUCTION_SECURITY.md">Deployment requirements</a></p></article>
+<article><div><span class="status">Implemented; deployment required</span><h3>Controlled secrets, network access and audit records</h3></div><p>Host-side brokers scope secret use and outbound access. Audit records are hash-chained, with authenticated remote anchoring components. Production credentials and an actual anchor service still need provisioning. <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/secret_broker.py">Secrets</a> · <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/pinned_egress.py">Network</a> · <a href="https://github.com/Anharmoniclabs/BULL/blob/main/src/bulldog/anchor_service.py">Audit service</a></p></article>
+<article><div><span class="status unfinished">In development</span><h3>A separate MicroVM around the runtime</h3></div><p>The Linux x86-64/KVM launcher, immutable input-image builder and host regression tests exist. A persistent production engine, complete guest integration and real-KVM release evidence are unfinished. ARM and macOS/HVF remain disabled or experimental. <a href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/MICROVM_RELEASE_STATUS.md">Exact release gaps</a></p></article>
+<article><div><span class="status">Working browser demonstration</span><h3>The policy demo below</h3></div><p>The deployment copies the repository’s policy modules into a browser Python runtime and records source hashes. It checks proposals without executing them. Connecting a hosted model is optional. <a href="#view-verification">Build evidence</a> · <a href="https://github.com/Anharmoniclabs/BULL/blob/main/site/runtime/lab_api.py">Demo adapter</a></p></article>
+</div></section>
+<section class="section examples" id="examples"><span class="eyebrow">In everyday terms</span><h2>Three situations BULL is designed to handle.</h2><div class="steps"><article><h3>The task is to read a project file.</h3><p>The agent has project-read permission and requests a file inside that project. That can be allowed without granting shell or credential access.</p></article><article><h3>A webpage asks for a credential.</h3><p>Reading the page does not grant it authority. The policy hard-blocks credential access influenced by untrusted external content.</p></article><article><h3>A child asks for more access.</h3><p>Spawning an agent does not create new permission. A child cannot exceed its parent’s authority.</p></article></div><p class="small">These are illustrative policy cases, not claims about attacks blocked on your machine. Try the corresponding presets below.</p></section>
+<section class="section lab-section" id="view-playground"><div class="section-intro"><span class="eyebrow">Try it yourself</span><h2>A request is not permission.</h2><p>Choose an example and see the decision, plus the reason behind it. The demo uses BULL's actual Python policy code. It checks requests; it does not run the proposed command or protect your computer.</p></div><div class="runtime-row"><div aria-live="polite" id="runtime-banner" role="status"><strong id="runtime-state">Demo not loaded</strong><span id="runtime-detail">Reading this page does not load the Python demo.</span></div><button class="button primary" id="load-demo" type="button">Load the demo</button></div><p class="small">Loading the demo downloads Pyodide from jsDelivr. Test requests stay in this tab unless you choose the optional hosted-model connection below. <span id="overview-browser-status">NOT LOADED</span></p><noscript><p>The story and documentation work without JavaScript. The interactive demo needs JavaScript enabled.</p></noscript>
+<div class="playground-toolbar"><div aria-label="BULL security presets" class="preset-row" id="presets"></div></div>
+<div class="lab-grid"><form class="card request-panel" id="request-form"><div class="card-header"><div><h3>Action proposal</h3><span>BULL derives the requested capability. The proposal does not choose it.</span></div><span class="tiny-badge">INPUT</span></div>
+<label>Agent / session<input autocomplete="off" id="actor" name="actor" value="browser-agent"></label><div class="two-col"><label>Operation<select id="operation" name="operation"><option value="read">read</option><option value="write">write</option><option value="exec">exec</option><option value="credential.read">credential.read</option><option value="fetch">fetch</option><option value="post">post</option><option value="spawn">spawn</option><option value="message">message</option></select></label><label>Provenance<select id="provenance" name="provenance"><option value="human">human</option><option value="local_trusted">local_trusted</option><option value="repository">repository</option><option selected value="internet">internet</option><option value="external_agent">external_agent</option><option value="unknown">unknown</option></select></label></div>
+<label>Resource<input autocomplete="off" id="resource" name="resource" spellcheck="false" value="/workspace/README.md"></label><fieldset><legend>Granted capability envelope</legend><div class="cap-grid" id="grants"></div></fieldset><label class="switch-row"><input id="parent-enabled" type="checkbox"><span>Apply parent-agent authority ceiling</span></label><fieldset disabled id="parent-fieldset"><legend>Parent capability ceiling</legend><div class="cap-grid" id="parent-grants"></div></fieldset><div class="form-actions"><button class="button primary" disabled id="evaluate-button" type="submit">Check this request</button><button class="button ghost" disabled id="reset-button" type="button">Reset agent history</button></div></form>
+<section aria-live="polite" class="card result-panel"><div class="card-header"><div><h3>Decision trace</h3><span>Direct result from the BULL Python core.</span></div><span class="tiny-badge">OUTPUT</span></div><div class="decision idle" id="decision"><small>DECISION</small><strong>WAITING</strong></div><dl class="facts"><div><dt>Stage</dt><dd id="stage">—</dd></div><div><dt>Derived capability</dt><dd id="derived-capability">—</dd></div><div><dt>Canonical resource</dt><dd id="canonical-resource">—</dd></div><div><dt>Risk</dt><dd id="risk">—</dd></div><div><dt>Hard block</dt><dd id="hard-block">—</dd></div></dl><div class="reason-box"><h4>Why BULL returned this decision</h4><ol id="reasons"><li>Load the demo, choose an example, then check the request.</li></ol></div><details><summary>Raw evaluation JSON</summary><pre id="raw-output">{}</pre></details></section></div>
+<details class="advanced"><summary>Optional: connect your own hosted model</summary><section class="card hosted-model-card" id="hosted-model"><div class="card-header"><div><h3>Bring your own hosted open model</h3><span>Let an OpenAI-compatible model propose one action, then send that proposal through the same BULL browser core.</span></div><span class="tiny-badge">OPTIONAL</span></div><div class="hosted-model-notice">The model response remains untrusted data. This page never executes the proposed command. If you provide a key, the current connector keeps it in page memory rather than browser storage. Treat browser API keys as temporary test credentials.</div><div class="hosted-model-grid"><label>Hosted endpoint<input autocomplete="off" id="model-endpoint" placeholder="https://model.example.com/v1" type="url"></label><label>Model ID<input autocomplete="off" id="model-id" placeholder="qwen2.5:7b-instruct" type="text"></label><label>Optional visitor API key<input autocomplete="off" id="model-api-key" placeholder="Temporary test key" type="password"></label></div><div class="form-actions hosted-model-actions"><a class="text-button" href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/HOSTED_OPEN_MODEL_CONNECTOR.md" rel="noreferrer" target="_blank">Connector requirements ↗</a><div><button class="button ghost" id="model-test-button" type="button">Test connection</button><button class="button primary" id="model-run-button" type="button">Run selected preset with model</button></div></div><p class="hosted-model-status" data-kind="idle" id="model-status">Configure an OpenAI-compatible hosted model endpoint.</p><details class="model-proposal-details"><summary>Model action proposal</summary><pre id="model-proposal-output">No model proposal received.</pre></details></section></details>
+<details class="advanced" id="session-results"><summary>View this tab’s decision history</summary><div class="metric-strip standalone-metrics"><div class="metric-cell"><span>All decisions</span><strong id="metric-all">0</strong></div><div class="metric-cell"><span>Allowed</span><strong id="metric-allow">0</strong></div><div class="metric-cell"><span>Restricted</span><strong id="metric-restrict">0</strong></div><div class="metric-cell"><span>Denied</span><strong id="metric-deny">0</strong></div></div><div class="telemetry-grid"><article class="card traffic-card"><div class="chart-head"><div><strong>Decision activity</strong><span>Cumulative outcomes · current browser session</span></div><span class="tiny-badge"><span id="overview-session-count">0</span> EVENTS</span></div><div class="chart-shell"><svg aria-label="Decision activity chart" id="decision-chart" preserveAspectRatio="none" role="img" viewBox="0 0 760 240"><line class="grid-line" x1="0" x2="760" y1="30" y2="30"/><line class="grid-line" x1="0" x2="760" y1="90" y2="90"/><line class="grid-line" x1="0" x2="760" y1="150" y2="150"/><line class="grid-line" x1="0" x2="760" y1="210" y2="210"/><path class="chart-line all" d="" id="chart-all"/><path class="chart-line allow" d="" id="chart-allow"/><path class="chart-line restrict" d="" id="chart-restrict"/><path class="chart-line deny" d="" id="chart-deny"/></svg><div class="chart-empty" id="chart-empty">Run a policy test to generate real session telemetry.</div></div></article><article class="card panel-card"><div class="card-header"><div><h3>Non-allow outcomes</h3><span>Only from this browser session</span></div></div><div class="feed-list" id="alert-feed"><div class="empty-row">No alerts yet.</div></div></article></div><article class="card events-card"><div class="card-header"><div><h3>Decision events</h3><span>Actions actually evaluated in this tab</span></div><button class="text-button" id="clear-dashboard" type="button">Clear session UI</button></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Capability</th><th>Decision</th><th>Risk</th></tr></thead><tbody id="events-table"><tr><td class="empty-cell" colspan="6">No decision events yet.</td></tr></tbody></table></div></article></details></section>
+<section class="section" id="view-verification"><div class="section-intro"><span class="eyebrow">Evidence, not promises</span><h2>What has been checked?</h2><p>These results come from the build that published this page. They are not a claim that every deployment is safe. The browser self-test runs only after you load the demo.</p></div><div class="verification-grid"><article class="card metric-card"><span>Commit</span><strong id="build-sha">Loading build evidence…</strong></article><article class="card metric-card"><span>Regression suite</span><strong id="pytest-status">Loading build evidence…</strong></article><article class="card metric-card"><span>Local-host red team</span><strong id="redteam-status">Loading build evidence…</strong></article><article class="card metric-card"><span>TLA+ model check</span><strong id="formal-status">Loading build evidence…</strong></article><article class="card metric-card"><span>Browser core self-test</span><strong id="browser-status">Not loaded</strong></article><article class="card metric-card"><span>Built</span><strong id="built-at">Loading build evidence…</strong></article></div><div class="evidence-layout"><article class="card evidence-card"><div class="card-header"><div><h3>Exact browser source hashes</h3><span>SHA-256 values generated during deployment.</span></div><a class="text-button" href="https://github.com/Anharmoniclabs/BULL/actions">Actions ↗</a></div><pre id="source-hashes">loading…</pre></article><article class="card proof-limits"><h3>What a green build does not prove</h3><p>Passing CI does not mean BULL is vulnerability-free.</p><p>TLA+ checks the modeled state machine, not the full Python/Linux implementation.</p><p>Host certification proves requested controls were observed on that host; it is not a proof against kernel or hypervisor compromise.</p><p>BULL has not undergone an independent third-party security audit.</p></article></div></section>
+<section class="section" id="limitations"><span class="eyebrow">The limits matter</span><h2>BULL is early. Here is what not to assume.</h2><div class="prose wide"><p><strong>It is not a universal safety guarantee.</strong> The host administrator, trusted BULL code and kernel remain part of the trusted system. This project does not claim protection against a compromised kernel or hypervisor, every side channel, or harmful actions that still fit permissions you explicitly granted.</p><p><strong>It is not plug-and-play protection for every agent.</strong> Integrators still have to route sensitive actions through the runtime and configure the real host boundary. First-class agent adapters and a polished persistent MicroVM session remain work to do.</p><p><strong>A green test suite is evidence, not certification.</strong> The formal models cover their modeled state machines, not the entire Python/Linux implementation. An independent third-party security audit is still needed.</p></div></section>
+<section class="section getting-started" id="developers"><div><span class="eyebrow">For developers</span><h2>Read it. Run the checks.<br>Build on it carefully.</h2><p>Start with the source and the security boundary. Use a disposable development environment, not sensitive workloads.</p><p><a href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/PRODUCTION_SECURITY.md">Production setup requirements ↗</a></p></div><div><pre><code>git clone https://github.com/Anharmoniclabs/BULL.git
 cd BULL
-python -m pip install -e .</code></pre></article>
-            <article class="code-card"><small>VERIFY</small><pre><code>bull verify
-bull verify --production</code></pre></article>
-            <article class="code-card"><small>SIGN THE TRUSTED RUNTIME</small><pre><code>export BULL_INTEGRITY_MANIFEST_KEY='host-secret'
-bull manifest --output /etc/bull/integrity.json</code></pre></article>
-            <article class="code-card"><small>CREATE A DEPLOYMENT POLICY</small><pre><code>export BULL_POLICY_BUNDLE_KEY='policy-secret'
-bull policy \
-  --output /etc/bull/policy.json \
-  --capability fs.read.project \
-  --capability process.exec</code></pre></article>
-          </div>
-          <div class="next-gap"><strong>What BULL still needs to become plug-and-play</strong><p>First-class adapters for real agent runtimes: MCP, coding-agent tool execution, IDE agents, and a clean daemon/gateway surface. The core security pieces exist; distribution and integration are the next product layer.</p></div>
-        </section>
-
-        <footer class="site-footer">
-          <div><strong>BULL</strong><span>Experimental open-source execution governance for AI agents.</span></div>
-          <div><a href="https://github.com/Anharmoniclabs/BULL">Source</a><a href="https://github.com/Anharmoniclabs/BULL/blob/main/SECURITY.md">Security policy</a><a href="https://github.com/Anharmoniclabs/BULL/blob/main/docs/PRODUCTION_SECURITY.md">Production boundary</a></div>
-        </footer>
-      </main>
-    </div>
-  </div>
-</body>
-</html>
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e . pytest
+python -m pytest -q
+bull verify</code></pre><p class="small">Linux/macOS shell syntax. Installing the package does not activate protection. <code>bull verify --production</code> is a separate check for a host whose required controls and secrets have already been provisioned.</p></div></section>
+<section class="section brand-kit" id="brand-kit"><span class="eyebrow">The BULL identity</span><h2>One bulldog. A consistent identity.</h2><p>The approved mark is now shared by this website and the project documentation. These lightweight SVG assets were traced from the supplied logo sheet; the small descriptor remains editable text.</p><div class="brand-grid"><a download href="./assets/brand/bull-mark.svg"><img src="./assets/brand/bull-mark.svg" alt="BULL mark-only logo" width="290" height="278"><span>Mark only · SVG ↓</span></a><a download href="./assets/brand/bull-primary.svg"><img src="./assets/brand/bull-primary.svg" alt="BULL primary horizontal logo" width="790" height="278"><span>Primary lockup · SVG ↓</span></a><a download href="./assets/brand/bull-stacked.svg"><img src="./assets/brand/bull-stacked.svg" alt="BULL stacked logo" width="474" height="425"><span>Stacked · SVG ↓</span></a><a download href="./assets/brand/bull-one-color.svg"><img src="./assets/brand/bull-one-color.svg" alt="BULL one-color logo" width="790" height="278"><span>One color · SVG ↓</span></a></div></section>
+</main><footer class="site-footer"><img src="./assets/brand/bull-primary.svg" width="260" height="92" alt="BULL — Blocking Unauthorized Logic Loopholes"><p>An open-source project by Anharmoniclabs.<br>Clear permission. Visible limits. Work still to do.</p><div><a href="https://github.com/Anharmoniclabs/BULL">Source</a><a href="https://github.com/Anharmoniclabs/BULL/blob/main/SECURITY.md">Report a security issue</a><a href="https://github.com/Anharmoniclabs/BULL/blob/main/LICENSE">License</a></div></footer></body></html>
