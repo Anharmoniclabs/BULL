@@ -170,6 +170,7 @@ def test_production_full_argv_binding_rejects_semantic_argument_drift(monkeypatc
             ledger=SimpleNamespace(
                 remote_anchor_url="https://audit.example/",
                 remote_anchor_key=b"key",
+                production_anchor_ready=True,
             ),
         ),
         sandbox=sandbox,
