@@ -1,0 +1,13 @@
+[
+ {"start":0,"end":18.292,"title":"Information is not permission."},
+ {"start":18.292,"end":42.292,"title":"Two inputs. Different levels of trust."},
+ {"start":42.292,"end":62.375,"title":"Bind approval to the actual command."},
+ {"start":62.375,"end":82.25,"title":"Move an admitted copy, not the host."},
+ {"start":82.25,"end":107.75,"title":"The first boundary uses Linux."},
+ {"start":107.75,"end":128.375,"title":"Limits and measurements are explicit."},
+ {"start":128.375,"end":154.25,"title":"An optional second boundary: MicroVM."},
+ {"start":154.25,"end":176.458,"title":"Secrets and outbound data need mediation."},
+ {"start":176.458,"end":197.75,"title":"Keep evidence separate from authority."},
+ {"start":197.75,"end":220.125,"title":"Results return through bounded channels."},
+ {"start":220.125,"end":244.083,"title":"Read the implementation. Keep the limits."}
+]
