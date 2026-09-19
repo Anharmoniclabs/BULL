@@ -1,0 +1,160 @@
+WEBVTT
+
+00:00:00.600 --> 00:00:03.537
+BULL stands for Blocking Unauthorized Logic Loopholes.
+
+00:00:03.757 --> 00:00:07.438
+It sits between an agent and the actions its host makes available.
+
+00:00:07.658 --> 00:00:11.013
+Information can shape a request, but it should not grant permission.
+
+00:00:11.233 --> 00:00:17.247
+BULL is a Python execution-governance runtime, not a new language model or a custom operating-system kernel.
+
+00:00:18.892 --> 00:00:21.214
+The model proposes an operation and resource.
+
+00:00:21.434 --> 00:00:26.635
+Separately, trusted integration code supplies identity, provenance and capability grants.
+
+00:00:26.855 --> 00:00:31.058
+The canonicalizer normalizes the request and derives the capability itself.
+
+00:00:31.278 --> 00:00:33.530
+Policy checks grants and deployment limits.
+
+00:00:33.750 --> 00:00:38.452
+Session and security-domain checks carry behavioral history across related agents.
+
+00:00:38.672 --> 00:00:41.261
+A child does not acquire more authority than its parent.
+
+00:00:42.892 --> 00:00:47.872
+Production dispatch checks the exact executable and every argument against host authorization.
+
+00:00:48.092 --> 00:00:51.355
+A dispatcher-issued permit binds that action to the runtime call.
+
+00:00:51.575 --> 00:00:52.701
+Denied requests stop.
+
+00:00:52.921 --> 00:00:55.092
+Escalated requests return for review.
+
+00:00:55.312 --> 00:01:01.314
+Requests that continue still pass the execution checks; an allow decision does not mean unrestricted host access.
+
+00:01:02.975 --> 00:01:07.723
+Before command execution, BULL admits a bounded project tree into a private snapshot.
+
+00:01:07.943 --> 00:01:12.576
+File manifests and copy checks reject unsupported entries and detect source changes.
+
+00:01:12.796 --> 00:01:15.257
+The snapshot is scanned, then hashed again.
+
+00:01:15.477 --> 00:01:18.368
+The namespace runtime mounts this admitted copy read-only.
+
+00:01:18.588 --> 00:01:21.200
+It does not hand the agent the entire host filesystem.
+
+00:01:22.850 --> 00:01:29.653
+The namespace backend creates separate user, mount, process, network and interprocess-communication views.
+
+00:01:29.873 --> 00:01:33.937
+Trusted security code comes from a read-only runtime mount, separate from the project.
+
+00:01:34.157 --> 00:01:35.956
+Seccomp limits system calls.
+
+00:01:36.176 --> 00:01:38.452
+Landlock restricts filesystem access.
+
+00:01:38.672 --> 00:01:41.830
+No-new-privileges and resource limits add constraints.
+
+00:01:42.050 --> 00:01:46.717
+These controls use the host Linux kernel; they do not create a virtual machine.
+
+00:01:48.350 --> 00:01:52.100
+BULL bounds project admission, process resources and captured output.
+
+00:01:52.320 --> 00:01:55.083
+Delegated control groups add workload-wide limits.
+
+00:01:55.303 --> 00:01:59.494
+The trusted bootstrap emits a nonce-bound record before executing the command.
+
+00:01:59.714 --> 00:02:04.207
+In this source revision, the parent validates that record after the bounded child run.
+
+00:02:04.427 --> 00:02:07.318
+That is not a parent-acknowledged pre-execution launch handshake.
+
+00:02:08.975 --> 00:02:15.175
+The optional outer launcher targets Linux x eighty-six sixty-four with K V M hardware virtualization.
+
+00:02:15.395 --> 00:02:17.566
+QEMU boots a locally supplied guest kernel.
+
+00:02:17.786 --> 00:02:22.557
+Three read-only disks provide the root filesystem, admitted project and trusted runtime.
+
+00:02:22.777 --> 00:02:26.516
+Guest initialization mounts them and starts an explicit engine.
+
+00:02:26.736 --> 00:02:28.454
+There is no guest network device.
+
+00:02:28.674 --> 00:02:33.190
+Persistent sessions and real-hardware release certification remain unfinished.
+
+00:02:34.850 --> 00:02:40.307
+On the trusted-host integration path, secret and network brokers perform separate authorization.
+
+00:02:40.527 --> 00:02:43.313
+Secret grants can limit names, lifetime and use count.
+
+00:02:43.533 --> 00:02:50.070
+Outbound requests are checked against host restrictions and pinned addresses, with TLS hostname verification for HTTPS.
+
+00:02:50.290 --> 00:02:55.421
+These broker components do not imply a working network channel inside the networkless MicroVM.
+
+00:02:57.058 --> 00:02:59.276
+Audit records form a local hash chain.
+
+00:02:59.496 --> 00:03:07.193
+The production HTTPS transport sends an authenticated checkpoint containing the session, sequence and head hash, rather than the full record.
+
+00:03:07.413 --> 00:03:11.314
+The service returns an acknowledgement that is checked against those exact values.
+
+00:03:11.534 --> 00:03:16.712
+Guest relay classes exist, but production guest activation still requires a trusted bootstrap.
+
+00:03:18.350 --> 00:03:24.712
+For namespace execution, BULL returns an exit code and bounded standard-output and standard-error streams to the trusted caller.
+
+00:03:24.932 --> 00:03:27.092
+The private snapshot is then destroyed.
+
+00:03:27.312 --> 00:03:30.319
+This is not a general writable-artifact promotion system.
+
+00:03:30.539 --> 00:03:39.095
+The MicroVM launcher supervises its QEMU child and cleans temporary assets; a persistent guest result and export protocol is still release work.
+
+00:03:40.725 --> 00:03:48.887
+The repository combines policy, dispatch, snapshots, Linux enforcement, brokers, audit services and bounded formal models.
+
+00:03:49.107 --> 00:03:53.228
+Its tests support specific implemented behaviors, not universal safety.
+
+00:03:53.448 --> 00:03:59.532
+A reproducible guest build, persistent guest integration and real K V M release evidence remain unfinished.
+
+00:03:59.752 --> 00:04:03.038
+BULL has not undergone an independent third-party security audit.

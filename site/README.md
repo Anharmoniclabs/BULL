@@ -1,40 +1,18 @@
-# BULL Pages site
+# BULL engineering website
 
-This directory is the public static GitHub Pages surface for BULL. It is deliberately outside the trusted Linux enforcement boundary.
+The public site is a static architecture publication with an embedded narrated data-flow film, implementation diagrams, source links, a generated tracked-file inventory and commit-specific CI evidence.
 
-## Site direction
+There is no public policy evaluator, request editor, model endpoint form, browser Python runtime or testing console. Their source files have been removed from the current tree. Backend regression tests remain under `tests/`.
 
-The homepage is a long-form technical explainer rather than a fake SOC dashboard. A visitor can read the problem, trust model, examples, architecture, browser-versus-host boundary, multi-agent design, brokers, limitations, developer surface, and build evidence in one scroll.
+Build locally from the repository root:
 
-Only the parts that genuinely need interaction remain interactive.
+```sh
+python3 tools/build_site.py --output _site
+python3 -m http.server 8000 --directory _site
+```
 
-## Real browser policy core
+The source template uses `data-code` references. The build resolves these to commit-specific repository links and generates the source inventory. Run `python3 -m unittest discover -s tests -p test_brand_site.py -v` for static contracts. These tests do not certify a workload or boot a VM.
 
-The public lab loads the deployed copies of:
+The film is rendered through the Higgsfield media sandbox with deterministic motion graphics and synthesized narration. It is illustrative, not a recording of a production VM. The media manifest records the inspected source revision, caption/transcript provenance and content hash. Video bytes live in the owner's Higgsfield media storage; the repository stores documentation, captions and provenance, not a large video or VM image.
 
-- `src/bulldog/models.py`
-- `src/bulldog/canonicalizer.py`
-- `src/bulldog/policy.py`
-- `src/bulldog/session_guard.py`
-
-Pyodide executes those Python sources locally in the visitor's browser.
-
-Session counters, alerts, charts, and event rows start at zero and are populated only by actions actually evaluated during that browser session.
-
-## Linux enforcement boundary
-
-GitHub Pages does not claim to run namespaces, seccomp, Landlock, cgroups, malware scanning, secret brokers, pinned egress, or arbitrary visitor code. Those controls require a separately deployed BULL Linux host boundary.
-
-## Hosted model connector
-
-The optional hosted-model section asks a visitor-selected OpenAI-compatible endpoint for one bounded action proposal and sends that proposal through BULL's browser policy core. The model response remains untrusted data and is never executed as a shell command by the public page.
-
-See `docs/HOSTED_OPEN_MODEL_CONNECTOR.md` in the repository.
-
-## Deployment
-
-`.github/workflows/pages.yml` verifies BULL before publishing. The Pages artifact is uploaded only after the regression suite, local-host red-team tests, TLA+ model check, frontend contract checks, exact-source copy checks, and browser-core self-tests succeed.
-
-## Local preview
-
-The deployed artifact is assembled by the Pages workflow because it copies current BULL policy sources into `runtime/bull_core/`. A bare static server from a fresh checkout does not exactly reproduce the deployed artifact until the same source-copy build step is performed.
+Brand assets are used as the header identity and favicon, not presented as a visitor-facing logo gallery. Local deployment assets remain excluded by the repository artifact policy.
