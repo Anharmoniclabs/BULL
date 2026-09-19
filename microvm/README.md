@@ -1,83 +1,94 @@
-# Local BULL MicroVM
+# BULL MicroVM launcher
 
-This layout runs a Linux guest inside QEMU's `microvm` machine type. The host
-must provide hardware virtualization: KVM on Linux or Hypervisor.framework on
-macOS. The launcher refuses software emulation and refuses to start if the
-accelerator is unavailable.
+The release target is Linux x86-64 with real KVM. This launcher is not yet a
+certified persistent production session. ARM and macOS/HVF remain experimental
+and are disabled. Software emulation is never used as a fallback.
 
-The guest kernel and root filesystem are supplied locally. The root filesystem
-is opened read-only. The host `workspace` and trusted `bull_runtime` trees are
-exported through read-only virtio-9p devices and mounted in the guest at the
-same paths. The guest has no network device. `/run` and `/tmp` are private
-guest tmpfs mounts.
+The default launch attaches three read-only ext4 disks: rootfs, admitted
+workspace, and admitted trusted runtime. Workspace/runtime images are built
+from private snapshots with BULL's file-count, size, depth, hardlink,
+special-file, symlink, and source-mutation checks. No live host tree is attached
+unless the deployment explicitly enables development 9P mode. QEMU gets no
+network device, no monitor, minimal devices, and its Linux seccomp sandbox.
 
-```
-microvm/
-├── config/defaults.env       # non-secret local defaults
-├── guest/init                # guest PID 1, copied into the rootfs image
-├── guest/engine-adapter.example.sh
-├── rootfs/build-ext4.sh      # optional Linux-side rootfs image builder
-└── run-bull-microvm.sh       # host launcher
+Copy `config/defaults.env` to an owner-controlled deployment file and add:
+
+```text
+BULL_MICROVM_APPROVED_WORKSPACE_ROOT=/srv/bull/projects
+BULL_MICROVM_APPROVED_RUNTIME_ROOT=/srv/bull/runtime
 ```
 
-The engine is deliberately an explicit input. This repository currently
-provides BULL's Python runtime and namespace backend, but it does not provide a
-standalone `bull run` daemon or guest executable. Put a reviewed executable at
-`<trusted-runtime>/bin/bull-engine`, or pass another executable path below
-`/bull_runtime` with `--engine`. The guest init invokes it as:
+Both directories must exist. These approvals can only come from the explicitly
+selected configuration file; environment variables and launch flags cannot
+widen them. Selected exports must be beneath those roots and must not overlap.
+Root, home-directory roots, broad system directories, and aliases of those
+paths are rejected. The runtime and approved deployment configuration must be
+controlled by the deployment administrator, not the workload.
 
-```
-/bull_runtime/.../engine --workspace /workspace --runtime /bull_runtime
-```
+Configuration is literal `BULL_MICROVM_KEY=value`, with no quotes, expansions,
+substitutions, inline comments, duplicate keys, or unknown keys. Documented
+keys are `APPROVED_WORKSPACE_ROOT`, `APPROVED_RUNTIME_ROOT`, `WORKSPACE`,
+`RUNTIME_DIR`, `KERNEL`, `ROOTFS`, `ENGINE_GUEST`, `MEMORY_MIB`, `CPUS`, `ACCEL`,
+`QEMU`, `TIMEOUT_SECONDS`, and `DEV_9P`. For non-approval settings, precedence is
+flags, environment, configuration, defaults. `BULL_MICROVM_CONFIG_FILE` selects
+the configuration when `--config` is absent.
 
-The engine must be part of the read-only trusted runtime tree. Workspace files
-cannot select the engine, and symlinked engine paths are rejected.
-
-## Guest assets
-
-Provide a kernel matching the host architecture and a minimal Linux rootfs
-directory or raw ext4 image. The guest kernel needs the virtio-mmio, virtio
-block, virtio-9p, 9P filesystem, devtmpfs, procfs, sysfs, and tmpfs support
-needed by `guest/init`. The rootfs must contain `/bin/sh`, `mount`, `sleep`, and
-the interpreter and libraries required by the trusted engine.
-
-On Linux, a prepared rootfs directory can be converted into a read-only ext4
-image without root:
-
-```
-microvm/rootfs/build-ext4.sh \
-  --source /path/to/minimal-rootfs \
-  --output /path/to/rootfs.ext4
-```
-
-The helper adds `microvm/guest/init` as `/sbin/bull-init`. A prebuilt image
-must already contain that file, or a rootfs build step must install it.
-
-## Run locally
-
-```
+```sh
 microvm/run-bull-microvm.sh \
-  --kernel /path/to/vmlinux \
-  --rootfs /path/to/rootfs.ext4 \
-  --workspace /path/to/project \
-  --bull-runtime /path/to/trusted/bull-runtime \
-  --engine /bull_runtime/bin/bull-engine
+  --config /srv/bull/deployment.env \
+  --kernel /srv/bull/assets/vmlinux \
+  --rootfs /srv/bull/assets/rootfs.ext4 \
+  --workspace /srv/bull/projects/example \
+  --bull-runtime /srv/bull/runtime/release
 ```
 
-Use `--print-command` to inspect the exact QEMU invocation. The launcher uses
-`qemu-system-x86_64 -M microvm` on x86 hosts and `qemu-system-aarch64 -M
-virt` on ARM hosts, with the host-native accelerator selected explicitly. It
-does not add a user-mode or tap network backend.
+The engine defaults to `/bull_runtime/bin/bull-engine`. Every relative engine
+component must be normalized and free of symlinks. The launcher checks this
+with kernel-constrained file opens; guest init checks each component and the
+canonical path again. A trusted engine is still an explicit deployment input;
+the example adapter is not a persistent production engine.
 
-For the strongest directory isolation, build immutable workspace and runtime
-disk images and attach them as read-only virtio block devices in a Firecracker
-or QEMU configuration. The default 9P exports here are intentionally read-only
-and are useful for a local development loop, but QEMU remains the host-side
-file server for those exports and therefore stays in the trusted computing
-base.
+`--print-command` validates configuration and paths and prints the planned
+command with `/PRIVATE_RUN_DIRECTORY` placeholders. It does not create images,
+create temporary directories, probe QEMU, or start a VM. Its output explicitly
+says hardware was not checked. A real launch requires read/write `/dev/kvm`.
+The launcher supervises the exact QEMU child, forwards termination signals,
+enforces a lifetime limit, reaps the child, and removes its temporary assets.
 
-This layer protects the BULL guest from a compromised host workload only to the
-extent provided by the host hypervisor, QEMU, KVM/HVF, and the guest kernel.
-It does not make those components untrusted or eliminate hypervisor breakout
-risk. Keep the guest kernel, QEMU, and BULL runtime pinned and update them as
-one security-sensitive stack.
+Defaults are 4096 MiB, 2 CPUs, and a 3600-second maximum VM lifetime. Memory is
+bounded to 4096–65536 MiB, CPUs to 1–64, lifetime to 1–86400 seconds. These launch
+limits do not yet constitute a validated persistent-session storage budget.
+
+For development only, use `--dev-9p` or literal `BULL_MICROVM_DEV_9P=true`.
+The same approved-root restrictions apply. Live read-only 9P exposes changing
+host trees and is not a production image-isolation substitute.
+
+## Building rootfs images
+
+```sh
+microvm/rootfs/build-ext4.sh \
+  --source /srv/bull/assets/rootfs-tree \
+  --output /srv/bull/images/rootfs.ext4
+```
+
+The existing output parent must be owned by the builder and not group/world
+writable. Output parents may not contain symlinks; output directories must be
+outside the source. Existing outputs (including dangling links) are rejected;
+there is no replacement option. The builder creates private scratch and a
+private temporary image, then publishes the complete image with atomic
+no-clobber semantics. Failed builds clean up scratch and do not publish output.
+
+The strict admitted-tree builder currently rejects all symlinks, including
+usual merged-usr rootfs links. Supply a prepared tree of regular files and
+directories. It installs `/sbin/bull-init` and all guest mountpoints before
+formatting. It does not download a userspace, pin a kernel, or provision signed
+policies. The guest needs `/bin/sh`, mount utilities, `readlink`, and the
+engine's interpreter/libraries; its kernel needs ext4, devtmpfs, procfs, sysfs,
+tmpfs, and virtio-mmio/block built in. 9P is only needed for development mode.
+
+The VM contains guest workloads relative to the host. It does not protect
+against a malicious host or prove the absence of hypervisor vulnerabilities.
+Keep the guest kernel, QEMU, runtime, and images pinned as one release stack.
+
+Host regression tests: `python -m pytest -q tests/test_microvm.py`. These are
+separate from KVM boot evidence, which has not yet been produced.
