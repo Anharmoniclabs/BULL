@@ -1,24 +1,24 @@
 # BULL brand assets
 
-BULL means **Blocking Unauthorized Logic Loopholes**. The bulldog is the shared mark for the project, website and documentation.
+BULL means **Blocking Unauthorized Logic Loopholes**. The bulldog is the shared identity for the project, website and documentation—not a public logo-gallery section.
 
 ## Source of truth
 
-Use the SVGs in [`site/assets/brand/`](../site/assets/brand/). The mark and BULL lettering were traced from the owner-supplied approved raster logo sheet. These are lightweight vector adaptations, not original designer source files. The descriptor is editable system-font text, not outlined lettering. No font files are bundled.
+Use the SVGs in [`site/assets/brand/`](../site/assets/brand/). The mark and BULL lettering were traced from the owner-supplied approved raster sheet. These are vector adaptations, not original designer masters. The descriptor is editable system-font text; no font files are bundled.
 
 | Asset | Use |
 |---|---|
-| `bull-mark.svg` | Navigation, small project marks |
-| `bull-primary.svg` | Horizontal lockup on light backgrounds |
-| `bull-primary-dark.svg` | Reversed horizontal lockup on dark backgrounds |
-| `bull-stacked.svg` | Hero and square layouts |
-| `bull-one-color.svg` | One-color reproduction on light backgrounds |
-| `bull-favicon.svg` | Browser tab; opaque light backing for both browser themes |
+| `bull-mark.svg` | Small project marks and footer |
+| `bull-primary.svg` | Website header and light-background README |
+| `bull-primary-dark.svg` | Dark-background README |
+| `bull-stacked.svg` | Available source asset for square formats |
+| `bull-one-color.svg` | Available source asset for one-color reproduction |
+| `bull-favicon.svg` | Browser tab |
 
-Preserve proportions, keep a clear margin around the dog, and do not add horns, shields, neon effects or unrelated symbols. Use the mark alone where the descriptor would be too small to read. Charcoal is `#202830`; silver is `#8c98a4`.
+Preserve proportions and a clear margin. Do not add horns, shields, neon effects or unrelated symbols. Use the mark alone when the descriptor would be unreadable. Charcoal is `#202830`; silver is `#8c98a4`.
 
-The website header, hero, footer, tab icon, download area and repository README use this shared directory. It contains public branding, not VM assets. Keep guest images, kernels, deployment credentials and real deployment configurations outside the checkout. The local-only asset protections remain unchanged.
+The public website is an engineering publication with an embedded narrated architecture film. It does not display a logo-download gallery or a visitor testing console. Source variants stay available in this directory for maintainers. Images, kernels, deployment credentials and real deployment configurations belong outside the checkout; the local-only VM asset protections remain unchanged.
 
-## Naming and claims
+## Naming and technical claims
 
-Use BULL consistently in public copy. Describe a control as implemented only when there is corresponding code. Distinguish a browser policy decision from real host enforcement, host regression tests from KVM boot evidence, and modeled invariants from implementation-wide proofs. Do not imply an independent audit or a finished persistent MicroVM release.
+Use BULL consistently. Tie implementation statements to source. Distinguish architectural illustrations from live execution, host regression tests from real-KVM boot evidence, and bounded formal models from implementation-wide proofs. Do not imply an independent audit or a finished persistent MicroVM release.
