@@ -118,6 +118,13 @@ For mutually hostile tenants, put each BULL root security domain in a separate V
 9. Enable GitHub branch protection/rulesets so those checks cannot be bypassed.
 10. Re-run dynamic host certification after kernel, container-host, or BULL upgrades.
 
-## Repository protection still required
+## Repository protection
 
-As of this hardening pass, GitHub reports `main` as unprotected. Before using the repository as a production release source, enable a GitHub ruleset for `main` requiring pull requests, the BULL security regression workflow, the BULL formal-invariants workflow, conversation resolution, and prevention of force pushes/deletions.
+Main now has an active solo-maintainer ruleset requiring pull requests,
+verified signatures, resolved conversations, the Python security regression
+jobs, and TLA+ checks, with force pushes and deletion blocked. No second
+reviewer is required. The signed audit PR demonstrated a protected merge.
+Dedicated MicroVM host regression checks are added after their workflow lands;
+real KVM integration remains a release prerequisite. See the
+[rollout instructions](../microvm/governance/README.md) and
+[remaining release work](MICROVM_RELEASE_STATUS.md).
