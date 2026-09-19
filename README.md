@@ -1,6 +1,10 @@
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="site/assets/brand/bull-primary-dark.svg"><img src="site/assets/brand/bull-primary.svg" width="600" alt="BULL — Blocking Unauthorized Logic Loopholes"></picture></p>
+
 # BULL
 
 **BULL** is an experimental open-source, model-agnostic execution-governance runtime for AI agents.
+
+[The story, implementation and live policy demo](https://anharmoniclabs.github.io/BULL/) · [Shared brand assets](docs/BRAND.md)
 
 Its core rule is:
 
