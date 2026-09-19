@@ -16,7 +16,7 @@ bootstrap exists; no dummy HTTPS configuration is used.
 Install BULL in your Python environment, then run:
 
 ```sh
-microvm/audit/local-test.sh /path/to/new-private-test-directory
+bash microvm/audit/local-test.sh /path/to/new-private-test-directory
 ```
 
 The script refuses an existing directory and generates test-only keys and a
