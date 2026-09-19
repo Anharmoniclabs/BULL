@@ -36,6 +36,9 @@ These are service tests, not MicroVM boot evidence.
 2. Create an owner-only state directory on persistent storage. Provision a
    random key of at least 32 bytes through your secret manager into an
    owner-only regular file. Do not use local test keys or commit keys to Git.
+   For the environment-based direct client, use at least 32 bytes of random
+   printable text and preserve the exact same bytes in the service key file
+   and client secret (without adding a trailing newline).
 3. Run the following under a dedicated non-root service account with automatic
    restart and a read-only application installation:
 

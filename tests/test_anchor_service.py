@@ -142,6 +142,16 @@ def test_local_ledger_budget_preserves_previous_head(tmp_path):
     assert ledger.verify().valid
 
 
+def test_oversize_transport_record_rejected_before_local_append(tmp_path):
+    identity = AnchorIdentity("a" * 64, b"k" * 32)
+    transport = HTTPSAnchorTransport("https://example.invalid/v1/checkpoints", identity)
+    ledger = AuditLedger(tmp_path / "ledger", transport=transport)
+    with pytest.raises(AuditIntegrityError, match="framing"):
+        ledger.append_event("too-large", {"data": "x" * 65536})
+    assert not ledger.path.exists()
+    assert ledger.verify().valid
+
+
 @pytest.mark.skipif(not shutil.which("openssl"), reason="openssl required for local TLS fixture")
 def test_real_local_tls_acceptance_and_unavailable_service(tmp_path):
     store, _, session, key = setup_store(tmp_path)

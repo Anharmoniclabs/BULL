@@ -463,6 +463,8 @@ class AuditLedger:
                 record_hash = self._calculate_hash(record)
                 record["record_hash"] = record_hash
                 encoded_record = json.dumps(record, sort_keys=True) + "\n"
+                if self.transport is not None and len(encoded_record.encode()) > 60 * 1024:
+                    raise AuditIntegrityError("audit record exceeds transport framing budget")
                 existing_bytes = self.path.stat().st_size if self.path.exists() else 0
                 if existing_bytes + len(encoded_record.encode()) > self.max_ledger_bytes:
                     raise AuditIntegrityError("audit storage budget exhausted")
