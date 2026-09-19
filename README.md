@@ -115,7 +115,12 @@ bull verify --production
 
 See [`docs/PRODUCTION_SECURITY.md`](docs/PRODUCTION_SECURITY.md) for the complete trust model and deployment checklist.
 
-For a local hardware-virtualized outer boundary, see [`microvm/README.md`](microvm/README.md). The QEMU microVM launcher uses KVM on Linux or Hypervisor.framework on macOS, exports `/workspace` and `/bull_runtime` read-only, disables guest networking, and requires an explicit trusted engine entrypoint.
+For the hardware-virtualized outer boundary under development, see
+[`microvm/README.md`](microvm/README.md). The launcher targets Linux x86-64/KVM,
+attaches immutable admitted input images by default, disables guest networking,
+and requires an explicit trusted engine entrypoint. Persistent production
+sessions and real-KVM certification remain unfinished; macOS/HVF and ARM are
+experimental and disabled.
 
 ## Security boundary
 
