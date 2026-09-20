@@ -130,7 +130,7 @@ class BrandSiteTests(unittest.TestCase):
         self.assertIn("External production collector validation and persistent VM reuse remain future work", normalized)
         self.assertIn("not production certification or authorization to release", report)
         self.assertIn("parent-acknowledged", self.html)
-        self.assertIn("Persistent production release unfinished", self.html)
+        self.assertIn("One-shot real KVM integration demonstrated · Persistent VM reuse unfinished", self.html)
     def test_builder_refuses_source_output(self):
         with self.assertRaises(ValueError):
             builder.build(ROOT / "src")
