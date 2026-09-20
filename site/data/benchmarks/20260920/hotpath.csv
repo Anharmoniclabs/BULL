@@ -1,0 +1,4 @@
+benchmark,iterations,expected_matches,elapsed_seconds,mean_us,ops_per_second
+Traversal rejection,500,500,0.002449,4.897,204187.31
+Prompt-injection denial,500,500,33.279928,66559.856,15.02
+Benign multi-agent allow,500,500,219.279526,438559.052,2.28

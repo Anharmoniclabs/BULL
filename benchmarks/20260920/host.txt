@@ -1,0 +1,9 @@
+timestamp_utc=20260920T170536Z
+commit=cd461ae05a0925d6bd32381f8ef4da9e99bb2ccb
+kernel=Linux 7.2.6-1-cachyos x86_64 GNU/Linux
+python=Python 3.14.7
+repeats=3
+hot_iters=500
+cpu_model=AMD Ryzen 5 7430U with Radeon Graphics
+cpu_count=12
+memory=11Gi
