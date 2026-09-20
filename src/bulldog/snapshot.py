@@ -77,7 +77,10 @@ def _content_hash(manifest: FilesystemManifest) -> str:
         digest.update(b"\0")
         digest.update(entry.kind.encode("ascii"))
         digest.update(b"\0")
-        digest.update(str(entry.size).encode("ascii"))
+        # Directory st_size describes filesystem-specific storage, not tree
+        # content. File sizes remain bound; source identity/race checks below
+        # still compare the original directory metadata on the same filesystem.
+        digest.update(str(entry.size if entry.kind == "file" else 0).encode("ascii"))
         digest.update(b"\0")
         if entry.sha256 is not None:
             digest.update(entry.sha256.encode("ascii"))
@@ -367,8 +370,10 @@ def create_snapshot_isolated(
                 [
                     sys.executable,
                     "-I",
-                    "-m",
-                    "bulldog.snapshot_worker",
+                    "-c",
+                    "import runpy,sys; sys.path.insert(0, sys.argv.pop(1)); "
+                    "runpy.run_module('bulldog.snapshot_worker', run_name='__main__')",
+                    str(Path(__file__).resolve().parent.parent),
                     str(source),
                     str(worker_root),
                 ],

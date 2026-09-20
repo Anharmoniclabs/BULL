@@ -32,6 +32,12 @@ class ProductionRequirements:
 
 
 def _validate_remote_anchor(failures: list[str]) -> None:
+    if os.environ.get("BULL_AUDIT_TRANSPORT") == "relay":
+        try:
+            production_transport_from_environment()
+        except (OSError, ValueError) as exc:
+            failures.append("production audit transport is invalid: " + str(exc))
+        return
     raw = os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL", "").strip()
     if not raw:
         failures.append("remote audit anchor is not configured")
