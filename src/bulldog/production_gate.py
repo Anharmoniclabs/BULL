@@ -10,6 +10,7 @@ from .host_certify import certify_host
 from .integrity import IntegrityViolation, verify_integrity_manifest
 from .policy_bundle import PolicyBundleError, load_policy_bundle
 from .workspace_limits import WorkspaceBudget, WorkspaceLimitViolation
+from .audit_transport import production_transport_from_environment
 
 
 class ProductionGateFailure(RuntimeError):
@@ -46,6 +47,10 @@ def _validate_remote_anchor(failures: list[str]) -> None:
         failures.append("remote audit anchor URL credentials are forbidden")
     if not os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_KEY"):
         failures.append("remote audit anchor authentication key is not configured")
+    try:
+        production_transport_from_environment()
+    except (OSError, ValueError) as exc:
+        failures.append("production audit transport is invalid: " + str(exc))
 
 
 def _validate_policy_bundle(failures: list[str]) -> None:

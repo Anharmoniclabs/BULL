@@ -1,0 +1,97 @@
+#!/bin/sh
+
+set -eu
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+log() {
+    printf '%s\n' "[bull-microvm] $*" >/dev/console
+}
+
+fail() {
+    log "FATAL: $*"
+    if command -v poweroff >/dev/null 2>&1; then
+        poweroff -f >/dev/null 2>&1 || true
+    elif command -v reboot >/dev/null 2>&1; then
+        reboot -f >/dev/null 2>&1 || true
+    fi
+    exit 1
+}
+
+# These mountpoints must exist in the immutable rootfs before boot.
+for directory in /dev /proc /sys /run /tmp /workspace /bull_runtime; do
+    [ -d "$directory" ] && [ ! -L "$directory" ] || fail "invalid mountpoint $directory"
+done
+
+mount -t devtmpfs -o nosuid,noexec,mode=0755 devtmpfs /dev 2>/dev/null \
+    || mount -t tmpfs -o nosuid,noexec,mode=0755 tmpfs /dev
+mount -t proc -o nosuid,nodev,noexec proc /proc
+mount -t sysfs -o nosuid,nodev,noexec sysfs /sys
+mount -t tmpfs -o nosuid,nodev,noexec,mode=0755,size=128m tmpfs /run
+mount -t tmpfs -o nosuid,nodev,noexec,mode=1777,size=128m tmpfs /tmp
+
+mount_9p() {
+    tag="$1"
+    target="$2"
+    attempt=0
+    while ! mount -t 9p -o trans=virtio,version=9p2000.L,ro "$tag" "$target"; do
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 50 ]; then
+            fail "unable to mount read-only host export $tag at $target"
+        fi
+        sleep 0.1
+    done
+}
+
+cmdline_value() {
+    key="$1"
+    for word in $(cat /proc/cmdline); do
+        case "$word" in
+            "$key="*) printf '%s' "${word#*=}"; return 0 ;;
+        esac
+    done
+    return 1
+}
+
+if [ "$(cmdline_value bull.dev9p || true)" = true ]; then
+    log "DEVELOPMENT: live 9P exports enabled"
+    mount_9p bull_workspace /workspace
+    mount_9p bull_runtime /bull_runtime
+else
+    mount -t ext4 -o ro,noload,nosuid,nodev,noexec /dev/vdb /workspace || fail "workspace image mount failed"
+    mount -t ext4 -o ro,noload,nosuid,nodev /dev/vdc /bull_runtime || fail "runtime image mount failed"
+fi
+
+engine="$(cmdline_value bull.engine || true)"
+case "$engine" in
+    /bull_runtime/*) ;;
+    *) fail "bull.engine must name an executable below /bull_runtime" ;;
+esac
+
+case "$engine" in
+    *[[:space:],]*) fail "bull.engine contains an unsupported whitespace or comma" ;;
+    */../*|*/..|*/./*|*/.|*//* ) fail "bull.engine must use a normalized path below /bull_runtime" ;;
+esac
+
+[ -f "$engine" ] || fail "BULL engine does not exist: $engine"
+[ -x "$engine" ] || fail "BULL engine is not executable: $engine"
+[ ! -L "$engine" ] || fail "BULL engine may not be a symlink: $engine"
+component_path=/bull_runtime
+relative=${engine#/bull_runtime/}
+old_ifs=$IFS
+IFS=/
+for component in $relative; do
+    component_path=$component_path/$component
+    [ ! -L "$component_path" ] || fail "engine parent symlink forbidden"
+done
+IFS=$old_ifs
+[ "$(readlink -f "$engine")" = "$engine" ] || fail "engine canonical path mismatch"
+
+export BULL_MICROVM=1
+export BULL_WORKSPACE=/workspace
+export BULL_RUNTIME=/bull_runtime
+
+log "read-only workspace and trusted runtime mounted"
+log "starting trusted engine $engine"
+exec "$engine" --workspace /workspace --runtime /bull_runtime

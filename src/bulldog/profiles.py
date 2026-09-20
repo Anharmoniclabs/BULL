@@ -12,6 +12,7 @@ from typing import Sequence
 import warnings
 
 from .audit import AuditLedger
+from .audit_transport import production_transport_from_environment
 from .dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
 from .engine import BulldogEngine
 from .integrity import verify_integrity_manifest
@@ -127,8 +128,7 @@ class ProductionRuntime(BulldogRuntime):
 
         ledger = AuditLedger(
             os.environ["BULL_AUDIT_LEDGER"],
-            remote_anchor_url=os.environ["BULL_REMOTE_AUDIT_ANCHOR_URL"],
-            remote_anchor_key=os.environ["BULL_REMOTE_AUDIT_ANCHOR_KEY"],
+            transport=production_transport_from_environment(),
         )
         engine = BulldogEngine(policy=policy, ledger=ledger)
         budget = WorkspaceBudget.from_environment()

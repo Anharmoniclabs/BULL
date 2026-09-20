@@ -130,10 +130,8 @@ class CapabilityDispatcher:
         if ledger is None:
             failures.append("runtime audit ledger is unavailable")
         else:
-            if not getattr(ledger, "remote_anchor_url", None):
-                failures.append("runtime remote audit anchoring is unavailable")
-            if not getattr(ledger, "remote_anchor_key", None):
-                failures.append("runtime remote audit authentication is unavailable")
+            if getattr(ledger, "production_anchor_ready", False) is not True:
+                failures.append("runtime authenticated production audit transport is unavailable")
         if not getattr(self.runtime, "malware_scan_required", False):
             failures.append("runtime malware scanning is not required")
         scanner = getattr(self.runtime, "malware_scanner", None)

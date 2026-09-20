@@ -17,13 +17,17 @@ Untrusted components include model output, prompts from external sources, projec
 
 ## Production gates
 
-`production_mode=True` requires all of the following environmental controls:
+`ProductionRuntime` and `ProductionDispatcher` require the deployment controls
+below. The legacy `production_mode=True` Boolean cannot create a production boundary.
 
 - `BULL_SECCOMP_PROFILE=strict`
 - `BULL_INTEGRITY_MANIFEST=/absolute/path/to/signed-manifest.json`
 - `BULL_INTEGRITY_MANIFEST_KEY=<deployment secret>`
 - `BULL_REMOTE_AUDIT_ANCHOR_URL=https://...`
 - `BULL_REMOTE_AUDIT_ANCHOR_KEY=<deployment secret>`
+- `BULL_AUDIT_SESSION_ID=<fresh host-issued 64-character hex ID>`
+- signed policy, private snapshot scratch, durable audit ledger, and delegated
+  cgroup v2 configuration as validated by `production_gate.py`
 
 The production gate performs a dynamic backend certification, not only binary/path presence checks. The real namespace sandbox must start successfully and return a nonce-bound attestation proving:
 
@@ -56,15 +60,21 @@ This closes the previous weakness where an attacker able to replace both package
 
 ## Remote audit anchoring
 
-When `BULL_REMOTE_AUDIT_ANCHOR_URL` is configured, every audit append posts only:
+The production HTTPS transport posts only:
 
 - monotonic sequence number
 - hash-chain head
 - HMAC-SHA256 authentication tag
+- session ID and previous checkpoint hash
 
 No prompt, secret, or workload payload is sent to the anchor by this mechanism.
 
-A local remote-checkpoint advances only after an HTTPS 2xx acknowledgement. If a ledger append is persisted locally but the remote anchor is unavailable, the checkpoint remains behind and subsequent verification/appends fail closed until the gap is reconciled.
+A local remote-checkpoint advances only after an authenticated acknowledgement
+binding the session, sequence, and head hash. The legacy URL-only ledger API
+does not satisfy production checks. If delivery fails, the checkpoint remains
+behind and subsequent verification/appends fail closed. Explicit recovery
+retries the checkpoint without replaying any command. The reference SQLite
+service commits before acknowledging. See [deployment and recovery](../microvm/audit/README.md).
 
 ## Multi-agent isolation
 
@@ -108,6 +118,13 @@ For mutually hostile tenants, put each BULL root security domain in a separate V
 9. Enable GitHub branch protection/rulesets so those checks cannot be bypassed.
 10. Re-run dynamic host certification after kernel, container-host, or BULL upgrades.
 
-## Repository protection still required
+## Repository protection
 
-As of this hardening pass, GitHub reports `main` as unprotected. Before using the repository as a production release source, enable a GitHub ruleset for `main` requiring pull requests, the BULL security regression workflow, the BULL formal-invariants workflow, conversation resolution, and prevention of force pushes/deletions.
+Main now has an active solo-maintainer ruleset requiring pull requests,
+verified signatures, resolved conversations, the Python security regression
+jobs, and TLA+ checks, with force pushes and deletion blocked. No second
+reviewer is required. The signed audit PR demonstrated a protected merge.
+Dedicated MicroVM host regression checks are added after their workflow lands;
+real KVM integration remains a release prerequisite. See the
+[rollout instructions](../microvm/governance/README.md) and
+[remaining release work](MICROVM_RELEASE_STATUS.md).

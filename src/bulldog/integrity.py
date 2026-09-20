@@ -12,7 +12,9 @@ class IntegrityViolation(RuntimeError):
 
 
 CRITICAL_FILES = (
+    "anchor_service.py",
     "audit.py",
+    "audit_transport.py",
     "canonicalizer.py",
     "cgroup_scope.py",
     "dispatcher.py",
@@ -23,6 +25,8 @@ CRITICAL_FILES = (
     "integrity.py",
     "landlock_policy.py",
     "malware_scanner.py",
+    "microvm.py",
+    "microvm_image.py",
     "namespace_sandbox.py",
     "policy.py",
     "policy_bundle.py",

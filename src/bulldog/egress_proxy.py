@@ -7,6 +7,9 @@ import ipaddress
 import json
 import os
 import socket
+from .socket_hardening import (
+    HardeningError, accept_authenticated, bind_private_unix_socket,
+)
 import ssl
 import struct
 import threading
@@ -100,11 +103,9 @@ class EgressBroker:
             self.socket_path.unlink()
         except FileNotFoundError:
             pass
-        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        server.bind(str(self.socket_path))
-        os.chmod(self.socket_path, 0o600)
-        server.listen(16)
-        server.settimeout(0.25)
+        server = bind_private_unix_socket(
+            self.socket_path, backlog=16, timeout=0.25
+        )
         self._server = server
         self._stop.clear()
         self._thread = threading.Thread(
@@ -132,11 +133,13 @@ class EgressBroker:
         assert self._server is not None
         while not self._stop.is_set():
             try:
-                conn, _ = self._server.accept()
+                conn = accept_authenticated(self._server)
             except socket.timeout:
                 continue
             except OSError:
                 break
+            except HardeningError:
+                continue
             with conn:
                 self._handle(conn)
 

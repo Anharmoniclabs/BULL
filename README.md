@@ -1,6 +1,10 @@
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="site/assets/brand/bull-primary-dark.svg"><img src="site/assets/brand/bull-primary.svg" width="600" alt="BULL — Blocking Unauthorized Logic Loopholes"></picture></p>
+
 # BULL
 
 **BULL** is an experimental open-source, model-agnostic execution-governance runtime for AI agents.
+
+[The story, implementation and live policy demo](https://anharmoniclabs.github.io/BULL/) · [Shared brand assets](docs/BRAND.md)
 
 Its core rule is:
 
@@ -114,6 +118,13 @@ bull verify --production
 ```
 
 See [`docs/PRODUCTION_SECURITY.md`](docs/PRODUCTION_SECURITY.md) for the complete trust model and deployment checklist.
+
+For the hardware-virtualized outer boundary under development, see
+[`microvm/README.md`](microvm/README.md). The launcher targets Linux x86-64/KVM,
+attaches immutable admitted input images by default, disables guest networking,
+and requires an explicit trusted engine entrypoint. Persistent production
+sessions and real-KVM certification remain unfinished; macOS/HVF and ARM are
+experimental and disabled.
 
 ## Security boundary
 

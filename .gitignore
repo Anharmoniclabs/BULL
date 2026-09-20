@@ -9,3 +9,44 @@ build/
 
 # Downloaded verification tooling
 .tools/*.jar
+poetry.lock
+
+# BEGIN LOCAL-ONLY MICROVM ARTIFACTS
+# Build and store deployment assets outside this repository.
+# Keep source scripts and config/defaults.env tracked; never force-add images.
+*.ext2
+*.ext2.*
+*.ext3
+*.ext3.*
+*.ext4
+*.ext4.*
+*.qcow
+*.qcow.*
+*.qcow2
+*.qcow2.*
+*.img
+*.img.*
+*.raw
+*.raw.*
+*.vhd
+*.vhdx
+*.vmdk
+*.vdi
+*.iso
+vmlinux
+vmlinux.*
+vmlinuz
+vmlinuz-*
+bzImage
+initramfs
+initramfs.*
+initrd
+initrd.*
+/microvm/assets/
+/microvm/images/
+/microvm/local/
+/microvm/rootfs-tree/
+/microvm/config/deployment.env
+/microvm/config/*.local.env
+/deployment.env
+# END LOCAL-ONLY MICROVM ARTIFACTS
