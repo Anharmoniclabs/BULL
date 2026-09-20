@@ -56,7 +56,15 @@ class HTTPSAnchorTransport:
         encoded = canonical(message)
         if len(encoded) > MAX_FRAME:
             raise AnchorError("audit record exceeds framing limit")
-        request = Request(self.endpoint, data=encoded, headers={"Content-Type": "application/json"}, method="POST")
+        request = Request(
+            self.endpoint,
+            data=encoded,
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "BULL-AuditAnchor/1",
+            },
+            method="POST",
+        )
         with self.opener.open(request, timeout=self.timeout) as response:
             if response.status != 200:
                 raise AnchorError("audit service did not accept checkpoint")
@@ -70,7 +78,7 @@ class RelayAnchorTransport:
 
     def __init__(self, port_fd: int, identity: AnchorIdentity, *, timeout: float = 5):
         if not 0 < timeout <= 30:
-            raise AnchorError("relay timeout must be between 0 and 30 seconds")
+            raise AnchorError("anchor timeout must be between 0 and 30 seconds")
         self.fd, self.identity, self.timeout = port_fd, identity, timeout
         os.set_blocking(self.fd, False)
         os.set_inheritable(self.fd, False)
