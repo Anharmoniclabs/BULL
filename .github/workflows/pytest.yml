@@ -17,8 +17,8 @@ jobs:
       matrix:
         python-version: ["3.11", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
@@ -29,6 +29,13 @@ jobs:
         run: |
           cd /tmp
           python -I -c "import bulldog; import bulldog.multiagent; print('installed import OK:', bulldog.__file__)"
+      - name: Enable user namespaces for sandbox integration tests
+        shell: bash
+        run: |
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          unshare --user --map-root-user --mount --pid --fork --net --ipc true
       - name: Compile trusted runtime
         run: python -m compileall -q src/bulldog
       - name: Local-host red-team boundary
