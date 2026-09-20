@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -29,7 +30,11 @@ DEFAULTS = {
     "QEMU": "qemu-system-x86_64", "ENGINE_GUEST": "/bull_runtime/bin/bull-engine",
     "WORKSPACE": "", "RUNTIME_DIR": "", "KERNEL": "", "ROOTFS": "",
     "TIMEOUT_SECONDS": "3600", "DEV_9P": "false",
+    "FIRMWARE": "", "FIRMWARE_SHA256": "",
+    "CONTROL_SOCKET": "", "AUDIT_SOCKET": "",
+    "CPU_PROFILE": "host",
 }
+MACHINE = "microvm,acpi=off,x-option-roms=off,auto-kernel-cmdline=on"
 ROOT_KEYS = {"APPROVED_WORKSPACE_ROOT", "APPROVED_RUNTIME_ROOT"}
 PREFIX = "BULL_MICROVM_"
 
@@ -47,7 +52,7 @@ def config_file(path: Path) -> dict[str, str]:
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        match = re.fullmatch(r"BULL_MICROVM_([A-Z_]+)=([A-Za-z0-9_./:+@%-]*)", line)
+        match = re.fullmatch(r"BULL_MICROVM_([A-Z][A-Z0-9_]*)=([A-Za-z0-9_./:+@%-]*)", line)
         if not match:
             raise MicroVMError(f"invalid literal configuration at line {number}")
         key, value = match.groups()
@@ -121,6 +126,31 @@ def safe_qemu_path(path: Path) -> str:
     return value
 
 
+def firmware_bytes(values: dict[str, str]) -> bytes:
+    """Pin the deployment-approved qboot bytes before handing them to QEMU.
+
+    This launcher supports the qboot direct-kernel/non-ACPI contract only.
+    The digest is deployment authority, not a model-selected firmware trust root.
+    No symlink components are traversed and no firmware is downloaded.
+    """
+    path = Path(values["FIRMWARE"])
+    expected = values["FIRMWARE_SHA256"]
+    if not path.is_absolute() or not re.fullmatch(r"[0-9a-f]{64}", expected):
+        raise MicroVMError("trusted configuration must pin FIRMWARE and FIRMWARE_SHA256 for qboot")
+    safe_qemu_path(path)
+    with trusted_root_fd(Path("/")) as root_fd:
+        fd = open_beneath(root_fd, str(path).lstrip("/"))
+    with os.fdopen(fd, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(info.st_mode) or info.st_uid not in {0, os.getuid()}
+                or info.st_mode & 0o022 or not 0 < info.st_size <= 2 * 1024**2):
+            raise MicroVMError("firmware must be a bounded owner-controlled regular file")
+        data = stream.read(2 * 1024**2 + 1)
+    if hashlib.sha256(data).hexdigest() != expected:
+        raise MicroVMError("firmware SHA-256 mismatch")
+    return data
+
+
 def build_image(source: Path, output: Path, *, init: Path | None = None) -> None:
     """Admit to private scratch; publish a complete image without overwriting."""
     source = source.resolve(strict=True)
@@ -174,8 +204,45 @@ def build_image(source: Path, output: Path, *, init: Path | None = None) -> None
         os.close(parent_fd)
 
 
+def validate_channels(values: dict[str, str]) -> None:
+    paths = [values.get(key, "") for key in ("CONTROL_SOCKET", "AUDIT_SOCKET")]
+    if not any(paths):
+        return
+    if not all(paths) or paths[0] == paths[1]:
+        raise MicroVMError("control and audit require distinct paired sockets")
+    for raw in paths:
+        path = Path(raw)
+        if not path.is_absolute() or path.resolve() != path:
+            raise MicroVMError("channel socket must be an absolute canonical path")
+        info, parent = path.lstat(), path.parent.stat()
+        if (not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid()
+                or info.st_mode & 0o077 or parent.st_uid != os.getuid()
+                or parent.st_mode & 0o077):
+            raise MicroVMError("channel sockets require a private owner-controlled directory and mode")
+        safe_qemu_path(path)
+
+
+def cpu_argument(profile: str) -> str:
+    if profile == "host":
+        return "host"
+    if profile != "amd-native-ssbd":
+        raise MicroVMError("unsupported CPU_PROFILE")
+    info = Path('/proc/cpuinfo').read_text()
+    processors = [dict(line.split(':', 1) for line in block.splitlines() if ':' in line)
+                  for block in info.split('\n\n') if block.strip()]
+    normalized = [{key.strip(): value.strip() for key, value in cpu.items()} for cpu in processors]
+    if not normalized or any(cpu.get('vendor_id') != 'AuthenticAMD' or 'ssbd' not in cpu.get('flags', '').split()
+                             for cpu in normalized):
+        raise MicroVMError("amd-native-ssbd requires an AMD host with SSBD support")
+    # QEMU's Intel CPUID.7 SSBD alias requires SPEC_CTRL, which this AMD KVM
+    # host cannot expose. Use AMD's native SSBD CPUID bit instead. enforce
+    # rejects unsupported exposure; it must never silently drop protection.
+    return "host,ssbd=off,amd-ssbd=on,enforce"
+
+
 def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Path) -> list[str]:
-    cmd = [values["QEMU"], "-M", "microvm,x-option-roms=off", "-accel", "kvm", "-cpu", "host",
+    cmd = [values["QEMU"], "-M", MACHINE, "-bios", safe_qemu_path(run / "qboot.rom"),
+           "-accel", "kvm", "-cpu", cpu_argument(values.get("CPU_PROFILE", "host")),
            "-m", values["MEMORY_MIB"] + "M", "-smp", values["CPUS"],
            "-nodefaults", "-no-user-config", "-nographic", "-display", "none", "-monitor", "none", "-no-reboot",
            "-kernel", values["KERNEL"], "-append",
@@ -191,6 +258,12 @@ def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Pa
     for name, path in disks:
         cmd += ["-drive", f"id={name},file={safe_qemu_path(path)},format=raw,if=none,readonly=on",
                 "-device", f"virtio-blk-device,drive={name}"]
+    if values.get("CONTROL_SOCKET"):
+        cmd += ["-device", "virtio-serial-device,id=bull_serial"]
+        for name in ("control", "audit"):
+            path = safe_qemu_path(Path(values[name.upper() + "_SOCKET"]))
+            cmd += ["-chardev", f"socket,id=bull_{name},path={path},server=off",
+                    "-device", f"virtserialport,bus=bull_serial.0,chardev=bull_{name},name=org.bull.{name}"]
     return cmd + ["-net", "none", "-serial", "stdio", "-sandbox",
                   "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny"]
 
@@ -248,6 +321,9 @@ def main(argv=None) -> int:
     try:
         trusted = config_file(Path(args.config)) if args.config else {}
         values = {key: os.environ.get(PREFIX + key, trusted.get(key, default)) for key, default in DEFAULTS.items()}
+        # Like export approvals, firmware authority cannot come from the environment.
+        for key in ("FIRMWARE", "FIRMWARE_SHA256", "CONTROL_SOCKET", "AUDIT_SOCKET", "CPU_PROFILE"):
+            values[key] = trusted.get(key, DEFAULTS[key])
         values.update({key: getattr(args, key) for key in flags.values() if getattr(args, key) is not None})
         if args.dev_9p:
             values["DEV_9P"] = "true"
@@ -269,6 +345,8 @@ def main(argv=None) -> int:
             if not path.is_file() and not (key == "ROOTFS" and path.is_dir()):
                 raise MicroVMError(key + " must be a regular image or rootfs directory")
             values[key] = safe_qemu_path(path)
+        firmware = firmware_bytes(values)
+        validate_channels(values)
         if args.print_command:
             print(json.dumps({"hardware_checked": False, "command": shlex.join(qemu_command(values, workspace, runtime, Path("/PRIVATE_RUN_DIRECTORY")))}, indent=2))
             return 0
@@ -278,6 +356,10 @@ def main(argv=None) -> int:
             raise MicroVMError("QEMU is unavailable")
         with tempfile.TemporaryDirectory(prefix="bull-microvm-") as directory:
             run = Path(directory)
+            firmware_copy = run / "qboot.rom"
+            with firmware_copy.open("xb") as stream:
+                stream.write(firmware)
+            firmware_copy.chmod(0o400)
             if Path(values["ROOTFS"]).is_dir():
                 init = Path(__file__).resolve().parents[2] / "microvm/guest/init"
                 build_image(Path(values["ROOTFS"]), run / "rootfs.ext4", init=init)

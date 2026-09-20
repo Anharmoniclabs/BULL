@@ -90,6 +90,7 @@ import json
 import os
 import socket
 import sys
+import time
 
 PR_SET_NO_NEW_PRIVS = 38
 PR_GET_NO_NEW_PRIVS = 39
@@ -145,6 +146,7 @@ attestation = {
     "network_isolated": network_isolated,
     "python": sys.executable,
     "runtime_root": "/bull_runtime",
+    "bootstrap_complete_ns": time.monotonic_ns(),
 }
 os.write(attest_fd, (json.dumps(attestation, sort_keys=True) + "\n").encode("utf-8"))
 os.close(attest_fd)
