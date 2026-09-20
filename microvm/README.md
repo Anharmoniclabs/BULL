@@ -1,7 +1,8 @@
 # BULL MicroVM launcher
 
-The release target is Linux x86-64 with real KVM. This launcher is not yet a
-certified persistent production session. ARM and macOS/HVF remain experimental
+The supported local integration target is Linux x86-64 with real KVM. Five
+real guest cases passed through the one-shot production dispatcher path;
+persistent sessions remain deferred. ARM and macOS/HVF remain experimental
 and are disabled. Software emulation is never used as a fallback.
 
 The default launch attaches three read-only ext4 disks: rootfs, admitted
@@ -50,7 +51,9 @@ Configuration is literal `BULL_MICROVM_KEY=value`, with no quotes, expansions,
 substitutions, inline comments, duplicate keys, or unknown keys. Documented
 keys are `APPROVED_WORKSPACE_ROOT`, `APPROVED_RUNTIME_ROOT`, `WORKSPACE`,
 `RUNTIME_DIR`, `KERNEL`, `ROOTFS`, `ENGINE_GUEST`, `MEMORY_MIB`, `CPUS`, `ACCEL`,
-`QEMU`, `TIMEOUT_SECONDS`, and `DEV_9P`. For non-approval settings, precedence is
+`QEMU`, `TIMEOUT_SECONDS`, `DEV_9P`, `FIRMWARE`, `FIRMWARE_SHA256`, `CPU_PROFILE`,
+`CONTROL_SOCKET`, and `AUDIT_SOCKET`. Firmware, CPU profile and channel settings
+come only from trusted configuration, as do approved roots. For other settings, precedence is
 flags, environment, configuration, defaults. `BULL_MICROVM_CONFIG_FILE` selects
 the configuration when `--config` is absent.
 
@@ -67,7 +70,15 @@ The engine defaults to `/bull_runtime/bin/bull-engine`. Every relative engine
 component must be normalized and free of symlinks. The launcher checks this
 with kernel-constrained file opens; guest init checks each component and the
 canonical path again. A trusted engine is still an explicit deployment input;
-the example adapter is not a persistent production engine.
+the shipped `guest/bull-engine` starts the real one-shot production supervisor.
+Provision its immutable session authority, signed policy and integrity manifest
+in the runtime image. The integration runner supplies disposable test authority.
+
+Pin `FIRMWARE` and `FIRMWARE_SHA256` in trusted configuration. The implementation
+uses qboot with the non-ACPI microvm boot contract. The optional `amd-native-ssbd`
+CPU profile corrects the verified AMD/KVM SSBD dependency with enforced hardware
+support; `host` is the default. Paired control/audit paths must be distinct
+owner-only Unix sockets in private directories.
 
 `--print-command` validates configuration and paths and prints the planned
 command with `/PRIVATE_RUN_DIRECTORY` placeholders. It does not create images,
@@ -114,5 +125,33 @@ The VM contains guest workloads relative to the host. It does not protect
 against a malicious host or prove the absence of hypervisor vulnerabilities.
 Keep the guest kernel, QEMU, runtime, and images pinned as one release stack.
 
-Host regression tests: `python -m pytest -q tests/test_microvm.py`. These are
-separate from KVM boot evidence, which has not yet been produced.
+For the complete guest, use the pinned Buildroot scripts under `guest/` and
+[the dependency contract](guest/DEPENDENCIES.md). They cover Bash, offline
+ClamAV databases, Python dependencies and guest kernel features. Preserve
+existing assets and use new versioned output paths.
+
+## Reproduce the local KVM suite
+
+With prepared assets outside Git, run from the repository root:
+
+```sh
+PYTHONPATH=src python3 microvm/integration.py \
+  --kernel /absolute/path/to/private/images/bzImage \
+  --rootfs /absolute/path/to/private/images/rootfs.ext4 \
+  --firmware /absolute/path/to/private/qboot.rom \
+  --output /absolute/path/to/private/new-integration-run \
+  --case all --cpu-profile host
+```
+
+Select `amd-native-ssbd` only for the supported AMD configuration. The output
+directory must be new. The runner requires QEMU/KVM, Python, OpenSSL and ext4
+image tools; it starts a disposable local TLS collector automatically. It adds
+no guest NIC and does not contact an external collector. Cases are `allowed`,
+`denied`, `timeout`, `cancel`, and `missing-protection`. Completion requires
+authenticated results and audit evidence; QEMU exit status alone cannot pass.
+
+Host regressions: `python -m pytest -q`. Recorded results are 217 tests plus two
+subtests passing, separately from five passing KVM cases. The
+[integration report](../docs/MICROVM_INTEGRATION_REPORT.md) records source and
+asset identities, timings, limitations and the exact locally tested command.
+Credentials, images and raw reports stay outside Git.
