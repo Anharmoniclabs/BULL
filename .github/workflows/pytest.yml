@@ -42,3 +42,7 @@ jobs:
         run: python -m pytest -q tests/redteam_local_host
       - name: Full regression suite
         run: python -m pytest -q
+      - name: Installed-package import smoke test
+        run: |
+          cd /tmp
+          python -I -c "import bulldog; import bulldog.multiagent; print('installed import OK:', bulldog.__file__)"
