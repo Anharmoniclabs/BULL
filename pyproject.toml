@@ -14,5 +14,19 @@ bull = "bulldog.cli:main"
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# Explicit src-layout packaging. Do not rely on pytest's pythonpath setting or
+# setuptools auto-discovery: a normal `pip install -e .` / wheel install must
+# make `import bulldog` work in the interpreter that performed the install.
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["bulldog*"]
+
+[tool.setuptools.package-data]
+bulldog = ["_namespace_launcher.sh"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]

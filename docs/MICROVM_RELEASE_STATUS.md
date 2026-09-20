@@ -1,59 +1,74 @@
-# MicroVM production release status
+# MicroVM release notes and status
 
-The complete release objective is **not achieved**. These staged changes must
-not be described as a working production persistent MicroVM session.
+## One-shot KVM integration milestone — 2026-09-20
 
-Implemented and locally verified:
+BULL now executes an authorized harmless workload through the repository
+launcher, real QEMU/KVM guest, trusted guest supervision,
+ProductionDispatcher/ProductionRuntime, and strict namespace, seccomp and
+Landlock isolation. Dedicated authenticated virtio channels carry control,
+results and audit acknowledgments without a guest NIC.
 
-- Literal deployment configuration, explicit approved export roots, canonical
-  overlap checks, broad-root rejection, and engine component validation.
-- Private admitted immutable workspace/runtime images by default, explicit
-  development 9P, safe image publication, and read-only guest mountpoints.
-- Side-effect-free diagnostics and exact-child supervision with bounded cleanup.
-- Authenticated session-bound HTTPS audit transport, durable bounded SQLite
-  service, host relay components, exact-last retries, conflict rejection,
-  explicit checkpoint recovery, and a real local TLS fixture.
-- Production runtime/dispatcher checks for the new audit transport. Legacy
-  URL-only anchoring cannot satisfy production readiness. Guest relay activation
-  remains disabled pending a trusted bootstrap.
-- CI action commit pins, the TLA+ SHA-256 pin, and host MicroVM/audit regression
-  jobs for Python 3.11 and 3.13.
-- A bounded session/audit design model, separate from hardware and implementation
-  verification. Existing runtime model: 405 distinct states. New design model:
-  57 distinct states. Neither is a hypervisor proof.
+This experimental OSS milestone is available for public inspection and local
+reproduction. Merging or distributing its source does not require contributors
+to own a production collector or provide credentials. Runtime operators supply
+their own production policy, keys and audit destination. The local suite used
+a disposable authenticated TLS collector and validated no external service.
 
-Local verification: 186 tests pass, including 26 launcher/image regressions and
-10 audit-service tests. Tests requiring Unix sockets and namespaces ran outside
-the development tool sandbox. A real ext4 fixture and real localhost TLS were
-used. No QEMU process or guest VM was used in those tests.
+### Included changes
 
-Remaining implementation and release work:
+- Correct literal configuration parsing for documented keys containing digits.
+- Validate pinned qboot firmware and the supported microvm machine contract.
+- Support the verified AMD-native SSBD correction with enforced hardware support.
+- Build versioned guest dependencies including Bash and verified offline ClamAV
+  databases; check actual functionality before admitting workloads.
+- Provision bounded private scratch and cgroup v2 resources inside the guest.
+- Implement one-shot session authority, authenticated control/audit, actual
+  production dispatch, bounded output and explicit completion evidence.
+- Preserve full argv authorization, signed policy/integrity, malware scanning,
+  strict sandbox setup and runtime transition verification.
+- Correct cross-filesystem snapshot hashing and isolated worker package imports.
+- Verify cleanup after timeout/cancellation and reject invalid completion evidence.
 
-1. Install a real persistent `bull-engine` and `bull microvm session` interface;
-   provision trusted signed session authority separately from model requests.
-2. Dedicated virtio protocol/audit ports, host socket supervision, bounded
-   protocol transitions, disconnect/cancellation handling, and guest PID-1
-   supervision with cgroup-controller setup.
-3. Signed writable authority, validated post-execution snapshot promotion,
-   bounded artifact export, and the complete guest memory/storage budget.
-4. Trusted guest bootstrap and credentials; activate and verify relay mode
-   without fabricating direct HTTPS settings.
-5. A pinned reproducible guest/kernel build, dependency inventory, hashes, and
-   integrity coverage of deployed shell/init assets. The current strict image
-   builder requires a prepared tree without symlinks; it is not a guest build
-   recipe.
-6. A real KVM integration workflow with mandatory hardware preflight, actual
-   boot/dispatcher execution, containment and failure tests, cleanup checks,
-   and per-test evidence tied to the commit, QEMU, kernel, and image hashes.
-7. Add KVM as a required check once its actual boot/containment job is implemented.
-   The verified-signature source-and-squash path is established (audit PR #24). Main
-   now requires PRs, resolved conversations, signed commits, the existing
-   Python/TLA+ checks, and blocks force pushes/deletion with zero reviewer
-   approvals required. Add the new MicroVM regression jobs after they land.
-8. Provision and validate a production HTTPS anchor with deployment credentials.
-   Local test certificates/keys are not production deployment evidence.
+### Validation
 
-The local machine has no `/dev/kvm` or QEMU. GitHub runner hardware capability
-still needs an actual boot test. Linux x86-64/KVM is the intended first release;
-macOS/HVF and ARM remain disabled/experimental. HVF certification and independent
-hypervisor assessment remain prerequisites for their respective claims.
+| Scope | Recorded result |
+|---|---|
+| Host regressions | 217 passed plus 2 subtests; 0 failed, 0 skipped |
+| Real local KVM | 5 passed; 0 failed, 0 skipped |
+| Guest cases | Allowed, denied, timeout, cancellation, missing strict protection |
+| Guest sandbox | Landlock ABI 9, strict seccomp, no_new_privs, loopback only |
+| Audit destination | Disposable authenticated local TLS test collector |
+| Original assets/evidence | Hash-verified unchanged; excluded from Git |
+
+The [integration report](MICROVM_INTEGRATION_REPORT.md) records source and asset
+identities, stage timings and limitations. The [MicroVM README](../microvm/README.md)
+provides portable test commands. The recorded KVM run predates documentation-only
+follow-up commits; it does not claim that hosted CI booted KVM for those edits.
+
+### Merge and distribution
+
+Use the repository's pull-request process and required checks, signature rules
+and conversation resolution. Publish source and documentation while keeping
+images, firmware, databases, private configuration, credentials and raw local
+evidence outside Git. Do not bypass branch protection to merge this milestone.
+
+These results do not establish production certification, an independent audit,
+complete containment or exhaustive adversarial coverage. BULL remains open
+for independent audit and contribution.
+
+### Operator requirements and future work
+
+- Production use requires deployment-owned signed policy and integrity authority,
+  session keys, trusted firmware/images and an authenticated audit collector.
+  Validate acknowledgments and failure behavior for the actual destination.
+- Maintain offline signature database freshness through controlled image updates.
+- Validate each supported hardware/QEMU/kernel combination.
+- Hardware-backed attestation and independent security assessment remain untested.
+- Persistent VM reuse is deferred: every request needs authorization and session
+  binding, limits, expiry/revocation, credential/state separation and defined
+  failure behavior. Interrupted work must not be replayed automatically.
+- Writable workspace promotion and artifact export remain future scope; this
+  milestone uses read-only input workspaces.
+- ARM and macOS/HVF remain experimental and disabled. There is no software fallback.
+- A hosted required KVM CI job remains future work. Host-only CI does not
+  substitute for the locally demonstrated real guest execution.

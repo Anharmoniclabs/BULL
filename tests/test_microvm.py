@@ -1,5 +1,6 @@
 """Host-only regressions; these tests do not claim a hardware boot."""
 import os
+import hashlib
 from pathlib import Path
 import signal
 import shutil
@@ -9,6 +10,38 @@ import sys
 import pytest
 
 from bulldog import microvm
+
+
+def test_shipped_defaults_parse():
+    config = Path(__file__).resolve().parents[1] / "microvm/config/defaults.env"
+    values = microvm.config_file(config)
+    assert values["DEV_9P"] == "false"
+    assert values["CPUS"] == "2"
+
+
+def test_amd_native_profile_requires_supported_vendor_and_feature(monkeypatch):
+    monkeypatch.setattr(Path, 'read_text', lambda self: 'vendor_id : AuthenticAMD\nflags : ssbd\n')
+    assert microvm.cpu_argument('amd-native-ssbd') == 'host,ssbd=off,amd-ssbd=on,enforce'
+    monkeypatch.setattr(Path, 'read_text', lambda self: 'vendor_id : GenuineIntel\nflags : ssbd\n')
+    with pytest.raises(microvm.MicroVMError, match='AMD host'):
+        microvm.cpu_argument('amd-native-ssbd')
+    with pytest.raises(microvm.MicroVMError, match='unsupported'):
+        microvm.cpu_argument('host,mitigations=off')
+
+
+def test_pinned_firmware_rejects_changes_and_symlinks(tmp_path):
+    firmware = tmp_path / "qboot.rom"
+    firmware.write_bytes(b"fixture")
+    values = {"FIRMWARE": str(firmware), "FIRMWARE_SHA256": hashlib.sha256(b"fixture").hexdigest()}
+    assert microvm.firmware_bytes(values) == b"fixture"
+    firmware.write_bytes(b"changed")
+    with pytest.raises(microvm.MicroVMError, match="SHA-256"):
+        microvm.firmware_bytes(values)
+    alias = tmp_path / "alias"
+    alias.symlink_to(firmware)
+    values["FIRMWARE"] = str(alias)
+    with pytest.raises((OSError, RuntimeError)):
+        microvm.firmware_bytes(values)
 
 
 @pytest.mark.parametrize("line", [
@@ -72,6 +105,7 @@ def fixture_values(tmp_path):
     engine.write_text("#!/bin/sh\nexit 0\n")
     engine.chmod(0o755)
     (tmp_path / "kernel").write_bytes(b"test kernel")
+    (tmp_path / "qboot.rom").write_bytes(b"test firmware")
     config = tmp_path / "deployment.env"
     config.write_text("\n".join([
         f"BULL_MICROVM_APPROVED_WORKSPACE_ROOT={tmp_path / 'workspace'}",
@@ -81,6 +115,8 @@ def fixture_values(tmp_path):
         f"BULL_MICROVM_KERNEL={tmp_path / 'kernel'}",
         f"BULL_MICROVM_ROOTFS={tmp_path / 'rootfs'}",
         "BULL_MICROVM_CPUS=2",
+        f"BULL_MICROVM_FIRMWARE={tmp_path / 'qboot.rom'}",
+        f"BULL_MICROVM_FIRMWARE_SHA256={hashlib.sha256(b'test firmware').hexdigest()}",
     ]))
     return config
 
@@ -88,6 +124,9 @@ def fixture_values(tmp_path):
 def test_diagnostic_is_side_effect_free_and_precedence(tmp_path, monkeypatch, capsys):
     config = fixture_values(tmp_path)
     monkeypatch.setenv("BULL_MICROVM_CPUS", "3")
+    # Firmware authority must remain in the trusted file, not the environment.
+    monkeypatch.setenv("BULL_MICROVM_FIRMWARE", "/untrusted/firmware")
+    monkeypatch.setenv("BULL_MICROVM_FIRMWARE_SHA256", "0" * 64)
     def forbidden(*args, **kwargs):
         pytest.fail("diagnostic performed a side effect")
     monkeypatch.setattr(subprocess, "Popen", forbidden)
@@ -105,6 +144,8 @@ def test_images_are_default_and_no_network(tmp_path):
     assert command.count("virtio-blk-device,drive=workspace") == 1
     assert command[command.index("-net") + 1] == "none"
     assert sum("readonly=on" in part for part in command) == 3
+    assert command[command.index("-M") + 1] == microvm.MACHINE
+    assert command[command.index("-bios") + 1] == str(tmp_path / "qboot.rom")
 
 
 def test_image_rejects_existing_and_parent_symlink(tmp_path):

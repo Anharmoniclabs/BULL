@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+exec /usr/bin/python3 -I -c 'import sys; sys.path.insert(0, "/bull_runtime/src"); from bulldog.guest_engine import main; main()' "$@"
