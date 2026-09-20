@@ -157,8 +157,18 @@ cgroup v2 parent and a fresh audit session. It then requires
 checkpoint/acknowledgement, and constructs `ProductionRuntime` and
 `ProductionDispatcher`. It deliberately rejects localhost/test audit anchors;
 the external HTTPS collector and matching master key must already be deployed.
-See [production security](docs/PRODUCTION_SECURITY.md) and
-[audit deployment](microvm/audit/README.md).
+See [production security](docs/PRODUCTION_SECURITY.md),
+[audit deployment](microvm/audit/README.md), and the optional
+[Cloudflare Workers + D1 audit-anchor package](deploy/cloudflare-audit/README.md).
+
+## Measured benchmark evidence
+
+An operator-run benchmark on September 20, 2026 pinned BULL to commit
+`cd461ae05a0925d6bd32381f8ef4da9e99bb2ccb` and repeated 11 selected defensive regression classes three
+times each. The result was **33/33 selected runs passed, 0 failures**; the clean
+full regression suite also passed in **4.587 seconds** on the recorded host.
+
+See [`docs/BENCHMARK_20260920.md`](docs/BENCHMARK_20260920.md) for measured latency, memory and hot-path data plus interpretation limits. The public engineering page publishes the same graphs and machine-readable summary. Passing this corpus is not an independent security certification.
 
 ## Security boundary
 
