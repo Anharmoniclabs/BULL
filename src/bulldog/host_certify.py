@@ -14,17 +14,24 @@ def certify_host(
 ) -> dict:
     """Certify the host capabilities BULL depends on."""
 
+    try:
+        from .seccomp_policy import _load_libseccomp
+        _load_libseccomp()
+        seccomp_loadable = True
+    except (OSError, RuntimeError):
+        seccomp_loadable = False
     checks = {
         "linux": os.name == "posix",
         "unshare": shutil.which("unshare") is not None,
         "mount": shutil.which("mount") is not None,
         "chroot": shutil.which("chroot") is not None,
+        "true": shutil.which("true") is not None,
         "network_namespace": Path("/proc/self/ns/net").exists(),
         "pid_namespace": Path("/proc/self/ns/pid").exists(),
         "mount_namespace": Path("/proc/self/ns/mnt").exists(),
         "user_namespace": Path("/proc/self/ns/user").exists(),
         "cgroup_v2": Path("/sys/fs/cgroup/cgroup.controllers").exists(),
-        "libseccomp": ctypes.util.find_library("seccomp") is not None,
+        "libseccomp": seccomp_loadable,
     }
 
     result = {
@@ -50,7 +57,7 @@ def certify_host(
                         require_attestation=True,
                     )
                     probe = sandbox.run(
-                        ["/usr/bin/true"],
+                        [shutil.which("true") or "/usr/bin/true"],
                         project_root=td,
                         writable=False,
                         timeout=10.0,

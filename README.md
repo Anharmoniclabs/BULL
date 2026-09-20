@@ -119,12 +119,24 @@ bull verify --production
 
 See [`docs/PRODUCTION_SECURITY.md`](docs/PRODUCTION_SECURITY.md) for the complete trust model and deployment checklist.
 
-For the hardware-virtualized outer boundary under development, see
-[`microvm/README.md`](microvm/README.md). The launcher targets Linux x86-64/KVM,
-attaches immutable admitted input images by default, disables guest networking,
-and requires an explicit trusted engine entrypoint. Persistent production
-sessions and real-KVM certification remain unfinished; macOS/HVF and ARM are
-experimental and disabled.
+The [MicroVM integration](microvm/README.md) runs one request through the
+repository launcher, a real Linux x86-64/KVM guest, trusted guest supervision,
+ProductionDispatcher/ProductionRuntime, and strict namespace/seccomp/Landlock
+isolation. Input disks are read-only; authenticated control and audit use
+dedicated virtio ports without a guest NIC.
+
+Local validation passed five KVM cases: allowed execution, denied request,
+timeout cleanup, cancellation, and missing-protection refusal. The same source
+passed 217 regression tests plus two subtests, with no skips. These results
+used a disposable authenticated TLS test collector. See the
+[integration evidence](docs/MICROVM_INTEGRATION_REPORT.md) and
+[release notes](docs/MICROVM_RELEASE_STATUS.md).
+
+The source and local test collector are available for open audit; contributors
+do not need an external collector account to inspect or test BULL. Production
+operators supply their own policy, keys and audit destination. External
+production collector validation and persistent VM reuse remain future work;
+macOS/HVF and ARM remain experimental and disabled.
 
 ## Security boundary
 

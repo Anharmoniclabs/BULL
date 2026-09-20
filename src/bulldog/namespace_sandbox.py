@@ -11,6 +11,7 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+import time
 from typing import Sequence
 
 from .cgroup_scope import CgroupV2Scope
@@ -31,6 +32,7 @@ class SandboxAttestation:
     network_isolated: bool
     python: str
     runtime_root: str
+    bootstrap_complete_ns: int = 0
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,8 @@ class SandboxResult:
     stdout: str
     stderr: str
     attestation: SandboxAttestation | None = None
+    sandbox_setup_ms: float | None = None
+    workload_to_reap_ms: float | None = None
 
 
 class SandboxUnavailable(RuntimeError):
@@ -285,6 +289,7 @@ class NamespaceSandbox:
             network_isolated=True,
             python=str(data.get("python", "")),
             runtime_root="/bull_runtime",
+            bootstrap_complete_ns=int(data.get("bootstrap_complete_ns", 0)),
         )
 
     def run(
@@ -350,6 +355,7 @@ class NamespaceSandbox:
                             active_scope.attach_current()
                     preexec_fn = _apply_limits
 
+                started_ns = time.monotonic_ns()
                 try:
                     returncode, stdout, stderr = _run_bounded(
                         [
@@ -375,6 +381,7 @@ class NamespaceSandbox:
                         pass_fds=(write_fd,),
                         max_output_bytes=max_output_bytes,
                     )
+                    reaped_ns = time.monotonic_ns()
                 finally:
                     os.close(write_fd)
 
@@ -398,11 +405,16 @@ class NamespaceSandbox:
                     expected_profile=self.seccomp_profile,
                 )
 
+            boundary = attestation.bootstrap_complete_ns if attestation else 0
+            if boundary and not started_ns <= boundary <= reaped_ns:
+                raise SandboxAttestationError("invalid bootstrap timing evidence")
             return SandboxResult(
                 returncode=returncode,
                 stdout=stdout,
                 stderr=stderr,
                 attestation=attestation,
+                sandbox_setup_ms=(boundary - started_ns) / 1e6 if boundary else None,
+                workload_to_reap_ms=(reaped_ns - boundary) / 1e6 if boundary else None,
             )
         finally:
             for fd in (read_fd, write_fd):

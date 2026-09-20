@@ -108,10 +108,18 @@ class BrandSiteTests(unittest.TestCase):
             import html
             self.assertIn(html.escape(cue["text"]), text)
     def test_readme_and_publication_keep_security_limits(self):
-        readme = (ROOT / "README.md").read_text()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        normalized = " ".join(readme.split())
+        report = " ".join((ROOT / "docs/MICROVM_INTEGRATION_REPORT.md").read_text(encoding="utf-8").split())
         self.assertIn("site/assets/brand/bull-primary.svg", readme)
         self.assertIn("independent third-party security audit", readme)
-        self.assertIn("real-KVM certification remain unfinished", readme)
+        # Local KVM integration is now recorded. Keep its evidence link and
+        # release limitations instead of requiring obsolete pre-boot wording.
+        self.assertIn("docs/MICROVM_INTEGRATION_REPORT.md", readme)
+        self.assertIn("Local validation passed five KVM cases", normalized)
+        self.assertIn("disposable authenticated TLS test collector", normalized)
+        self.assertIn("External production collector validation and persistent VM reuse remain future work", normalized)
+        self.assertIn("not production certification or authorization to release", report)
         self.assertIn("parent-acknowledged", self.html)
         self.assertIn("Persistent production release unfinished", self.html)
     def test_builder_refuses_source_output(self):

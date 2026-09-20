@@ -49,4 +49,7 @@ initrd.*
 /microvm/config/deployment.env
 /microvm/config/*.local.env
 /deployment.env
+*.rom
+/microvm/evidence/
+/microvm/credentials/
 # END LOCAL-ONLY MICROVM ARTIFACTS
