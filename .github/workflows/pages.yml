@@ -1,0 +1,142 @@
+name: Deploy BULL Lab to Pages
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+  push:
+    branches: [main]
+    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bull-pages
+  cancel-in-progress: false
+
+jobs:
+  verify-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+      - name: Install BULL and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Enable user namespaces for live sandbox tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          if sysctl -n kernel.unprivileged_userns_clone >/dev/null 2>&1; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          unshare --user --map-root-user --mount --pid --fork --net --ipc true
+      - name: Compile trusted runtime and documentation builder
+        run: python -m compileall -q src/bulldog tools/build_site.py
+      - name: Local-host red-team boundary
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q tests/redteam_local_host | tee /tmp/bull-redteam.log
+      - name: Full regression suite
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q | tee /tmp/bull-pytest.log
+      - name: Validate static publication and removed interface
+        run: |
+          node --check site/infrastructure.js
+          python -m unittest discover -s tests -p test_brand_site.py -v
+          python -m unittest discover -s tests -p test_repository_artifacts.py -v
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Fetch pinned TLA+ tools
+        run: |
+          curl --fail --location --retry 3 https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar --output /tmp/tla2tools.jar
+          echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  /tmp/tla2tools.jar" | sha256sum --check --strict
+      - name: Parse and model-check both bounded specifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          for model in BullRuntime BullSessionAudit; do
+            java -cp /tmp/tla2tools.jar tla2sany.SANY "formal/tla/${model}.tla"
+            timeout 180s java -cp /tmp/tla2tools.jar tlc2.TLC -deadlock -workers 1 -config "formal/tla/${model}.cfg" "formal/tla/${model}.tla"
+          done
+      - name: Build static engineering publication
+        run: python tools/build_site.py --output _site --commit "${{ github.sha }}"
+      - name: Generate commit-specific build evidence
+        env:
+          BULL_COMMIT: ${{ github.sha }}
+          BULL_RUN_ID: ${{ github.run_id }}
+          BULL_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+          def summary(path):
+              lines = Path(path).read_text(errors="replace").splitlines()
+              for line in reversed(lines):
+                  if "passed" in line or "failed" in line or "error" in line.lower():
+                      return line.strip()
+              raise RuntimeError("No test summary in " + path)
+          paths = subprocess.check_output(["git", "ls-files", "-z"], text=True).split("\0")
+          hashes = {p: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths
+                    if p and Path(p).is_file() and (p.startswith("src/bulldog/") or p.startswith("microvm/guest/"))}
+          evidence = {
+              "repository": "Anharmoniclabs/BULL",
+              "commit": os.environ["BULL_COMMIT"],
+              "run_id": os.environ["BULL_RUN_ID"],
+              "run_number": os.environ["BULL_RUN_NUMBER"],
+              "built_at": datetime.now(timezone.utc).isoformat(),
+              "site_kind": "static engineering publication; no public evaluator",
+              "pytest_summary": summary("/tmp/bull-pytest.log"),
+              "redteam_summary": summary("/tmp/bull-redteam.log"),
+              "redteam_is_subset_of_full_suite": True,
+              "gates": {"compileall": True, "redteam": True, "pytest": True,
+                        "static_publication": True, "local_asset_policy": True,
+                        "tla_runtime_model": True, "tla_session_design_model": True},
+              "kvm_boot_certified": False,
+              "source_hashes": hashes,
+              "explainer": json.loads(Path("site/assets/explainer/manifest.json").read_text()),
+          }
+          Path("_site/data/verification.json").write_text(json.dumps(evidence, indent=2) + "\n")
+          print(json.dumps(evidence, indent=2))
+          PY
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: _site
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verify-build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Deploy verified BULL engineering publication
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

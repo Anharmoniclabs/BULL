@@ -7,6 +7,10 @@ import json
 import os
 import secrets
 import socket
+from .socket_hardening import (
+    HardeningError, accept_authenticated, bind_private_unix_socket,
+)
+import struct
 import threading
 import time
 from typing import Callable
@@ -28,20 +32,7 @@ class SecretGrant:
 
 
 class SecretBroker:
-    """
-    Host-side in-memory secret broker.
-
-    Security properties:
-      - secrets are never written to disk by this broker
-      - clients cannot enumerate names
-      - grants are explicit per secret
-      - grants expire
-      - grants can be bound to one sandbox identity
-      - grants can be one-shot / usage limited
-      - grant accounting is synchronized
-      - bearer tokens are high-entropy random values
-      - broker uses AF_UNIX instead of exposing a TCP listener
-    """
+    """Host-side in-memory secret broker with optional SO_PEERCRED binding."""
 
     def __init__(
         self,
@@ -49,6 +40,8 @@ class SecretBroker:
         *,
         audit: Callable[[dict], None] | None = None,
         trace_verifier: RuntimeTraceVerifier | None = None,
+        allowed_peer_uids: set[int] | frozenset[int] | None = None,
+        require_peer_credentials: bool = False,
     ):
         self.socket_path = Path(socket_path)
         self.audit = audit
@@ -57,12 +50,22 @@ class SecretBroker:
             if trace_verifier is not None
             else RuntimeTraceVerifier()
         )
+        self.require_peer_credentials = bool(require_peer_credentials)
+        self.allowed_peer_uids = frozenset(
+            int(uid) for uid in (
+                allowed_peer_uids
+                if allowed_peer_uids is not None
+                else ({os.getuid()} if self.require_peer_credentials else set())
+            )
+        )
+        if self.require_peer_credentials and not self.allowed_peer_uids:
+            raise SecretBrokerError("peer credential enforcement requires a UID allowlist")
+        self.peer_auth_enforced = self.require_peer_credentials
 
         self._secrets: dict[str, str] = {}
         self._grants: dict[str, SecretGrant] = {}
         self._grant_uses: dict[str, int] = {}
         self._grant_lock = threading.Lock()
-
         self._server: socket.socket | None = None
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
@@ -82,33 +85,24 @@ class SecretBroker:
     ) -> SecretGrant:
         if max_uses is not None and int(max_uses) < 1:
             raise ValueError("max_uses must be >= 1")
+        if float(ttl_seconds) <= 0:
+            raise ValueError("ttl_seconds must be > 0")
 
         names = frozenset(str(x) for x in allowed_names)
         unknown = names.difference(self._secrets)
-
         if unknown:
             raise SecretBrokerError(
-                "grant references unknown secrets: "
-                + ", ".join(sorted(unknown))
+                "grant references unknown secrets: " + ", ".join(sorted(unknown))
             )
 
         token = secrets.token_urlsafe(32)
         grant = SecretGrant(
             token=token,
             allowed_names=names,
-            expires_at=time.time() + ttl_seconds,
-            sandbox_id=(
-                str(sandbox_id)
-                if sandbox_id is not None
-                else None
-            ),
-            max_uses=(
-                int(max_uses)
-                if max_uses is not None
-                else None
-            ),
+            expires_at=time.time() + float(ttl_seconds),
+            sandbox_id=str(sandbox_id) if sandbox_id is not None else None,
+            max_uses=int(max_uses) if max_uses is not None else None,
         )
-
         with self._grant_lock:
             self._grants[token] = grant
             self._grant_uses[token] = 0
@@ -136,12 +130,9 @@ class SecretBroker:
         except FileNotFoundError:
             pass
 
-        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        server.bind(str(self.socket_path))
-        os.chmod(self.socket_path, 0o600)
-        server.listen(16)
-        server.settimeout(0.25)
-
+        server = bind_private_unix_socket(
+            self.socket_path, backlog=16, timeout=0.25
+        )
         self._server = server
         self._stop.clear()
         self._thread = threading.Thread(
@@ -169,16 +160,34 @@ class SecretBroker:
         assert self._server is not None
         while not self._stop.is_set():
             try:
-                conn, _ = self._server.accept()
+                conn = accept_authenticated(self._server)
             except socket.timeout:
                 continue
             except OSError:
                 break
+            except HardeningError:
+                continue
             with conn:
                 self._handle(conn)
 
+    def _authorize_peer(self, conn: socket.socket) -> tuple[int, int, int] | None:
+        if not self.require_peer_credentials:
+            return None
+        if not hasattr(socket, "SO_PEERCRED"):
+            raise SecretBrokerError("SO_PEERCRED is unavailable on this platform")
+        raw = conn.getsockopt(
+            socket.SOL_SOCKET,
+            socket.SO_PEERCRED,
+            struct.calcsize("3i"),
+        )
+        pid, uid, gid = struct.unpack("3i", raw)
+        if uid not in self.allowed_peer_uids:
+            raise SecretBrokerError("secret broker peer UID is not authorized")
+        return int(pid), int(uid), int(gid)
+
     def _handle(self, conn: socket.socket) -> None:
         try:
+            peer = self._authorize_peer(conn)
             request = json.loads(self._read_line(conn))
             if request.get("op") != "get":
                 raise SecretBrokerError("unsupported operation")
@@ -187,38 +196,26 @@ class SecretBroker:
             name = str(request.get("name", ""))
             sandbox_id_raw = request.get("sandbox_id")
             sandbox_id = (
-                str(sandbox_id_raw)
-                if sandbox_id_raw is not None
-                else None
+                str(sandbox_id_raw) if sandbox_id_raw is not None else None
             )
-
-            value = self._authorize_and_get(
-                token,
-                name,
-                sandbox_id=sandbox_id,
-            )
-            response = {
-                "ok": True,
-                "name": name,
-                "value": value,
-            }
-            self._emit({
+            value = self._authorize_and_get(token, name, sandbox_id=sandbox_id)
+            response = {"ok": True, "name": name, "value": value}
+            event = {
                 "event": "secret_access",
                 "name": name,
                 "allowed": True,
                 "sandbox_id": sandbox_id,
-            })
-        except Exception as exc:
-            response = {
-                "ok": False,
-                "error": str(exc),
             }
+            if peer is not None:
+                event["peer_pid"], event["peer_uid"], event["peer_gid"] = peer
+            self._emit(event)
+        except Exception as exc:
+            response = {"ok": False, "error": str(exc)}
             self._emit({
                 "event": "secret_access",
                 "allowed": False,
                 "error": str(exc),
             })
-
         conn.sendall((json.dumps(response) + "\n").encode("utf-8"))
 
     def _authorize_and_get(
@@ -231,7 +228,6 @@ class SecretBroker:
         with self._grant_lock:
             grant = None
             stored_key = None
-
             for stored_token, candidate in self._grants.items():
                 if hmac.compare_digest(stored_token, token):
                     grant = candidate
@@ -240,40 +236,29 @@ class SecretBroker:
 
             if grant is None or stored_key is None:
                 raise SecretBrokerError("invalid secret grant")
-
             if time.time() > grant.expires_at:
                 self._grants.pop(stored_key, None)
                 self._grant_uses.pop(stored_key, None)
                 raise SecretBrokerError("secret grant expired")
-
-            if grant.sandbox_id is not None:
-                if sandbox_id != grant.sandbox_id:
-                    raise SecretBrokerError(
-                        "secret grant belongs to another sandbox"
-                    )
-
+            if grant.sandbox_id is not None and sandbox_id != grant.sandbox_id:
+                raise SecretBrokerError("secret grant belongs to another sandbox")
             if name not in grant.allowed_names:
                 raise SecretBrokerError("secret not granted")
 
             uses = self._grant_uses.get(stored_key, 0)
             if grant.max_uses is not None and uses >= grant.max_uses:
                 raise SecretBrokerError("secret grant usage exhausted")
-
             try:
                 value = self._secrets[name]
             except KeyError:
                 raise SecretBrokerError("secret unavailable")
-
             self._grant_uses[stored_key] = uses + 1
 
         self.trace.emit("ReturnSecret")
         return value
 
     @staticmethod
-    def _read_line(
-        conn: socket.socket,
-        limit: int = 16384,
-    ) -> str:
+    def _read_line(conn: socket.socket, limit: int = 16384) -> str:
         data = bytearray()
         while len(data) < limit:
             chunk = conn.recv(4096)
@@ -282,10 +267,8 @@ class SecretBroker:
             data.extend(chunk)
             if b"\n" in chunk:
                 break
-
         if len(data) >= limit:
             raise SecretBrokerError("request too large")
-
         return bytes(data).split(b"\n", 1)[0].decode("utf-8")
 
     def _emit(self, event: dict) -> None:
@@ -301,23 +284,15 @@ def request_secret(
     sandbox_id: str | None = None,
     timeout: float = 3.0,
 ) -> str:
-    """Minimal sandbox-side client."""
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.settimeout(timeout)
-
     try:
         client.connect(str(socket_path))
-        request = {
-            "op": "get",
-            "token": token,
-            "name": name,
-        }
+        request = {"op": "get", "token": token, "name": name}
         if sandbox_id is not None:
             request["sandbox_id"] = str(sandbox_id)
-
         client.sendall((json.dumps(request) + "\n").encode("utf-8"))
         response = json.loads(SecretBroker._read_line(client))
-
         if not response.get("ok"):
             raise SecretBrokerError(
                 response.get("error", "secret request failed")

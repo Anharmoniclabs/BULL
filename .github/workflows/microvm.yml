@@ -1,0 +1,33 @@
+name: BULL MicroVM host regression
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  microvm-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Reject tracked local VM assets
+        run: python -m unittest discover -s tests -p test_repository_artifacts.py -v
+      - name: Install package and fixture tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y e2fsprogs openssl
+          python -m pip install -e . pytest
+      - name: Host launcher, image and audit regressions (not a KVM boot)
+        run: python -m pytest -q tests/test_microvm.py tests/test_anchor_service.py

@@ -12,13 +12,7 @@ def certify_host(
     dynamic: bool = False,
     seccomp_profile: str = "strict",
 ) -> dict:
-    """Certify the host capabilities BULL depends on.
-
-    Static checks prove prerequisites are present. ``dynamic=True`` additionally
-    launches the real NamespaceSandbox and requires its nonce-bound backend
-    attestation, so a host where unshare/mount/seccomp are installed but blocked
-    by policy does not receive a production certification.
-    """
+    """Certify the host capabilities BULL depends on."""
 
     checks = {
         "linux": os.name == "posix",
@@ -63,6 +57,14 @@ def certify_host(
                     )
 
                 att = probe.attestation
+                strict_landlock_ok = (
+                    seccomp_profile != "strict"
+                    or (
+                        att is not None
+                        and att.landlock
+                        and att.landlock_abi >= 1
+                    )
+                )
                 result["dynamic_certified"] = bool(
                     probe.returncode == 0
                     and att is not None
@@ -70,6 +72,7 @@ def certify_host(
                     and att.no_new_privs
                     and att.seccomp
                     and att.seccomp_profile == seccomp_profile
+                    and strict_landlock_ok
                     and att.network_isolated
                     and att.runtime_root == "/bull_runtime"
                 )
@@ -80,6 +83,8 @@ def certify_host(
                         "seccomp": att.seccomp,
                         "seccomp_profile": att.seccomp_profile,
                         "seccomp_rules": att.seccomp_rules,
+                        "landlock": att.landlock,
+                        "landlock_abi": att.landlock_abi,
                         "network_interfaces": list(att.network_interfaces),
                         "network_isolated": att.network_isolated,
                         "python": att.python,

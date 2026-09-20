@@ -1,0 +1,21 @@
+{
+  "title": "BULL: from information to controlled execution",
+  "source_commit": "12f531eb6b8e4cd460bb749528fac5250faebf7c",
+  "video_url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3BN6e9xn2X4STcw4FAYAt0XmfjE/e32608c9-1342-464e-b623-9df5600ae8dd.mp4",
+  "duration_seconds": 244.135,
+  "width": 1920,
+  "height": 1080,
+  "frames_per_second": 24,
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "bytes": 5605348,
+  "sha256": "3d01a6f6663848ba90f419126faf84c90f1413294630a31082e0f50c7c0bbec9",
+  "chapters": 11,
+  "narration": "Synthetic English narration; Piper en_US-libritts-high speaker 0. Not a representation of a named real speaker.",
+  "voice_attribution": "Piper LibriTTS voice; LibriTTS dataset by Heiga Zen and collaborators, distributed under CC BY 4.0. Synthesized for this BULL explainer.",
+  "voice_sources": ["https://www.openslr.org/60/", "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/libritts/high/MODEL_CARD", "https://creativecommons.org/licenses/by/4.0/"],
+  "production": "Rendered through the Higgsfield connector's cloud media sandbox with Pillow motion graphics, Piper narration and FFmpeg. No paid generation purchase.",
+  "illustrative_not_execution_recording": true,
+  "caption_source": "Sentence timings measured during synthesis; captions burned into video and supplied as WebVTT.",
+  "evidence_url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3BN6e9xn2X4STcw4FAYAt0XmfjE/27095207-5784-4e25-a762-8be8764b32b5.zip"
+}
