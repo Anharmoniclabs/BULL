@@ -25,6 +25,8 @@ GROUPS = [
     ("Broker components", "Secret retrieval and outbound requests have their own authorization and transport controls. Alternate hardening helpers are documented as components, not assumed to be wired into every execution route.", "secret_broker.py egress_proxy.py socket_hardening.py broker_hardening.py pinned_egress.py"),
     ("Audit and state models", "Local hash-chained records, authenticated checkpoint transports, the durable anchor service, and runtime trace abstractions. Guest relay activation and production provisioning remain separate release work.", "audit.py audit_transport.py anchor_service.py trace_model.py trace_runtime.py"),
     ("MicroVM host tools", "Hardware-only QEMU/KVM launch configuration and the admitted ext4 image helper. The guest kernel, root filesystem and trusted engine are supplied by the deployment.", "microvm.py microvm_image.py"),
+    ("Multi-agent orchestration", "Structured messages, registered handlers, approval-gated steps and host-owned synthetic canary inspection. Adapters must route external writes through the guard; absence of a canary finding is not proof of safety.", "multiagent/__init__.py multiagent/agents.py multiagent/bus.py multiagent/contracts.py multiagent/honeytoken.py multiagent/system.py"),
+    ("Adversary observation components", "Contracts, fingerprints, lure, registry and quarantine components for the adversary-capture subsystem. This source inventory is not evidence of deployment, complete containment or independent certification.", "adversary/__init__.py adversary/contracts.py adversary/fingerprint.py adversary/lure.py adversary/quarantine.py adversary/registry.py adversary/system.py"),
     ("Public API and auxiliaries", "Package exports and verification commands, plus advisory/sentinel interfaces. Heuristic agent detection is not proof of identity or a replacement for the production boundary.", "__init__.py cli.py verify.py advisory.py agent_sentinel.py"),
 ]
 REMOVED = (
@@ -49,8 +51,9 @@ def source_link(path: str, commit: str, line: int | None = None) -> str:
 
 def describe(path: str) -> str:
     if path.startswith("src/bulldog/"):
+        relative = path.removeprefix("src/bulldog/")
         for title, _, names in GROUPS:
-            if Path(path).name in names.split():
+            if relative in names.split():
                 return title
         return "Runtime source"
     if path.startswith("microvm/guest/"):
@@ -127,8 +130,14 @@ def page(title: str, body: str) -> str:
 
 
 def groups_html(commit: str, rows: list[dict]) -> str:
-    actual = {Path(row["path"]).name for row in rows if row["path"].startswith("src/bulldog/")}
-    documented = {name for _, _, names in GROUPS for name in names.split()}
+    # Use package-relative paths, not basenames: nested packages legitimately
+    # share names such as __init__.py, contracts.py and system.py.
+    actual = {row["path"].removeprefix("src/bulldog/") for row in rows
+              if row["path"].startswith("src/bulldog/")}
+    entries = [name for _, _, names in GROUPS for name in names.split()]
+    documented = set(entries)
+    if len(entries) != len(documented):
+        raise ValueError("module-map drift: duplicate documented path")
     if actual != documented:
         raise ValueError(f"module-map drift: undocumented={actual-documented}; absent={documented-actual}")
     result = []
