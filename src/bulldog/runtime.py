@@ -44,6 +44,9 @@ class ExecutionResult:
     malware_clean: bool | None = None
     malware_detections: tuple[str, ...] = ()
     trace_state: object | None = None
+    sandbox_attestation: object | None = None
+    sandbox_setup_ms: float | None = None
+    workload_to_reap_ms: float | None = None
 
 
 class BulldogRuntime:
@@ -378,6 +381,9 @@ class BulldogRuntime:
                 malware_scan_performed=True,
                 malware_clean=malware_clean,
                 trace_state=self.trace.snapshot(),
+                sandbox_attestation=result.attestation,
+                sandbox_setup_ms=result.sandbox_setup_ms,
+                workload_to_reap_ms=result.workload_to_reap_ms,
             )
         finally:
             destroy_snapshot(snapshot)

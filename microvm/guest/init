@@ -11,12 +11,12 @@ log() {
 
 fail() {
     log "FATAL: $*"
-    if command -v poweroff >/dev/null 2>&1; then
-        poweroff -f >/dev/null 2>&1 || true
-    elif command -v reboot >/dev/null 2>&1; then
+    # qboot/non-ACPI uses reboot=t and QEMU -no-reboot, not ACPI poweroff.
+    if command -v reboot >/dev/null 2>&1; then
         reboot -f >/dev/null 2>&1 || true
     fi
-    exit 1
+    # Never return from PID 1 if reboot failed; host lifetime supervision remains.
+    while :; do sleep 1; done
 }
 
 # These mountpoints must exist in the immutable rootfs before boot.
@@ -30,6 +30,17 @@ mount -t proc -o nosuid,nodev,noexec proc /proc
 mount -t sysfs -o nosuid,nodev,noexec sysfs /sys
 mount -t tmpfs -o nosuid,nodev,noexec,mode=0755,size=128m tmpfs /run
 mount -t tmpfs -o nosuid,nodev,noexec,mode=1777,size=128m tmpfs /tmp
+
+# Private bounded storage for admitted snapshots and the trusted audit ledger.
+mkdir -m 0700 /run/bull
+mount -t tmpfs -o nosuid,nodev,noexec,mode=0700,size=1024m tmpfs /run/bull
+mkdir -m 0700 /run/bull/snapshots /run/bull/audit
+mount -t cgroup2 -o nosuid,nodev,noexec cgroup2 /sys/fs/cgroup \
+    || fail "cgroup v2 mount failed"
+mkdir /sys/fs/cgroup/supervisor /sys/fs/cgroup/workloads
+printf '1\n' > /sys/fs/cgroup/supervisor/cgroup.procs
+printf '+cpu +memory +pids\n' > /sys/fs/cgroup/cgroup.subtree_control
+printf '+cpu +memory +pids\n' > /sys/fs/cgroup/workloads/cgroup.subtree_control
 
 mount_9p() {
     tag="$1"
@@ -93,5 +104,9 @@ export BULL_WORKSPACE=/workspace
 export BULL_RUNTIME=/bull_runtime
 
 log "read-only workspace and trusted runtime mounted"
+# This checks guest functionality. ProductionRuntime still verifies every
+# deployment gate; a successful preflight is not workload completion evidence.
+python3 -I -c 'import sys; sys.path.insert(0, "/bull_runtime/src"); from bulldog.guest_preflight import main; raise SystemExit(main())' \
+    || fail "guest dependency preflight failed; no workload admitted"
 log "starting trusted engine $engine"
 exec "$engine" --workspace /workspace --runtime /bull_runtime
