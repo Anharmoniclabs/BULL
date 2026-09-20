@@ -138,6 +138,28 @@ operators supply their own policy, keys and audit destination. External
 production collector validation and persistent VM reuse remain future work;
 macOS/HVF and ARM remain experimental and disabled.
 
+## One-command production host provisioning
+
+BULL includes a fail-closed Linux production provisioner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Anharmoniclabs/BULL/main/tools/bull-production-provision.sh -o bull-production-provision.sh
+chmod +x bull-production-provision.sh
+./bull-production-provision.sh \
+  --anchor-url https://YOUR-AUDIT-HOST/v1/checkpoints \
+  --anchor-key-file /path/to/owner-only/bull-anchor.key
+```
+
+The provisioner creates owner-only deployment state, signed integrity and policy
+bundles, strict-seccomp configuration, private snapshot/audit paths, a delegated
+cgroup v2 parent and a fresh audit session. It then requires
+`bull verify --production`, performs a real authenticated remote-anchor
+checkpoint/acknowledgement, and constructs `ProductionRuntime` and
+`ProductionDispatcher`. It deliberately rejects localhost/test audit anchors;
+the external HTTPS collector and matching master key must already be deployed.
+See [production security](docs/PRODUCTION_SECURITY.md) and
+[audit deployment](microvm/audit/README.md).
+
 ## Security boundary
 
 BULL's untrusted-workload boundary is the sandboxed agent process. The host Python process, the BULL trusted computing base, and the Linux kernel remain trusted components.
