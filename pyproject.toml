@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local execution firewall and provenance-aware policy harness for AI agents"
 requires-python = ">=3.11"
 authors = [{name = "Anharmoniclabs"}]
-license = {text = "Apache-2.0"}
+license = {text = "GPL-2.0-or-later"}
 dependencies = []
 
 [project.scripts]
