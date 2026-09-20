@@ -36,6 +36,15 @@ class BrandSiteTests(unittest.TestCase):
     def setUp(self):
         self.html = (self.output / "index.html").read_text(encoding="utf-8")
         self.page = Page(self.html)
+    def test_homepage_tracks_current_kvm_and_authority_status(self):
+        self.assertIn("One-shot real KVM integration demonstrated", self.html)
+        self.assertIn("September 20, 2026", self.html)
+        self.assertIn("security-domain lineage and shared root-domain history", self.html)
+        self.assertIn("Advisory monotonicity", self.html)
+        self.assertIn("Recorded KVM integration evidence", self.html)
+        self.assertNotIn("real KVM release boot evidence", self.html)
+        self.assertNotIn("What is not connected yet", self.html)
+
     def test_public_testing_interface_is_removed(self):
         for path in builder.REMOVED:
             self.assertFalse((ROOT / path).exists(), path)
