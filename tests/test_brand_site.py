@@ -111,7 +111,7 @@ class BrandSiteTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text()
         self.assertIn("site/assets/brand/bull-primary.svg", readme)
         self.assertIn("independent third-party security audit", readme)
-        self.assertIn("real-KVM certification remain unfinished", readme)
+        self.assertIn("persistent VM reuse remain future work", readme)
         self.assertIn("parent-acknowledged", self.html)
         self.assertIn("Persistent production release unfinished", self.html)
     def test_builder_refuses_source_output(self):
