@@ -188,6 +188,9 @@ class EgressBroker:
 
     def fetch(self, *, method: str, url: str) -> EgressResponse:
         method = method.upper()
+        request_trace = RuntimeTraceVerifier()
+        if self.allowed_hosts:
+            request_trace.emit("GrantBroker")
         if method not in self.allowed_methods:
             raise EgressDenied("HTTP method is not granted")
 
@@ -249,7 +252,7 @@ class EgressBroker:
                 headers={str(k): str(v) for k, v in response.getheaders()},
                 body=body,
             )
-            self.trace.emit("BrokerEgress")
+            request_trace.emit("BrokerEgress")
             return result
         except EgressDenied:
             raise

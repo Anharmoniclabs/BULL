@@ -6,6 +6,7 @@ import json
 import os
 from urllib.parse import urlsplit
 
+from .approval_crypto import ApprovalError
 from .host_certify import certify_host
 from .integrity import IntegrityViolation, verify_integrity_manifest
 from .policy_bundle import PolicyBundleError, load_policy_bundle
@@ -70,7 +71,7 @@ def _validate_policy_bundle(failures: list[str]) -> None:
         return
     try:
         load_policy_bundle(path, key)
-    except (OSError, ValueError, PolicyBundleError) as exc:
+    except (OSError, ValueError, PolicyBundleError, ApprovalError) as exc:
         failures.append("policy bundle verification failed: " + str(exc))
 
 

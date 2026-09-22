@@ -127,7 +127,7 @@ class BrandSiteTests(unittest.TestCase):
         self.assertIn("docs/MICROVM_INTEGRATION_REPORT.md", readme)
         self.assertIn("Local validation passed five KVM cases", normalized)
         self.assertIn("disposable authenticated TLS test collector", normalized)
-        self.assertIn("External production collector validation and persistent VM reuse remain future work", normalized)
+        self.assertIn("current-candidate guest-to-external-collector path and persistent VM reuse remain future work", normalized)
         self.assertIn("not production certification or authorization to release", report)
         self.assertIn("parent-acknowledged", self.html)
         self.assertIn("One-shot real KVM integration demonstrated · Persistent VM reuse unfinished", self.html)

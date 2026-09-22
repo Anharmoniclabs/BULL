@@ -47,8 +47,25 @@ Linux namespace + seccomp sandbox
 tamper-evident + remotely anchored audit trail
 ```
 
+## Release candidate: 0.2.0rc1
+
+This candidate integrates the runtime hardening from PR #46 and adds a
+credentialed human approval gate on production secret/network broker calls.
+Contained autonomous computation continues; exact routine HTTPS GET/HEAD URLs
+can be listed in signed policy. Every other broker call needs a fresh,
+request-bound security-key signature. Missing approval configuration blocks
+protected broker calls; existing policy denials are never overridden.
+
+Read [human approval setup and limits](docs/HUMAN_APPROVAL.md),
+[claims and required evidence](docs/SECURITY_CLAIMS.md), and
+[release status](docs/RELEASE_0.2.0rc1.md). Hardware ceremonies, current-candidate
+real KVM and external collector integration remain release validation gates.
+This is a reviewable source candidate, not universal protection or certification.
+
 ## Current security controls
 
+- signed-policy-controlled, single-use human approval for consequential broker requests
+- enrolled security-key signature verification requiring signed presence and verification
 - deterministic capability policy
 - host-owned identity and provenance context
 - canonical filesystem paths with traversal rejection
@@ -134,8 +151,8 @@ used a disposable authenticated TLS test collector. See the
 
 The source and local test collector are available for open audit; contributors
 do not need an external collector account to inspect or test BULL. Production
-operators supply their own policy, keys and audit destination. External
-production collector validation and persistent VM reuse remain future work;
+operators supply their own policy, keys and audit destination. The host production collector has separate recorded evidence; the joined
+current-candidate guest-to-external-collector path and persistent VM reuse remain future work;
 macOS/HVF and ARM remain experimental and disabled.
 
 ## One-command production host provisioning

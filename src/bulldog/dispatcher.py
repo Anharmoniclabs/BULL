@@ -402,6 +402,11 @@ class CapabilityDispatcher:
         )
         return grant
 
+    def _perform_broker_effect(self, action, *, operation, parameters, approval, effect):
+        if approval is not None:
+            raise DispatchDenied("credential approval requires ProductionDispatcher")
+        return effect()
+
     def get_secret(
         self,
         *,
@@ -411,6 +416,7 @@ class CapabilityDispatcher:
         domain_id: str | None = None,
         request: DispatchRequest | None = None,
         timeout: float = 3.0,
+        approval=None,
     ) -> str:
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
@@ -447,12 +453,16 @@ class CapabilityDispatcher:
             authorized_name = action.resource
 
         try:
-            value = request_secret(
-                socket_path=self.secret_broker.socket_path,
-                token=token,
-                name=authorized_name,
-                sandbox_id=sandbox_id,
-                timeout=timeout,
+            from hashlib import sha256
+            value = self._perform_broker_effect(
+                action, operation="secret.read",
+                parameters={"grant_digest": sha256(token.encode()).hexdigest(),
+                            "sandbox_id": sandbox_id, "timeout": timeout},
+                approval=approval,
+                effect=lambda: request_secret(
+                    socket_path=self.secret_broker.socket_path, token=token,
+                    name=authorized_name, sandbox_id=sandbox_id, timeout=timeout,
+                ),
             )
         except Exception as exc:
             if self.domain_registry is not None and domain_id is not None:
@@ -482,6 +492,7 @@ class CapabilityDispatcher:
         method: str = "GET",
         domain_id: str | None = None,
         request: DispatchRequest | None = None,
+        approval=None,
     ) -> EgressResponse:
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
@@ -538,9 +549,10 @@ class CapabilityDispatcher:
             authorized_url = action.resource
 
         try:
-            response = self.egress_broker.fetch(
-                method=method_upper,
-                url=authorized_url,
+            response = self._perform_broker_effect(
+                action, operation="network.request",
+                parameters={"method": method_upper}, approval=approval,
+                effect=lambda: self.egress_broker.fetch(method=method_upper, url=authorized_url),
             )
         except Exception as exc:
             if self.domain_registry is not None and domain_id is not None:

@@ -75,6 +75,24 @@ def canonicalize_filesystem_resource(resource: str) -> str:
     _reject_unicode_separator_or_dot_folding(decoded)
     decoded = decoded.replace("\\", "/")
 
+    # BULL-PENTEST-HARDENING: ambiguous-path rejection
+    # POSIX permits implementation-defined handling for exactly two leading
+    # slashes. Reject all multi-leading-slash spellings instead of allowing a
+    # security decision to depend on platform-specific path interpretation.
+    if decoded.startswith("//"):
+        raise ActionCanonicalizationError(
+            "filesystem resource has ambiguous leading slashes"
+        )
+
+    # Control characters do not belong in security-sensitive filesystem
+    # resources. Reject them before normalization/logging so the value cannot
+    # gain a second interpretation in terminals, logs, shells, or downstream
+    # libraries.
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in decoded):
+        raise ActionCanonicalizationError(
+            "filesystem resource contains ASCII control characters"
+        )
+
     if not decoded.startswith("/"):
         raise ActionCanonicalizationError(
             "filesystem resource must be an absolute path"
@@ -85,6 +103,10 @@ def canonicalize_filesystem_resource(resource: str) -> str:
         )
 
     normalized = posixpath.normpath(decoded)
+    if normalized.startswith("//"):
+        raise ActionCanonicalizationError(
+            "normalized filesystem resource has ambiguous leading slashes"
+        )
     if not normalized.startswith("/"):
         raise ActionCanonicalizationError(
             "filesystem resource escaped absolute path namespace"

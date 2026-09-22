@@ -11,6 +11,7 @@ import stat
 from typing import Sequence
 import warnings
 
+from .approval import ApprovalError, ApprovalGate, binding_for, canonical_bytes, digest
 from .audit import AuditLedger
 from .audit_transport import production_transport_from_environment
 from .dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
@@ -151,6 +152,7 @@ class ProductionRuntime(BulldogRuntime):
             snapshot_root=production_snapshot_root(),
         )
         self._permit_key = secrets.token_bytes(32)
+        self._approval_session_id = os.environ["BULL_AUDIT_SESSION_ID"]
 
     def verify_trusted_state(self) -> None:
         """Reverify installed BULL and signed policy before privileged use."""
@@ -175,6 +177,23 @@ class ProductionRuntime(BulldogRuntime):
             None,
         ):
             raise DispatchDenied("signed policy capability ceiling changed after startup")
+
+    def approval_gate(self) -> tuple[ApprovalGate, dict]:
+        self.verify_trusted_state()
+        bundle = load_policy_bundle(self._policy_bundle_path, self._policy_key)
+        config = bundle.raw.get("human_approval")
+        if config is None:
+            raise ApprovalError("consequential operation blocked: signed human_approval configuration missing")
+        state = Path(config["state_directory"]).resolve(strict=True)
+        project = Path(bundle.project_root).resolve()
+        if state == project or project in state.parents:
+            raise ApprovalError("approval state cannot reside inside workload project")
+        ledger = self.engine.ledger
+        if ledger is None or not ledger.production_anchor_ready:
+            raise ApprovalError("authenticated audit transport required for human approval")
+        gate = ApprovalGate(config, audit=ledger.append_event,
+                            policy_digest=digest(canonical_bytes(bundle.raw)))
+        return gate, bundle.raw
 
     def _mint_dispatch_permit(
         self,
@@ -262,6 +281,33 @@ class ProductionDispatcher(CapabilityDispatcher):
     def _evaluate_broker_action(self, action: ActionRequest) -> ActionRequest:
         self.runtime.verify_trusted_state()
         return super()._evaluate_broker_action(action)
+
+    def _perform_broker_effect(self, action, *, operation, parameters, approval, effect):
+        # Policy authorization has already succeeded; approval cannot lower it.
+        gate, policy = self.runtime.approval_gate()
+        if (operation == "network.request" and parameters.get("method") in {"GET", "HEAD"}
+                and action.resource in gate.config["routine_egress_urls"]):
+            if approval is not None:
+                raise DispatchDenied("routine operation does not consume an approval")
+            return effect()
+        binding = binding_for(action, operation=operation, parameters=parameters,
+                              policy_digest=gate.policy_digest,
+                              session_id=self.runtime._approval_session_id)
+        request_id = gate.consume(binding, approval)
+        try:
+            # Recheck authoritative policy and active domain immediately before use.
+            self.runtime.verify_trusted_state()
+            current = load_policy_bundle(self.runtime._policy_bundle_path, self.runtime._policy_key)
+            if digest(canonical_bytes(current.raw)) != gate.policy_digest:
+                raise DispatchDenied("approval policy changed before effect")
+            if self.domain_registry is not None:
+                self.domain_registry.require_active(action.metadata["domain_id"])
+            result = effect()
+        except BaseException:
+            gate.finish(request_id, "uncertain")
+            raise
+        gate.finish(request_id, "completed")
+        return result
 
     def execute(
         self,

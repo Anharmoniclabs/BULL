@@ -128,3 +128,14 @@ Dedicated MicroVM host regression checks are added after their workflow lands;
 real KVM integration remains a release prerequisite. See the
 [rollout instructions](../microvm/governance/README.md) and
 [remaining release work](MICROVM_RELEASE_STATUS.md).
+
+## Consequential broker approval in 0.2.0rc1
+
+ProductionDispatcher now adds credentialed approval after existing policy
+allows a secret or network operation. Signed routine GET/HEAD URLs are the only
+network exception. Without signed `human_approval` configuration these broker
+operations fail closed. Read-only contained execution remains available.
+See [configuration and ceremony](HUMAN_APPROVAL.md) and
+[claims and limits](SECURITY_CLAIMS.md). `bull verify --production` certifies its
+existing host prerequisites only; it does not claim a hardware approval ceremony,
+complete adapter coverage or current guest-to-external-collector validation.

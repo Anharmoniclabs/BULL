@@ -16,6 +16,29 @@ class SeccompError(RuntimeError):
 SCMP_ACT_ALLOW = 0x7FFF0000
 SCMP_ACT_ERRNO_BASE = 0x00050000
 
+# BULL-PENTEST-HARDENING: argument-filtered socket policy
+# libseccomp comparison operators from enum scmp_compare.
+SCMP_CMP_EQ = 4
+SCMP_CMP_MASKED_EQ = 7
+
+# Linux UAPI values are stable across supported architectures.
+_AF_UNIX = 1
+_AF_INET = 2
+_AF_INET6 = 10
+_SOCK_STREAM = 1
+_SOCK_DGRAM = 2
+_SOCK_SEQPACKET = 5
+_SOCK_TYPE_MASK = 0xF
+
+
+class _ScmpArgCmp(ctypes.Structure):
+    _fields_ = [
+        ("arg", ctypes.c_uint),
+        ("op", ctypes.c_int),
+        ("datum_a", ctypes.c_uint64),
+        ("datum_b", ctypes.c_uint64),
+    ]
+
 
 def SCMP_ACT_ERRNO(value: int) -> int:
     return SCMP_ACT_ERRNO_BASE | (value & 0xFFFF)
@@ -277,6 +300,14 @@ _lib.seccomp_rule_add.argtypes = [
     ctypes.c_uint,
 ]
 _lib.seccomp_rule_add.restype = ctypes.c_int
+_lib.seccomp_rule_add_array.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_uint32,
+    ctypes.c_int,
+    ctypes.c_uint,
+    ctypes.POINTER(_ScmpArgCmp),
+]
+_lib.seccomp_rule_add_array.restype = ctypes.c_int
 _lib.seccomp_load.argtypes = [ctypes.c_void_p]
 _lib.seccomp_load.restype = ctypes.c_int
 
@@ -295,6 +326,30 @@ def _resolve(name: str) -> int | None:
     if number < 0:
         return None
     return number
+
+
+def _add_cmp_rule(
+    ctx,
+    *,
+    action: int,
+    syscall_number: int,
+    comparisons: tuple[_ScmpArgCmp, ...],
+    label: str,
+) -> None:
+    if not comparisons:
+        raise SeccompError("comparison rule must contain at least one argument constraint")
+    array_type = _ScmpArgCmp * len(comparisons)
+    array = array_type(*comparisons)
+    _check(
+        _lib.seccomp_rule_add_array(
+            ctx,
+            action,
+            syscall_number,
+            len(comparisons),
+            array,
+        ),
+        f"seccomp_rule_add_array({label})",
+    )
 
 
 def install_bull_seccomp(
@@ -331,7 +386,9 @@ def install_bull_seccomp(
             names = denied_syscalls
         else:
             action = SCMP_ACT_ALLOW
-            names = allowed_syscalls
+            # socket() is installed below with argument constraints. A generic
+            # socket allow rule would make SOCK_RAW reachable again.
+            names = tuple(name for name in allowed_syscalls if name != "socket")
 
         for name in names:
             number = _resolve(name)
@@ -342,6 +399,52 @@ def install_bull_seccomp(
                 f"seccomp_rule_add({name})",
             )
             installed.append(name)
+
+        if profile == "strict" and "socket" in allowed_syscalls:
+            socket_nr = _resolve("socket")
+            if socket_nr is not None:
+                # Local broker/runtime sockets remain available.
+                _add_cmp_rule(
+                    ctx,
+                    action=SCMP_ACT_ALLOW,
+                    syscall_number=socket_nr,
+                    comparisons=(
+                        _ScmpArgCmp(0, SCMP_CMP_EQ, _AF_UNIX, 0),
+                    ),
+                    label="socket:AF_UNIX",
+                )
+                installed.append("socket(AF_UNIX)")
+
+                # Internet-family sockets are limited to ordinary non-raw
+                # socket types. SOCK_CLOEXEC/SOCK_NONBLOCK flags are ignored
+                # by masking against Linux's low-nibble SOCK_TYPE_MASK.
+                for domain, domain_name in (
+                    (_AF_INET, "AF_INET"),
+                    (_AF_INET6, "AF_INET6"),
+                ):
+                    for sock_type, type_name in (
+                        (_SOCK_STREAM, "SOCK_STREAM"),
+                        (_SOCK_DGRAM, "SOCK_DGRAM"),
+                        (_SOCK_SEQPACKET, "SOCK_SEQPACKET"),
+                    ):
+                        _add_cmp_rule(
+                            ctx,
+                            action=SCMP_ACT_ALLOW,
+                            syscall_number=socket_nr,
+                            comparisons=(
+                                _ScmpArgCmp(0, SCMP_CMP_EQ, domain, 0),
+                                _ScmpArgCmp(
+                                    1,
+                                    SCMP_CMP_MASKED_EQ,
+                                    _SOCK_TYPE_MASK,
+                                    sock_type,
+                                ),
+                            ),
+                            label=f"socket:{domain_name}:{type_name}",
+                        )
+                        installed.append(
+                            f"socket({domain_name},{type_name})"
+                        )
 
         _check(_lib.seccomp_load(ctx), "seccomp_load")
     finally:

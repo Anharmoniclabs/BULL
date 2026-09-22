@@ -1,11 +1,14 @@
 [project]
 name = "bulldog-ai-firewall"
-version = "0.1.0"
+version = "0.2.0rc1"
 description = "Local execution firewall and provenance-aware policy harness for AI agents"
 requires-python = ">=3.11"
 authors = [{name = "Anharmoniclabs"}]
 license = {text = "GPL-2.0-or-later"}
 dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "cryptography>=43,<47"]
 
 [project.scripts]
 bull = "bulldog.cli:main"

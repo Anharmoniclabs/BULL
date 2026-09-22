@@ -77,6 +77,7 @@ def _run_policy(args: argparse.Namespace) -> int:
             allowed_capabilities=capabilities,
             key=key,
             key_id=args.key_id,
+            human_approval=(json.loads(args.approval_config.read_text()) if args.approval_config else None),
         )
     except Exception as exc:
         print(f"unable to create policy bundle: {exc}", file=sys.stderr)
@@ -138,6 +139,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Generate a signed production capability policy bundle.",
     )
     policy_parser.add_argument("--output", type=Path, required=True)
+    policy_parser.add_argument("--approval-config", type=Path, help="Host-owned JSON approval configuration to include in signed policy.")
     policy_parser.add_argument("--project-root", default="/workspace")
     policy_parser.add_argument(
         "--capability",
@@ -151,6 +153,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     policy_parser.add_argument("--key-id", default="deployment-policy")
     policy_parser.set_defaults(handler=_run_policy)
+    from .approval_cli import add_parser as add_approval_parser
+    add_approval_parser(subparsers)
     return parser
 
 

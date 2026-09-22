@@ -24,3 +24,11 @@ A useful report includes:
 ## Security claims
 
 Passing CI, TLA+ model checking, host certification, or adversarial tests does not prove the entire Python/Linux implementation is vulnerability-free. Security claims should be limited to the documented threat model and tested invariants.
+
+## Credentialed approval candidate
+
+Approval reuse, mismatched-action acceptance, credential substitution, missing
+presence/verification acceptance, state rollback exposure, and unmediated broker
+access are security-relevant. The gate trusts host-controlled credential enrollment,
+policy, durable state and operator UI. See [claims](docs/SECURITY_CLAIMS.md) and
+[human approval](docs/HUMAN_APPROVAL.md) for implemented scope and exclusions.

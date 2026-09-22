@@ -37,6 +37,7 @@ def sign_policy_bundle(
     allowed_capabilities: Iterable[Capability | str],
     key: bytes | str,
     key_id: str = "deployment-policy",
+    human_approval: dict | None = None,
 ) -> dict:
     if isinstance(key, str):
         key = key.encode("utf-8")
@@ -57,6 +58,9 @@ def sign_policy_bundle(
             "value": "",
         },
     }
+    if human_approval is not None:
+        from .approval import validate_config
+        payload["human_approval"] = validate_config(human_approval)
     payload["signature"]["value"] = hmac.new(
         key,
         _canonical_bytes(payload),
@@ -101,6 +105,10 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
         raise PolicyBundleError("policy bundle contains invalid capability") from exc
     if not capabilities:
         raise PolicyBundleError("policy capability ceiling cannot be empty")
+
+    if "human_approval" in payload:
+        from .approval import validate_config
+        validate_config(payload["human_approval"])
 
     return PolicyBundle(
         project_root=project_root,
