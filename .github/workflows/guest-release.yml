@@ -41,8 +41,16 @@ jobs:
           set -euo pipefail
           db="$RUNNER_TEMP/bull-database"
           install -d -m 700 "$db"
-          printf 'DatabaseDirectory %s\nDatabaseOwner %s\nDatabaseMirror database.clamav.net\n' \
-            "$db" "$USER" > "$db/freshclam.conf"
+          # Start from Ubuntu's validated config syntax. FreshClam rejects a
+          # hand-written minimal file on some package revisions. Keep the
+          # database private and run the updater as the normal runner user.
+          cp /etc/clamav/freshclam.conf "$db/freshclam.conf"
+          sed -i '/^[[:space:]]*Example[[:space:]]*$/d' "$db/freshclam.conf"
+          sed -i "s|^[#[:space:]]*DatabaseDirectory .*|DatabaseDirectory $db|" "$db/freshclam.conf"
+          sed -i "s|^[#[:space:]]*DatabaseOwner .*|DatabaseOwner $USER|" "$db/freshclam.conf"
+          sed -i 's|^[#[:space:]]*DatabaseMirror .*|DatabaseMirror database.clamav.net|' "$db/freshclam.conf"
+          grep -Eq "^DatabaseDirectory $db$" "$db/freshclam.conf"
+          grep -Eq "^DatabaseOwner $USER$" "$db/freshclam.conf"
           freshclam --config-file="$db/freshclam.conf"
           python3 microvm/guest/build_public.py databases \
             --output "$RUNNER_TEMP/bull-guest" --database-dir "$db"
