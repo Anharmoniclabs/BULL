@@ -7,8 +7,10 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
+import time
 
-from bulldog.cgroup_scope import CgroupV2Scope
+from bulldog.cgroup_scope import CgroupV2Scope, CgroupUnavailable
 
 
 def counters(path):
@@ -78,6 +80,11 @@ finally:
                 child = subprocess.Popen([sys.executable, "-I", "-c",
                     "import os,time; os.fork(); time.sleep(10)"],
                     preexec_fn=scope.attach_current)
+                deadline = time.monotonic() + 2
+                while len((path / "cgroup.procs").read_text().split()) < 2:
+                    if time.monotonic() >= deadline:
+                        raise AssertionError("cleanup fixture did not create its descendant")
+                    time.sleep(0.01)
                 try:
                     child.wait(timeout=0.2)
                     raise AssertionError("cleanup fixture exited unexpectedly")
@@ -92,4 +99,18 @@ finally:
                 child.wait(timeout=5)
         assert path is not None and not path.exists(), "descendant scope cleanup failed"
         results[reason] = {"status": "PASS", "scope_removed": True}
+
+    # A real, owned cgroup with no controllers enabled must not admit work.
+    undelegated = Path(tempfile.mkdtemp(prefix="bull-undelegated-", dir=parent))
+    try:
+        try:
+            with CgroupV2Scope(undelegated, memory_bytes=64*1024*1024,
+                               processes=4, cpu_quota_us=25000):
+                raise AssertionError("missing controllers admitted a scope")
+        except CgroupUnavailable as exc:
+            if "unable to configure cgroup" not in str(exc):
+                raise
+            results["missing_delegation"] = {"status": "PASS", "reason": str(exc)}
+    finally:
+        undelegated.rmdir()  # Also fails if partial scope setup leaked a child.
     return results

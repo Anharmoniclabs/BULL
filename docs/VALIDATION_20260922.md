@@ -139,3 +139,137 @@ approval, independent review or a two-build byte comparison in this validation.
 `CONFIGURED_NOT_BUILT`, `BUILT_NOT_BOOT_TESTED`, BLOCKED deployment gates and
 `certified: false` remain explicit. Hosted workflow results qualify only their
 reported checks, not the missing deployment evidence.
+
+## CachyOS production validation follow-up
+
+This section is new agent-executed evidence, separate from the historical
+operator results above. Origin/main was fetched and remained
+`974eb17081e3374e99ecd35f9ebb3ef6121beefa`. The original checkout was clean and
+left unchanged; work used a separate worktree with umask 022.
+
+The operator's prior `/home/al/bull-evidence/bull-local.tqb90x/checks` reports and
+logs were inspected. They recorded 364 JUnit records, strict host checks, 34
+synthetic approval tests, disposable TLS, verified images, and five local VM
+cases passing. Production configuration, external host/guest collection, and
+physical approval were BLOCKED. These are prior results, not reruns.
+
+### New clean-candidate results
+
+Candidate `67d452d8d740e36aa72d61136ca954ea526ac9b7`, tracked-content SHA-256
+`b5ec916ff50b872ff9df67b91d8c7040b9880676f874238a5479b42dcd9b4f57`, passed:
+
+| Requirement | Executed check and outcome |
+|---|---|
+| Source, authorization, narrow grants, integrity/audit failures | Release suite: 371 JUnit records, zero failures/errors/skips |
+| Approval side effects | 38 synthetic protocol tests; missing, wrong, expired, reused and changed approvals are rejected; callback fixtures observe no unauthorized effects |
+| Formal abstraction | All three models parsed and checked: Runtime 405 distinct states, SessionAudit 57, Approval 112 |
+| Packaging and site | Wheel and static site build PASS |
+| Portable production inputs | Private new validation deployment, signed policy/manifest verification, strict host and production configuration PASS |
+| Rerun authority preservation | Second init refused; existing private file bytes unchanged |
+| Real cgroup enforcement | UID 1000 child placement and limit readback; CPU throttling, memory OOM-kill and pids rejection counters; cancellation/timeout scope removal PASS |
+| Audit transport | Disposable local TLS/outage test PASS; external host authenticated receipt PASS |
+| Current guest and external collector | Allowed, denied, timeout, cancel, missing-protection: 5/5 PASS; exact completion receipt correlation PASS |
+| Source identity | Clean before/after and unchanged source PASS |
+| Physical approval | BLOCKED: compatible enrolled authenticator plus operator interaction still required |
+
+Full private evidence is retained at
+`/home/al/bull-evidence/production-20260922/candidate-checks`. The checker exited
+1 because hardware approval was BLOCKED, not because any automated gate failed.
+No skipped check was counted as passed. A final run after the follow-up's last
+edits is stored alongside it under `final-checks`; its `source.json` and source
+report identify the final commit and content digest. The PR records that final
+run's outcome. These reports are private; only this reviewed summary is public.
+
+### Environment, assets and commands
+
+Host: CachyOS Linux 7.2.6-1-cachyos x86-64, glibc 2.44, Python 3.14.7,
+pytest 9.1.1, cryptography 46.0.7, setuptools 84.0.0, QEMU 11.1.1,
+e2fsprogs 1.47.4, OpenSSL 3.6.4, OpenSSH 10.5p1, systemd 261.3,
+OpenJDK 17.0.19. PATH included `/usr/sbin` and `/sbin`; QEMU, OpenSSL,
+mkfs.ext4, debugfs, e2fsck and resize2fs were checked before running.
+
+Existing images were reused after SHA-256 verification, without rebuilding or
+large downloads:
+
+| Input | SHA-256 |
+|---|---|
+| bzImage | `66bcc80464908d0bbdb5e854eba369d1fa509f71656d9f8baa32073349315daa` |
+| rootfs.ext4 | `5a99e8eb82d3acba04efaf23c94c2fad2e01a14b09e9c3b2fe6e07326ccc665b` |
+| qboot.rom | `14a5f6679d16477c44ed947a50dae3c772dc77107715c09ab3ac3f5ef2763c98` |
+| tla2tools 1.7.4 | `936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88` |
+
+The downloaded assets manifest contained CI-runner paths. A new private local
+manifest retained the expected hashes and named the actual local files. The
+original manifest was not changed. Public guest code is now staged as readable
+0644 files and 0755 directories/launchers independently of private evidence
+umask; deployment secrets remain private. A regression verifies that staging
+does not change original source permissions.
+
+The exact agent run used the existing test interpreter and these commands
+from `/home/al/Projects/BULL-production-validation`:
+
+```bash
+PYTHONPATH=src /home/al/bull-local-tests.iI2sro/.venv/bin/python -m pytest -q \
+  tests/test_deployment_setup.py tests/test_human_approval.py
+
+systemd-run --user --wait --pipe --collect --unit=bull-validation-20260922 \
+  --property='Delegate=cpu memory pids' --property=DelegateSubgroup=coordinator \
+  /home/al/bull-local-tests.iI2sro/.venv/bin/python \
+  /home/al/bull-evidence/production-20260922/validate.py candidate-checks
+```
+
+The retained private wrapper checks its own coordinator identity, enables only
+cpu/memory/pids in its dedicated service root, initializes new validation state
+with the existing collector key, verifies refused initialization on rerun, and
+runs the supported checker command:
+
+```bash
+python tools/deployment_check.py --deployment "$EVIDENCE/deployment" \
+  --tla-jar /home/al/bull-tla2tools-v1.7.4.jar \
+  --output "$EVIDENCE/candidate-checks"
+```
+
+For the final run the wrapper's last argument is `final-checks`. The checker
+runs `tools/release_check.py --tla-jar ... --output .../source-checks` and
+`microvm/integration.py --case all --output .../kvm --cpu-profile host`, with
+verified kernel/rootfs/firmware paths and the confirmed external endpoint and
+private key-file path. Exact asset identities and source file hashes are in the
+private reports. Fresh operators should use their own paths and the
+[portable setup guide](REPRODUCIBLE_DEPLOYMENT.md).
+
+### Privileges, failed attempts, and limitations
+
+The operator explicitly provisioned `/sys/fs/cgroup/bull-1000` using the root
+helper. Agent sudo attempts could not authenticate; this dedicated root-level
+subtree is PROVISIONED_NOT_TESTED, not the subtree used in the passing workload
+checks. Actual agent tests used a separate transient systemd **user** service
+with only cpu/memory/pids delegation. Its coordinator and workloads ran as UID
+1000. The transient subtree is removed on service exit. The chat and unrelated
+services were not moved or restarted. Root is needed only for the alternative
+administrator provisioning path and optional KVM group grant; no workloads need
+root. KVM was available outside the tool sandbox.
+
+An early memory probe failed its evidence assertion because zero-filled
+allocation did not guarantee physically charged pages. The corrected bounded
+probe touches each page and requires the kernel OOM-kill counter and SIGKILL
+exit status. This failed preliminary probe is not counted as a pass. Final
+follow-up coverage also requires an observed descendant before cancellation or
+timeout, and rejection/cleanup of a real subtree with controllers disabled.
+
+The operator confirmed the collector endpoint and supplied an existing key
+file. The original file's permissions were narrowed to 0600. With explicit
+operator approval, its UTF-8 encoding marker was removed only from the imported
+private copy; the source file contents and deployed key were not changed. New
+policy/integrity authority belongs to this separate validation installation;
+no existing production authority was replaced or silently rotated.
+
+External tests used fresh sessions and ordinary bounded checkpoints. Deliberate
+collector outages/tampering stayed on disposable local infrastructure. Receipts
+prove authenticated acceptance bound to session/sequence/head; no retention
+period, backup restoration, disaster recovery, or independent durability was
+tested. They do not independently prove the latest stored remote sequence.
+The existing approval enrollment and host-display trust limits remain unchanged;
+synthetic signatures are not physical hardware evidence, and touch is not proof
+of informed consent. Finite tests and model checks do not establish universal
+protection from malicious AI or arbitrary host compromise. No certification,
+release, deployment, or merge is claimed.
