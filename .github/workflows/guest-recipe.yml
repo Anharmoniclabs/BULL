@@ -1,0 +1,53 @@
+name: BULL public guest recipe configuration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  public-guest-configuration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Configure public pinned inputs without private assets
+        run: |
+          python3 microvm/guest/build_public.py prepare \
+            --output "$RUNNER_TEMP/bull-public-guest" --fetch
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'bull-public-guest'
+          r = json.loads((root / 'build.json').read_text())
+          assert r['status'] == 'CONFIGURED_NOT_BUILT'
+          assert r['database_verification'] == 'NOT_RUN'
+          assert r['certified'] is False
+          assert not (root / 'assets.json').exists()
+          PY
+      - name: Resolve actual pinned Linux Kconfig requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y flex bison libelf-dev bc
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.13.tar.xz \
+            --output "$RUNNER_TEMP/linux-7.1.13.tar.xz"
+          awk '$1 == "sha256" {print $2 "  " $3}' microvm/guest/public/patches/linux/linux.hash \
+            | (cd "$RUNNER_TEMP" && sha256sum --check -)
+          tar -xJf "$RUNNER_TEMP/linux-7.1.13.tar.xz" -C "$RUNNER_TEMP"
+          mkdir "$RUNNER_TEMP/bull-linux-config"
+          cp microvm/guest/public/linux.config "$RUNNER_TEMP/bull-linux-config/.config"
+          make -C "$RUNNER_TEMP/linux-7.1.13" O="$RUNNER_TEMP/bull-linux-config" ARCH=x86_64 olddefconfig
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from microvm.guest.build_public import KERNEL, selected
+          selected(Path(os.environ['RUNNER_TEMP']) / 'bull-linux-config/.config', ['CONFIG_' + x for x in KERNEL])
+          print('Required kernel features resolved; no kernel compilation or boot was performed.')
+          PY

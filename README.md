@@ -62,6 +62,31 @@ Read [human approval setup and limits](docs/HUMAN_APPROVAL.md),
 real KVM and external collector integration remain release validation gates.
 This is a reviewable source candidate, not universal protection or certification.
 
+## Reproduce your own deployment
+
+Use the [portable deployment workflow](docs/REPRODUCIBLE_DEPLOYMENT.md) to generate
+your own private keys, delegate host resources, enroll your own authenticator and
+run the same acceptance checks. No author's key, service account, home directory
+or private guest baseline is required. The public guest recipe pins Buildroot,
+Linux and qboot sources; image compilation, real boot and external/hardware
+qualification remain separate evidence gates. Bit-for-bit image reproducibility
+has not been demonstrated.
+
+From a selected checkout with `.[test]` installed:
+
+```bash
+python tools/deployment_setup.py init \
+  --state "$HOME/.local/share/bull/deployment-01" --project-root "$PWD"
+python tools/deployment_check.py \
+  --deployment "$HOME/.local/share/bull/deployment-01" \
+  --tla-jar "$HOME/bull-tla2tools-v1.7.4.jar" \
+  --output "$HOME/bull-evidence-$(date -u +%Y%m%dT%H%M%SZ)"
+```
+
+The first command prepares private authority. The second reports missing host,
+collector, guest or hardware prerequisites as BLOCKED until provisioned using
+the linked workflow. Existing state is never overwritten or silently rotated.
+
 ## Current security controls
 
 - signed-policy-controlled, single-use human approval for consequential broker requests

@@ -135,7 +135,12 @@ observed 170 rules; no broad allowlist expansion was used to fix startup.
 | docs/MICROVM_R3_FOLLOWUP.md | Retain the earlier investigation as historical context |
 | docs/MICROVM_INTEGRATION_REPORT.md | This final evidence and limitations report |
 
-## Reproduce
+## Historical reproduction command
+
+The paths below identify the original operator's retained evidence. New
+installations use [the public deployment recipe](REPRODUCIBLE_DEPLOYMENT.md),
+which generates their own authority and builds guest inputs from public pins.
+These historical images and keys are not prerequisites for that workflow.
 
 Run from `/home/al/BULL`. The output directory must not already exist:
 

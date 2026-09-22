@@ -35,7 +35,8 @@ def main():
         try:
             with (out / (name + ".log")).open("w") as log:
                 result = subprocess.run(argv, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
-                                        timeout=timeout, check=False)
+                                        timeout=timeout, check=False,
+                                        env={k: v for k, v in os.environ.items() if not k.startswith("BULL_")})
             status, code = ("PASS" if result.returncode == 0 else "FAIL"), result.returncode
         except (OSError, subprocess.TimeoutExpired) as exc:
             (out / (name + ".log")).write_text(type(exc).__name__ + ": " + str(exc))

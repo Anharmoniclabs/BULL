@@ -106,3 +106,36 @@ KVM/assets/credentials and the dirty development tree as non-passing evidence.
 Physical device and real guest/external tests still require an operator run with
 the actual prerequisites. CI exercises a clean checkout and asserts that missing
 deployment inputs remain BLOCKED rather than being reported as certification.
+
+## Portable deployment and public guest preparation
+
+The portable provisioner replaces personal paths and shared authority with a new
+private state directory per installation. Independent policy, integrity and
+collector keys and audit identities are generated locally. Existing authority is
+never rotated on rerun. The deployment checker verifies that selected state and
+does not inherit another installation's `BULL_*` credentials.
+
+Twenty-two provisioning regressions cover independent installations, actual
+cross-key checkpoint rejection, cross-policy/manifest rejection, private file
+permissions, preservation of exact imported secret bytes, stable authority,
+approval enrollment requirements and rejection before downstream checks.
+Seven public recipe regressions cover unverified databases, changed inputs,
+missing package requirements, changed source identity and invalid preparation.
+
+The final local suite reports **350 passed, 4 failed, 6 subtests passed**. The four
+failures are the previously recorded AF_UNIX/namespace restrictions of this
+execution environment. A documentation contract assertion was corrected to keep
+the compatibility wrapper documented; no runtime security gate was relaxed.
+
+Real configuration of pinned Buildroot `d5180309b1b66ef3b8eaccca70ad69be8e0729a1`
+completed with the mandatory packages and download hash enforcement selected.
+The kernel archive's SHA-256 matched its pinned official checksum. CI additionally
+resolves the actual Linux Kconfig and exercises administrator cgroup delegation
+followed by unprivileged process placement. Local cgroup mutation is unavailable
+because this execution environment mounts cgroup read-only.
+
+The new public recipe has **not** completed image compilation, VM boot, physical
+approval, independent review or a two-build byte comparison in this validation.
+`CONFIGURED_NOT_BUILT`, `BUILT_NOT_BOOT_TESTED`, BLOCKED deployment gates and
+`certified: false` remain explicit. Hosted workflow results qualify only their
+reported checks, not the missing deployment evidence.

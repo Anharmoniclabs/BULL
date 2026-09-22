@@ -52,6 +52,15 @@ writable workspace promotion and persistent VM reuse are not completed features.
 
 ## Reproduction
 
+The [portable deployment workflow](REPRODUCIBLE_DEPLOYMENT.md) now creates
+independent installation authority and supplies a public guest recipe without
+the author's private baseline. `deployment_setup.py`, `host_setup.py` and
+`deployment_check.py --deployment` replace the manual per-machine paste blocks.
+The legacy `bull-production-provision.sh` entry point now forwards the new
+`init/configure/show` interface; its old checkout-resetting CLI is retired.
+Public recipe configuration is a separate CI check. Full public-image compilation,
+boot qualification and bit-for-bit comparison are not established by that check.
+
 Install the package and test extras in a dedicated Python environment:
 
 ```sh
