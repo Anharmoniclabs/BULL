@@ -1,0 +1,96 @@
+name: Build and publish the pinned BULL guest image
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "New release tag, for example guest-2026.09.22"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-guest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout the selected source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Install guest build dependencies
+        run: |
+          set -euo pipefail
+          # Buildroot's downloads, extracted trees and compiler outputs need
+          # more room than the base runner provides.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo apt-get update
+          sudo apt-get install -y build-essential binutils make bash patch gzip bzip2 \
+            perl tar cpio unzip rsync file bc wget git curl xz-utils flex bison \
+            libssl-dev libelf-dev pkg-config qemu-system-x86 e2fsprogs openssl \
+            clamav clamav-freshclam
+      - name: Configure and fetch pinned sources
+        run: |
+          set -euo pipefail
+          python3 microvm/guest/build_public.py prepare \
+            --output "$RUNNER_TEMP/bull-guest" --fetch
+      - name: Download and verify official ClamAV databases
+        run: |
+          set -euo pipefail
+          db="$RUNNER_TEMP/bull-database"
+          install -d -m 700 "$db"
+          printf 'DatabaseDirectory %s\nDatabaseOwner %s\nDatabaseMirror database.clamav.net\n' \
+            "$db" "$USER" > "$db/freshclam.conf"
+          freshclam --config-file="$db/freshclam.conf"
+          python3 microvm/guest/build_public.py databases \
+            --output "$RUNNER_TEMP/bull-guest" --database-dir "$db"
+      - name: Compile guest and firmware
+        run: |
+          set -euo pipefail
+          python3 microvm/guest/build_public.py build \
+            --output "$RUNNER_TEMP/bull-guest" --jobs 2 2>&1 | tee "$RUNNER_TEMP/bull-build.log"
+      - name: Verify and package immutable release assets
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          guest="$RUNNER_TEMP/bull-guest"
+          test "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$guest/build.json")" = BUILT_NOT_BOOT_TESTED
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          guest = Path(os.environ["RUNNER_TEMP"]) / "bull-guest"
+          assets = json.loads((guest / "assets.json").read_text())
+          assert set(assets) == {"kernel", "rootfs", "firmware"}
+          for entry in assets.values():
+              path = Path(entry["path"])
+              assert path.is_file() and not path.is_symlink() and path.stat().st_size > 0
+          PY
+          mkdir -p "$RUNNER_TEMP/release"
+          cp "$guest/artifacts/"* "$RUNNER_TEMP/release/"
+          cp "$guest/assets.json" "$guest/build.json" "$RUNNER_TEMP/release/"
+          (cd "$RUNNER_TEMP/release" && sha256sum bzImage rootfs.ext4 qboot.rom assets.json build.json > SHA256SUMS)
+          printf '%s\n' "BULL guest image $RELEASE_TAG" > "$RUNNER_TEMP/release/RELEASE_SCOPE.txt"
+          cat >> "$RUNNER_TEMP/release/RELEASE_SCOPE.txt" <<'EOF'
+          This release was built from the pinned public recipe and its official ClamAV
+          database signatures. SHA256SUMS covers every file. BUILT_NOT_BOOT_TESTED means
+          the image was compiled and hash-checked; it is not proof of VM boot, physical
+          approval, independent review, or universal security certification. Run the five
+          KVM cases from docs/CODESPACES_VM_AND_KEY_CHECKS.md after downloading it.
+          EOF
+      - name: Create the versioned GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refusing to replace immutable guest assets" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" "$RUNNER_TEMP"/release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "BULL guest image $RELEASE_TAG" \
+            --notes "Pinned public guest build. Verify SHA256SUMS before booting. The image is BUILT_NOT_BOOT_TESTED; follow the Codespaces VM checklist for runtime evidence."

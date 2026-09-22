@@ -160,21 +160,28 @@ def databases(output, directory, sigtool="sigtool"):
 
 
 def build(output, jobs=2):
+    if type(jobs) is not int or not 1 <= jobs <= 16:
+        raise ValueError("build jobs must be an integer between 1 and 16")
     output, record = load(output)
     if record["database_verification"] != "VERIFIED_BY_SIGTOOL":
         raise ValueError("official offline databases must be verified before building")
     selected(output / "output/.config", PACKAGES)
     env = dict(os.environ, SOURCE_DATE_EPOCH=record["source_date_epoch"])
     buildroot = Path(record["sources"]["buildroot"]["path"])
-    command(["make", "-C", buildroot, "O=" + str(output / "output"), "-j" + str(jobs)], env=env)
-    command(["make", "-C", buildroot, "O=" + str(output / "output"), "host-meson", "host-ninja", "-j" + str(jobs)], env=env)
+    # Buildroot's CMake infrastructure reads PARALLEL_JOBS from BR2_JLEVEL
+    # independently of the outer make jobserver. Set both so a small Codespace
+    # does not compile those packages at host CPU-count + 1.
+    make = ["make", "-C", buildroot, "O=" + str(output / "output"),
+            "BR2_JLEVEL=" + str(jobs), "-j" + str(jobs)]
+    command(make, env=env)
+    command([*make, "host-meson", "host-ninja"], env=env)
     host = output / "output/host/bin"
     env["PATH"] = str(host) + os.pathsep + os.environ.get("PATH", os.defpath)
     firmware_build = output / "firmware-build"
     if not firmware_build.exists():
         command([host / "meson", "setup", "--buildtype=release", firmware_build,
                  record["sources"]["qboot"]["path"]], env=env)
-    command([host / "ninja", "-C", firmware_build], env=env)
+    command([host / "ninja", "-C", firmware_build, "-j" + str(jobs)], env=env)
     selected(output / "output/build/linux-7.1.13/.config", ["CONFIG_" + name for name in KERNEL])
     # Re-check provenance after compilers/build helpers finish.
     load(output)

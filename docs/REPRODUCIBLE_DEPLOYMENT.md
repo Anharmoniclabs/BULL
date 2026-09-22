@@ -1,5 +1,8 @@
 # Reproduce a BULL deployment with your own authority
 
+Already using Codespaces? The [VM and physical-key checklist](CODESPACES_VM_AND_KEY_CHECKS.md)
+provides the commands for the remaining real-environment tests.
+
 BULL does not require the author's keys, Cloudflare account, hardware credential,
 home directory, or private VM baseline. Every operator follows this workflow and
 owns their deployment state. Supported enforcement/guest qualification currently
