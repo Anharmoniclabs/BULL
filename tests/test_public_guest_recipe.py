@@ -69,3 +69,44 @@ def test_prepare_requires_new_external_output_and_public_sources(tmp_path):
     assert not (tmp_path / "build").exists()
     with pytest.raises(ValueError, match="outside Git"):
         recipe.prepare(recipe.ROOT / "unsafe-build", fetch=True)
+
+
+def test_build_job_limit_reaches_package_builders_and_firmware(tmp_path, monkeypatch):
+    """Check child-process limits without producing synthetic build evidence."""
+    record = sealed_configuration(tmp_path)
+    record.update(
+        sources={name: {"path": str(tmp_path / name), "commit": pin, "url": url}
+                 for name, (url, pin) in recipe.SOURCES.items()},
+        database_verification="VERIFIED_BY_SIGTOOL",
+        source_date_epoch="1",
+    )
+    recipe.save(tmp_path / "build.json", record)
+    monkeypatch.setattr(recipe, "source", lambda *args: tmp_path)
+    monkeypatch.setattr(recipe, "selected", lambda *args: None)
+    calls = []
+
+    class StopBeforeCompilation(Exception):
+        pass
+
+    def capture(args, **kwargs):
+        argv = [str(arg) for arg in args]
+        calls.append(argv)
+        if Path(argv[0]).name == "ninja":
+            raise StopBeforeCompilation
+
+    monkeypatch.setattr(recipe, "command", capture)
+    with pytest.raises(StopBeforeCompilation):
+        recipe.build(tmp_path, jobs=3)
+    make_calls = [argv for argv in calls if argv[0] == "make"]
+    assert len(make_calls) == 2
+    for argv in make_calls:
+        assert "BR2_JLEVEL=3" in argv  # Buildroot's explicit package parallelism.
+        assert "-j3" in argv  # Recursive make jobserver.
+    assert "-j3" in calls[-1]  # Separate firmware Ninja process.
+    assert not (tmp_path / "assets.json").exists()
+
+
+@pytest.mark.parametrize("jobs", [0, 17, True])
+def test_invalid_build_job_limit_stops_before_reading_inputs(tmp_path, jobs):
+    with pytest.raises(ValueError, match="build jobs"):
+        recipe.build(tmp_path, jobs=jobs)

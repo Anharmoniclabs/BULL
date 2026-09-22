@@ -1,5 +1,8 @@
 # Deployment checks from Codespaces
 
+For the actual VM boot and physical-key steps, use
+[the copy-and-run Codespaces checklist](CODESPACES_VM_AND_KEY_CHECKS.md).
+
 For a new installation, start with [reproducible deployment](REPRODUCIBLE_DEPLOYMENT.md).
 It supplies checked-in host setup, independent keys and a public guest recipe.
 Use `--deployment /YOUR/private/state` to load that installation explicitly;
