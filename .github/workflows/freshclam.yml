@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - microvm/guest/build_public.py
       - tools/fetch_guest_databases.sh
       - .github/workflows/guest-release.yml
       - .github/workflows/freshclam.yml
