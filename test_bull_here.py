@@ -187,9 +187,15 @@ def attack_canonicalizer(root: Path) -> None:
 
 def attack_dispatcher(root: Path) -> None:
     print("\n[checkout] dispatcher execution boundary")
-    from bulldog.canonicalizer import TrustedExecutionContext
-    from bulldog.dispatcher import CapabilityDispatcher, DispatchRequest
+    from bulldog.canonicalizer import ActionCanonicalizationError, TrustedExecutionContext
+    from bulldog.dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
     from bulldog.models import Capability, Provenance
+
+    try:
+        from bulldog.approval import ApprovalRequired
+    except ImportError:
+        class ApprovalRequired(Exception):
+            pass
 
     # CapabilityDispatcher is the development/compatibility surface (it warns
     # as much); ProductionDispatcher requires a provisioned production host.
@@ -207,29 +213,47 @@ def attack_dispatcher(root: Path) -> None:
             granted_capabilities=frozenset(caps),
         )
 
-    entries = [getattr(dispatch, n) for n in
-               ("request", "execute", "dispatch", "submit", "canonicalize")
-               if callable(getattr(dispatch, n, None))]
-    if not entries:
-        record("dispatcher: entry points", False, "no callable entry found - update harness to current API")
+    def expect_deny(name: str, fn, *args, **kwargs) -> None:
+        """Strict gate check: only a real denial outcome counts as PASS.
+        A TypeError, FileNotFoundError or other unexpected exception is a
+        possible enforcement gap and is recorded as FAIL, not as a rejection.
+        """
+        try:
+            fn(*args, **kwargs)
+        except (DispatchDenied, ActionCanonicalizationError, ApprovalRequired) as exc:
+            record(name, True, f"denied ({type(exc).__name__})")
+            return
+        except Exception as exc:
+            record(name, False,
+                   f"unexpected outcome ({type(exc).__name__}: {exc}) - possible enforcement gap")
+            return
+        record(name, False, "ATTACK SUCCEEDED - executed without denial")
+
+    if not callable(getattr(dispatch, "execute", None)):
+        record("dispatcher: entry points", False, "no execute entry found - update harness")
         return
 
     hostile = [
-        ("empty resource", ""),
-        ("traversal resource", "/usr/bin/../../etc/passwd"),
-        ("NUL resource", "/bin/ls\x00/usr/bin/ls"),
-        ("relative traversal", "../../etc/shadow"),
-        ("shell metacharacters", "/bin/sh -c cat /etc/shadow"),
-        ("unauthorized executable", "/not/authorized/binary"),
+        ("empty resource", "", [""]),
+        ("traversal resource", "/usr/bin/../../etc/passwd", ["/usr/bin/../../etc/passwd"]),
+        ("NUL resource", "/bin/ls\x00/usr/bin/ls", ["/bin/ls\x00/usr/bin/ls"]),
+        ("relative traversal", "../../etc/shadow", ["../../etc/shadow"]),
+        ("nonexistent hostile path", "/bin/sh -c cat /etc/shadow", ["/bin/sh -c cat /etc/shadow"]),
+        ("unauthorized executable", "/not/authorized/binary", ["/not/authorized/binary"]),
     ]
-    for lbl, res in hostile:
-        for entry in entries:
-            expect_reject(f"dispatcher[{entry.__name__}]: {lbl}", entry,
-                          make(res, [Capability.PROCESS_EXEC]))
+    for lbl, res, cmd in hostile:
+        expect_deny(f"dispatcher.execute: {lbl}", dispatch.execute,
+                    make(res, [Capability.PROCESS_EXEC]), cmd)
+
     # capability omission: a clean executable must still be denied without the grant
-    for entry in entries:
-        expect_reject(f"dispatcher[{entry.__name__}]: no PROCESS_EXEC grant", entry,
-                      make("/usr/bin/ls", []))
+    expect_deny("dispatcher.execute: no PROCESS_EXEC grant", dispatch.execute,
+                make("/usr/bin/ls", []), ["/usr/bin/ls"])
+    # argv0 substitution: authorized resource must equal command[0]
+    expect_deny("dispatcher.execute: argv0 substitution", dispatch.execute,
+                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/echo", "pwned"])
+    # command tuple must match host authorization exactly
+    expect_deny("dispatcher.execute: mismatched command tuple", dispatch.execute,
+                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/ls", "--extra", "arg"])
 
 
 def attack_multiagent(root: Path) -> None:
@@ -238,53 +262,80 @@ def attack_multiagent(root: Path) -> None:
     import typing
     import uuid
     from bulldog.multiagent.bus import MessageBus
+    from bulldog.multiagent import contracts
 
     bus = MessageBus(max_hops=2)
     expect_reject("multiagent: string garbage", bus.deliver, "not-an-envelope")
     expect_reject("multiagent: dict envelope", bus.deliver, {"recipient": "ghost"})
 
-    from bulldog.multiagent import contracts
-    env_cls = None
-    for name in ("Envelope", "Message", "BusEnvelope"):
-        cand = getattr(contracts, name, None)
-        if cand is not None and dataclasses.is_dataclass(cand):
-            env_cls = cand
-            break
-    if env_cls is None:
-        record("multiagent: envelope type", False, "no dataclass envelope in contracts; update harness")
+    env_cls = getattr(contracts, "Envelope", None)
+    ident_cls = getattr(contracts, "AgentIdentity", None)
+    if env_cls is None or ident_cls is None or not dataclasses.is_dataclass(env_cls):
+        record("multiagent: contracts", False, "Envelope/AgentIdentity not found; update harness")
         return
 
-    hints = typing.get_type_hints(env_cls)
+    ident_hints = typing.get_type_hints(ident_cls)
+    env_hints = typing.get_type_hints(env_cls)
 
-    def placeholder(field):
-        t = hints.get(field.name, str)
-        if t is str:
-            return "probe"
-        if t is int:
-            return 1
-        if t is bool:
-            return False
-        if isinstance(t, type) and issubclass(t, uuid.UUID):
-            return uuid.uuid4()
-        if t is type(None):
-            return None
-        if typing.get_origin(t) in (tuple, list, set, frozenset):
-            return []
-        try:
-            return t()
-        except Exception:
-            return None
+    def make_identity(agent_id: str):
+        kwargs = {}
+        for f in dataclasses.fields(ident_cls):
+            if f.default is not dataclasses.MISSING and f.default_factory is not dataclasses.MISSING:
+                continue
+            if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
+                continue
+            t = ident_hints.get(f.name, str)
+            if t is str or f.name == "agent_id":
+                kwargs[f.name] = agent_id
+            elif t is int:
+                kwargs[f.name] = 0
+            elif t is bool:
+                kwargs[f.name] = False
+            elif t is type(None):
+                kwargs[f.name] = None
+            elif typing.get_origin(t) in (tuple, list, set, frozenset):
+                kwargs[f.name] = []
+            else:
+                try:
+                    kwargs[f.name] = t()
+                except Exception:
+                    kwargs[f.name] = None
+        return ident_cls(**kwargs)
 
-    base = {}
-    for field in dataclasses.fields(env_cls):
-        if field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING:
-            base[field.name] = placeholder(field)
+    try:
+        make_identity("probe-agent")
+    except Exception as exc:
+        record("multiagent: identity construction", False, f"could not build AgentIdentity: {exc}")
+        return
 
-    def build_env(recipient: str):
-        kwargs = dict(base)
-        for key in ("recipient", "to", "target", "destination"):
-            if key in kwargs:
-                kwargs[key] = recipient
+    RECIPIENT_FIELDS = ("recipient", "to", "target", "destination")
+
+    def build_env(recipient_id: str):
+        kwargs = {}
+        for f in dataclasses.fields(env_cls):
+            if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
+                continue
+            t = env_hints.get(f.name, str)
+            if isinstance(t, type) and t is ident_cls:
+                kwargs[f.name] = make_identity(
+                    recipient_id if f.name in RECIPIENT_FIELDS else f"probe-{f.name}")
+            elif t is str:
+                kwargs[f.name] = "probe"
+            elif t is int:
+                kwargs[f.name] = 1
+            elif t is bool:
+                kwargs[f.name] = False
+            elif isinstance(t, type) and issubclass(t, uuid.UUID):
+                kwargs[f.name] = uuid.uuid4()
+            elif t is type(None):
+                kwargs[f.name] = None
+            elif typing.get_origin(t) in (tuple, list, set, frozenset):
+                kwargs[f.name] = []
+            else:
+                try:
+                    kwargs[f.name] = t()
+                except Exception:
+                    kwargs[f.name] = None
         return env_cls(**kwargs)
 
     try:
@@ -297,14 +348,45 @@ def attack_multiagent(root: Path) -> None:
     # forwarding chain longer than max_hops must be stopped by the hop limit
     names = [f"chain{i}" for i in range(6)]
     received = []
+    result_cls = getattr(contracts, "AgentResult", None)
+
+    def make_result():
+        if result_cls is None or not dataclasses.is_dataclass(result_cls):
+            return None
+        kwargs = {}
+        hints = typing.get_type_hints(result_cls)
+        for f in dataclasses.fields(result_cls):
+            if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
+                continue
+            t = hints.get(f.name, str)
+            if t is str:
+                kwargs[f.name] = "probe"
+            elif t is int:
+                kwargs[f.name] = 0
+            elif t is bool:
+                kwargs[f.name] = False
+            elif t is type(None):
+                kwargs[f.name] = None
+            elif typing.get_origin(t) in (tuple, list, set, frozenset):
+                kwargs[f.name] = []
+            else:
+                try:
+                    kwargs[f.name] = t()
+                except Exception:
+                    kwargs[f.name] = None
+        try:
+            return result_cls(**kwargs)
+        except Exception:
+            return None
 
     def handler_for(i, envelope):
         received.append(i)
         if i + 1 < len(names):
             bus.deliver(build_env(names[i + 1]))
+        return make_result()
 
     for i, name in enumerate(names):
-        bus.register(name, (lambda idx: lambda env: handler_for(idx, env))(i))
+        bus.register(make_identity(name), (lambda idx: lambda env: handler_for(idx, env))(i))
     try:
         bus.deliver(build_env(names[0]))
     except Exception:
