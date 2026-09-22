@@ -75,3 +75,33 @@ host delegation, guest builds and physical-key enrollment.
 This is an external durable anchor, not a replacement for the local BULL ledger or the KVM boundary. Cloudflare account compromise remains part of the external service trust surface. The Worker does not receive prompts, credentials, or workload payloads from BULL's direct HTTPS checkpoint transport; it receives the session, monotonic sequence, previous/head hashes, and MAC.
 
 Do not use localhost, a test CA, or a committed key for production verification.
+
+## Workers Builds root-directory errors
+
+This repository's root is a Python project, not a Worker entry point. The audit
+Worker package and Wrangler configuration live in `deploy/cloudflare-audit/`;
+its checked-in Worker name is `bull-audit` and its entry point is `src/index.ts`
+relative to that directory. A root-directory trigger running
+`npx wrangler versions upload` without a selected configuration fails with
+“Missing entry-point to Worker script or to assets directory”. Installing the
+Python package does not supply that entry point.
+
+For an audit Worker build, select `deploy/cloudflare-audit` as the trigger root
+and ensure the dashboard Worker name matches the selected Wrangler configuration.
+Alternatively, an operator can explicitly select that config with Wrangler's
+`--config` option. Before any upload, replace the D1 placeholder in the operator's
+configuration with the intended existing database binding; retain the existing
+collector secret. Do not point an unrelated Worker at this package or create a
+new production identity just to make CI green.
+
+The engineering website is built by `tools/build_site.py` and published through
+GitHub Pages. Its PR workflow deliberately skips the deployment job. A separate
+Cloudflare website mirror needs its own explicit assets configuration and build
+output; the audit Worker configuration is not a website configuration.
+
+Cloudflare documents [trigger root directories](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+and [matching Worker names](https://developers.cloudflare.com/workers/ci-cd/builds/).
+A diagnosed trigger error is not a successful build: retain the failed status
+until the intended configuration has been selected and an authorized build
+actually passes. No upload or production configuration change is required to
+review or test this repository locally.

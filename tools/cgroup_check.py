@@ -39,7 +39,8 @@ try:
             time.sleep(5)
             os._exit(0)
         children.append(pid)
-    assert blocked, 'pids limit did not reject bounded fork attempts'
+    if not blocked:
+        raise RuntimeError('pids limit did not reject bounded fork attempts')
 finally:
     for pid in children:
         os.kill(pid, signal.SIGKILL)
@@ -55,17 +56,21 @@ finally:
                                     capture_output=True)
             if name == "memory":
                 observed = counters(scope.path / "memory.events")
-                assert result.returncode == -9 and observed.get("oom_kill", 0) >= 1, (
-                    f"memory limit evidence mismatch: returncode={result.returncode}, counters={observed}, "
-                    f"probe_error={result.stderr.decode(errors='replace')[:512]}")
+                if result.returncode != -9 or observed.get("oom_kill", 0) < 1:
+                    raise RuntimeError(
+                        f"memory limit evidence mismatch: returncode={result.returncode}, counters={observed}, "
+                        f"probe_error={result.stderr.decode(errors='replace')[:512]}")
             elif name == "cpu":
                 observed = counters(scope.path / "cpu.stat")
-                assert result.returncode == 0 and observed.get("nr_throttled", 0) >= 1, "CPU quota was not enforced"
+                if result.returncode != 0 or observed.get("nr_throttled", 0) < 1:
+                    raise RuntimeError("CPU quota was not enforced")
             else:
                 observed = counters(scope.path / "pids.events")
-                assert result.returncode == 0 and observed.get("max", 0) >= 1, "pids limit was not enforced"
+                if result.returncode != 0 or observed.get("max", 0) < 1:
+                    raise RuntimeError("pids limit was not enforced")
             path = scope.path
-        assert not path.exists(), "resource probe scope was not removed"
+        if path.exists():
+            raise RuntimeError("resource probe scope was not removed")
         results[name] = {"status": "PASS", "returncode": result.returncode, "counters": observed}
 
     # Both an interrupted coordinator and a timeout must reap an owned process
@@ -83,11 +88,11 @@ finally:
                 deadline = time.monotonic() + 2
                 while len((path / "cgroup.procs").read_text().split()) < 2:
                     if time.monotonic() >= deadline:
-                        raise AssertionError("cleanup fixture did not create its descendant")
+                        raise RuntimeError("cleanup fixture did not create its descendant")
                     time.sleep(0.01)
                 try:
                     child.wait(timeout=0.2)
-                    raise AssertionError("cleanup fixture exited unexpectedly")
+                    raise RuntimeError("cleanup fixture exited unexpectedly")
                 except subprocess.TimeoutExpired:
                     if reason == "timeout":
                         raise
@@ -97,7 +102,8 @@ finally:
         finally:
             if child is not None:
                 child.wait(timeout=5)
-        assert path is not None and not path.exists(), "descendant scope cleanup failed"
+        if path is None or path.exists():
+            raise RuntimeError("descendant scope cleanup failed")
         results[reason] = {"status": "PASS", "scope_removed": True}
 
     # A real, owned cgroup with no controllers enabled must not admit work.
@@ -106,7 +112,7 @@ finally:
         try:
             with CgroupV2Scope(undelegated, memory_bytes=64*1024*1024,
                                processes=4, cpu_quota_us=25000):
-                raise AssertionError("missing controllers admitted a scope")
+                raise RuntimeError("missing controllers admitted a scope")
         except CgroupUnavailable as exc:
             if "unable to configure cgroup" not in str(exc):
                 raise

@@ -273,3 +273,42 @@ synthetic signatures are not physical hardware evidence, and touch is not proof
 of informed consent. Finite tests and model checks do not establish universal
 protection from malicious AI or arbitrary host compromise. No certification,
 release, deployment, or merge is claimed.
+
+## Optimization-safe cgroup evidence correction
+
+PR review identified a validation defect in `tools/cgroup_check.py`: Python
+optimization removed `assert` statements that checked resource counters,
+probe exit status and scope cleanup. The ordinary-mode results above remain
+observations of those specific runs; they did not establish correct behavior
+under optimized Python.
+
+The correction replaces every enforcement assertion, including the embedded
+pids probe's condition, with explicit conditional errors. The regression runs
+`check_limits()` in fresh normal, `-O`, `-OO`, and `PYTHONOPTIMIZE=2` interpreters.
+Across those four modes, eight invalid evidence cases (CPU/memory/pids exit
+status or counters, resource cleanup, descendant cleanup) must raise, while a
+valid control completes. All 36 cases passed in the targeted run. These cases
+use controlled fixtures and do not claim real isolation. New real-kernel rerun
+reports and source evidence are kept separately under
+`/home/al/bull-evidence/cgroup-optimization-20260922/`; the PR records their
+commit and outcomes.
+
+The operator's prior root-level terminal run on `978ff4d` also passed all six
+real cgroup checks as UID 1000, with clean unchanged source. Its saved report,
+terminal log and file manifest were inspected at
+`/home/al/bull-evidence/production-20260922/root-cgroup-R7m4GV82/`.
+That closes the earlier skipped path for that commit; it is not a new run of
+the optimization correction. Physical-key validation remains deferred and
+unverified.
+
+Separately, GitHub reported `Workers Builds: bull` failed on `978ff4d` without
+an attached error log. The operator supplied its error and configuration:
+`npx wrangler versions upload`, root `/`, and “Missing entry-point to Worker
+script or to assets directory”. Repository inspection confirms there is no
+root Worker config; the audit package is nested and named `bull-audit`.
+This is a build-trigger/configuration mismatch, not a Python package install
+failure or evidence that the running collector rejected audit receipts.
+The [collector guide](../deploy/cloudflare-audit/README.md#workers-builds-root-directory-errors)
+describes the configuration distinction. No successful Cloudflare rebuild,
+production settings change, or deployment is claimed. The GitHub Pages deploy
+job is intentionally skipped on PRs by its workflow condition.
