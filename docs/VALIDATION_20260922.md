@@ -51,3 +51,37 @@ GitHub Actions completed on candidate `377ef3c4b9e8ac3a5d2777888711aecdf8018e2d`
 These hosted passes resolve the source-test uncertainty from the four local
 environment failures. They do not replace real KVM, physical device, or external
 collector integration evidence. The local failures above remain part of the record.
+
+## Codespaces permission regression and fixture correction
+
+The operator's Codespaces run of main `b5059c33660d63d025f03060dd933f88aad8de25`
+used Python 3.14.2 and reported **302 passed, 5 failed, 6 subtests passed, 0 skipped**.
+All three formal models, packaging, and the website build passed. Source validation
+correctly remained failed. The checkout's `microvm/config/defaults.env` had mode
+`0666`; failures also occurred at permission checks on freshly created authority,
+firmware, and diagnostic configuration fixtures.
+
+The same five failures were reproduced locally on Python 3.12 by using umask
+`000` and a mode-`0666` source template. The tests relied on ambient filesystem
+permissions. This reproduction does not establish which Codespaces setting
+produced those permissions.
+
+The correction provisions valid test authority, firmware, and configuration files
+with explicit mode `0600`. The shipped-template parsing test first copies the
+template into a private deployment fixture, reflecting the production setup
+contract. Nine additional cases separately verify rejection of group-writable,
+world-writable, and mode-`0666` files. Configuration syntax tests now assert their
+specific rejection reasons so an earlier permission failure cannot mask a parser
+regression. Runtime permission enforcement is unchanged.
+
+The required MicroVM host CI jobs now exercise the two affected test modules with
+umask `000` and a writable source template. Local correction results:
+
+- Permissive-permissions run: **41 passed, 1 failed**. The remaining failure is
+  the already documented AF_UNIX restriction on `test_private_paired_channels`.
+- Full suite: **312 passed, 4 failed, 6 subtests passed, 0 skipped**. The four
+  remaining failures are the same local environment blockers listed above.
+
+Hosted CI for the correction and a fresh Codespaces release-check report provide
+separate evidence. These fixture changes do not qualify hardware or deployment
+security; those promotion gates still apply.

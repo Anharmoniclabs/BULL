@@ -19,8 +19,10 @@ def authority(tmp_path, **changes):
             'environment': {}, 'expires': int(time.time()) + 60}
     data.update(changes)
     signed = authenticate(data, bytes.fromhex(data['control_key']), purpose='guest-deployment')
-    (deployment / 'session.json').write_text(json.dumps(signed))
-    return deployment / 'session.json'
+    path = deployment / 'session.json'
+    path.write_text(json.dumps(signed))
+    path.chmod(0o600)
+    return path
 
 
 def test_authority_rejects_tampering_and_expiry(tmp_path):
@@ -36,6 +38,15 @@ def test_authority_rejects_tampering_and_expiry(tmp_path):
 def test_expired_authority_is_not_admitted(tmp_path):
     authority(tmp_path, expires=int(time.time()) - 1)
     with pytest.raises(AnchorError, match='expired'):
+        load_authority(tmp_path)
+
+
+@pytest.mark.parametrize('mode', [0o620, 0o602, 0o666])
+def test_authority_rejects_writable_permissions(tmp_path, mode):
+    path = authority(tmp_path)
+    assert load_authority(tmp_path)['request']['argv'] == ['/usr/bin/true']
+    path.chmod(mode)
+    with pytest.raises(AnchorError, match='invalid session authority file'):
         load_authority(tmp_path)
 
 
