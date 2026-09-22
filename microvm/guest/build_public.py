@@ -145,13 +145,14 @@ def databases(output, directory, sigtool="sigtool"):
         path = directory / name
         if path.is_symlink() or not path.is_file():
             raise ValueError("missing regular official database: " + name)
-        # A checksum chosen by the caller alone is not origin verification.
-        command([sigtool, "--verify-cvd", path], timeout=120, capture_output=True)
+        # For .cvd files, sigtool --info calls cl_cvdverify_ex and fails on
+        # invalid signatures. A caller-chosen checksum alone is not origin verification.
+        command([sigtool, "--info=" + str(path)], timeout=120, capture_output=True)
         before = sha(path)
         shutil.copyfile(path, destination / name)
         if sha(destination / name) != before:
             raise ValueError("database changed while copying")
-        command([sigtool, "--verify-cvd", destination / name], timeout=120, capture_output=True)
+        command([sigtool, "--info=" + str(destination / name)], timeout=120, capture_output=True)
         (destination / name).chmod(0o644)
         verified[name] = before
     record.update(database_verification="VERIFIED_BY_SIGTOOL", databases=verified, inputs=snapshot(output / "inputs"))
