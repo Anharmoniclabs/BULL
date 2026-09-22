@@ -187,6 +187,7 @@ def attack_canonicalizer(root: Path) -> None:
 
 def attack_dispatcher(root: Path) -> None:
     print("\n[checkout] dispatcher execution boundary")
+    import inspect
     from bulldog.canonicalizer import ActionCanonicalizationError, TrustedExecutionContext
     from bulldog.dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
     from bulldog.models import Capability, Provenance
@@ -212,6 +213,27 @@ def attack_dispatcher(root: Path) -> None:
             trusted=trusted,
             granted_capabilities=frozenset(caps),
         )
+
+    # Auto-fill whatever keyword arguments the current execute() signature
+    # requires (e.g. project_root, timeout) so the harness survives API drift.
+    sig = inspect.signature(dispatch.execute)
+    project_dir = Path(tempfile.mkdtemp(prefix="bull-redteam-"))
+    extra: dict = {}
+    for name, param in sig.parameters.items():
+        if name in ("self", "request", "command") or param.default is not param.empty:
+            continue
+        ann = param.annotation
+        ann_str = ann if isinstance(ann, str) else getattr(ann, "__name__", str(ann))
+        if name == "project_root" or "Path" in ann_str:
+            extra[name] = project_dir
+        elif name == "timeout" or ann_str == "int":
+            extra[name] = 60
+        elif ann_str == "bool":
+            extra[name] = False
+        else:
+            extra[name] = "redteam-probe"
+    if extra:
+        print(f"    [info] execute() auto-filled kwargs: {sorted(extra)}")
 
     def expect_deny(name: str, fn, *args, **kwargs) -> None:
         """Strict gate check: only a real denial outcome counts as PASS.
@@ -243,17 +265,25 @@ def attack_dispatcher(root: Path) -> None:
     ]
     for lbl, res, cmd in hostile:
         expect_deny(f"dispatcher.execute: {lbl}", dispatch.execute,
-                    make(res, [Capability.PROCESS_EXEC]), cmd)
+                    make(res, [Capability.PROCESS_EXEC]), cmd, **extra)
 
     # capability omission: a clean executable must still be denied without the grant
     expect_deny("dispatcher.execute: no PROCESS_EXEC grant", dispatch.execute,
-                make("/usr/bin/ls", []), ["/usr/bin/ls"])
+                make("/usr/bin/ls", []), ["/usr/bin/ls"], **extra)
     # argv0 substitution: authorized resource must equal command[0]
     expect_deny("dispatcher.execute: argv0 substitution", dispatch.execute,
-                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/echo", "pwned"])
+                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/echo", "pwned"], **extra)
     # command tuple must match host authorization exactly
     expect_deny("dispatcher.execute: mismatched command tuple", dispatch.execute,
-                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/ls", "--extra", "arg"])
+                make("/usr/bin/ls", [Capability.PROCESS_EXEC]), ["/usr/bin/ls", "--extra", "arg"], **extra)
+
+    # honest control (informational only): shows the gate answers at all
+    try:
+        result = dispatch.execute(make("/usr/bin/echo", [Capability.PROCESS_EXEC]),
+                                  ["/usr/bin/echo", "bull-harness"], **extra)
+        print(f"    [info] honest control: returned {type(result).__name__}")
+    except Exception as exc:
+        print(f"    [info] honest control: {type(exc).__name__}: {exc}")
 
 
 def attack_multiagent(root: Path) -> None:
@@ -345,9 +375,6 @@ def attack_multiagent(root: Path) -> None:
         return
     expect_reject("multiagent: unregistered recipient", bus.deliver, ghost)
 
-    # forwarding chain longer than max_hops must be stopped by the hop limit
-    names = [f"chain{i}" for i in range(6)]
-    received = []
     result_cls = getattr(contracts, "AgentResult", None)
 
     def make_result():
@@ -379,6 +406,26 @@ def attack_multiagent(root: Path) -> None:
         except Exception:
             return None
 
+    # register every identity the harness-built envelopes can reference
+    # (recipients AND senders), so delivery is not refused for an
+    # unregistered sender before the hop chain can even start.
+    sender_ids = []
+    for f in dataclasses.fields(env_cls):
+        if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
+            continue
+        t = env_hints.get(f.name, str)
+        if isinstance(t, type) and t is ident_cls and f.name not in RECIPIENT_FIELDS:
+            sender_ids.append(f"probe-{f.name}")
+    for sid in sender_ids:
+        try:
+            bus.register(make_identity(sid), lambda env: make_result())
+        except Exception:
+            pass
+
+    # forwarding chain longer than max_hops must be stopped by the hop limit
+    names = [f"chain{i}" for i in range(6)]
+    received = []
+
     def handler_for(i, envelope):
         received.append(i)
         if i + 1 < len(names):
@@ -387,12 +434,18 @@ def attack_multiagent(root: Path) -> None:
 
     for i, name in enumerate(names):
         bus.register(make_identity(name), (lambda idx: lambda env: handler_for(idx, env))(i))
+    stop_exc = None
     try:
         bus.deliver(build_env(names[0]))
-    except Exception:
-        pass
-    record("multiagent: hop limit", len(received) <= 3,
-           f"{len(received)} deliveries before stop (max_hops=2)")
+    except Exception as exc:
+        stop_exc = exc
+    ok = 1 <= len(received) <= 3
+    detail = f"{len(received)} deliveries before stop (max_hops=2)"
+    if stop_exc is not None:
+        detail += f"; stopped by {type(stop_exc).__name__}: {stop_exc}"
+    if len(received) == 0:
+        detail += " - chain never started; envelope rejected before first handler"
+    record("multiagent: hop limit", ok, detail)
 
 
 def run_repo_pytest(root: Path) -> None:
