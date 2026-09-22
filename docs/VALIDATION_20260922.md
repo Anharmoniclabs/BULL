@@ -36,3 +36,18 @@ unverified. See release notes for the promotion gates.
 Use `tools/release_check.py` to obtain exact current counts and a content-identified
 machine-readable report on the intended host. The report retains full failures
 and marks `certified: false`; no universal malicious-AI protection is claimed.
+
+## Hosted candidate checks
+
+GitHub Actions completed on candidate `377ef3c4b9e8ac3a5d2777888711aecdf8018e2d`:
+
+- Python 3.11: **307 passed, 6 subtests passed**, no failed/skipped tests (4.36 s).
+- Python 3.13: **307 passed, 6 subtests passed**, no failed/skipped tests (3.90 s).
+- Required security workflow: https://github.com/Anharmoniclabs/BULL/actions/runs/35732645334
+- All three formal models: https://github.com/Anharmoniclabs/BULL/actions/runs/35732645399
+- MicroVM host regressions: https://github.com/Anharmoniclabs/BULL/actions/runs/35732645118
+- Publication verification/build: https://github.com/Anharmoniclabs/BULL/actions/runs/35732646554
+
+These hosted passes resolve the source-test uncertainty from the four local
+environment failures. They do not replace real KVM, physical device, or external
+collector integration evidence. The local failures above remain part of the record.
