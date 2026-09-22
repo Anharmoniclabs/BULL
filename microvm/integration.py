@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local KVM integration fixture with a disposable authenticated TLS collector.
+"""KVM integration fixture with disposable TLS or an operator-selected collector.
 
 This is test infrastructure, not deployment configuration or certification.
 Invoke from the checkout with PYTHONPATH=src.
@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import secrets
 import shutil
+import signal
 import socket
 import ssl
 import subprocess
@@ -24,6 +25,7 @@ from bulldog.audit_transport import AnchorIdentity, HTTPSAnchorTransport, HostAn
 from bulldog.integrity import build_integrity_manifest, sign_integrity_manifest
 from bulldog.microvm_protocol import RemoteSessionError, SessionChannel
 from bulldog.policy_bundle import sign_policy_bundle
+from evidence import ReceiptTransport, anchor_master
 
 WORKLOAD = '''import json, os, resource, time
 started = time.monotonic_ns()
@@ -118,18 +120,28 @@ def run(args):
     save(deployment / 'session.json', authenticate({'session': session, 'control_key': control_key.hex(),
          'audit_master': master.hex(), 'request': request, 'environment': environment,
          'expires': int(time.time()) + 900}, control_key, purpose='guest-deployment'))
-    cert, tls_key = out / 'test-cert.pem', out / 'test-key.pem'
-    subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
-                    '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1',
-                    '-keyout', str(tls_key), '-out', str(cert)], check=True, capture_output=True, timeout=15)
-    collector = AnchorStore(out / 'collector.sqlite', master)
-    server = make_server(collector, ('127.0.0.1', 0))
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(cert, tls_key)
-    server.socket = context.wrap_socket(server.socket, server_side=True)
-    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
-    server_thread.start()
-    transport = HTTPSAnchorTransport(f'https://localhost:{server.server_port}/v1/checkpoints', identity, test_ca=cert)
+    server = server_thread = collector = None
+    if args.external_url:
+        # The external master stays on the host. The guest gets a separate,
+        # disposable relay master; HostAnchorRelay re-signs upstream checkpoints.
+        external_identity = AnchorIdentity(session, session_key(anchor_master(args.external_key_file), session))
+        upstream = HTTPSAnchorTransport(args.external_url, external_identity)
+        if not upstream.production_ready:
+            raise ValueError('external collector requires a non-local HTTPS endpoint with system trust')
+    else:
+        cert, tls_key = out / 'test-cert.pem', out / 'test-key.pem'
+        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+                        '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1',
+                        '-keyout', str(tls_key), '-out', str(cert)], check=True, capture_output=True, timeout=15)
+        collector = AnchorStore(out / 'collector.sqlite', master)
+        server = make_server(collector, ('127.0.0.1', 0))
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cert, tls_key)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+        upstream = HTTPSAnchorTransport(f'https://localhost:{server.server_port}/v1/checkpoints', identity, test_ca=cert)
+    transport = ReceiptTransport(upstream, out / 'collector-receipt.json')
     relay = HostAnchorRelay(AnchorStore(out / 'relay.sqlite', master), transport, session)
     listeners = {}
     errors = []
@@ -183,7 +195,8 @@ def run(args):
     config_path.write_text(''.join('BULL_MICROVM_' + k + '=' + v + '\n' for k, v in config.items()))
     config_path.chmod(0o600)
     report = {'status': 'FAIL', 'session': session, 'case': args.case,
-              'collector': 'isolated disposable authenticated TLS test collector',
+              'collector': 'external authenticated HTTPS collector' if args.external_url else 'isolated disposable authenticated TLS test collector',
+              'external_collector': bool(args.external_url),
               'hardware_attestation': False,
               'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip(),
               'assets': {name: digest(getattr(args, name)) for name in ('kernel', 'rootfs', 'firmware')}}
@@ -232,11 +245,13 @@ def run(args):
                 report['result'] = result
                 if result.get('session') != session or not result.get('audit', {}).get('valid'):
                     raise ValueError('incomplete authenticated completion evidence')
-                with collector.connect() as db:
-                    accepted = db.execute('SELECT head FROM checkpoints WHERE session=? AND sequence=?',
-                                          (session, result['audit'].get('records'))).fetchone()
-                if accepted is None or accepted[0] != result['audit'].get('head_hash'):
-                    raise ValueError('completion head was not acknowledged by test collector')
+                report['completion_receipt'] = transport.completion(session, result['audit'])
+                if collector is not None:
+                    with collector.connect() as db:
+                        accepted = db.execute('SELECT head FROM checkpoints WHERE session=? AND sequence=?',
+                                              (session, result['audit'].get('records'))).fetchone()
+                    if accepted is None or accepted[0] != result['audit'].get('head_hash'):
+                        raise ValueError('completion head was not acknowledged by test collector')
                 if args.case == 'allowed':
                     if (result.get('executed') is not True or result.get('returncode') != 0
                             or not result.get('sandboxed') or not result.get('malware_scan_performed')
@@ -287,9 +302,10 @@ def run(args):
         for listener in listeners.values():
             listener.close()
         audit_thread.join(timeout=2)
-        server.shutdown()
-        server.server_close()
-        server_thread.join(timeout=2)
+        if server is not None:
+            server.shutdown()
+            server.server_close()
+            server_thread.join(timeout=2)
         for name in ('control', 'audit'):
             (out / (name + '.sock')).unlink(missing_ok=True)
         save(out / 'report.json', report)
@@ -302,12 +318,19 @@ class VerifiedCancellation(Exception):
 
 
 if __name__ == '__main__':
+    def interrupted(signum, frame):
+        raise InterruptedError('integration interrupted; cleaning up owned VM')
+    signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     for flag in ('kernel', 'rootfs', 'firmware', 'output'):
         parser.add_argument('--' + flag, type=Path, required=True)
     parser.add_argument('--case', choices=('all', 'allowed', 'denied', 'timeout', 'cancel', 'missing-protection'), required=True)
     parser.add_argument('--cpu-profile', choices=('host', 'amd-native-ssbd'), default='host')
+    parser.add_argument('--external-url', help='Operator-selected collector; sends checkpoint metadata to this HTTPS endpoint.')
+    parser.add_argument('--external-key-file', type=Path, help='Private key file, or use BULL_REMOTE_AUDIT_ANCHOR_KEY.')
     args = parser.parse_args()
+    if args.external_key_file and not args.external_url:
+        parser.error('--external-key-file requires --external-url')
     if args.case == 'all':
         args.output.mkdir(mode=0o700, parents=True, exist_ok=False)
         reports = []
@@ -317,7 +340,7 @@ if __name__ == '__main__':
             run(case_args)
             reports.append(json.loads((case_args.output / 'report.json').read_text()))
         summary = {'status': 'PASS' if all(r['status'] == 'PASS' for r in reports) else 'FAIL',
-                   'scope': 'local one-shot KVM integration with disposable TLS test collector',
+                   'scope': 'one-shot KVM integration with external collector' if args.external_url else 'local one-shot KVM integration with disposable TLS test collector',
                    'cases': {r['case']: r['status'] for r in reports},
                    'source_tree_sha256': sorted({r['source_tree_sha256'] for r in reports})}
         if len(summary['source_tree_sha256']) != 1:

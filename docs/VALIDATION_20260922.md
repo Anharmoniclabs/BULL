@@ -85,3 +85,24 @@ umask `000` and a writable source template. Local correction results:
 Hosted CI for the correction and a fresh Codespaces release-check report provide
 separate evidence. These fixture changes do not qualify hardware or deployment
 security; those promotion gates still apply.
+
+## Deployment runner wiring
+
+The operator subsequently reported all source gates passing in Codespaces on
+`b0c702274f14379fad38c57a4f8d88022365627b`: Python 3.14.2, clean checkout, 322 JUnit
+records including subtests, zero failures/errors/skips. This is operator-provided
+source evidence; the deployment gates in that report remained NOT_RUN.
+
+The deployment runner adds actual environment probes and connects existing
+hardware/KVM checks to one command. The KVM path now supports an external
+collector with a completion-bound authenticated receipt and separate guest/host
+keys. Nine runner regressions cover device probing, cleanup, pinned-asset
+integrity, private key handling, skipped evidence, and a real loopback TLS relay.
+
+Local wiring validation: **321 passed, 4 failed, 6 subtests passed**. The four
+failures are the same local AF_UNIX/backend restrictions documented above. The
+deployment command itself completed and retained those restrictions, missing
+KVM/assets/credentials and the dirty development tree as non-passing evidence.
+Physical device and real guest/external tests still require an operator run with
+the actual prerequisites. CI exercises a clean checkout and asserts that missing
+deployment inputs remain BLOCKED rather than being reported as certification.
