@@ -200,3 +200,47 @@ def test_invalid_deployment_stops_before_running_checks(tmp_path, monkeypatch):
     result = json.loads((out / "report.json").read_text())
     assert result["certified"] is False
     assert result["gates"]["deployment_configuration"]["status"] == "FAIL"
+
+
+def test_partial_cgroup_configuration_removes_empty_scope(tmp_path, monkeypatch):
+    from bulldog.cgroup_scope import CgroupV2Scope, CgroupUnavailable
+    scope = CgroupV2Scope(tmp_path, memory_bytes=1024, processes=4, cpu_quota_us=25000)
+    def unavailable(name, value):
+        raise CgroupUnavailable("controller unavailable")
+    monkeypatch.setattr(scope, "_write", unavailable)
+    with pytest.raises(CgroupUnavailable, match="controller unavailable"):
+        with scope:
+            pytest.fail("partial scope must never admit a workload")
+    assert list(tmp_path.iterdir()) == []
+    assert scope.path is None
+
+
+def test_guest_public_source_permissions_ignore_private_umask(tmp_path):
+    from microvm.integration import stage_public_runtime
+    source = tmp_path / "repo"
+    package = source / "src/bulldog"
+    package.mkdir(parents=True, mode=0o700)
+    (package / "__init__.py").write_text("# public fixture\n")
+    (package / "__init__.py").chmod(0o600)
+    (package / "_namespace_launcher.sh").write_text("#!/bin/sh\n")
+    (package / "_namespace_launcher.sh").chmod(0o600)
+    (source / "microvm/guest").mkdir(parents=True)
+    (source / "microvm/guest/bull-engine").write_text("#!/bin/sh\n")
+    runtime = tmp_path / "runtime"
+    previous = os.umask(0o077)
+    try:
+        stage_public_runtime(source, runtime)
+    finally:
+        os.umask(previous)
+    assert (runtime / "src/bulldog/__init__.py").stat().st_mode & 0o777 == 0o644
+    for path in (runtime / "src", runtime / "src/bulldog", runtime / "bin", runtime / "bin/bull-engine",
+                 runtime / "src/bulldog/_namespace_launcher.sh"):
+        assert path.stat().st_mode & 0o777 == 0o755
+    assert (package / "__init__.py").stat().st_mode & 0o777 == 0o600
+
+
+def test_resource_checks_refuse_root_before_starting_workloads(monkeypatch):
+    from tools.cgroup_check import check_limits
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    with pytest.raises(ValueError, match="normal operator"):
+        check_limits(Path("/unused"))

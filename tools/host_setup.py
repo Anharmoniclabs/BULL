@@ -89,7 +89,12 @@ def main():
     parser.add_argument("--grant-kvm", action="store_true")
     parser.add_argument("--enable-parent-controllers", action="store_true")
     parser.add_argument("--enter-shell", action="store_true", help="enter an unprivileged Bash with refreshed groups inside the delegated cgroup")
+    parser.add_argument("--run", nargs=argparse.REMAINDER, help="run an explicit command as the operator inside the coordinator (last option)")
     args = parser.parse_args()
+    if args.enter_shell and args.run is not None:
+        parser.error("choose --enter-shell or --run")
+    if args.run == []:
+        parser.error("--run requires a command")
     try:
         if os.geteuid() != 0:
             raise ValueError("administrator provisioning requires sudo")
@@ -99,14 +104,16 @@ def main():
         parent = provision_cgroup(user, enable_parent=args.enable_parent_controllers)
         print(json.dumps({"status": "PROVISIONED_NOT_TESTED", "cgroup_parent": str(parent),
                           "kvm_group": group, "operator": user.pw_name, "certified": False}), flush=True)
-        if args.enter_shell:
+        if args.enter_shell or args.run:
             (parent / "coordinator/cgroup.procs").write_text(str(os.getpid()))
             os.initgroups(user.pw_name, user.pw_gid)
             os.setgid(user.pw_gid)
             os.setuid(user.pw_uid)
-            environment = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": user.pw_dir,
+            environment = {"PATH": "/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin", "HOME": user.pw_dir,
                            "USER": user.pw_name, "LOGNAME": user.pw_name,
                            "TERM": os.environ.get("TERM", "xterm"), "BULL_CGROUP_PARENT": str(parent)}
+            if args.run:
+                os.execvpe(args.run[0], args.run, environment)
             print("BULL operator shell: run deployment checks here; exit returns to the previous shell.", flush=True)
             os.execve("/bin/bash", ["bash", "--noprofile", "--norc", "-i"], environment)
         return 0

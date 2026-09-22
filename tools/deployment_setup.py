@@ -252,7 +252,9 @@ def check_cgroup(parent):
                  'raise SystemExit(0 if str(os.getpid()) in (Path(sys.argv[1])/"cgroup.procs").read_text().split() else 1)')
         subprocess.run([sys.executable, "-I", "-c", probe, str(scope.path)],
                        preexec_fn=scope.attach_current, check=True, timeout=10)
-    return {"status": "PASS", "scope": "real limit configuration and child placement; no resource exhaustion test"}
+    from tools.cgroup_check import check_limits
+    return {"status": "PASS", "scope": "real placement, bounded resource enforcement and descendant cleanup",
+            "checks": check_limits(parent)}
 
 
 def main(argv=None):
@@ -279,7 +281,7 @@ def main(argv=None):
     shell = commands.add_parser("environment", help="write a new private shell environment file (never stdout)")
     shell.add_argument("--state", type=Path, required=True)
     shell.add_argument("--output", type=Path, required=True)
-    check = commands.add_parser("cgroup-check", help="run harmless actual process placement and limit readback")
+    check = commands.add_parser("cgroup-check", help="run bounded actual placement, resource enforcement and cleanup checks")
     check.add_argument("--state", type=Path, required=True)
     args = parser.parse_args(argv)
     os.umask(0o077)

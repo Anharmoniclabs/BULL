@@ -180,28 +180,20 @@ operators supply their own policy, keys and audit destination. The host producti
 current-candidate guest-to-external-collector path and persistent VM reuse remain future work;
 macOS/HVF and ARM remain experimental and disabled.
 
-## One-command production host provisioning
+## Production provisioning
 
-BULL includes a fail-closed Linux production provisioner:
+Use the checked-out `tools/deployment_setup.py init`, `configure`, and `show`
+commands in the [portable deployment guide](docs/REPRODUCIBLE_DEPLOYMENT.md).
+The compatibility wrapper `tools/bull-production-provision.sh` accepts those same
+subcommands; it must stay in the checkout beside the Python implementation.
+It does not install packages or grant host privileges. Administrator cgroup
+provisioning is a separate, explicit `tools/host_setup.py` step.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Anharmoniclabs/BULL/main/tools/bull-production-provision.sh -o bull-production-provision.sh
-chmod +x bull-production-provision.sh
-./bull-production-provision.sh \
-  --anchor-url https://YOUR-AUDIT-HOST/v1/checkpoints \
-  --anchor-key-file /path/to/owner-only/bull-anchor.key
-```
-
-The provisioner creates owner-only deployment state, signed integrity and policy
-bundles, strict-seccomp configuration, private snapshot/audit paths, a delegated
-cgroup v2 parent and a fresh audit session. It then requires
-`bull verify --production`, performs a real authenticated remote-anchor
-checkpoint/acknowledgement, and constructs `ProductionRuntime` and
-`ProductionDispatcher`. It deliberately rejects localhost/test audit anchors;
-the external HTTPS collector and matching master key must already be deployed.
-See [production security](docs/PRODUCTION_SECURITY.md),
-[audit deployment](microvm/audit/README.md), and the optional
-[Cloudflare Workers + D1 audit-anchor package](deploy/cloudflare-audit/README.md).
+Initialization prepares private policy and integrity authority. It refuses an
+existing state directory, preserving keys and audit history. An existing external
+collector requires its exact existing key and a confirmed HTTPS endpoint;
+initialization does not deploy or rotate the service. Run `deployment_check.py`
+to distinguish actual validation from prepared configuration and missing inputs.
 
 ## Measured benchmark evidence
 
