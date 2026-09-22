@@ -187,58 +187,130 @@ def attack_canonicalizer(root: Path) -> None:
 
 def attack_dispatcher(root: Path) -> None:
     print("\n[checkout] dispatcher execution boundary")
+    from bulldog.canonicalizer import TrustedExecutionContext
     from bulldog.dispatcher import CapabilityDispatcher, DispatchRequest
+    from bulldog.models import Capability, Provenance
+
+    # CapabilityDispatcher is the development/compatibility surface (it warns
+    # as much); ProductionDispatcher requires a provisioned production host.
     dispatch = CapabilityDispatcher()
-    hostile = [
-        ("empty argv", [""]),
-        ("traversal in argv0", ["/usr/bin/../../etc/passwd"]),
-        ("NUL in command", ["/bin/ls\x00/usr/bin/ls"]),
-        ("shell metacharacters", ["/bin/sh", "-c", "cat /etc/shadow"]),
-        ("unauthorized executable", ["/not/authorized/binary"]),
-    ]
-    entries = [getattr(dispatch, n) for n in ("request", "execute", "dispatch", "submit", "canonicalize")
+    trusted = TrustedExecutionContext(
+        actor="redteam-probe",
+        provenance=(Provenance.HUMAN,),
+        security_context_id="redteam-probe-ctx",
+    )
+
+    def make(resource: str, caps) -> DispatchRequest:
+        return DispatchRequest(
+            proposal={"task": "redteam probe", "operation": "execute", "resource": resource},
+            trusted=trusted,
+            granted_capabilities=frozenset(caps),
+        )
+
+    entries = [getattr(dispatch, n) for n in
+               ("request", "execute", "dispatch", "submit", "canonicalize")
                if callable(getattr(dispatch, n, None))]
     if not entries:
         record("dispatcher: entry points", False, "no callable entry found - update harness to current API")
         return
-    for lbl, argv in hostile:
+
+    hostile = [
+        ("empty resource", ""),
+        ("traversal resource", "/usr/bin/../../etc/passwd"),
+        ("NUL resource", "/bin/ls\x00/usr/bin/ls"),
+        ("relative traversal", "../../etc/shadow"),
+        ("shell metacharacters", "/bin/sh -c cat /etc/shadow"),
+        ("unauthorized executable", "/not/authorized/binary"),
+    ]
+    for lbl, res in hostile:
         for entry in entries:
             expect_reject(f"dispatcher[{entry.__name__}]: {lbl}", entry,
-                          DispatchRequest(proposal={"action": "process.exec", "argv": argv}))
+                          make(res, [Capability.PROCESS_EXEC]))
+    # capability omission: a clean executable must still be denied without the grant
+    for entry in entries:
+        expect_reject(f"dispatcher[{entry.__name__}]: no PROCESS_EXEC grant", entry,
+                      make("/usr/bin/ls", []))
 
 
 def attack_multiagent(root: Path) -> None:
     print("\n[checkout] multi-agent bus")
-    try:
-        from bulldog.multiagent.bus import MessageBus
-    except ImportError:
-        record("multiagent: import", False, "bus not importable")
+    import dataclasses
+    import typing
+    import uuid
+    from bulldog.multiagent.bus import MessageBus
+
+    bus = MessageBus(max_hops=2)
+    expect_reject("multiagent: string garbage", bus.deliver, "not-an-envelope")
+    expect_reject("multiagent: dict envelope", bus.deliver, {"recipient": "ghost"})
+
+    from bulldog.multiagent import contracts
+    env_cls = None
+    for name in ("Envelope", "Message", "BusEnvelope"):
+        cand = getattr(contracts, name, None)
+        if cand is not None and dataclasses.is_dataclass(cand):
+            env_cls = cand
+            break
+    if env_cls is None:
+        record("multiagent: envelope type", False, "no dataclass envelope in contracts; update harness")
         return
-    try:
-        bus = MessageBus()
-    except TypeError:
-        bus = MessageBus(hop_limit=2)
-    send = bus.publish if hasattr(bus, "publish") else bus.send
-    for lbl, env in [
-        ("unregistered recipient", dict(recipient="ghost", sender="a", body="x")),
-        ("spoofed sender", dict(recipient="a", sender="forged", body="x")),
-        ("missing sender", dict(recipient="a", body="x")),
-        ("non-envelope garbage", "not-a-dict"),
-    ]:
+
+    hints = typing.get_type_hints(env_cls)
+
+    def placeholder(field):
+        t = hints.get(field.name, str)
+        if t is str:
+            return "probe"
+        if t is int:
+            return 1
+        if t is bool:
+            return False
+        if isinstance(t, type) and issubclass(t, uuid.UUID):
+            return uuid.uuid4()
+        if t is type(None):
+            return None
+        if typing.get_origin(t) in (tuple, list, set, frozenset):
+            return []
         try:
-            send(env)
-            record(f"multiagent: {lbl}", False, "delivered without validation")
+            return t()
         except Exception:
-            record(f"multiagent: {lbl}", True, "rejected")
-    hops = 0
+            return None
+
+    base = {}
+    for field in dataclasses.fields(env_cls):
+        if field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING:
+            base[field.name] = placeholder(field)
+
+    def build_env(recipient: str):
+        kwargs = dict(base)
+        for key in ("recipient", "to", "target", "destination"):
+            if key in kwargs:
+                kwargs[key] = recipient
+        return env_cls(**kwargs)
+
     try:
-        for i in range(200):
-            send(dict(recipient=f"agent{i}", sender=f"agent{i-1}", body="hop"))
-            hops += 1
+        ghost = build_env("ghost-agent")
+    except Exception as exc:
+        record("multiagent: envelope construction", False, f"could not build Envelope: {exc}")
+        return
+    expect_reject("multiagent: unregistered recipient", bus.deliver, ghost)
+
+    # forwarding chain longer than max_hops must be stopped by the hop limit
+    names = [f"chain{i}" for i in range(6)]
+    received = []
+
+    def handler_for(i, envelope):
+        received.append(i)
+        if i + 1 < len(names):
+            bus.deliver(build_env(names[i + 1]))
+
+    for i, name in enumerate(names):
+        bus.register(name, (lambda idx: lambda env: handler_for(idx, env))(i))
+    try:
+        bus.deliver(build_env(names[0]))
     except Exception:
-        record("multiagent: hop exhaustion", True, f"terminated after {hops} hops")
-    else:
-        record("multiagent: hop exhaustion", hops < 200, f"{hops} forwards accepted")
+        pass
+    record("multiagent: hop limit", len(received) <= 3,
+           f"{len(received)} deliveries before stop (max_hops=2)")
 
 
 def run_repo_pytest(root: Path) -> None:
