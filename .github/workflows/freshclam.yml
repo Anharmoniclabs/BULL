@@ -38,3 +38,27 @@ jobs:
             | grep 'apparmor="DENIED".*freshclam' || true
       - name: Download and verify real official databases with release helper
         run: bash tools/fetch_guest_databases.sh "$RUNNER_TEMP/bull-verified-databases"
+      - name: Seal the real databases through the guest recipe
+        run: |
+          python3 microvm/guest/build_public.py prepare --output "$RUNNER_TEMP/bull-guest" --fetch
+          python3 microvm/guest/build_public.py databases --output "$RUNNER_TEMP/bull-guest" \
+            --database-dir "$RUNNER_TEMP/bull-verified-databases"
+      - name: Reject a corrupted copy with the actual signature verifier
+        run: |
+          python3 - <<'PY'
+          import os, shutil, subprocess
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          bad = root / 'corrupted-bytecode.cvd'
+          shutil.copyfile(root / 'bull-verified-databases/bytecode.cvd', bad)
+          with bad.open('r+b') as stream:
+              stream.seek(512)
+              original = stream.read(1)
+              assert original, 'missing real CVD payload'
+              stream.seek(512)
+              stream.write(bytes([original[0] ^ 1]))
+          result = subprocess.run(['sigtool', '--info=' + str(bad)], capture_output=True, text=True)
+          print(result.stdout, result.stderr)
+          assert result.returncode != 0, 'corrupted CVD was incorrectly accepted'
+          print('Real CVD payload corruption rejected: PASS')
+          PY

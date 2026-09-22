@@ -14,6 +14,8 @@ destination="$(cd -- "$destination" && pwd -P)"
 
 # Avoid sharing the daemon's updater lock. No AppArmor policy is changed.
 sudo -n systemctl stop clamav-freshclam.service
+# This build uses offline clamscan, not a running clamd daemon.
+sudo -n sed -i '/^NotifyClamd[[:space:]]/d' /etc/clamav/freshclam.conf
 database="$(sudo -n mktemp -d /var/lib/clamav/bull-build.XXXXXXXX)"
 sudo -n chown clamav:clamav "$database"
 printf 'FreshClam configuration: /etc/clamav/freshclam.conf\nDatabase directory: %s\n' "$database"
@@ -26,6 +28,6 @@ for name in main.cvd daily.cvd bytecode.cvd; do
   sudo -n test ! -L "$database/$name"
   sudo -n install -m 600 -o "$(id -u)" -g "$(id -g)" \
     "$database/$name" "$destination/$name"
-  sigtool --verify-cvd "$destination/$name"
+  sigtool --info="$destination/$name"
 done
 echo 'Official database download and CVD signature verification: PASS'
