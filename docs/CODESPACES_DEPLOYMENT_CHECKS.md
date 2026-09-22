@@ -1,5 +1,11 @@
 # Deployment checks from Codespaces
 
+For a new installation, start with [reproducible deployment](REPRODUCIBLE_DEPLOYMENT.md).
+It supplies checked-in host setup, independent keys and a public guest recipe.
+Use `--deployment /YOUR/private/state` to load that installation explicitly;
+inherited BULL credentials are ignored. The environment-variable workflow below
+remains available for manually managed deployments.
+
 With `.[test]` installed and the pinned TLA+ jar downloaded, run:
 
 ```sh

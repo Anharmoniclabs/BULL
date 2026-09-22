@@ -1,5 +1,12 @@
 # Production guest dependency contract
 
+For new installations, use [`build_public.py`](build_public.py) and the
+[public reproduction workflow](../../docs/REPRODUCIBLE_DEPLOYMENT.md). It contains
+complete source configs, pinned public Buildroot/Linux/qboot inputs and verified
+offline-database import. It has no dependency on the historical R3 baseline.
+The private-baseline derivation below remains historical; its previously measured
+guest results do not qualify a newly built public image.
+
 The R3 guest is insufficient for ProductionRuntime. The production.fragment
 adds the missing Bash and ClamAV build selections to the pinned Buildroot
 configuration. The complete local recipe additionally needs verified offline

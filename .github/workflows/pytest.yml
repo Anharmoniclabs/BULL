@@ -68,3 +68,42 @@ jobs:
         run: |
           cd /tmp
           python -I -c "import bulldog; import bulldog.multiagent; print('installed import OK:', bulldog.__file__)"
+      - name: Portable deployment ignores unrelated ambient authority
+        shell: bash
+        env:
+          BULL_REMOTE_AUDIT_ANCHOR_URL: https://must-not-contact.invalid/v1/checkpoints
+          BULL_APPROVAL_KEY: /not-an-enrolled-credential
+        run: |
+          set -euo pipefail
+          python tools/deployment_setup.py init \
+            --state "$RUNNER_TEMP/bull-independent" --project-root "$GITHUB_WORKSPACE"
+          code=0
+          python tools/deployment_check.py --deployment "$RUNNER_TEMP/bull-independent" \
+            --output "$RUNNER_TEMP/bull-independent-report" || code=$?
+          test "$code" -eq 1
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r = json.loads((Path(os.environ['RUNNER_TEMP']) / 'bull-independent-report/report.json').read_text())
+          assert r['gates']['deployment_configuration']['status'] == 'PASS'
+          for name in ('external_collector_host', 'hardware_approval_protocol', 'cgroup_delegation'):
+              assert r['gates'][name]['status'] == 'BLOCKED', r['gates'][name]
+          for name in ('strict_host', 'approval_protocol', 'live_local_tls', 'unchanged_clean_source'):
+              assert r['gates'][name]['status'] == 'PASS', r['gates'][name]
+          assert r['certified'] is False
+          PY
+      - name: Real administrator delegation and unprivileged child placement
+        shell: bash
+        run: |
+          set -euo pipefail
+          BULL_RUNNER_PYTHON="$(command -v python)"
+          sudo /usr/bin/python3 -I tools/host_setup.py \
+            --user "$(id -un)" --enable-parent-controllers --enter-shell <<COMMANDS
+          set -euo pipefail
+          "$BULL_RUNNER_PYTHON" tools/deployment_setup.py init \
+            --state "$RUNNER_TEMP/bull-host-delegation" --project-root "$GITHUB_WORKSPACE" \
+            --cgroup-parent "\$BULL_CGROUP_PARENT"
+          "$BULL_RUNNER_PYTHON" tools/deployment_setup.py cgroup-check \
+            --state "$RUNNER_TEMP/bull-host-delegation"
+          exit
+          COMMANDS

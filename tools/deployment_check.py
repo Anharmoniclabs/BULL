@@ -122,9 +122,11 @@ class Checks:
         self.gates[name] = {"status": status, **detail}
         print(name + ": " + status, flush=True)
 
-    def command(self, name, argv, timeout=300, interactive=False):
+    def command(self, name, argv, timeout=300, interactive=False, clean_authority=False):
         start = time.monotonic()
         env = dict(os.environ, PYTHONPATH=str(ROOT / "src"))
+        if clean_authority:
+            env = {key: value for key, value in env.items() if not key.startswith("BULL_")}
         try:
             with (self.out / (name + ".log")).open("w") as log:
                 if interactive:
@@ -155,7 +157,7 @@ class Checks:
 
     def pytest(self, name, selection):
         junit = self.out / (name + ".xml")
-        passed = self.command(name, [sys.executable, "-m", "pytest", "-q", "--junitxml=" + str(junit), *selection])
+        passed = self.command(name, [sys.executable, "-m", "pytest", "-q", "--junitxml=" + str(junit), *selection], clean_authority=True)
         if not junit.exists():
             self.record(name, "FAIL", reason="missing test evidence")
             return
@@ -171,11 +173,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tla-jar", type=Path)
-    parser.add_argument("--assets", type=Path, default=os.environ.get("BULL_DEPLOYMENT_ASSETS"))
-    parser.add_argument("--anchor-url", default=os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL"))
-    parser.add_argument("--anchor-key-file", type=Path, default=os.environ.get("BULL_DEPLOYMENT_ANCHOR_KEY_FILE"))
-    parser.add_argument("--approval-key", type=Path, default=os.environ.get("BULL_APPROVAL_KEY"))
-    parser.add_argument("--approval-public-key", type=Path, default=os.environ.get("BULL_APPROVAL_PUBLIC_KEY"))
+    parser.add_argument("--deployment", type=Path, help="private state created by deployment_setup.py; ignores inherited BULL authority")
+    parser.add_argument("--assets", type=Path)
+    parser.add_argument("--anchor-url")
+    parser.add_argument("--anchor-key-file", type=Path)
+    parser.add_argument("--approval-key", type=Path)
+    parser.add_argument("--approval-public-key", type=Path)
     parser.add_argument("--cpu-profile", choices=("host", "amd-native-ssbd"), default="host")
     args = parser.parse_args(argv)
     out = args.output.resolve()
@@ -187,15 +190,41 @@ def main(argv=None):
     before = source_identity()
     save(out / "source.json", before)
 
+    inputs = {"assets": "BULL_DEPLOYMENT_ASSETS", "anchor_url": "BULL_REMOTE_AUDIT_ANCHOR_URL",
+              "anchor_key_file": "BULL_DEPLOYMENT_ANCHOR_KEY_FILE", "approval_key": "BULL_APPROVAL_KEY",
+              "approval_public_key": "BULL_APPROVAL_PUBLIC_KEY"}
+    if args.deployment:
+        if any(getattr(args, name) is not None for name in inputs):
+            parser.error("--deployment owns collector, approval and asset inputs; use deployment_setup.py configure")
+        from tools.deployment_setup import isolated_environment, read_config
+        try:
+            prepared = isolated_environment(args.deployment)
+            _, deployment = read_config(args.deployment)
+            os.environ.clear()
+            os.environ.update(prepared)
+            save(out / "deployment.json", {"installation_id": deployment["installation_id"],
+                                           "source_commit": deployment["source_commit"]})
+            checks.record("deployment_configuration", "PASS", installation_id=deployment["installation_id"])
+        except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
+            checks.record("deployment_configuration", "FAIL", reason=str(exc))
+            save(out / "report.json", {"format": "bull-deployment-evidence-v1", "certified": False,
+                 "automated_checks_passed": False, "gates": checks.gates,
+                 "scope": "Invalid deployment authority; no downstream checks executed."})
+            return 1
+    for name, variable in inputs.items():
+        if getattr(args, name) is None and os.environ.get(variable):
+            value = os.environ[variable]
+            setattr(args, name, value if name == "anchor_url" else Path(value))
+
     if args.tla_jar:
         checks.command("source", [sys.executable, "tools/release_check.py", "--tla-jar", str(args.tla_jar.resolve()),
-                                  "--output", str(out / "source-checks")], timeout=600)
+                                  "--output", str(out / "source-checks")], timeout=600, clean_authority=True)
     else:
         checks.record("source", "BLOCKED", reason="provide --tla-jar to collect current source evidence")
     checks.command("strict_host", [sys.executable, "-c",
         "import json; from bulldog.host_certify import certify_host; "
         "r=certify_host(dynamic=True, seccomp_profile='strict'); print(json.dumps(r)); "
-        "raise SystemExit(0 if r['dynamic_certified'] is True else 1)"])
+        "raise SystemExit(0 if r['dynamic_certified'] is True else 1)"], clean_authority=True)
     checks.pytest("approval_protocol", ["tests/test_human_approval.py"])
     checks.gates["approval_protocol"]["scope"] = "synthetic SK credentials; physical device presence is not established"
     checks.pytest("live_local_tls", ["tests/test_anchor_service.py::test_real_local_tls_acceptance_and_unavailable_service"])
@@ -204,6 +233,13 @@ def main(argv=None):
     required = ("BULL_SECCOMP_PROFILE", "BULL_INTEGRITY_MANIFEST", "BULL_INTEGRITY_MANIFEST_KEY",
                 "BULL_POLICY_BUNDLE", "BULL_POLICY_BUNDLE_KEY", "BULL_AUDIT_LEDGER",
                 "BULL_SNAPSHOT_ROOT", "BULL_CGROUP_PARENT")
+    if args.deployment:
+        required += ("BULL_REMOTE_AUDIT_ANCHOR_URL", "BULL_REMOTE_AUDIT_ANCHOR_KEY", "BULL_AUDIT_SESSION_ID")
+        if os.environ.get("BULL_CGROUP_PARENT"):
+            checks.command("cgroup_delegation", [sys.executable, "tools/deployment_setup.py", "cgroup-check",
+                                                "--state", str(args.deployment.resolve())])
+        else:
+            checks.record("cgroup_delegation", "BLOCKED", reason="configure an administrator-delegated cgroup parent")
     missing = [name for name in required if not os.environ.get(name)]
     if missing:
         checks.record("production_configuration", "BLOCKED", missing_environment=missing,

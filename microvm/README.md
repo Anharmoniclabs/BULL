@@ -97,6 +97,12 @@ host trees and is not a production image-isolation substitute.
 
 ## Building rootfs images
 
+For a fresh production guest from public pinned inputs, use
+[`guest/build_public.py`](guest/build_public.py) and the
+[reproduction guide](../docs/REPRODUCIBLE_DEPLOYMENT.md). Its preparation step is
+configuration evidence only; its completed images still require live KVM cases.
+The directory-to-image helper below remains useful for already prepared trees.
+
 Build into an existing private directory outside the checkout. The output
 below is the same local image passed to `--rootfs` in the launch example:
 
