@@ -46,6 +46,24 @@ jobs:
         run: python -m pytest -q tests/redteam_local_host
       - name: Full regression suite
         run: python -m pytest -q --junitxml=/tmp/bull-regression.xml
+      - name: Deployment runner reports missing deployment inputs honestly
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=0
+          python tools/deployment_check.py --output /tmp/bull-deployment-check || code=$?
+          test "$code" -eq 1
+          python - <<'PY'
+          import json
+          r = json.load(open('/tmp/bull-deployment-check/report.json'))
+          assert r['certified'] is False
+          assert r['automated_checks_passed'] is False
+          for name in ('strict_host', 'approval_protocol', 'live_local_tls', 'unchanged_clean_source'):
+              assert r['gates'][name]['status'] == 'PASS', (name, r['gates'][name])
+          for name in ('source', 'production_configuration', 'guest_assets', 'current_candidate_kvm', 'external_collector_host', 'external_collector_with_guest', 'hardware_approval_protocol'):
+              assert r['gates'][name]['status'] == 'BLOCKED', (name, r['gates'][name])
+          assert r['manual_gates']['independent_review'] == 'REQUIRES_INDEPENDENT_REVIEW'
+          PY
       - name: Installed-package import smoke test
         run: |
           cd /tmp

@@ -146,9 +146,16 @@ PYTHONPATH=src python3 microvm/integration.py \
 Select `amd-native-ssbd` only for the supported AMD configuration. The output
 directory must be new. The runner requires QEMU/KVM, Python, OpenSSL and ext4
 image tools; it starts a disposable local TLS collector automatically. It adds
-no guest NIC and does not contact an external collector. Cases are `allowed`,
+no guest NIC and uses a local collector by default. Cases are `allowed`,
 `denied`, `timeout`, `cancel`, and `missing-protection`. Completion requires
 authenticated results and audit evidence; QEMU exit status alone cannot pass.
+
+Use `--external-url` with `--external-key-file` (or the existing
+`BULL_REMOTE_AUDIT_ANCHOR_KEY` secret) to correlate guest completion with the
+external collector's authenticated receipt. The external master remains on the
+host; guest relay authority is disposable and separate. The unified
+[Codespaces runner](../docs/CODESPACES_DEPLOYMENT_CHECKS.md) verifies asset hashes
+and runs the source, host, collector, KVM and approval checks.
 
 Host regressions: `python -m pytest -q`. Recorded results are 217 tests plus two
 subtests passing, separately from five passing KVM cases. The

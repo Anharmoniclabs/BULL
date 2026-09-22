@@ -64,3 +64,12 @@ fresh output directory outside Git. A missing prerequisite, failure or skipped
 test is not a pass. Full output may contain private deployment paths; publish only
 sanitized summaries. The runner does not silently provision keys, alter host
 security configuration, launch external scans, or certify the deployment.
+
+For checks in the current Codespace or deployment host, use
+`tools/deployment_check.py`. It runs actual host and local TLS checks, probes KVM,
+and invokes the existing guest and physical approval runners when their inputs
+are available. The guest runner now supports an operator-selected external
+collector and correlates its authenticated receipt with completion evidence.
+See [Codespaces deployment checks](CODESPACES_DEPLOYMENT_CHECKS.md) for credentials,
+pinned assets, physical interaction requirements and explicit BLOCKED results.
+This wiring does not itself establish a live external/KVM or hardware pass.
