@@ -30,7 +30,9 @@ jobs:
       - name: Install BULL and test tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . pytest
+          python -m pip install -e ".[test]"
+          sudo apt-get update
+          sudo apt-get install -y openssh-client
       - name: Enable user namespaces for live sandbox tests
         shell: bash
         run: |
@@ -68,11 +70,11 @@ jobs:
         run: |
           curl --fail --location --retry 3 https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar --output /tmp/tla2tools.jar
           echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  /tmp/tla2tools.jar" | sha256sum --check --strict
-      - name: Parse and model-check both bounded specifications
+      - name: Parse and model-check bounded specifications
         shell: bash
         run: |
           set -euo pipefail
-          for model in BullRuntime BullSessionAudit; do
+          for model in BullRuntime BullSessionAudit BullApproval; do
             java -cp /tmp/tla2tools.jar tla2sany.SANY "formal/tla/${model}.tla"
             timeout 180s java -cp /tmp/tla2tools.jar tlc2.TLC -deadlock -workers 1 -config "formal/tla/${model}.cfg" "formal/tla/${model}.tla"
           done
@@ -109,8 +111,11 @@ jobs:
               "redteam_is_subset_of_full_suite": True,
               "gates": {"compileall": True, "redteam": True, "pytest": True,
                         "static_publication": True, "local_asset_policy": True,
-                        "tla_runtime_model": True, "tla_session_design_model": True},
+                        "tla_runtime_model": True, "tla_session_design_model": True,
+                        "tla_approval_model": True},
               "kvm_boot_certified": False,
+              "hardware_approval_certified": False,
+              "universal_security_certified": False,
               "source_hashes": hashes,
               "explainer": json.loads(Path("site/assets/explainer/manifest.json").read_text()),
           }

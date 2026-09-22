@@ -11,6 +11,7 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from typing import Sequence
 
@@ -324,15 +325,65 @@ class NamespaceSandbox:
                 key = str(key)
                 if not key.startswith("BULL_"):
                     raise ValueError(f"sandbox environment key is not host-approved: {key}")
-                if key in {"BULL_ATTEST_FD", "BULL_ATTEST_NONCE", "BULL_SECCOMP_PROFILE"}:
+                if key in {"BULL_ATTEST_FD", "BULL_ATTEST_NONCE", "BULL_SECCOMP_PROFILE", "BULL_GO_FD"}:
                     raise ValueError(f"sandbox environment key is reserved: {key}")
                 outer_env[key] = str(value)
 
         nonce = secrets.token_urlsafe(32)
         read_fd, write_fd = os.pipe()
+        go_read_fd, go_write_fd = os.pipe()
         outer_env["BULL_ATTEST_FD"] = str(write_fd)
         outer_env["BULL_ATTEST_NONCE"] = nonce
         outer_env["BULL_SECCOMP_PROFILE"] = self.seccomp_profile
+        outer_env["BULL_GO_FD"] = str(go_read_fd)
+
+        # BULL-ATTEST-PREEXEC-GATE-V1
+        # The bootstrap cannot exec the workload until this host reader
+        # consumes and validates the nonce-bound attestation.
+        attestation_state = {
+            "raw": b"",
+            "attestation": None,
+            "error": None,
+        }
+
+        def _attestation_gate_reader() -> None:
+            buffer = bytearray()
+            try:
+                while b"\n" not in buffer:
+                    chunk = os.read(read_fd, 4096)
+                    if not chunk:
+                        break
+                    buffer.extend(chunk)
+                    if len(buffer) > 16384:
+                        raise SandboxAttestationError(
+                            "sandbox attestation exceeded size limit"
+                        )
+
+                raw = bytes(buffer)
+                attestation_state["raw"] = raw
+
+                if self.require_attestation:
+                    attestation_state["attestation"] = self._parse_attestation(
+                        raw,
+                        expected_nonce=nonce,
+                        expected_profile=self.seccomp_profile,
+                    )
+
+                os.write(go_write_fd, b"1")
+            except BaseException as exc:
+                attestation_state["error"] = exc
+            finally:
+                try:
+                    os.close(go_write_fd)
+                except OSError:
+                    pass
+
+        attestation_thread = threading.Thread(
+            target=_attestation_gate_reader,
+            name="bull-attestation-gate",
+            daemon=True,
+        )
+        attestation_thread.start()
 
         scope = None
         if resource_budget is not None:
@@ -378,32 +429,25 @@ class NamespaceSandbox:
                         env=outer_env,
                         timeout=timeout,
                         preexec_fn=preexec_fn,
-                        pass_fds=(write_fd,),
+                        pass_fds=(write_fd, go_read_fd),
                         max_output_bytes=max_output_bytes,
                     )
                     reaped_ns = time.monotonic_ns()
                 finally:
                     os.close(write_fd)
 
-            chunks = []
-            total = 0
-            while True:
-                chunk = os.read(read_fd, 4096)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > 16384:
-                    raise SandboxAttestationError("sandbox attestation exceeded size limit")
-                chunks.append(chunk)
-            raw_attestation = b"".join(chunks)
-
-            attestation = None
-            if self.require_attestation:
-                attestation = self._parse_attestation(
-                    raw_attestation,
-                    expected_nonce=nonce,
-                    expected_profile=self.seccomp_profile,
+            attestation_thread.join(timeout=2.0)
+            if attestation_thread.is_alive():
+                raise SandboxAttestationError(
+                    "timed out waiting for pre-exec sandbox attestation"
                 )
+            if attestation_state["error"] is not None:
+                error = attestation_state["error"]
+                if isinstance(error, BaseException):
+                    raise error
+                raise SandboxAttestationError(str(error))
+
+            attestation = attestation_state["attestation"]
 
             boundary = attestation.bootstrap_complete_ns if attestation else 0
             if boundary and not started_ns <= boundary <= reaped_ns:
@@ -417,7 +461,7 @@ class NamespaceSandbox:
                 workload_to_reap_ms=(reaped_ns - boundary) / 1e6 if boundary else None,
             )
         finally:
-            for fd in (read_fd, write_fd):
+            for fd in (read_fd, write_fd, go_read_fd, go_write_fd):
                 try:
                     os.close(fd)
                 except OSError:

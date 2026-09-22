@@ -118,6 +118,12 @@ except LandlockUnavailable:
     if profile == "strict":
         raise
 
+# BULL-PENTEST-HARDENING: attest interfaces before seccomp
+# if_nameindex() may use AF_NETLINK internally. Capture the namespace view
+# before installing the narrower workload socket policy.
+interfaces = sorted(name for _, name in socket.if_nameindex())
+network_isolated = all(name == "lo" for name in interfaces)
+
 installed = install_bull_seccomp(profile=profile)
 os.environ["BULL_SECCOMP_ACTIVE"] = "1"
 os.environ["BULL_SECCOMP_PROFILE"] = profile
@@ -130,8 +136,6 @@ if attest_fd_raw is None or attest_nonce is None:
 
 attest_fd = int(attest_fd_raw)
 no_new_privs = libc.prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0) == 1
-interfaces = sorted(name for _, name in socket.if_nameindex())
-network_isolated = all(name == "lo" for name in interfaces)
 attestation = {
     "format": "bull-sandbox-attestation-v2",
     "nonce": attest_nonce,
@@ -150,6 +154,16 @@ attestation = {
 }
 os.write(attest_fd, (json.dumps(attestation, sort_keys=True) + "\n").encode("utf-8"))
 os.close(attest_fd)
+
+# BULL-ATTEST-PREEXEC-GATE-V1
+go_fd_raw = os.environ.pop("BULL_GO_FD", None)
+if go_fd_raw is None:
+    raise SystemExit("missing trusted pre-exec release channel")
+go_fd = int(go_fd_raw)
+gate_token = os.read(go_fd, 1)
+os.close(go_fd)
+if gate_token != b"1":
+    raise SystemExit("host did not release pre-exec attestation gate")
 
 for key in (
     "PYTHONPATH", "PYTHONHOME", "LD_PRELOAD", "LD_LIBRARY_PATH",

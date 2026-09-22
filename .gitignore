@@ -53,3 +53,11 @@ initrd.*
 /microvm/evidence/
 /microvm/credentials/
 # END LOCAL-ONLY MICROVM ARTIFACTS
+
+# Human approval credentials/state are local deployment inputs.
+*.sqlite3
+*.sqlite3-*
+*.sig
+/approval-config.json
+/approval-key*
+/release-evidence/

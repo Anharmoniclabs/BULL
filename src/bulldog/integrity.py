@@ -13,6 +13,12 @@ class IntegrityViolation(RuntimeError):
 
 CRITICAL_FILES = (
     "anchor_service.py",
+    "approval.py",
+    "approval_crypto.py",
+    "approval_cli.py",
+    "models.py",
+    "pinned_egress.py",
+    "socket_hardening.py",
     "audit.py",
     "audit_transport.py",
     "canonicalizer.py",
