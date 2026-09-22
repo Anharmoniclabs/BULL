@@ -1,0 +1,40 @@
+name: Ubuntu FreshClam guest database integration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/fetch_guest_databases.sh
+      - .github/workflows/guest-release.yml
+      - .github/workflows/freshclam.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshclam-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install the actual release database tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav clamav-freshclam
+      - name: Diagnose the old temporary configuration path
+        shell: bash
+        run: |
+          set -euo pipefail
+          db="$RUNNER_TEMP/bull-old-path"
+          install -d -m 700 "$db"
+          printf 'DatabaseDirectory %s\nDatabaseOwner %s\nDatabaseMirror database.clamav.net\n' \
+            "$db" "$(id -un)" > "$db/freshclam.conf"
+          result=0
+          timeout 5s freshclam --config-file="$db/freshclam.conf" > "$db/diagnostic.log" 2>&1 || result=$?
+          cat "$db/diagnostic.log"
+          echo "Old-path diagnostic exit: $result (not a passing download test)"
+          sudo journalctl -k --since '2 minutes ago' --no-pager \
+            | grep 'apparmor="DENIED".*freshclam' || true
+      - name: Download and verify real official databases with release helper
+        run: bash tools/fetch_guest_databases.sh "$RUNNER_TEMP/bull-verified-databases"
