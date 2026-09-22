@@ -139,3 +139,22 @@ approval, independent review or a two-build byte comparison in this validation.
 `CONFIGURED_NOT_BUILT`, `BUILT_NOT_BOOT_TESTED`, BLOCKED deployment gates and
 `certified: false` remain explicit. Hosted workflow results qualify only their
 reported checks, not the missing deployment evidence.
+
+Hosted validation on candidate `1608c3ab8423259fc3ad7debd53ad646469b2a38`:
+
+- Python 3.11 and 3.13 each report **354 passed, 6 subtests passed**, zero test
+  failures or skips. Both jobs also passed real cgroup limit readback and
+  unprivileged child placement, and the isolated deployment smoke check:
+  [security regression](https://github.com/Anharmoniclabs/BULL/actions/runs/35748614699).
+- Public Buildroot configuration and actual Linux 7.1.13 Kconfig resolution passed:
+  [public recipe configuration](https://github.com/Anharmoniclabs/BULL/actions/runs/35748615035).
+- All three bounded formal models passed:
+  [formal invariants](https://github.com/Anharmoniclabs/BULL/actions/runs/35748614703).
+- Host-side MicroVM regressions passed on both Python versions:
+  [MicroVM regressions](https://github.com/Anharmoniclabs/BULL/actions/runs/35748614696).
+- Static publication verification and build passed:
+  [publication checks](https://github.com/Anharmoniclabs/BULL/actions/runs/35748614790).
+
+These hosted results resolve the four local source-test restrictions for that
+candidate. They do not supply the missing full-image, hardware or external
+collector/guest evidence listed above.
