@@ -31,3 +31,13 @@ jobs:
           python -m pip install -e . pytest
       - name: Host launcher, image and audit regressions (not a KVM boot)
         run: python -m pytest -q tests/test_microvm.py tests/test_anchor_service.py
+      - name: Authority fixtures with permissive file creation defaults
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 000
+          # Simulate a writable source template in this disposable CI checkout.
+          # The tests must provision their own private deployment copy.
+          trap 'chmod 644 microvm/config/defaults.env' EXIT
+          chmod 666 microvm/config/defaults.env
+          python -m pytest -q tests/test_guest_engine.py tests/test_microvm.py

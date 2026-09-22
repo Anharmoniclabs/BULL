@@ -12,8 +12,13 @@ import pytest
 from bulldog import microvm
 
 
-def test_shipped_defaults_parse():
-    config = Path(__file__).resolve().parents[1] / "microvm/config/defaults.env"
+def test_shipped_defaults_parse(tmp_path):
+    # Checkout permissions are environment-dependent. Provision the template as
+    # an owner-controlled deployment file before exercising the real loader.
+    template = Path(__file__).resolve().parents[1] / "microvm/config/defaults.env"
+    config = tmp_path / "deployment.env"
+    config.write_bytes(template.read_bytes())
+    config.chmod(0o600)
     values = microvm.config_file(config)
     assert values["DEV_9P"] == "false"
     assert values["CPUS"] == "2"
@@ -32,6 +37,7 @@ def test_amd_native_profile_requires_supported_vendor_and_feature(monkeypatch):
 def test_pinned_firmware_rejects_changes_and_symlinks(tmp_path):
     firmware = tmp_path / "qboot.rom"
     firmware.write_bytes(b"fixture")
+    firmware.chmod(0o600)
     values = {"FIRMWARE": str(firmware), "FIRMWARE_SHA256": hashlib.sha256(b"fixture").hexdigest()}
     assert microvm.firmware_bytes(values) == b"fixture"
     firmware.write_bytes(b"changed")
@@ -44,16 +50,43 @@ def test_pinned_firmware_rejects_changes_and_symlinks(tmp_path):
         microvm.firmware_bytes(values)
 
 
-@pytest.mark.parametrize("line", [
-    "BULL_MICROVM_CPUS=$(touch /tmp/no)", "BULL_MICROVM_CPUS='2'",
-    "BULL_MICROVM_NOPE=2", "export BULL_MICROVM_CPUS=2",
-    "BULL_MICROVM_CPUS=2\nBULL_MICROVM_CPUS=3", "BULL_MICROVM_CPUS=2 # comment",
+@pytest.mark.parametrize(("line", "reason"), [
+    ("BULL_MICROVM_CPUS=$(touch /tmp/no)", "invalid literal"),
+    ("BULL_MICROVM_CPUS='2'", "invalid literal"),
+    ("BULL_MICROVM_NOPE=2", "unknown configuration key"),
+    ("export BULL_MICROVM_CPUS=2", "invalid literal"),
+    ("BULL_MICROVM_CPUS=2\nBULL_MICROVM_CPUS=3", "duplicate configuration key"),
+    ("BULL_MICROVM_CPUS=2 # comment", "invalid literal"),
 ])
-def test_config_rejects_nonliteral_unknown_duplicate(tmp_path, line):
+def test_config_rejects_nonliteral_unknown_duplicate(tmp_path, line, reason):
     config = tmp_path / "deployment.env"
     config.write_text(line)
-    with pytest.raises(microvm.MicroVMError):
+    config.chmod(0o600)
+    with pytest.raises(microvm.MicroVMError, match=reason):
         microvm.config_file(config)
+
+
+@pytest.mark.parametrize("mode", [0o620, 0o602, 0o666])
+def test_config_rejects_writable_permissions(tmp_path, mode):
+    config = tmp_path / "deployment.env"
+    config.write_text("BULL_MICROVM_CPUS=2\n")
+    config.chmod(0o600)
+    assert microvm.config_file(config)["CPUS"] == "2"
+    config.chmod(mode)
+    with pytest.raises(microvm.MicroVMError, match="not group/world writable"):
+        microvm.config_file(config)
+
+
+@pytest.mark.parametrize("mode", [0o620, 0o602, 0o666])
+def test_firmware_rejects_writable_permissions(tmp_path, mode):
+    firmware = tmp_path / "qboot.rom"
+    firmware.write_bytes(b"fixture")
+    firmware.chmod(0o600)
+    values = {"FIRMWARE": str(firmware), "FIRMWARE_SHA256": hashlib.sha256(b"fixture").hexdigest()}
+    assert microvm.firmware_bytes(values) == b"fixture"
+    firmware.chmod(mode)
+    with pytest.raises(microvm.MicroVMError, match="owner-controlled regular file"):
+        microvm.firmware_bytes(values)
 
 
 @pytest.mark.parametrize("raw", ["/", "/tmp", "/home", str(Path.home()), "/etc", "/usr/bin"])
@@ -106,6 +139,7 @@ def fixture_values(tmp_path):
     engine.chmod(0o755)
     (tmp_path / "kernel").write_bytes(b"test kernel")
     (tmp_path / "qboot.rom").write_bytes(b"test firmware")
+    (tmp_path / "qboot.rom").chmod(0o600)
     config = tmp_path / "deployment.env"
     config.write_text("\n".join([
         f"BULL_MICROVM_APPROVED_WORKSPACE_ROOT={tmp_path / 'workspace'}",
@@ -118,6 +152,7 @@ def fixture_values(tmp_path):
         f"BULL_MICROVM_FIRMWARE={tmp_path / 'qboot.rom'}",
         f"BULL_MICROVM_FIRMWARE_SHA256={hashlib.sha256(b'test firmware').hexdigest()}",
     ]))
+    config.chmod(0o600)
     return config
 
 
