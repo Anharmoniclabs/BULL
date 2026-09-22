@@ -343,12 +343,19 @@ def attack_multiagent(root: Path) -> None:
     def build_env(recipient_id: str):
         kwargs = {}
         for f in dataclasses.fields(env_cls):
+            t = env_hints.get(f.name, str)
+            # recipient-like fields are ALWAYS overridden, even when they
+            # carry defaults (e.g. a default recipient of "*").
+            if f.name in RECIPIENT_FIELDS:
+                if isinstance(t, type) and t is ident_cls:
+                    kwargs[f.name] = make_identity(recipient_id)
+                else:
+                    kwargs[f.name] = recipient_id
+                continue
             if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
                 continue
-            t = env_hints.get(f.name, str)
             if isinstance(t, type) and t is ident_cls:
-                kwargs[f.name] = make_identity(
-                    recipient_id if f.name in RECIPIENT_FIELDS else f"probe-{f.name}")
+                kwargs[f.name] = make_identity(f"probe-{f.name}")
             elif t is str:
                 kwargs[f.name] = "probe"
             elif t is int:
@@ -412,7 +419,8 @@ def attack_multiagent(root: Path) -> None:
     sender_ids = []
     for f in dataclasses.fields(env_cls):
         if f.default is not dataclasses.MISSING or f.default_factory is not dataclasses.MISSING:
-            continue
+            if f.name not in RECIPIENT_FIELDS:
+                continue
         t = env_hints.get(f.name, str)
         if isinstance(t, type) and t is ident_cls and f.name not in RECIPIENT_FIELDS:
             sender_ids.append(f"probe-{f.name}")
