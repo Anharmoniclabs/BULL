@@ -7,7 +7,7 @@ an action; trusted host integration supplies authority. BULL checks that authori
 constrains execution, and records an authenticated audit checkpoint.
 
 [Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/ab53f56.json) ·
-[Architecture](docs/PRODUCTION_SECURITY.md) · [Preprint](https://zenodo.org/records/22922278) ·
+[Architecture](docs/PRODUCTION_SECURITY.md) · [Paper II](site/assets/papers/bull-ii.pdf) ·
 [Contributing](CONTRIBUTING.md)
 
 The software release work and hardware host integration are merged into `main`.
@@ -88,14 +88,14 @@ physical unsigned BOOT gestures, USB/session hardening, and remaining signing
 gaps. [LaTeX and build instructions](docs/papers/bull-ii/README.md) ·
 [Evidence/source companion](site/assets/papers/bull-ii-companion.zip) ·
 [Artifact hashes](site/assets/papers/bull-ii-manifest.json).
-This Git revision has not been uploaded to Zenodo; the deposit below retains
-the preceding edition.
+This is revision 3, prepared for Zenodo resubmission. The author reports removing
+the previous deposit; a new DOI is pending. Until publication, cite the report
+using its repository artifact and documentation commit.
 
-[BULL: Blocking Unauthorized Logic Loopholes](https://zenodo.org/records/22922278)
-is available as an open-access preprint on Zenodo.
+**Citation:** Minier, Luis. (2026). *BULL II: Binding Authority to Execution*.
+Revised evidence edition, revision 3. Anharmoniclabs. Author-operated technical report.
 
-**Citation:** Minier, Luis. (2026). *BULL: Blocking Unauthorized Logic Loopholes*.
-Zenodo. [https://doi.org/10.5281/zenodo.22922278](https://doi.org/10.5281/zenodo.22922278).
+[Submission metadata and announcement draft](docs/papers/bull-ii/SUBMISSION.md).
 
 ## Review and present
 

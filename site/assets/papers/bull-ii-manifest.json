@@ -1,17 +1,18 @@
 {
   "title": "BULL II: Binding Authority to Execution",
   "author": "Luis Minier / Anharmoniclabs",
-  "edition": "Revised evidence edition, revision 2",
+  "edition": "Revised evidence edition, revision 3",
   "date": "2026-09-23",
-  "pages": 13,
+  "pages": 14,
   "review_status": "Author-operated technical report; not peer reviewed or independently audited",
   "validated_runtime_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
   "publication_scope": "Documentation revision; retained live results apply to the stated runtime and historical source identities",
-  "zenodo_status": "Prior edition deposited at 10.5281/zenodo.22922278; this revision has not been uploaded there",
+  "zenodo_status": "Prepared for resubmission; author reports previous deposit removed; new DOI pending",
   "source_files_sha256": {
     "LICENSE": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
-    "README.md": "b135d04176326a0d6276c970b9d84c6dffdd0c50517954eeaae49f2f99a3f2a1",
-    "build.py": "f52906f58e33dce7392b2a5447f7ba6e2d4f432902974910acdfde6d96e9afce",
+    "README.md": "1dc52bd439b1da0f424b8371528bfe49604c14c96c0901e1b205b7f3ffb606eb",
+    "SUBMISSION.md": "207b194152a7c580dfb42344ba3ac36576ca3e19ae830dc7bec130ba6b661003",
+    "build.py": "6e6699963e828a6ba43119cf07deaace7a08b60a8219916496aca71fed22548f",
     "coverage.json": "e6854062070650bd47abfbf70ee3e8cbe303d20972d84496be8d56eff4eca893",
     "evidence/docs/ADAPTER_VALIDATION.md": "517219eeeb8cad114bf78a774823b5b898b57c709e0444042c0f08db4da80190",
     "evidence/docs/BENCHMARK_20260920.md": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613",
@@ -39,15 +40,15 @@
     "figures/data-flow.svg": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8",
     "figures/kernel-layers.svg": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e",
     "figures/microvm-io.svg": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a",
-    "paper.tex": "663560149ebef58aa545270d9a76ffa8f90d3598ffa9b00873785097f51d0ab9",
+    "paper.tex": "a231ffdee4a4ef1b44bf09d8aa49a0e8f8c23e7c0e3d3a279c845975ebfa20b0",
     "requirements.txt": "ceeca15379876a295c8f8ff0ae6d6585608f274a3c174ce6d3d35e0f0bd11458"
   },
   "artifacts_sha256": {
-    "bull-ii.pdf": "9238c67246cb2d37918b9d363d2ea0514e911c70bc84f142838ae49cb5546bca",
-    "bull-ii-companion.zip": "e7a29c6667a24a5b2cda1e6dbc1b646dcb7ab61c62558f33823164f4a78c817f"
+    "bull-ii.pdf": "1a788e95c42ee109ba256b66adee3ffbfa4d0c7dfdaa9006757771d182578b9a",
+    "bull-ii-companion.zip": "83920d9dce062fa44a51950c258f8076f3028b18226fd654895646cc68d69578"
   },
   "build": {
-    "engine": "pdfTeX 3.141592653-2.6-1.40.29 (TeX Live 2026)",
+    "engine": "pdfTeX 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian)",
     "source_date_epoch": "1790164800",
     "python_dependencies": "requirements.txt",
     "shell_escape": false

@@ -187,11 +187,11 @@ def build(output: Path, engine: str) -> None:
                 archive.writestr(info, data)
         manifest = {
             "title": "BULL II: Binding Authority to Execution", "author": "Luis Minier / Anharmoniclabs",
-            "edition": "Revised evidence edition, revision 2", "date": "2026-09-23", "pages": len(pdf.pages),
+            "edition": "Revised evidence edition, revision 3", "date": "2026-09-23", "pages": len(pdf.pages),
             "review_status": "Author-operated technical report; not peer reviewed or independently audited",
             "validated_runtime_commit": RUNTIME,
             "publication_scope": "Documentation revision; retained live results apply to the stated runtime and historical source identities",
-            "zenodo_status": "Prior edition deposited at 10.5281/zenodo.22922278; this revision has not been uploaded there",
+            "zenodo_status": "Prepared for resubmission; author reports previous deposit removed; new DOI pending",
             "source_files_sha256": {name: digest(data) for name, data in src.items()},
             "artifacts_sha256": {name: digest((output / name).read_bytes()) for name in ["bull-ii.pdf", "bull-ii-companion.zip"]},
             "build": {"engine": subprocess.check_output([executable, "--version"], text=True).splitlines()[0],

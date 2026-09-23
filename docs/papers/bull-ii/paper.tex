@@ -16,7 +16,7 @@
 \newcommand{\ev}[1]{\nolinkurl{#1}}
 \title{\textbf{BULL II: Binding Authority to Execution}\\[5pt]\large Implementation, Authenticated Evidence, Controlled Recovery,\\and the Boundary of Physical Approval}
 \author{Luis Minier\\Anharmoniclabs\\\small\href{https://orcid.org/0009-0006-7321-4167}{ORCID: 0009-0006-7321-4167}}
-\date{September 23, 2026\\\small Revised evidence edition, revision 2\\Validated runtime: \texttt{ab53f563bcbcaf60820acb318b8212796ce502ff}}
+\date{September 23, 2026\\\small Revised evidence edition, revision 3\\Validated runtime: \texttt{ab53f563bcbcaf60820acb318b8212796ce502ff}}
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -287,7 +287,7 @@ This revision includes native \code{paper.tex}, a reproducible build script, exa
 
 The evidence archive contains aggregate public records, not private collector keys, raw deployment configuration, raw ledgers, or the original private audit bundle. Consequently a reader can inspect the disclosed evidence and reproduce experiments, but cannot independently authenticate the operator's historical receipts using a secret intentionally withheld from publication. Hashes identify preserved bytes; they are not independent witnesses.
 
-The website now links this revised paper and its companion. The older Paper I PDF remains separately archived. The existing Zenodo record remains the prior deposited edition until a new version is uploaded there; a Git push does not amend that deposit or assign this PDF a new DOI. The previous Paper II's SHA-256 is preserved in \code{evidence-manifest.json} to distinguish the documents.
+The website now links this revised paper and its companion. The older Paper I PDF remains separately archived. This edition is prepared for a new Zenodo submission. The author reports removal of the previous deposit; no new DOI has been assigned to this edition. The repository PDF, companion and artifact manifest identify the resubmission files. The previous Paper II's SHA-256 is preserved in \code{evidence-manifest.json} to distinguish the documents.
 
 \section{Related work and limitations}
 CaMeL separates control/data flows around an LLM and uses capabilities to constrain tool information flow~\cite{camel}. BULL's emphasis here is the deployed effect boundary: exact command/resource binding, admitted bytes, Linux/guest protections, one-use approval, and authenticated completion. No shared-task comparative evaluation between these systems is reported. AgentDojo provides a framework for studying task completion and prompt-injection attacks~\cite{agentdojo}; adapting it would require explicit mappings from tools to BULL capabilities and mediated effects. This paper reports no AgentDojo score.
@@ -303,7 +303,7 @@ The latest retained software qualification binds authority, input, containment, 
 Luis Minier / Anharmoniclabs is the project author and an interested party in the reported results. ChatGPT/Codex assisted with implementation, validation orchestration, manuscript preparation, and evidence synthesis. This is an author-operated technical report, not peer review or an independent audit. No new live model or physical-signing experiment was performed to typeset this revision. Source: \url{https://github.com/Anharmoniclabs/BULL}. Original contributions follow the repository license; cited works retain their own rights.
 
 \begin{thebibliography}{99}\small
-\bibitem{prior} L. Minier, \emph{BULL: Blocking Unauthorized Logic Loopholes}, Zenodo record containing Paper I and the preceding Paper II, September 23, 2026. \url{https://doi.org/10.5281/zenodo.22922278}. Prior Paper II publication snapshot: 437de3f.
+\bibitem{prior} L. Minier, \emph{BULL: Blocking Unauthorized Logic Loopholes}, prior manuscript, September 2026. Archived Paper I: \url{https://github.com/Anharmoniclabs/BULL/blob/437de3f/site/assets/papers/bull.pdf}. The preceding Paper II is identified by its retained hash in the evidence manifest.
 \bibitem{claims} Anharmoniclabs, \emph{Security claims and effect-based acceptance}, \repo{docs/SECURITY_CLAIMS.md}; \emph{Supported execution paths}, \repo{docs/ADAPTER_VALIDATION.md}. Runtime references in this bibliography are pinned to ab53f56.
 \bibitem{runtime} Anharmoniclabs, production runtime and bootstrap implementation: \repo{src/bulldog/profiles.py}, \repo{src/bulldog/namespace_sandbox.py}; deployment recipe: \repo{docs/REPRODUCIBLE_DEPLOYMENT.md}.
 \bibitem{linux} Linux kernel developers, \emph{Seccomp BPF}, \url{https://docs.kernel.org/userspace-api/seccomp_filter.html}; \emph{Landlock}, \url{https://docs.kernel.org/userspace-api/landlock.html}; \emph{Control Group v2}, \url{https://docs.kernel.org/admin-guide/cgroup-v2.html}. Accessed September 23, 2026.
@@ -315,6 +315,6 @@ Luis Minier / Anharmoniclabs is the project author and an interested party in th
 \bibitem{distribution} Anharmoniclabs, \repo{docs/DISTRIBUTION.md}; guest release and corresponding materials, \url{https://github.com/Anharmoniclabs/BULL/releases/tag/guest-2026-09-22}. Buildroot, \emph{Legal notice and licensing}, \url{https://buildroot.org/downloads/manual/manual.html#legal-info}.
 \bibitem{camel} E. Debenedetti et al., \emph{Defeating Prompt Injections by Design}, arXiv:2503.18813v2, 2025. \url{https://arxiv.org/abs/2503.18813v2}.
 \bibitem{agentdojo} E. Debenedetti, J. Zhang, M. Balunovi\'{c}, L. Beurer-Kellner, M. Fischer, and F. Tram\`er, \emph{AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents}, NeurIPS Datasets and Benchmarks, 2024; arXiv:2406.13352v3. \url{https://arxiv.org/abs/2406.13352v3}.
-\bibitem{evidence} Anharmoniclabs, \emph{BULL II revised evidence companion}, revision 2, September 23, 2026. Included \ev{evidence/validation-ab53f56.json}, historical summaries/CSV, \ev{evidence-manifest.json}, and \ev{coverage.json}. Download with the paper at \url{https://anharmoniclabs.github.io/BULL/assets/papers/bull-ii-companion.zip}; check the adjacent \ev{bull-ii-manifest.json} for the exact published artifact hashes.
+\bibitem{evidence} Anharmoniclabs, \emph{BULL II revised evidence companion}, revision 3, September 23, 2026. Included \ev{evidence/validation-ab53f56.json}, historical summaries/CSV, \ev{evidence-manifest.json}, and \ev{coverage.json}. Download with the paper at \url{https://anharmoniclabs.github.io/BULL/assets/papers/bull-ii-companion.zip}; check the adjacent \ev{bull-ii-manifest.json} for the exact published artifact hashes.
 \end{thebibliography}
 \end{document}

@@ -1,7 +1,7 @@
 # BULL II — revised evidence edition
 
 Native LaTeX technical report by Luis Minier / Anharmoniclabs, September 23,
-2026, revision 2. The latest **tested runtime is `ab53f56`**. This paper's Git
+2026, revision 3. The latest **tested runtime is `ab53f56`**. This paper's Git
 commit publishes those retained results; it is not a new live deployment run.
 
 The manuscript replaces the preceding Paper II's stale 489-test/current-hardware
@@ -71,13 +71,14 @@ produced. Full offline guest recompilation remains unrun.
 
 ## Zenodo
 
-The previous Paper II PDF is deposited at DOI 10.5281/zenodo.22922278; its hash
-is in the evidence manifest. This rewritten PDF has **not** been uploaded to
-Zenodo. Publishing these Git artifacts does not modify that deposit. For a
-future Zenodo version, upload the new PDF **and companion ZIP**, cite this
-documentation commit and the separate tested runtime, and verify the downloaded
-files against `bull-ii-manifest.json`. Do not silently attribute the old DOI's
-PDF hash or experiments to this revision.
+This is revision 3, prepared for resubmission. The author reports deleting the
+previous Zenodo deposit. No new DOI has been supplied. Upload `bull-ii.pdf`
+and `bull-ii-companion.zip` together, with `bull-ii-manifest.json` for artifact
+verification. The old deposit URL in the evidence manifest records historical
+provenance only; it is not the current publication link.
+
+After publication, add the new Zenodo record and DOI to the root README and
+website. Use the metadata and announcement draft in `SUBMISSION.md`.
 
 Original paper source and scripts follow the included GPL-2.0-or-later LICENSE.
 Original repository drawings retain the same project attribution. External
