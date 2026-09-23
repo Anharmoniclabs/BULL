@@ -16,6 +16,15 @@ remains blocked. The audit worker retains its separate deployment branch.
 Its main-attached build check is recorded as failed; the existing live collector
 passed the authenticated receipt checks. No preview was promoted.
 
+## Physical BOOT gesture follow-up
+
+At host source `437de3fd03da2e8d8ca15e7bcb9804e45317b58a`, the connected
+BULL-DIAG-3 prototype returned YES after two BOOT clicks and NO after three.
+The two tests used distinct challenges; the final state had no pending request.
+[Sanitized gesture results](../site/data/hardware/20260923-gestures.json) retain
+the initial cancellation, bootloader recovery and stale-reply failure. These
+unsigned diagnostics do not change the blocked secure-signing gate.
+
 ## Earlier candidate
 
 Tested clean commit: `428db9cf8740f755249b23d33ba71da0c39502b1`.

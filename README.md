@@ -12,7 +12,10 @@ constrains execution, and records an authenticated audit checkpoint.
 The software release work and hardware host integration are merged into `main`.
 See the [branch integration record](docs/BRANCH_INTEGRATION.md).
 The KB2040 is a diagnostic prototype: no secure element is connected, so it
-cannot authorize protected actions. See [hardware status](docs/HARDWARE_AUTHORITY.md).
+cannot authorize protected actions. Live BOOT tests registered two clicks as YES
+and three as NO; these were unsigned diagnostics. See
+[physical test evidence](site/data/hardware/20260923-gestures.json) and
+[hardware status](docs/HARDWARE_AUTHORITY.md).
 
 ## What it does
 

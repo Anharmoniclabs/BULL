@@ -30,15 +30,32 @@ def main(argv=None):
             if lib.hid_write(handle, command, 65) != 65:
                 raise SystemExit("HID request failed: " + str(lib.hid_error(handle)))
 
-        def read_status():
-            send(b'\1' + bytes(63))
+        def receive_status(timeout_ms):
             output = C.create_string_buffer(64)
-            count = lib.hid_read_timeout(handle, output, 64, 2000)
+            count = lib.hid_read_timeout(handle, output, 64, timeout_ms)
+            if count == 0:
+                return None
             if count != 64 or output.raw[:11] not in (b'BULL-DIAG-1', b'BULL-DIAG-2', b'BULL-DIAG-3'):
                 raise SystemExit("Missing or malformed diagnostic status")
             if output.raw[11] != 0:
                 raise SystemExit("Unexpected authority flag in diagnostic firmware")
             return output.raw
+
+        # CANCEL emits a status reply. A previous invocation can close before
+        # reading it, leaving a stale report on the interrupt endpoint. Drain a
+        # bounded queue before sending any command; never reuse its decisions.
+        for _ in range(8):
+            if receive_status(100) is None:
+                break
+        else:
+            raise SystemExit("Diagnostic receive queue did not settle")
+
+        def read_status():
+            send(b'\1' + bytes(63))
+            data = receive_status(2000)
+            if data is None:
+                raise SystemExit("Missing diagnostic status")
+            return data
 
         data = read_status()
         if args.test_clicks:
