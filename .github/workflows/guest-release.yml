@@ -52,12 +52,19 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, shutil, subprocess, tarfile
+          import hashlib, json, os, shutil, subprocess, tarfile
           from pathlib import Path
           guest = Path(os.environ['RUNNER_TEMP']) / 'bull-guest'
           record = json.loads((guest / 'build.json').read_text())
+          def check_config():
+              for name, key in (('output/.config', 'resolved_config_sha256'),
+                                ('output/build/linux-7.1.13/.config', 'resolved_kernel_config_sha256')):
+                  if hashlib.sha256((guest / name).read_bytes()).hexdigest() != record[key]:
+                      raise RuntimeError('resolved build configuration changed: ' + name)
+          check_config()
           buildroot = Path(record['sources']['buildroot']['path'])
           subprocess.run(['make', '-C', str(buildroot), 'O=' + str(guest / 'output'), 'legal-info'], check=True)
+          check_config()
           legal = guest / 'output/legal-info'
           for name in ('manifest.csv', 'licenses', 'sources'):
               if not (legal / name).exists():
@@ -126,6 +133,7 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" "$RUNNER_TEMP"/release/* \
             --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
             --draft --prerelease \
             --title "BULL guest image $RELEASE_TAG" \
             --notes "Draft for source/license review and guest qualification. Verify SHA256SUMS. Reassemble source-materials.tar.gz.part-* before extracting. Read RELEASE_SCOPE.txt and docs/DISTRIBUTION.md. The image is BUILT_NOT_BOOT_TESTED."

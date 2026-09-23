@@ -41,8 +41,8 @@ collector disaster recovery and broad third-party adapters remain unverified.
 There is no independent security certification or endorsement by a meeting organizer.
 Ask reviewers about mediation coverage, operator trust and recovery semantics.
 
-The project source is publicly licensed. The historical binary guest release has
-an unresolved source/license-bundle gap; see [distribution status](DISTRIBUTION.md).
+The project source is publicly licensed. The historical binary guest release now
+includes matching source and license materials; see [distribution status](DISTRIBUTION.md).
 Present the reviewed source and measured evidence, not an unqualified production release.
 
 [Longer technical Q&A](OCTOBER_REVIEW.md) · [Contributing](../CONTRIBUTING.md)
