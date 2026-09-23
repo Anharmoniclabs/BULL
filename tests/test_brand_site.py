@@ -99,16 +99,16 @@ class BrandSiteTests(unittest.TestCase):
                 self.assertIsNotNone(root.find("{http://www.w3.org/2000/svg}title"))
                 self.assertIsNotNone(root.find("{http://www.w3.org/2000/svg}desc"))
     def test_published_deployment_evidence_matches_visible_claims(self):
-        record = json.loads((self.output / "data/validation/603365e.json").read_text())
-        self.assertEqual(record["commit"], "603365edd0164418a06ec0ee46250a2922b284bf")
+        record = json.loads((self.output / "data/validation/ab53f56.json").read_text())
+        self.assertEqual(record["commit"], "ab53f563bcbcaf60820acb318b8212796ce502ff")
         self.assertFalse(record["source_dirty"])
-        self.assertEqual(record["regression"]["passed"], 489)
+        self.assertEqual(record["regression"]["passed"], 501)
         self.assertEqual(record["regression"]["subtests_passed"], 21)
         self.assertEqual(len(record["kvm_cases"]), 5)
         self.assertTrue(all(v == "PASS" for v in record["kvm_cases"].values()))
         self.assertEqual(record["deployment_gates"]["hardware_approval_protocol"], "BLOCKED")
         self.assertFalse(record["physical_key_inspection"]["approval_available"])
-        for value in ("489", "21 subtests", "603365e", "no secure element", "synthetic signatures"):
+        for value in ("501", "21 subtests", "ab53f56", "no secure element", "synthetic signatures"):
             self.assertIn(value, self.html)
         self.assertNotIn("437 tests", self.html)
 
@@ -121,7 +121,7 @@ class BrandSiteTests(unittest.TestCase):
         # Local KVM integration is now recorded. Keep its evidence link and
         # release limitations instead of requiring obsolete pre-boot wording.
         self.assertIn("docs/MICROVM_INTEGRATION_REPORT.md", readme)
-        self.assertIn("603365e", normalized)
+        self.assertIn("ab53f56", normalized)
         self.assertIn("Five cases passed", normalized)
         self.assertIn("external host/guest receipts passed", normalized)
         self.assertIn("Persistent VM recovery", normalized)

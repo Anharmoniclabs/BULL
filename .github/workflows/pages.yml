@@ -80,6 +80,8 @@ jobs:
           done
       - name: Build static engineering publication
         run: python tools/build_site.py --output _site --commit "${{ github.sha }}"
+      - name: Verify paper source and published artifact identities
+        run: python docs/papers/bull-ii/build.py --verify-publication site/assets/papers
       - name: Generate commit-specific build evidence
         env:
           BULL_COMMIT: ${{ github.sha }}

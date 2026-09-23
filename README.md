@@ -6,7 +6,7 @@ An experimental, open-source execution firewall for AI agents. The model propose
 an action; trusted host integration supplies authority. BULL checks that authority,
 constrains execution, and records an authenticated audit checkpoint.
 
-[Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/603365e.json) ·
+[Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/ab53f56.json) ·
 [Architecture](docs/PRODUCTION_SECURITY.md) · [Preprint](https://zenodo.org/records/22922278) ·
 [Contributing](CONTRIBUTING.md)
 
@@ -36,12 +36,12 @@ host-callable development orchestration, not an automatic production adapter.
 ## Recorded validation
 
 Full deployment evidence below belongs to clean candidate
-[`603365e`](https://github.com/Anharmoniclabs/BULL/commit/603365edd0164418a06ec0ee46250a2922b284bf).
+[`ab53f56`](https://github.com/Anharmoniclabs/BULL/commit/ab53f563bcbcaf60820acb318b8212796ce502ff).
 Later documentation or packaging commits do not inherit a new live-validation claim.
 
 | Check | Recorded result |
 |---|---|
-| Local regression | 489 tests + 21 subtests passed; no failures or skips |
+| Local regression | 501 tests + 21 subtests passed; no failures or skips |
 | GitHub validation | All six validation workflows passed on the same commit |
 | Real KVM | Five cases passed: allowed, denied, timeout, cancellation, missing protection |
 | Production enforcement | Strict host, cgroups, signed configuration and external host/guest receipts passed |
@@ -82,6 +82,15 @@ workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
 
 ## Publication and citation
 
+[**BULL II: Binding Authority to Execution — revised PDF**](site/assets/papers/bull-ii.pdf)
+includes the validated `ab53f56` results (501 tests + 21 subtests, five KVM cases),
+physical unsigned BOOT gestures, USB/session hardening, and remaining signing
+gaps. [LaTeX and build instructions](docs/papers/bull-ii/README.md) ·
+[Evidence/source companion](site/assets/papers/bull-ii-companion.zip) ·
+[Artifact hashes](site/assets/papers/bull-ii-manifest.json).
+This Git revision has not been uploaded to Zenodo; the deposit below retains
+the preceding edition.
+
 [BULL: Blocking Unauthorized Logic Loopholes](https://zenodo.org/records/22922278)
 is available as an open-access preprint on Zenodo.
 
@@ -91,7 +100,7 @@ Zenodo. [https://doi.org/10.5281/zenodo.22922278](https://doi.org/10.5281/zenodo
 ## Review and present
 
 - [Five-minute presentation](docs/PRESENTATION.md): problem, boundary, proof and limits.
-- [Latest live-validation record](site/data/validation/603365e.json): exact source, image hashes and retained failures.
+- [Latest live-validation record](site/data/validation/ab53f56.json): exact source, image hashes and retained failures.
 - [MicroVM reproduction](microvm/README.md) and [historical integration report](docs/MICROVM_INTEGRATION_REPORT.md).
 - [Engineering site](https://anharmoniclabs.github.io/BULL/): architecture and historical benchmarks; deployment follows its own branch workflow.
 

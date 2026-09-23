@@ -18,16 +18,17 @@ as separate integrations.
 
 ## 3. Evidence — 90 seconds
 
-Open [the validation record](VALIDATION_20260923.md), pinned to `603365e`:
-489 tests + 21 subtests; six GitHub validation workflows; five real KVM cases; authenticated
+Open [the validation record](VALIDATION_20260923.md), pinned to `ab53f56`:
+501 tests + 21 subtests; six GitHub validation workflows; five real KVM cases; authenticated
 external host/guest receipts; allowed and denied fixed-tool requests.
 Explain the controlled worker, collector and storage-failure tests.
 
-Then show [PR 57](https://github.com/Anharmoniclabs/BULL/pull/57), merged into
-`main`: approved branding, diagnostic firmware, hardware assertion verification
-through the existing ApprovalGate, and the dependency update. Its integration
-suite passed 489 tests + 21 subtests. Software-generated signatures test request
-binding and durable consumption; they are not physical signing evidence.
+Then open [revised Paper II](../site/assets/papers/bull-ii.pdf), with its
+[LaTeX and evidence companion](papers/bull-ii/README.md). It covers the hardware
+host integration from PR 57, subsequent diagnostic transport correction and
+one-shot session hardening, all integrated before the `ab53f56` qualification.
+Software-generated signatures test request binding and durable consumption;
+they are not physical signing evidence.
 Use the release candidate's `VALIDATION.json` for its exact source and guest
 versions rather than combining these revision-specific results.
 
@@ -40,7 +41,7 @@ its source revision or test counts with the newer candidate.
 Use the recorded allowed, denied and timeout results from the same candidate.
 For a live rehearsal, follow [MicroVM integration](../microvm/README.md) with
 fresh disposable local infrastructure. Keep private keys and raw logs off-screen.
-The architecture film illustrates the design; it is not an execution recording.
+The paper's architecture figures illustrate the design; they are not execution recordings.
 
 ## 5. Limits and review request — 45 seconds
 
