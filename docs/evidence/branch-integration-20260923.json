@@ -275,6 +275,11 @@
       "branch": "tools/production-provision-signed-stage-20260920",
       "tip": "a79a8fbb92ad906b969ccd90a224a8879de57cb0",
       "disposition": "Previously merged PR(s): 38"
+    },
+    {
+      "branch": "dependabot/pip/cryptography-gte-43-and-lt-51",
+      "tip": "9ef9a49fb3d8b99499e8994d0e61628bd31b0d6d",
+      "disposition": "PR 56 appeared during integration; dependency range merged and applied to both test and hardware extras, validated with cryptography 50.0.1."
     }
   ],
   "local_historical_branches": [

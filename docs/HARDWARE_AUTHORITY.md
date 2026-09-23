@@ -30,7 +30,8 @@ four-byte reads, and no pending diagnostic request. SDA and SCL read high at
 boot. This does not identify a chip or validate wiring, power, address or timing.
 The physical click test was cancelled; two-/three-click gestures are not yet
 verified on the board. Original firmware backups and raw diagnostic logs remain
-private. No secure element has been provisioned or enrolled.
+private. The operator confirmed that only the KB2040 is present; no secure-element
+breakout is connected. No secure element has been provisioned or enrolled.
 
 The alternate Trust&GO and TrustFLEX defaults are documented in Microchip's
 [ATECC608A Trust Development Board guide](https://ww1.microchip.com/downloads/en/DeviceDoc/ATECC608A-Trust-Development-Board-Users-Guide-DS50002922A.pdf).
