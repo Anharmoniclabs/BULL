@@ -1,4 +1,4 @@
-name: Build and publish the pinned BULL guest image
+name: Build a draft BULL guest release with source materials
 
 on:
   workflow_dispatch:
@@ -48,6 +48,36 @@ jobs:
           set -euo pipefail
           python3 microvm/guest/build_public.py build \
             --output "$RUNNER_TEMP/bull-guest" --jobs 2 2>&1 | tee "$RUNNER_TEMP/bull-build.log"
+      - name: Collect corresponding sources and license materials
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, shutil, subprocess, tarfile
+          from pathlib import Path
+          guest = Path(os.environ['RUNNER_TEMP']) / 'bull-guest'
+          record = json.loads((guest / 'build.json').read_text())
+          buildroot = Path(record['sources']['buildroot']['path'])
+          subprocess.run(['make', '-C', str(buildroot), 'O=' + str(guest / 'output'), 'legal-info'], check=True)
+          legal = guest / 'output/legal-info'
+          for name in ('manifest.csv', 'licenses', 'sources'):
+              if not (legal / name).exists():
+                  raise RuntimeError('missing legal-info material: ' + name)
+          materials = guest / 'source-materials'
+          materials.mkdir()
+          shutil.copytree(legal, materials / 'legal-info')
+          for name, entry in record['sources'].items():
+              subprocess.run(['git', '-C', entry['path'], 'archive', '--format=tar.gz',
+                              '--prefix=' + name + '/', '-o', str(materials / (name + '.tar.gz')),
+                              entry['commit']], check=True)
+          subprocess.run(['git', 'archive', '--format=tar.gz', '--prefix=BULL/',
+                          '-o', str(materials / 'BULL.tar.gz'), 'HEAD'], check=True)
+          shutil.copytree(guest / 'inputs', materials / 'inputs', symlinks=True)
+          shutil.copyfile(guest / 'output/.config', materials / 'buildroot.config')
+          shutil.copyfile(guest / 'output/build/linux-7.1.13/.config', materials / 'linux.config')
+          shutil.copyfile(guest / 'build.json', materials / 'build.json')
+          with tarfile.open(guest / 'source-materials.tar.gz', 'w:gz', dereference=False) as archive:
+              archive.add(materials, arcname='source-materials')
+          PY
       - name: Verify and package immutable release assets
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -68,7 +98,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release"
           cp "$guest/artifacts/"* "$RUNNER_TEMP/release/"
           cp "$guest/assets.json" "$guest/build.json" "$RUNNER_TEMP/release/"
-          (cd "$RUNNER_TEMP/release" && sha256sum bzImage rootfs.ext4 qboot.rom assets.json build.json > SHA256SUMS)
+          # Split only the archive bytes if needed to stay below GitHub's asset limit.
+          split -b 1900M -d "$guest/source-materials.tar.gz" "$RUNNER_TEMP/release/source-materials.tar.gz.part-"
           printf '%s\n' "BULL guest image $RELEASE_TAG" > "$RUNNER_TEMP/release/RELEASE_SCOPE.txt"
           cat >> "$RUNNER_TEMP/release/RELEASE_SCOPE.txt" <<'EOF'
           This release was built from the pinned public recipe and its official ClamAV
@@ -76,8 +107,14 @@ jobs:
           the image was compiled and hash-checked; it is not proof of VM boot, physical
           approval, independent review, or universal security certification. Run the five
           KVM cases from docs/CODESPACES_VM_AND_KEY_CHECKS.md after downloading it.
+          This is a draft pending review of source materials and upstream notices.
+          Reassemble source materials with:
+            cat source-materials.tar.gz.part-* > source-materials.tar.gz
+          Inspect legal-info manifests, license files, sources and warnings. Generation
+          alone is not a completeness review. Follow docs/DISTRIBUTION.md before publishing.
           EOF
-      - name: Create the versioned GitHub release
+          (cd "$RUNNER_TEMP/release" && sha256sum -- * > SHA256SUMS)
+      - name: Create the draft versioned GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -89,5 +126,6 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" "$RUNNER_TEMP"/release/* \
             --repo "$GITHUB_REPOSITORY" \
+            --draft --prerelease \
             --title "BULL guest image $RELEASE_TAG" \
-            --notes "Pinned public guest build. Verify SHA256SUMS before booting. The image is BUILT_NOT_BOOT_TESTED; follow the Codespaces VM checklist for runtime evidence."
+            --notes "Draft for source/license review and guest qualification. Verify SHA256SUMS. Reassemble source-materials.tar.gz.part-* before extracting. Read RELEASE_SCOPE.txt and docs/DISTRIBUTION.md. The image is BUILT_NOT_BOOT_TESTED."

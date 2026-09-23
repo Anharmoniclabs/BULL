@@ -125,9 +125,11 @@ class BrandSiteTests(unittest.TestCase):
         # Local KVM integration is now recorded. Keep its evidence link and
         # release limitations instead of requiring obsolete pre-boot wording.
         self.assertIn("docs/MICROVM_INTEGRATION_REPORT.md", readme)
-        self.assertIn("Local validation passed five KVM cases", normalized)
-        self.assertIn("disposable authenticated TLS test collector", normalized)
-        self.assertIn("current-candidate guest-to-external-collector path and persistent VM reuse remain future work", normalized)
+        self.assertIn("428db9c", normalized)
+        self.assertIn("Five cases passed", normalized)
+        self.assertIn("external host/guest receipts passed", normalized)
+        self.assertIn("Persistent VM recovery", normalized)
+        self.assertIn("host namespace sandbox, not the MicroVM", normalized)
         self.assertIn("not production certification or authorization to release", report)
         self.assertIn("parent-acknowledged", self.html)
         self.assertIn("One-shot real KVM integration demonstrated · Persistent VM reuse unfinished", self.html)

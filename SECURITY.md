@@ -10,7 +10,7 @@ The actively maintained target is the current `main` branch and the production p
 
 For public-safe issues, open a GitHub issue with the smallest reproducible case. Do not include live credentials, private keys, tokens, personal data, or exploit traffic targeting third-party systems.
 
-For a vulnerability whose publication would create immediate risk, use GitHub's private vulnerability reporting/security-advisory mechanism when available for this repository.
+For sensitive vulnerabilities, use [GitHub private vulnerability reporting](https://github.com/Anharmoniclabs/BULL/security/advisories/new), enabled for this repository. Do not publish exploit details or credentials in an issue while a private report is being reviewed. No response-time SLA or independent certification is promised.
 
 A useful report includes:
 

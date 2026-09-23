@@ -1,4 +1,7 @@
-# October AI/ML review packet
+# Technical presentation Q&A
+
+Start with the [five-minute presentation](PRESENTATION.md) and
+[latest exact-candidate evidence](VALIDATION_20260923.md).
 
 ## Opening statement
 
@@ -64,7 +67,7 @@ key, a guest boot or external retention.
 ## Source of truth
 
 - `SECURITY_CLAIMS.md`: implementation/test mapping and unsupported behaviors.
-- `VALIDATION_20260922.md`: revision-specific evidence, including unsuccessful runs.
+- `VALIDATION_20260923.md`: latest pinned evidence; older records remain historical.
 - `BRANCH_AUDIT_20260922.md`: preserved branch inventory and historical caveats.
 - PR #55: latest exact candidate status and reviewed public result summary.
 
