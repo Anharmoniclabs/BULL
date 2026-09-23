@@ -7,7 +7,8 @@ an action; trusted host integration supplies authority. BULL checks that authori
 constrains execution, and records an authenticated audit checkpoint.
 
 [Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/603365e.json) ·
-[Architecture](docs/PRODUCTION_SECURITY.md) · [Contributing](CONTRIBUTING.md)
+[Architecture](docs/PRODUCTION_SECURITY.md) · [Preprint](https://zenodo.org/records/22922278) ·
+[Contributing](CONTRIBUTING.md)
 
 The software release work and hardware host integration are merged into `main`.
 See the [branch integration record](docs/BRANCH_INTEGRATION.md).
@@ -75,6 +76,14 @@ For real deployment, use the [portable setup guide](docs/REPRODUCIBLE_DEPLOYMENT
 with your own private authority, signed ClamAV databases, delegated cgroups and
 collector. Hardware approval is a separate step. For the bounded local-model
 workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
+
+## Publication and citation
+
+[BULL: Blocking Unauthorized Logic Loopholes](https://zenodo.org/records/22922278)
+is available as an open-access preprint on Zenodo.
+
+**Citation:** Minier, Luis. (2026). *BULL: Blocking Unauthorized Logic Loopholes*.
+Zenodo. [https://doi.org/10.5281/zenodo.22922278](https://doi.org/10.5281/zenodo.22922278).
 
 ## Review and present
 
