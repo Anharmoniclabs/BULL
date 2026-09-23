@@ -24,6 +24,8 @@ class SessionChannel:
         self.fd, self.session, self.key = fd, session, key
         self.side, self.timeout = side, timeout
         self.sent = self.received = 0
+        self.failed = False
+        self.executed = False
         os.set_inheritable(fd, False)
         os.set_blocking(fd, False)
 
@@ -54,6 +56,17 @@ class SessionChannel:
         return bytes(result)
 
     def send(self, kind: str, payload: dict) -> None:
+        if self.failed:
+            raise AnchorError("control channel is unusable after failure")
+        try:
+            self._send(kind, payload)
+        except Exception:
+            self.failed = True
+            raise
+
+    def _send(self, kind: str, payload: dict) -> None:
+        if kind == "execute" and (self.side != "host" or self.executed):
+            raise AnchorError("one-shot execution authority already used or wrong direction")
         if kind not in {"ready", "execute", "result", "error"} or not isinstance(payload, dict):
             raise AnchorError("unsupported control operation")
         message = authenticate({"version": 1, "session": self.session,
@@ -64,8 +77,21 @@ class SessionChannel:
             raise AnchorError("control frame exceeds limit")
         self._transfer(data=len(encoded).to_bytes(4, "big") + encoded)
         self.sent += 1
+        if kind == "execute":
+            self.executed = True
 
     def receive(self, expected_kind: str) -> dict:
+        if self.failed:
+            raise AnchorError("control channel is unusable after failure")
+        try:
+            return self._receive(expected_kind)
+        except Exception:
+            self.failed = True
+            raise
+
+    def _receive(self, expected_kind: str) -> dict:
+        if expected_kind == "execute" and (self.side != "guest" or self.executed):
+            raise AnchorError("one-shot execution authority already used or wrong direction")
         length = int.from_bytes(self._transfer(length=4), "big")
         if not 0 < length <= MAX_FRAME:
             raise AnchorError("invalid control frame length")
@@ -79,6 +105,8 @@ class SessionChannel:
                 or message["kind"] not in {expected_kind, 'error'} or not isinstance(message["payload"], dict)):
             raise AnchorError("unexpected control message or session/sequence mismatch")
         self.received += 1
+        if message["kind"] == "execute":
+            self.executed = True
         if message['kind'] == 'error' and expected_kind != 'error':
             raise RemoteSessionError(message['payload'])
         return message["payload"]
