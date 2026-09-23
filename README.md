@@ -1,4 +1,4 @@
-<p align="center"><img src="site/assets/brand/bull-primary.svg" width="420" alt="BULL — Blocking Unauthorized Logic Loopholes"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="site/assets/brand/bull-primary-dark.svg"><img src="site/assets/brand/bull-primary.svg" width="420" alt="BULL — Blocking Unauthorized Logic Loopholes"></picture></p>
 
 # BULL
 
@@ -91,3 +91,6 @@ from clearance to redistribute a bundled guest image.
 Small, reviewable pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 Report sensitive vulnerabilities [privately](https://github.com/Anharmoniclabs/BULL/security/advisories/new);
 see [SECURITY.md](SECURITY.md). Never include credentials or private deployment logs.
+
+Hardware prototype and host verification: [BULL Hardware Authority](docs/HARDWARE_AUTHORITY.md).
+The diagnostic token cannot authorize protected actions.

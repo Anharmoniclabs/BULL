@@ -154,6 +154,8 @@ def build_parser() -> argparse.ArgumentParser:
     policy_parser.add_argument("--key-id", default="deployment-policy")
     policy_parser.set_defaults(handler=_run_policy)
     from .approval_cli import add_parser as add_approval_parser
+    from .hardware_approval.cli import add_parser as add_hardware_parser
+    add_hardware_parser(subparsers)
     add_approval_parser(subparsers)
     return parser
 
