@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bull",
   "compatibility_date": "2026-09-21",
+  "previews": {},
   "observability": { "enabled": true },
   "assets": { "directory": "site" }
 }

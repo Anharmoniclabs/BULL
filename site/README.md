@@ -26,10 +26,14 @@ Failed branch builds ran `npx wrangler versions upload` without a configuration.
 The checked-in configuration makes asset selection explicit for both commands.
 
 Keep build root `/`, no build command, and production branch `main`. The
-production command is `npx wrangler deploy`; the non-production command is
-`npx wrangler versions upload`. Uploading a version does not promote it to
-production. Leave branch builds disabled until this configuration is on the
-branch being built. Validate locally without uploading with
+production command is `npx wrangler deploy`. Cloudflare's Worker Previews build
+uses `npx wrangler preview`; the root configuration includes the required empty
+`previews` block. Assets and compatibility settings remain at the top level.
+This is distinct from the older `npx wrangler versions upload` workflow, which
+uploads an unpromoted version. Do not change dashboard commands to work around
+a missing preview configuration. See the official
+[preview configuration](https://developers.cloudflare.com/workers/previews/configuration/).
+Validate locally without uploading with
 `npx wrangler deploy --dry-run --config wrangler.jsonc`.
 
 This mirror serves checked-in templates directly, matching the existing
