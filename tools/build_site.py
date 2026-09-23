@@ -25,7 +25,7 @@ GROUPS = [
     ("Linux enforcement", "The namespace backend and trusted shell bootstrap install the active restrictions. Compatibility and cross-platform helper contracts do not imply an available certified backend on every platform.", "namespace_sandbox.py _namespace_launcher.sh seccomp_policy.py landlock_policy.py resource_limits.py cgroup_scope.py container_hardening.py linux_sandbox.py sandbox_backends.py host_certify.py"),
     ("Broker components", "Secret retrieval and outbound requests have their own authorization and transport controls. Alternate hardening helpers are documented as components, not assumed to be wired into every execution route.", "secret_broker.py egress_proxy.py socket_hardening.py broker_hardening.py pinned_egress.py"),
     ("Audit and state models", "Local hash-chained records, authenticated checkpoint transports, the durable anchor service, and runtime trace abstractions. The guest relay requires a verified acknowledgment; production operators supply their own collector and authority.", "audit.py audit_transport.py anchor_service.py trace_model.py trace_runtime.py"),
-    ("MicroVM host and guest", "Hardware-only QEMU/KVM launch, admitted ext4 images, functional guest preflight, trusted one-shot production supervision and bounded authenticated control. Historical runs used a disposable TLS collector; candidate 428db9c also has external host/guest receipt evidence.", "microvm.py microvm_image.py guest_preflight.py guest_engine.py microvm_protocol.py"),
+    ("MicroVM host and guest", "Hardware-only QEMU/KVM launch, admitted ext4 images, functional guest preflight, trusted one-shot production supervision and bounded authenticated control. Historical runs used a disposable TLS collector; candidate 603365e has five-case KVM and external host/guest receipt evidence.", "microvm.py microvm_image.py guest_preflight.py guest_engine.py microvm_protocol.py"),
     ("Multi-agent orchestration", "Development orchestration with host callables, structured messages and synthetic canary inspection. It does not automatically route effects through ProductionDispatcher; absence of a canary finding is not proof of safety.", "multiagent/__init__.py multiagent/agents.py multiagent/bus.py multiagent/contracts.py multiagent/honeytoken.py multiagent/system.py"),
     ("Adversary observation components", "Contracts, fingerprints, lure, registry and quarantine components for the adversary-capture subsystem. This source inventory is not evidence of deployment, complete containment or independent certification.", "adversary/__init__.py adversary/contracts.py adversary/fingerprint.py adversary/lure.py adversary/quarantine.py adversary/registry.py adversary/system.py"),
     ("Public API and auxiliaries", "Package exports and verification commands, plus advisory/sentinel interfaces. Heuristic agent detection is not proof of identity or a replacement for the production boundary.", "__init__.py cli.py verify.py advisory.py agent_sentinel.py"),
@@ -126,7 +126,7 @@ def page(title: str, body: str) -> str:
             "<link rel=\"stylesheet\" href=\"./styles.css\"></head><body>"
             "<header class=\"masthead\"><a href=\"./index.html\">"
             "<img class=\"logo\" src=\"./assets/brand/bull-primary.svg\" width=\"215\" height=\"78\" alt=\"BULL\"></a>"
-            "<a href=\"./index.html#explainer\">Architecture and video</a></header><main>"
+            "<a href=\"./index.html#architecture\">Architecture and evidence</a></header><main>"
             + body + "</main><footer><p>BULL · Blocking Unauthorized Logic Loopholes</p></footer></body></html>\n")
 
 
@@ -169,44 +169,6 @@ def inventory_html(commit: str, rows: list[dict]) -> str:
     return page("Repository implementation inventory", body + "</tbody></table></div>")
 
 
-def seconds(value: str) -> float:
-    h, m, s = value.split(":")
-    return int(h) * 3600 + int(m) * 60 + float(s)
-
-
-def caption_cues(text: str) -> list[dict]:
-    result = []
-    for block in re.split(r"\n\s*\n", text.strip()):
-        lines = block.splitlines()
-        if not lines or " --> " not in lines[0]:
-            continue
-        start, end = lines[0].split(" --> ")
-        result.append({"start": seconds(start), "end": seconds(end), "text": " ".join(lines[1:])})
-    return result
-
-
-def transcript_html(site: Path) -> str:
-    base = site / "assets/explainer"
-    chapters = json.loads((base / "chapters.json").read_text())
-    manifest = json.loads((base / "manifest.json").read_text())
-    cues = caption_cues((base / "captions.vtt").read_text())
-    body = ('<section class="intro"><p class="eyebrow">Narrated architecture film / accessible transcript</p>'
-            '<h1>From input to execution.</h1><p class="lede">The full narration of BULL’s four-minute data-flow explainer.</p>'
-            '<p>The animation describes source mechanisms. It is not a recorded VM boot, deployment test or independent audit.</p></section>')
-    for chapter in chapters:
-        words = " ".join(c["text"] for c in cues if chapter["start"] <= c["start"] < chapter["end"])
-        minute, second = divmod(int(chapter["start"]), 60)
-        body += (f'<section class="transcript-section"><p class="timestamp">{minute:02}:{second:02}</p>'
-                 f'<h2>{html.escape(chapter["title"])}</h2><p>{html.escape(words)}</p></section>')
-    body += ('<section class="section"><h2>Media provenance and voice attribution</h2>'
-             f'<p>{html.escape(manifest["production"])}</p><p>{html.escape(manifest["voice_attribution"])}</p>'
-             '<p>' + ' · '.join(f'<a href="{html.escape(url,quote=True)}">{html.escape(url)}</a>' for url in manifest["voice_sources"]) + '</p>'
-             f'<p>Source revision <code>{manifest["source_commit"]}</code>. '
-             '<a href="./assets/explainer/manifest.json">Media hash and provenance record</a> · '
-             '<a href="./assets/explainer/captions.vtt">English captions</a></p></section>')
-    return page("Video transcript", body)
-
-
 def build(output: Path, commit: str | None = None) -> Path:
     output = output.resolve()
     if output == ROOT or ROOT.is_relative_to(output) or (output.is_relative_to(ROOT) and output != ROOT / "_site"):
@@ -230,13 +192,12 @@ def build(output: Path, commit: str | None = None) -> Path:
         if name not in names:
             raise ValueError("source link does not exist in tracked inventory: " + name)
         return f'<a href="{source_link(name,commit)}"'
-    text = re.sub(r'<a data-code="([^"]+)"', resolve, text)
+    text = re.sub(r'<a data-code="([^"]+)"(?: href="[^"]*")?', resolve, text)
     if "<!-- REPOSITORY_GROUPS -->" not in text:
         raise ValueError("repository group insertion point is missing")
     text = text.replace("<!-- REPOSITORY_GROUPS -->", groups_html(commit, rows))
     (output / "index.html").write_text(text, encoding="utf-8")
     (output / "repository.html").write_text(inventory_html(commit, rows), encoding="utf-8")
-    (output / "transcript.html").write_text(transcript_html(output), encoding="utf-8")
     (output / "data").mkdir(exist_ok=True)
     (output / "data/repository.json").write_text(json.dumps({"repository": "Anharmoniclabs/BULL", "commit":commit, "files":rows}, indent=2) + "\n")
     (output / ".nojekyll").touch()

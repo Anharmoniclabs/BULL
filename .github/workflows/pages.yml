@@ -117,7 +117,6 @@ jobs:
               "hardware_approval_certified": False,
               "universal_security_certified": False,
               "source_hashes": hashes,
-              "explainer": json.loads(Path("site/assets/explainer/manifest.json").read_text()),
           }
           Path("_site/data/verification.json").write_text(json.dumps(evidence, indent=2) + "\n")
           print(json.dumps(evidence, indent=2))

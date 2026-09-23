@@ -1,5 +1,23 @@
 # Validation recorded 2026-09-23
 
+## Integrated main candidate
+
+Clean commit `603365edd0164418a06ec0ee46250a2922b284bf` passed 489 tests and 21
+subtests, all six GitHub validation workflows, all five real KVM cases, strict
+host/cgroup checks and authenticated existing-collector host/guest receipts.
+Both fixed host tools passed; empty authority was denied. A fresh guest after
+cancellation passed. The source distribution built an installable wheel.
+
+[Sanitized results, source identity, image hashes and CI URLs](../site/data/validation/603365e.json).
+
+Hardware host verification and diagnostic firmware are included. Only the KB2040
+is connected; no secure element or signing key is enrolled. Physical approval
+remains blocked. The audit worker retains its separate deployment branch.
+Its main-attached build check is recorded as failed; the existing live collector
+passed the authenticated receipt checks. No preview was promoted.
+
+## Earlier candidate
+
 Tested clean commit: `428db9cf8740f755249b23d33ba71da0c39502b1`.
 [Published operator report](https://github.com/Anharmoniclabs/BULL/pull/55#issuecomment-5794436540).
 Machine-readable, sanitized results: [candidate-428db9c.json](evidence/candidate-428db9c.json).

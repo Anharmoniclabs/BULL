@@ -18,8 +18,8 @@ as separate integrations.
 
 ## 3. Evidence — 90 seconds
 
-Open [the validation record](VALIDATION_20260923.md), pinned to `428db9c`:
-437 tests + 6 subtests; seven GitHub jobs; five real KVM cases; authenticated
+Open [the validation record](VALIDATION_20260923.md), pinned to `603365e`:
+489 tests + 21 subtests; six GitHub validation workflows; five real KVM cases; authenticated
 external host/guest receipts; allowed and denied fixed-tool requests.
 Explain the controlled worker, collector and storage-failure tests.
 

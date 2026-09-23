@@ -1,0 +1,269 @@
+{
+  "format": "bull-release-candidate-v1",
+  "version": "0.2.0rc1",
+  "commit": "603365edd0164418a06ec0ee46250a2922b284bf",
+  "source_dirty": false,
+  "status": "SOFTWARE_RC_VALIDATED_PHYSICAL_APPROVAL_BLOCKED",
+  "certified": false,
+  "tracked_content_sha256": "052dac91af88626112fd36f34e8ff6e0f163c56509d4ffd766ef71a061d3b47f",
+  "guest_runtime_tree_sha256": [
+    "5b5476f334852cba2c22b482e7e4d31742659ef7195be5fa58769879bd6ab468"
+  ],
+  "guest_assets_sha256": {
+    "kernel": "66bcc80464908d0bbdb5e854eba369d1fa509f71656d9f8baa32073349315daa",
+    "rootfs": "5a99e8eb82d3acba04efaf23c94c2fad2e01a14b09e9c3b2fe6e07326ccc665b",
+    "firmware": "14a5f6679d16477c44ed947a50dae3c772dc77107715c09ab3ac3f5ef2763c98"
+  },
+  "regression": {
+    "passed": 489,
+    "subtests_passed": 21,
+    "failures": 0,
+    "skipped": 0
+  },
+  "source_gates": [
+    {
+      "gate": "diff-check",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.004
+    },
+    {
+      "gate": "compile",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.064
+    },
+    {
+      "gate": "pytest",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 13.29
+    },
+    {
+      "gate": "BullRuntime-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.265
+    },
+    {
+      "gate": "BullRuntime-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.866
+    },
+    {
+      "gate": "BullSessionAudit-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.265
+    },
+    {
+      "gate": "BullSessionAudit-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.766
+    },
+    {
+      "gate": "BullApproval-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.264
+    },
+    {
+      "gate": "BullApproval-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.766
+    },
+    {
+      "gate": "wheel",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.966
+    },
+    {
+      "gate": "distribution",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.071
+    },
+    {
+      "gate": "site",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.365
+    },
+    {
+      "gate": "unchanged-clean-source",
+      "status": "PASS"
+    }
+  ],
+  "ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 35868842575,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868842575",
+      "workflowName": "Ubuntu FreshClam guest database integration"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35868820124,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868820124",
+      "workflowName": "BULL formal invariants"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35868820137,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868820137",
+      "workflowName": "BULL MicroVM host regression"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35868820228,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868820228",
+      "workflowName": "BULL security regression"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35868820325,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868820325",
+      "workflowName": "Deploy BULL Lab to Pages"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35868820159,
+      "headSha": "603365edd0164418a06ec0ee46250a2922b284bf",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35868820159",
+      "workflowName": "BULL public guest recipe configuration"
+    }
+  ],
+  "cloudflare_checks": [
+    {
+      "name": "Workers Builds: bull-audit",
+      "status": "completed",
+      "conclusion": "failure",
+      "details_url": "https://dash.cloudflare.com/a516a1df63fca7e13f01b916a397a79d/workers/services/view/bull-audit/production/builds/8ffcd809-7700-4d57-be8d-13146ea8287b"
+    },
+    {
+      "name": "Workers Builds: bull",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://dash.cloudflare.com/a516a1df63fca7e13f01b916a397a79d/workers/services/view/bull/production/builds/f5ab808c-934d-4bd5-b9ea-3b96afa9cce7"
+    }
+  ],
+  "deployment_gates": {
+    "approval_protocol": "PASS",
+    "cgroup_delegation": "PASS",
+    "current_candidate_kvm": "PASS",
+    "deployment_configuration": "PASS",
+    "external_collector_host": "PASS",
+    "external_collector_with_guest": "PASS",
+    "guest_assets": "PASS",
+    "hardware_approval_protocol": "BLOCKED",
+    "kvm_device": "PASS",
+    "live_local_tls": "PASS",
+    "production_configuration": "PASS",
+    "source": "PASS",
+    "strict_host": "PASS",
+    "unchanged_clean_source": "PASS"
+  },
+  "kvm_cases": {
+    "allowed": "PASS",
+    "denied": "PASS",
+    "timeout": "PASS",
+    "cancel": "PASS",
+    "missing-protection": "PASS"
+  },
+  "fixed_tool_adapter": {
+    "inspect": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "checksum": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "empty-grants": {
+      "status": "PASS",
+      "executed": false,
+      "decision": "DENY"
+    }
+  },
+  "fresh_guest_after_cancellation": "PASS",
+  "package": {
+    "commit": "603365edd0164418a06ec0ee46250a2922b284bf",
+    "status": "PASS",
+    "wheel_built_from_sdist": true,
+    "fresh_install": true,
+    "artifacts": {
+      "bulldog_ai_firewall-0.2.0rc1-py3-none-any.whl": "1f60e704f3ce72ce5643f3490918029112516a1599e30cc2b3a926748179a017",
+      "bulldog_ai_firewall-0.2.0rc1.tar.gz": "cda2600dd686bf5b02a025187c2828d44a2ba30fd7d74bc956f47da472cc4b50"
+    }
+  },
+  "guest_source_bundle": {
+    "release": "https://github.com/Anharmoniclabs/BULL/releases/tag/guest-2026-09-22",
+    "archive": "guest-2026-09-22-source-materials.tar.gz",
+    "sha256": "690bc5fb906e289d9e9738960bcb7163876ee191a54b2c30a0aaf9d9b0e574f8",
+    "matching_recorded_inputs_and_resolved_configs": true,
+    "original_build_package_versions_checked": 67,
+    "offline_preparation_and_source_verification": "PASS; 57 source archives with external networking unavailable",
+    "full_offline_recompile": "NOT_RUN"
+  },
+  "downloaded_pentest_review": {
+    "script_sha256": "82bfb30d9efe12c48b4938ea1b980da7c40387af3088c88846e887cc5a6e3ccc",
+    "method": "read-only StaticSuite, HygieneSuite and InvariantSuite invoked after source inspection; original main constructs suite objects incorrectly",
+    "findings": [
+      "Example defaults.env contains public placeholders, not credentials.",
+      "Legacy branch protection endpoint misses active repository rulesets; required PR, status checks, signatures, no deletion and no force pushes were verified."
+    ],
+    "live_penetration_testing_claimed": false
+  },
+  "physical_key_inspection": {
+    "device": "KB2040 custom prototype; user confirms no secure element connected",
+    "firmware": "BULL-DIAG-3",
+    "approval_available": false,
+    "production_enrolled": false,
+    "pending_request": false,
+    "physical_gesture_validation": "CANCELLED; unverified",
+    "source": "603365edd0164418a06ec0ee46250a2922b284bf",
+    "scope": "read-only HID diagnostics; no flashing, signing, provisioning or lock commands",
+    "software_only_tests": {
+      "stateless_verifier_tests": 24,
+      "durable_gate_tests": 23,
+      "c_button_state_machines": "PASS in GitHub CI",
+      "firmware_build": "PASS with Pico SDK 2.2.0"
+    },
+    "host_integration": "explicit custom credentials through existing ApprovalGate; exact binding and atomic counter/request consumption; no enrolled hardware credential"
+  },
+  "deployment_routing": {
+    "site": "main; successful Git-connected build",
+    "audit": "separate audit branch per operator; deployment configuration not changed",
+    "existing_collector": "authenticated host and guest receipts PASS",
+    "preview": "previously failed functional checkpoint validation; not promoted",
+    "cloudflare_log_access": "saved local API token invalid; detailed failed audit build logs unavailable"
+  },
+  "limits": [
+    "Physical signing and credential release remain blocked; secure element, signing firmware, authenticated production HID transport and witnessed gestures are unfinished.",
+    "Fixed read-only inspect/checksum host adapter and fresh one-shot guest dispatcher are the qualified integrations.",
+    "Fresh guest after cancellation is not persistent VM recovery.",
+    "Controlled process, collector outage and injected storage failures do not demonstrate host power-loss or multi-day reliability.",
+    "Existing live collector was tested; failing preview is not promoted.",
+    "No independent security certification.",
+    "Historical 40-action Qwen host run is separate evidence and was not repeated on this commit."
+  ]
+}
