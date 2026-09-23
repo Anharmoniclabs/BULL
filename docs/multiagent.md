@@ -1,5 +1,10 @@
 # BULL Multi-Agent System
 
+This is a development orchestration API. Registered callables run in the host
+Python process; this package does not automatically route them through
+ProductionDispatcher or a sandbox. Its policy/canary tests are not production
+adapter validation. See [supported execution paths](ADAPTER_VALIDATION.md).
+
 The `bulldog.multiagent` package extends BULL's mission — **Blocking
 Unauthorized Logic Loopholes** — to the orchestration layer. Instead of a
 single agent with full tool access, work is decomposed across specialized
