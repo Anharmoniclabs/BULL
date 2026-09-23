@@ -61,3 +61,6 @@ initrd.*
 /approval-config.json
 /approval-key*
 /release-evidence/
+
+# Operator-specific generated audit build configuration.
+/deploy/cloudflare-audit/wrangler.build.json

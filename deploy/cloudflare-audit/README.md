@@ -105,3 +105,26 @@ A diagnosed trigger error is not a successful build: retain the failed status
 until the intended configuration has been selected and an authorized build
 actually passes. No upload or production configuration change is required to
 review or test this repository locally.
+
+### Supply an existing database through build configuration
+
+Keep the shared Wrangler template portable. In the intended `bull-audit`
+Worker's **build variables**, set `BULL_D1_DATABASE_ID` to its existing D1 UUID
+(not an API token or collector secret). With build root `deploy/cloudflare-audit`,
+use:
+
+- Build command: `python3 prepare_build.py`
+- Version upload command: `npx wrangler versions upload --config wrangler.build.json`
+
+The preparation script validates the explicit UUID and writes a Git-ignored
+local configuration. It leaves the template unchanged, permits an identical
+rerun, and refuses to replace a differing generated configuration. It creates
+no database, key, Worker version or deployment. Never use `npm run db:init`
+merely to connect an already initialized collector.
+
+Before any version upload, verify that the selected existing Worker has both
+the intended `DB` binding and its existing `BULL_ANCHOR_MASTER_KEY` runtime
+secret. An empty runtime-secret list needs investigation; do not generate a
+replacement key. Uploading a version and promoting it to production are separate
+operations, and neither is performed by the preparation script. Configure the
+build connection only after this source change is on the selected branch.
