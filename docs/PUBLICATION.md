@@ -26,3 +26,15 @@ PDF, companion bytes, or their recorded hashes. The earlier Zenodo record
 
 The runtime evidence remains pinned to `ab53f56`; the paper's publication
 commits are documentation revisions rather than additional experiments.
+
+## Retrievable preceding Paper II
+
+The [preceding Paper II PDF](../site/assets/papers/archive/bull-ii-prior.pdf)
+is preserved for checking the current manuscript's historical comparison
+(489 tests and the then-cancelled physical-gesture attempt).
+Its SHA-256 is
+`f319c1cc61632209ed499e4ef2713cbfbcffeddd4ec9d5ad49668b5738f5db66`,
+exactly matching `prior_paper.sha256` in the paper's evidence manifest.
+This archived edition is not the current Zenodo paper. The current manuscript's
+reference [1] links Paper I and identifies this preceding Paper II by that hash;
+this archive supplies the retrievable historical PDF after the old deposit's removal.
