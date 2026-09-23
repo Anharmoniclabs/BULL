@@ -1,13 +1,13 @@
-\documentclass[10pt,letterpaper]{article}
+\documentclass[journal]{IEEEtran}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=0.8in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype,cite,listings}
 \usepackage{graphicx,booktabs,longtable,tabularx,array,amsmath,xcolor}
 \usepackage[hyphens]{url}
 \usepackage[colorlinks=true,linkcolor=teal,urlcolor=teal,citecolor=teal]{hyperref}
 \hypersetup{pdftitle={BULL II: Binding Authority to Execution},pdfauthor={Luis Minier / Anharmoniclabs},pdfsubject={Revised technical report; validated runtime ab53f56; physical signing blocked}}
-\setlength{\parskip}{4pt}
-\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{1em}
 \setlength{\emergencystretch}{3em}
 \renewcommand{\arraystretch}{1.18}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
@@ -15,22 +15,30 @@
 \newcommand{\repo}[1]{\href{https://github.com/Anharmoniclabs/BULL/blob/ab53f563bcbcaf60820acb318b8212796ce502ff/#1}{\nolinkurl{#1}}}
 \newcommand{\ev}[1]{\nolinkurl{#1}}
 \title{\textbf{BULL II: Binding Authority to Execution}\\[5pt]\large Implementation, Authenticated Evidence, Controlled Recovery,\\and the Boundary of Physical Approval}
-\author{Luis Minier\\Anharmoniclabs\\\small\href{https://orcid.org/0009-0006-7321-4167}{ORCID: 0009-0006-7321-4167}}
-\date{September 23, 2026\\\small Revised evidence edition, revision 2\\Validated runtime: \texttt{ab53f563bcbcaf60820acb318b8212796ce502ff}}
+\author{Luis~Minier\thanks{Luis Minier is an independent researcher at Anharmoniclabs, New York, NY, USA. ORCID: 0009-0006-7321-4167. Technical report, September 23, 2026; revision 4. Validated runtime: \texttt{ab53f56}. Prepared in IEEE journal style; not an IEEE publication or peer-reviewed article.}}
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,frame=single,rulecolor=\color{lightgray},framesep=4pt}
+\urlstyle{same}
+\interdisplaylinepenalty=2500
+\widowpenalty=10000
+\clubpenalty=10000
 \begin{document}
+\raggedbottom
 \maketitle
 \begin{abstract}
 BULL places execution authority outside an AI agent's generated output. Trusted host integration binds a proposed operation to permissions, an exact executable and arguments or broker resource, admitted input bytes, and an active security domain. Mandatory Linux protections and, on the guest route, a fresh QEMU/KVM instance constrain the resulting execution. Authenticated control messages and audit checkpoints distinguish workload output from trusted completion. This report documents the implemented system and the retained local evaluation through clean source \code{ab53f56}: 501 passing tests and 21 passing subtests, all five real-KVM acceptance cases, three bounded formal models, authenticated host and guest receipts, and a source-distribution-to-wheel installation check. A separate historical Qwen run completed 40 fixed read-only actions in 707.4835 seconds with two controlled recoveries and one credential denial; those actions used the host sandbox, not MicroVM execution. Subsequent KB2040 tests witnessed two-click YES and three-click NO diagnostics, and prompted a bounded USB stale-response fix. These events were unsigned. No secure element or production signing key is present, and consequential credential release remains blocked. The paper supplies editable LaTeX, plotted public data, evidence hashes, reproduction commands, and an explicit acceptance matrix. It reports operator-run evidence for identified paths rather than arbitrary-agent security, exactly-once external effects, multi-day reliability, or independent certification.
 \end{abstract}
+\begin{IEEEkeywords}
+AI-agent security, execution governance, capability authorization, information transport, MicroVM isolation, authenticated audit, physical approval, reproducibility.
+\end{IEEEkeywords}
 
-\section{Purpose and evidence boundary}
+\section{Introduction}
 An agent's proposal becomes a security decision when an application turns it into a process, network request, or credential retrieval. BULL checks that transition in trusted code. Model output cannot create an installation identity, grant itself permission, mint a production permit, or satisfy a physical approval requirement. The engineering question is whether the operation that actually executes still matches the operation whose authority, input, and protections were checked.
 
 This is a new, source-editable revision of \emph{BULL II: Binding Authority to Execution}. The preceding Zenodo PDF used publication snapshot \code{437de3f} and validation candidate \code{603365e}~\cite{prior}. It reported 489 tests and described the physical gesture attempt as cancelled. That was its recorded scope. This revision incorporates the later software qualification at \code{ab53f56}, successful unsigned gestures at \code{437de3f}, the subsequent USB fix, and session hardening integrated through PR~63. It preserves the source identity of each measurement.
 
 The cutoff is the clean runtime at \code{ab53f56}. New branches or adapters, including the subsequently opened contained-HTTP-honeypot PR~64, are outside this qualification. The documentation commit carrying this paper is not itself the source on which the retained live deployment experiment ran. Future CI results on that documentation commit are separate publication checks.
 
-\begin{table}[ht]
+\begin{table*}[!t]
 \centering\small
 \begin{tabularx}{\linewidth}{@{}p{0.19\linewidth}p{0.19\linewidth}Y@{}}
 \toprule
@@ -47,18 +55,20 @@ Latest qualified software & \code{ab53f56} & 501 tests plus 21 subtests; five KV
 \end{tabularx}
 \caption{Distinct evidence units. Counts are neither additive nor a percentage of security coverage. Full hashes and provenance are in the companion.}
 \label{tab:identity}
-\end{table}
+\end{table*}
 
 \section{Security objectives and trust assumptions}
+The design follows least privilege and mediation principles described by Saltzer and Schroeder~\cite{E_Saltzer}. Confidentiality, integrity and availability provide the organizing security objectives~\cite{E_FIPS199}; the following maps those objectives to BULL's actual controls.
 The untrusted side includes the model's generated text, downloaded content, admitted workload code, and workload output. Trusted components include the administrator, Linux kernel, installed BULL runtime, authority registry, policy/integrity keys, brokers, and deployment configuration. The guest route additionally trusts QEMU/KVM, firmware, the guest kernel, and the trusted guest supervisor. External checkpoint authentication depends on collector operation and key custody. A compromised host administrator with access to those keys remains inside the current trust boundary~\cite{claims}.
 
 Confidentiality depends on scoped reads, admitted read-only inputs, restricted network visibility, and controlled secret/egress brokers. Integrity depends on binding a request to the exact effect, preserving the admitted bytes, authenticating control traffic, consuming approval once, and maintaining checkable audit history. Availability depends on finite budgets, deadlines, cancellation, descendant cleanup, and explicit recovery rules. An allowed action can still be harmful within its granted authority; broad read and send grants can authorize disclosure.
 
 For an execution request $r$, the intended contract is
 \[
-\operatorname{Execute}(r)\Rightarrow
-\operatorname{Allowed}(r)\land\operatorname{Bound}(r)\land
-\operatorname{Admitted}(r)\land\operatorname{Protected}(r).
+\begin{aligned}
+\operatorname{Execute}(r)\Rightarrow{}&\operatorname{Allowed}(r)\land\operatorname{Bound}(r)\\
+&{}\land\operatorname{Admitted}(r)\land\operatorname{Protected}(r).
+\end{aligned}
 \]
 For a consequential broker effect, current approval and required audit delivery are additional conditions. This notation states the contract exercised by the implementation and selected tests; it is not a proof about every possible Python integration or hostile kernel.
 
@@ -70,28 +80,35 @@ Domains carry host-owned identities and bounded capabilities. A child's capabili
 
 File admission securely traverses the selected project, copies eligible inputs to private snapshot storage, verifies the copy, scans it with ClamAV, and rehashes the admitted content. Unsupported file objects and changes that invalidate identity are refused. The workload sees the admitted snapshot, not a mutable source project. Directory storage-size normalization permits content comparison across filesystems while preserving file hashes, sizes, and source race checks. Trusted runtime code is kept separate from admitted workspace data.
 
-\begin{figure}[ht]
+\begin{figure*}[!t]
 \centering\includegraphics[width=\linewidth]{figures/data-flow.pdf}
 \caption{Repository control and file-data paths. The companion preserves the original SVG and its source hash. Authority and admitted input converge before execution; this is an architecture diagram, not measurement evidence.}
-\end{figure}
+\end{figure*}
 
 \subsection{Linux protection before workload release}
 The namespace route combines user, mount, PID, network, and IPC namespaces; read-only mounts; \code{no\_new\_privs}; strict seccomp; Landlock; and cgroup v2 budgets. The parent does not release the workload solely because the launcher started. Trusted bootstrap code installs protections and sends nonce-bound evidence through a private pipe. The parent checks the expected privilege state, seccomp profile, PID namespace, Landlock, and network conditions, then acknowledges the pre-exec gate. The workload does not inherit the evidence descriptor. This is a checked software bootstrap, not hardware attestation~\cite{linux,runtime}.
 
 Qualification observes enforcement rather than only configuration. The memory probe touches pages under a 64 MiB limit and requires OOM evidence. The process probe attempts bounded forks under a four-process cgroup ceiling. The CPU probe performs one second of work under a 25\% quota. Timeout and cancellation checks require cleanup of owned descendants. These are acceptance-probe settings; production workload limits are separately configured. Security-critical assertions that optimized Python could remove were replaced with explicit exceptions. Eight invalid cases and one valid control across four Python modes produced 36 software cases in the recorded corrective work.
 
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=0.92\textwidth]{figures/kernel-layers.pdf}
+\caption{Original repository drawing of the nested enforcement layers. Its bootstrap footnote records an earlier design state; the qualified runtime now uses parent validation before release, as described in Section III-B.}
+\end{figure*}
 \subsection{Fresh one-shot guests}
 The QEMU \code{microvm} route adds a separate kernel and hypervisor boundary~\cite{qemu}. The supported guest uses three read-only ext4 inputs: root, admitted workspace, and trusted runtime. It has no guest NIC and no QEMU monitor. Development 9P sharing is an explicit separate option. The launcher validates pinned assets and private session channels; the guest supervisor validates trusted runtime and deployment authority before dispatch. Completion requires authenticated result and audit evidence. The host tracks and reaps its exact QEMU child.
 
 Every qualified guest request starts a fresh VM. A successful fresh guest after a cancelled guest demonstrates a new one-shot session. It does not recover guest RAM, preserve a running process, or retry an uncertain consequential effect. The five KVM outcomes remain distinct from host-only protocol regressions.
 
-\begin{figure}[ht]
+\begin{figure*}[!t]
 \centering\includegraphics[width=\linewidth]{figures/microvm-io.pdf}
-\caption{Read-only guest inputs and separate control/audit routes, from the repository drawing. Workload text cannot act as a trusted status frame.}
-\end{figure}
+\caption{Original repository drawing of read-only guest inputs and separate control/audit routes. The footer records an earlier state: authenticated one-shot transport and five real-KVM cases are now demonstrated; persistent sessions remain unfinished.}
+\end{figure*}
 
 \subsection{Implemented integration inventory}
-\begin{table}[ht]
+The implementation exposes several entry paths. Table~\ref{tab:entrypoints} distinguishes production-mediated paths from development orchestration and evaluation interfaces.
+
+\begin{table*}[!t]
 \small\begin{tabularx}{\linewidth}{@{}p{0.28\linewidth}YY@{}}
 \toprule Entry point & Enforcement & Qualified scope \\
 \midrule
@@ -102,8 +119,8 @@ Dispatcher API & Host-owned exact authority and command & Integrating applicatio
 CLI/sentinel & Evaluation and advisory interfaces & No independent production-containment claim.\\
 External frameworks & Adapter-specific work required & No blanket arbitrary-agent support.\\
 \bottomrule
-\end{tabularx}\caption{An orchestration test is not evidence that an external adapter's effects use production enforcement.}
-\end{table}
+\end{tabularx}\caption{\label{tab:entrypoints}An orchestration test is not evidence that an external adapter's effects use production enforcement.}
+\end{table*}
 
 \section{Authenticated transport and evidence}
 \subsection{Bounded control frames and session failure}
@@ -114,13 +131,14 @@ The later session hardening is included in \code{ab53f56}. A channel records whe
 These checks do not introduce persistent sessions. Requirements for reuse, writable exports, and hostile-host confidential computing are documented separately. Persistent operation would need per-action fresh authority, serialized dispatch, generation binding, cleanup evidence, and reconciliation. Writable publication would need bounded quarantine, safe file types/paths, immutable approved manifests, and crash-safe publication. None of those future interfaces is qualified by the one-shot session tests.
 
 \subsection{Audit checkpoint ordering}
+HMAC supplies keyed message authentication~\cite{E_HMAC}. In BULL, its role is to authenticate checkpoint and acknowledgment fields within the deployed trust arrangement; it does not make a compromised producer trustworthy.
 The local audit ledger is hash-linked. Authenticated external checkpoints bind an installation/session, record count, and head hash; the client verifies the acknowledgement. Guest audit traffic uses a dedicated trusted relay, separate from workload output and control. An authenticated result alone does not substitute for the required completion evidence. Figure~\ref{fig:audit} shows the repository's evidence route.
 
-\begin{figure}[ht]
+\begin{figure*}[!t]
 \centering\includegraphics[width=\linewidth]{figures/audit-flow.pdf}
 \caption{Local history, guest relay, and external checkpoint flow. Authentication establishes acceptance by the configured authority; it does not independently prove collector retention or a trustworthy compromised host.}
 \label{fig:audit}
-\end{figure}
+\end{figure*}
 
 If a local append succeeds but checkpoint delivery fails, subsequent appends stop. Explicit reconciliation retries delivery of the already produced evidence. It does not repeat workload execution. The September 20 external test retained one interrupted record, reconciled it, accepted another authenticated checkpoint, and verified the final two-record ledger. Cloudflare initially rejected Python urllib's default client signature; the documented client user agent reached the Worker. The correction preserved authentication checks.
 
@@ -161,7 +179,7 @@ Production YES requires a fresh deliberate hold of at least 750 ms after release
 
 The RP2040 lacks the hardened authenticated firmware trust assumed of a commercial authenticator. A secure element protects key extraction but cannot by itself prove that compromised controller firmware required a human. The no-screen prototype trusts the host's presentation of the requested action. Request binding does not establish that the human saw trustworthy action text. The prototype is not FIDO2-certified, tamper-proof, equivalent to a commercial security key, or qualified against invasive physical attacks. A future controller with verified boot and a trusted display could address parts of this boundary; it is not implemented here.
 
-\begin{table}[ht]
+\begin{table*}[!t]
 \small\begin{tabularx}{\linewidth}{@{}p{0.46\linewidth}Y@{}}
 \toprule Acceptance group & Recorded state \\
 \midrule
@@ -178,18 +196,18 @@ Physical disconnect/reset/timeout/fault matrix & Simulations/host checks only; f
 Protected credential release & Blocked.\\
 \bottomrule
 \end{tabularx}\caption{Grouped hardware acceptance requirements. Passing diagnostics does not close the secure-signing gate. Detailed requirements remain in the archived hardware design.}
-\end{table}
+\end{table*}
 
 \section{Evaluation method and results}
 \subsection{Latest clean-source qualification}
-The retained release record identifies clean \code{ab53f563bcbcaf60820acb318b8212796ce502ff}~\cite{evidence}. It records 501 passing tests and 21 passing subtests, no failures and no skips. Compilation, diff validation, three TLA+ parse/model gates, wheel/distribution checks, site build, and unchanged-clean-source checks passed. The local full pytest invocation took 13.089 seconds; this is suite duration, not per-action latency. GitHub's publication run reported its own 18.59-second suite duration, not an additional experiment to average with the local run.
+The retained release record identifies clean \nolinkurl{ab53f563bcbcaf60820acb318b8212796ce502ff}~\cite{evidence}. It records 501 passing tests and 21 passing subtests, no failures and no skips. Compilation, diff validation, three TLA+ parse/model gates, wheel/distribution checks, site build, and unchanged-clean-source checks passed. The local full pytest invocation took 13.089 seconds; this is suite duration, not per-action latency. GitHub's publication run reported its own 18.59-second suite duration, not an additional experiment to average with the local run.
 
 All six recorded GitHub workflows succeeded on this source: security regression, MicroVM host regression, formal invariants, public guest recipe configuration, Pages publication, and FreshClam guest database integration. Python 3.11/3.13 CI supplements the local Python 3.14.7 environment. Source, strict-host, cgroup delegation/enforcement, signed production/deployment configuration, local TLS, external host/guest receipts, pinned guest assets, KVM readiness/current cases, and unchanged-source gates passed. The hardware approval gate remained BLOCKED; the deployment checker therefore did not report an all-gates release success.
 
-\begin{figure}[ht]
-\centering\includegraphics[width=0.85\linewidth]{figures/regression-milestones.pdf}
+\begin{figure*}[!t]
+\centering\includegraphics[width=0.85\textwidth]{figures/regression-milestones.pdf}
 \caption{Counts from retained machine-readable records. Bar lengths show tests; labels list subtests separately. Increasing counts do not measure attack-space coverage.}
-\end{figure}
+\end{figure*}
 
 \begin{table}[ht]
 \small\begin{tabularx}{\linewidth}{@{}p{0.25\linewidth}Y@{}}
@@ -210,12 +228,27 @@ The fixed-tool deployment check executed both inspect and checksum through produ
 At \code{cd461ae}, eleven selected defensive scenarios ran three times each: 33 passes and zero failures. The recorded host was Linux 7.2.6-1-cachyos x86\_64, Python 3.14.7, AMD Ryzen 5 7430U with 12 logical CPUs, and 11 GiB memory. End-to-end pytest means range from 292.603 to 376.640 ms and include interpreter, fixture, and process startup. Peak RSS ranges from 44.668 to 46.086 MiB. The corpus is deliberately selected; its 100\% result is not a broad malicious-effect probability or false-denial estimate.
 
 \input{benchmark-table.tex}
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{figures/defensive-corpus.pdf}
+\caption{Selected defensive corpus at cd461ae: mean pytest duration and recorded minimum--maximum across three runs per scenario. All 33 selected runs passed. These intervals include test-harness overhead; they are not confidence intervals.}
+\end{figure*}
+
 
 The separate 500-iteration in-process loops recorded 4.897 microseconds per traversal rejection, 66,559.856 microseconds per prompt-injection denial, and 438,559.052 microseconds per benign multi-agent allow. The last two reused one \code{MultiAgentSystem}, accumulating trace/honeytoken state. They describe that construction, not a fresh-state policy latency comparison, an isolated component cost, or a production-adapter throughput claim.
 
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{figures/hotpath-results.pdf}
+\caption{Recorded 500-iteration loops at cd461ae. The logarithmic axis preserves the measured scale. Prompt-injection and benign multi-agent loops reused state; they are not comparable fresh-instance policy microbenchmarks.}
+\end{figure*}
 \subsection{Historical MicroVM timing}
 The retained September 20 guest measurement used \code{d218e68} plus its recorded local patch and source-tree hash. QEMU process start to dispatcher-ready was 12,157.320 ms; launcher invocation to readiness was 12,282.303 ms. Guest runtime/dispatcher initialization was 597.739 ms; dispatch including admission/scanning was 9,165.705 ms; sandbox setup to trusted pre-exec was 308.901 ms; pre-exec to reap was 99.492 ms. The fixture body reported 0.476 ms, completion audit acknowledgement 33.714 ms, and result/audit overhead outside dispatch 34.355 ms. These intervals overlap and must not be summed. There is one observation, no percentile estimate, and no new timing claim for \code{ab53f56}.
 
+
+\begin{figure*}[!t]
+\centering\includegraphics[width=\textwidth]{figures/kvm-results.pdf}
+\caption{Historical single-run QEMU/KVM intervals from the retained September 20 report. Intervals overlap and must not be summed. Logarithmic scale; no inferred percentiles or repeated-run distribution.}
+\end{figure*}
 \subsection{Historical local-model run}
 The model was \code{qwen2.5:1.5b-instruct}, identified by its full digest in the companion. Trusted code provided the fixed tools, resource paths, arguments, grants, and identity. The model returned untrusted JSON selecting inspect/checksum. The recorded prompt explicitly exercised both tools after an earlier prompt repeatedly selected one.
 
@@ -229,7 +262,7 @@ Seven controlled cases exercise four combinations of injected ENOSPC/EIO at appe
 The collector test stops only its own loopback server, observes delivery failure and blocked advancement, restarts against retained state, explicitly reconciles, verifies idempotent checkpoint retry, and continues to three accepted records. Storage errors are injected; no physical disk controller failure or host power loss is reproduced. The production collector was not subjected to a disaster-recovery exercise. No host reboot or multi-day run is claimed.
 
 \subsection{Formal models and supplemental review}
-The finite TLA+ models cover runtime, session/audit, and approval transitions. The recorded model sizes are 405, 57, and 112 distinct states respectively. All parse/model gates passed. They check the configured finite specifications, not an automatically established refinement from all Python code or every environment to the model.
+TLA+ specifies state transitions and invariants~\cite{E_Lamport}. The finite BULL models cover runtime, session/audit, and approval transitions. The recorded model sizes are 405, 57, and 112 distinct states respectively. All parse/model gates passed. They check the configured finite specifications, not an automatically established refinement from all Python code or every environment to the model.
 
 The standalone adversarial harness recorded 49 source/API probes. Corrections made it recognize a normal \code{executed=false} denial, use legitimate full argument vectors for positive controls, and preserve forwarded hop history. It does not replace live kernel/guest acceptance. A downloaded GLM/Perplexity pentest script was inspected before its read-only static, hygiene, and invariant suites were invoked. Its main routine incorrectly constructed suite objects. Reported example-environment values were public placeholders, and its legacy branch-protection lookup missed active rulesets. Neither observation was relabeled a secret leak or missing repository protection. This was a supplemental script review, not an independent live penetration test.
 
@@ -243,7 +276,7 @@ Earlier validation attempts lacked build/scanner prerequisites, timed out a gues
 \section{Reproduction, distribution, and publication}
 \subsection{Software and deployment reproduction}
 Use a supported Linux host and keep evidence directories outside the checkout. The following pins the runtime that produced the latest retained live results:
-\begin{verbatim}
+\begin{lstlisting}
 git clone https://github.com/Anharmoniclabs/BULL.git BULL-runtime
 cd BULL-runtime
 git checkout --detach ab53f563bcbcaf60820acb318b8212796ce502ff
@@ -251,11 +284,11 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[test,hardware]' 'setuptools>=77' wheel
 .venv/bin/python tools/release_check.py \
   --tla-jar /ABS/PATH/tla2tools-1.7.4.jar --output /tmp/bull-src-01
-\end{verbatim}
+\end{lstlisting}
 Java and the repository-pinned TLA+ 1.7.4 jar are required. Preserve dependency resolution and the host environment with the report. Source tests do not substitute for namespace, Landlock, seccomp, scanner, delegated cgroup, KVM, and real collector prerequisites. The core Python package has no mandatory third-party Python runtime dependencies; test/hardware extras include cryptography. The qualified custom-provider dependency range is \code{cryptography>=43,<51}.
 
 Follow \repo{docs/REPRODUCIBLE_DEPLOYMENT.md} for host setup and a new installation. The initializer creates private state outside Git, independent policy/integrity/collector keys, and installation/session identities; it refuses an existing state directory. Directories are owner-only and private files use mode 0600. Do not copy another operator's private deployment keys to reproduce the paper. Supply the new installation's collector endpoint and checked guest assets, then run:
-\begin{verbatim}
+\begin{lstlisting}
 .venv/bin/python tools/deployment_check.py \
   --deployment /ABS/PRIVATE/deployment \
   --tla-jar /ABS/PATH/tla2tools-1.7.4.jar --output /tmp/bull-dep-01
@@ -263,16 +296,16 @@ PYTHONPATH=src .venv/bin/python microvm/integration.py \
   --kernel /ABS/PRIVATE/bzImage --rootfs /ABS/PRIVATE/rootfs.ext4 \
   --firmware /ABS/PRIVATE/qboot.rom \
   --output /tmp/bull-kvm-01 --case all --cpu-profile host
-\end{verbatim}
+\end{lstlisting}
 The standalone guest runner uses a disposable TLS collector by default. Its external collector options select a separate installation-owned destination. Keep output paths short because the runner creates Unix sockets. Record source cleanliness, guest/runtime hashes, sessions, environment, gates, and retained failures. Missing hardware should remain BLOCKED.
 
 For a new model run, initialize a separate deployment admitting \code{examples/governed-agent}, with the documented read/process ceiling, delegation, scanner, and collector. Install the selected Ollama model and preserve its digest. Run:
-\begin{verbatim}
+\begin{lstlisting}
 .venv/bin/python tools/check_governed_agent.py \
   --deployment /ABS/PRIVATE/agent-deployment --output /tmp/bull-agent-01 \
   --model qwen2.5:1.5b-instruct --steps 40 --interval 5 \
   --max-seconds 7200 --enter-coordinator
-\end{verbatim}
+\end{lstlisting}
 Verify expected outputs, both tools, sandbox evidence, worker exit phases, credential denial, authenticated receipt, and an empty pending-plan state. \code{tools/audit\_governed\_agent.py} checks the retained ledger; an independently held expected head strengthens comparison. A new run is new evidence, not a reproduction of old random/session identifiers.
 
 \subsection{Exact guest and package identities}
@@ -283,13 +316,14 @@ The qualified guest assets are those in Table~\ref{tab:hashes}. The public \code
 The release candidate supplies a full Git source archive, Python source distribution, wheel built from that distribution, release notes, hardware acceptance status, validation JSON, and checksums. All seven uploaded draft assets were verified against local hashes. It remains a draft prerelease: software qualification is not a stable-release or physical-approval certification. Original source retains GPL-2.0-or-later; upstream dependencies and supplied guest materials retain their notices. The process is an engineering distribution check, not independent legal certification.
 
 \subsection{Paper companion and publication state}
-This revision includes native \code{paper.tex}, a reproducible build script, exact Python build dependencies, original repository SVGs, generated figure inputs, a source/evidence manifest, a requirement-to-evidence map, and sanitized records. The build verifies every archived input hash before producing the PDF and companion ZIP. It generates tables and the regression plot directly from retained JSON/CSV. The companion includes its own checksum manifest. Rebuilding the paper requires the documentation revision containing these files, whereas rerunning the qualified runtime uses the pinned revision above.
+This revision includes native \code{paper.tex}, a reproducible build script, exact Python build dependencies, original repository SVGs, generated figure inputs, a source/evidence manifest, a requirement-to-evidence map, and sanitized records. The build verifies every archived input hash before producing the PDF and companion ZIP. It generates tables, regression milestones, defensive-test intervals and hot-path plots from retained JSON/CSV; the KVM plot is extracted from the archived measurement table. No synthetic observations are added. The companion includes its own checksum manifest. Rebuilding the paper requires the documentation revision containing these files, whereas rerunning the qualified runtime uses the pinned revision above.
 
 The evidence archive contains aggregate public records, not private collector keys, raw deployment configuration, raw ledgers, or the original private audit bundle. Consequently a reader can inspect the disclosed evidence and reproduce experiments, but cannot independently authenticate the operator's historical receipts using a secret intentionally withheld from publication. Hashes identify preserved bytes; they are not independent witnesses.
 
-The website now links this revised paper and its companion. The older Paper I PDF remains separately archived. The existing Zenodo record remains the prior deposited edition until a new version is uploaded there; a Git push does not amend that deposit or assign this PDF a new DOI. The previous Paper II's SHA-256 is preserved in \code{evidence-manifest.json} to distinguish the documents.
+The website now links this revised paper and its companion. The older Paper I PDF remains separately archived. This edition is prepared for a new Zenodo submission. The author reports removal of the previous deposit; no new DOI has been assigned to this edition. The repository PDF, companion and artifact manifest identify the resubmission files. The previous Paper II's SHA-256 is preserved in \code{evidence-manifest.json} to distinguish the documents.
 
 \section{Related work and limitations}
+Firecracker describes a specialized virtualization system for serverless workloads~\cite{E_Firecracker}. BULL's recorded guest path uses QEMU/KVM and adds its own authority, admission and audit protocol. Its measured intervals belong to that implementation, not to Firecracker.
 CaMeL separates control/data flows around an LLM and uses capabilities to constrain tool information flow~\cite{camel}. BULL's emphasis here is the deployed effect boundary: exact command/resource binding, admitted bytes, Linux/guest protections, one-use approval, and authenticated completion. No shared-task comparative evaluation between these systems is reported. AgentDojo provides a framework for studying task completion and prompt-injection attacks~\cite{agentdojo}; adapting it would require explicit mappings from tools to BULL capabilities and mediated effects. This paper reports no AgentDojo score.
 
 QEMU's minimal machine model supplies the virtualization platform; BULL adds admission, authority, transport, and completion rules. Cryptographic audit history is useful under its stated key/trust assumptions and does not prove a computation was correct. Ordinary KVM does not protect secrets from a malicious host administrator. A confidential-computing design would need appropriate hardware, fresh verified attestation, independently approved measurements, channel-bound secret release, and rollback protection. Those requirements are future work, not properties of the nonce-bound software bootstrap.
@@ -303,7 +337,7 @@ The latest retained software qualification binds authority, input, containment, 
 Luis Minier / Anharmoniclabs is the project author and an interested party in the reported results. ChatGPT/Codex assisted with implementation, validation orchestration, manuscript preparation, and evidence synthesis. This is an author-operated technical report, not peer review or an independent audit. No new live model or physical-signing experiment was performed to typeset this revision. Source: \url{https://github.com/Anharmoniclabs/BULL}. Original contributions follow the repository license; cited works retain their own rights.
 
 \begin{thebibliography}{99}\small
-\bibitem{prior} L. Minier, \emph{BULL: Blocking Unauthorized Logic Loopholes}, Zenodo record containing Paper I and the preceding Paper II, September 23, 2026. \url{https://doi.org/10.5281/zenodo.22922278}. Prior Paper II publication snapshot: 437de3f.
+\bibitem{prior} L. Minier, \emph{BULL: Blocking Unauthorized Logic Loopholes}, prior manuscript, September 2026. Archived Paper I: \url{https://github.com/Anharmoniclabs/BULL/blob/437de3f/site/assets/papers/bull.pdf}. The preceding Paper II is identified by its retained hash in the evidence manifest.
 \bibitem{claims} Anharmoniclabs, \emph{Security claims and effect-based acceptance}, \repo{docs/SECURITY_CLAIMS.md}; \emph{Supported execution paths}, \repo{docs/ADAPTER_VALIDATION.md}. Runtime references in this bibliography are pinned to ab53f56.
 \bibitem{runtime} Anharmoniclabs, production runtime and bootstrap implementation: \repo{src/bulldog/profiles.py}, \repo{src/bulldog/namespace_sandbox.py}; deployment recipe: \repo{docs/REPRODUCIBLE_DEPLOYMENT.md}.
 \bibitem{linux} Linux kernel developers, \emph{Seccomp BPF}, \url{https://docs.kernel.org/userspace-api/seccomp_filter.html}; \emph{Landlock}, \url{https://docs.kernel.org/userspace-api/landlock.html}; \emph{Control Group v2}, \url{https://docs.kernel.org/admin-guide/cgroup-v2.html}. Accessed September 23, 2026.
@@ -315,6 +349,11 @@ Luis Minier / Anharmoniclabs is the project author and an interested party in th
 \bibitem{distribution} Anharmoniclabs, \repo{docs/DISTRIBUTION.md}; guest release and corresponding materials, \url{https://github.com/Anharmoniclabs/BULL/releases/tag/guest-2026-09-22}. Buildroot, \emph{Legal notice and licensing}, \url{https://buildroot.org/downloads/manual/manual.html#legal-info}.
 \bibitem{camel} E. Debenedetti et al., \emph{Defeating Prompt Injections by Design}, arXiv:2503.18813v2, 2025. \url{https://arxiv.org/abs/2503.18813v2}.
 \bibitem{agentdojo} E. Debenedetti, J. Zhang, M. Balunovi\'{c}, L. Beurer-Kellner, M. Fischer, and F. Tram\`er, \emph{AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents}, NeurIPS Datasets and Benchmarks, 2024; arXiv:2406.13352v3. \url{https://arxiv.org/abs/2406.13352v3}.
-\bibitem{evidence} Anharmoniclabs, \emph{BULL II revised evidence companion}, revision 2, September 23, 2026. Included \ev{evidence/validation-ab53f56.json}, historical summaries/CSV, \ev{evidence-manifest.json}, and \ev{coverage.json}. Download with the paper at \url{https://anharmoniclabs.github.io/BULL/assets/papers/bull-ii-companion.zip}; check the adjacent \ev{bull-ii-manifest.json} for the exact published artifact hashes.
+\bibitem{evidence} Anharmoniclabs, \emph{BULL II revised evidence companion}, revision 4, September 23, 2026. Included \ev{evidence/validation-ab53f56.json}, historical summaries/CSV, \ev{evidence-manifest.json}, and \ev{coverage.json}. Download with the paper at \url{https://anharmoniclabs.github.io/BULL/assets/papers/bull-ii-companion.zip}; check the adjacent \ev{bull-ii-manifest.json} for the exact published artifact hashes.
+\bibitem{E_Saltzer} J. H. Saltzer and M. D. Schroeder, \href{https://web.mit.edu/Saltzer/www/publications/protection/}{The Protection of Information in Computer Systems}. \textit{Proceedings of the IEEE, vol. 63, no. 9, pp. 1278--1308, 1975}.
+\bibitem{E_FIPS199} National Institute of Standards and Technology, \href{https://csrc.nist.gov/pubs/fips/199/final}{Standards for Security Categorization of Federal Information and Information Systems}. \textit{FIPS PUB 199, doi:10.6028/NIST.FIPS.199, 2004}.
+\bibitem{E_HMAC} H. Krawczyk, M. Bellare, and R. Canetti, \href{https://www.rfc-editor.org/rfc/rfc2104.html}{HMAC: Keyed-Hashing for Message Authentication}. \textit{RFC 2104, doi:10.17487/RFC2104, 1997}.
+\bibitem{E_Lamport} L. Lamport, \href{https://lamport.azurewebsites.net/tla/book.html}{Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers}. \textit{Addison-Wesley Professional, 2002}.
+\bibitem{E_Firecracker} A. Agache et al., \href{https://www.usenix.org/conference/nsdi20/presentation/agache}{Firecracker: Lightweight Virtualization for Serverless Applications}. \textit{17th USENIX Symposium on Networked Systems Design and Implementation (NSDI), pp. 419--434, 2020}.
 \end{thebibliography}
 \end{document}

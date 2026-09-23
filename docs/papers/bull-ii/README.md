@@ -1,7 +1,7 @@
 # BULL II — revised evidence edition
 
 Native LaTeX technical report by Luis Minier / Anharmoniclabs, September 23,
-2026, revision 2. The latest **tested runtime is `ab53f56`**. This paper's Git
+2026, revision 4. The latest **tested runtime is `ab53f56`**. This paper's Git
 commit publishes those retained results; it is not a new live deployment run.
 
 The manuscript replaces the preceding Paper II's stale 489-test/current-hardware
@@ -20,7 +20,7 @@ BULL source distribution or a private audit-log export.
 
 Install Python 3.12+ for the pinned paper dependencies (tested with 3.14.7),
 a working TeX Live/pdfLaTeX installation (article,
-fontenc, lmodern, geometry, graphicx, booktabs, longtable, tabularx, array, amsmath,
+fontenc, inputenc, microtype, cite, listings, graphicx, booktabs, longtable, tabularx, array, amsmath,
 xcolor, url and hyperref), Cairo, and fonts used by the SVGs. On Debian/Ubuntu,
 the usual TeX packages are texlive-latex-base, texlive-latex-recommended and
 texlive-latex-extra; CairoSVG also needs the system Cairo library. Then:
@@ -48,7 +48,7 @@ python3 docs/papers/bull-ii/build.py \
 ```
 
 The build verifies archived input hashes, produces tables from CSV/JSON,
-renders the milestone plot and original SVGs, runs LaTeX three times with
+renders four evidence plots and the original SVGs, runs LaTeX three times with
 shell escape disabled, rejects unresolved references/layout overflow, and
 packages source, evidence, generated tables/figures, PDF and SHA256SUMS.
 The manifest links every source file and both generated artifacts by hash.
@@ -71,14 +71,19 @@ produced. Full offline guest recompilation remains unrun.
 
 ## Zenodo
 
-The previous Paper II PDF is deposited at DOI 10.5281/zenodo.22922278; its hash
-is in the evidence manifest. This rewritten PDF has **not** been uploaded to
-Zenodo. Publishing these Git artifacts does not modify that deposit. For a
-future Zenodo version, upload the new PDF **and companion ZIP**, cite this
-documentation commit and the separate tested runtime, and verify the downloaded
-files against `bull-ii-manifest.json`. Do not silently attribute the old DOI's
-PDF hash or experiments to this revision.
+This is revision 4, prepared for resubmission. The author reports deleting the
+previous Zenodo deposit. No new DOI has been supplied. Upload `bull-ii.pdf`
+and `bull-ii-companion.zip` together, with `bull-ii-manifest.json` for artifact
+verification. The old deposit URL in the evidence manifest records historical
+provenance only; it is not the current publication link.
+
+After publication, add the new Zenodo record and DOI to the root README and
+website. Use the metadata and announcement draft in `SUBMISSION.md`.
 
 Original paper source and scripts follow the included GPL-2.0-or-later LICENSE.
 Original repository drawings retain the same project attribution. External
 papers are cited, not bundled; dependency licenses remain their own.
+
+## Layout
+
+Revision 4 restores the supplied IEEEtran journal layout and the four recorded-data plots. `layout-reference.tex` preserves the author-supplied historical template; its old results are not the current manuscript. `paper.tex` is the authoritative updated source. The bundled unmodified `IEEEtran.cls` retains its upstream LaTeX Project Public License notice. This formatting does not imply IEEE publication.

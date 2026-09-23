@@ -23,7 +23,7 @@ def digest(data: bytes) -> str:
 
 
 def sources() -> dict[str, bytes]:
-    allowed = {".tex", ".py", ".json", ".csv", ".md", ".svg", ".txt"}
+    allowed = {".cls", ".tex", ".py", ".json", ".csv", ".md", ".svg", ".txt"}
     return {
         str(p.relative_to(HERE)): p.read_bytes()
         for p in sorted(HERE.rglob("*"))
@@ -64,22 +64,22 @@ def tables(work: Path, report: dict) -> None:
         rows = list(csv.DictReader(stream))
     if sum(int(r["passed"]) for r in rows) != 33 or any(int(r["failed"]) for r in rows):
         raise ValueError("Historical benchmark changed")
-    lines = [r"\begin{table}[ht]\centering\small", r"\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}",
+    lines = [r"\begin{table*}[!t]\centering\small", r"\begin{tabularx}{\linewidth}{@{}Yrrrr@{}}",
              r"\toprule Selected scenario & Runs & Mean ms & Min--max ms & RSS MiB \\", r"\midrule"]
     for r in rows:
         lines.append(latex(r["attack"]) + " & " + r["runs"] + " & " + r["mean_ms"] + " & "
                      + r["min_ms"] + "--" + r["max_ms"] + " & " + r["peak_rss_mb"] + r" \\")
     lines.extend([r"\bottomrule\end{tabularx}",
-                  r"\caption{Historical selected defensive corpus at cd461ae. All 33 runs passed. End-to-end pytest durations, not isolated policy latency; RSS is the recorded peak.}\end{table}"])
+                  r"\caption{Historical selected defensive corpus at cd461ae. All 33 runs passed. End-to-end pytest durations, not isolated policy latency; RSS is the recorded peak.}\end{table*}"])
     (work / "benchmark-table.tex").write_text("\n".join(lines) + "\n")
-    lines = [r"\begin{table}[ht]\small", r"\begin{tabularx}{\linewidth}{@{}p{0.2\linewidth}Y@{}}",
+    lines = [r"\begin{table*}[!t]\small", r"\begin{tabularx}{\linewidth}{@{}p{0.2\linewidth}Y@{}}",
              r"\toprule Artifact & SHA-256 \\", r"\midrule"]
     assets = dict(report["guest_assets_sha256"])
     assets["Source materials"] = report["guest_source_bundle"]["sha256"]
     for name, sha in assets.items():
         lines.append(latex(name) + r" & \nolinkurl{" + sha + r"} \\")
     lines.extend([r"\bottomrule\end{tabularx}",
-                  r"\caption{Pinned assets in the latest runtime qualification. Full package digests and guest runtime-tree identity are in validation-ab53f56.json.}\label{tab:hashes}\end{table}"])
+                  r"\caption{Pinned assets in the latest runtime qualification. Full package digests and guest runtime-tree identity are in validation-ab53f56.json.}\label{tab:hashes}\end{table*}"])
     (work / "hashes-table.tex").write_text("\n".join(lines) + "\n")
 
 
@@ -150,7 +150,10 @@ def build(output: Path, engine: str) -> None:
     with tempfile.TemporaryDirectory(prefix="bull-paper-") as temp:
         work = Path(temp)
         shutil.copyfile(HERE / "paper.tex", work / "paper.tex")
+        shutil.copyfile(HERE / "IEEEtran.cls", work / "IEEEtran.cls")
         figures(work, report)
+        from plot_evidence import extra_figures
+        extra_figures(HERE, work / "figures")
         tables(work, report)
         env = dict(os.environ, SOURCE_DATE_EPOCH=EPOCH, FORCE_SOURCE_DATE="1", TZ="UTC",
                    PATH=str(Path(executable).parent) + os.pathsep + os.environ.get("PATH", ""))
@@ -187,11 +190,11 @@ def build(output: Path, engine: str) -> None:
                 archive.writestr(info, data)
         manifest = {
             "title": "BULL II: Binding Authority to Execution", "author": "Luis Minier / Anharmoniclabs",
-            "edition": "Revised evidence edition, revision 2", "date": "2026-09-23", "pages": len(pdf.pages),
+            "edition": "Revised evidence edition, revision 4", "date": "2026-09-23", "pages": len(pdf.pages),
             "review_status": "Author-operated technical report; not peer reviewed or independently audited",
             "validated_runtime_commit": RUNTIME,
             "publication_scope": "Documentation revision; retained live results apply to the stated runtime and historical source identities",
-            "zenodo_status": "Prior edition deposited at 10.5281/zenodo.22922278; this revision has not been uploaded there",
+            "zenodo_status": "Prepared for resubmission; author reports previous deposit removed; new DOI pending",
             "source_files_sha256": {name: digest(data) for name, data in src.items()},
             "artifacts_sha256": {name: digest((output / name).read_bytes()) for name in ["bull-ii.pdf", "bull-ii-companion.zip"]},
             "build": {"engine": subprocess.check_output([executable, "--version"], text=True).splitlines()[0],

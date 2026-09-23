@@ -7,7 +7,7 @@ an action; trusted host integration supplies authority. BULL checks that authori
 constrains execution, and records an authenticated audit checkpoint.
 
 [Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/ab53f56.json) ·
-[Architecture](docs/PRODUCTION_SECURITY.md) · [Preprint](https://zenodo.org/records/22922278) ·
+[Architecture](docs/PRODUCTION_SECURITY.md) · [Publication](https://doi.org/10.5281/zenodo.22923455) ·
 [Contributing](CONTRIBUTING.md)
 
 The software release work and hardware host integration are merged into `main`.
@@ -88,14 +88,15 @@ physical unsigned BOOT gestures, USB/session hardening, and remaining signing
 gaps. [LaTeX and build instructions](docs/papers/bull-ii/README.md) ·
 [Evidence/source companion](site/assets/papers/bull-ii-companion.zip) ·
 [Artifact hashes](site/assets/papers/bull-ii-manifest.json).
-This Git revision has not been uploaded to Zenodo; the deposit below retains
-the preceding edition.
+The paper is published on [Zenodo](https://zenodo.org/records/22923455):
+[**DOI: 10.5281/zenodo.22923455**](https://doi.org/10.5281/zenodo.22923455).
+The deposited `bull-ii.pdf` matches the repository's revision 4 PDF.
+The reproducible source/evidence companion is available from the GitHub links above.
 
-[BULL: Blocking Unauthorized Logic Loopholes](https://zenodo.org/records/22922278)
-is available as an open-access preprint on Zenodo.
+**Citation:** Minier, Luis. (2026). *BULL : Blocking Unauthorized Logic Loopholes*.
+Zenodo. https://doi.org/10.5281/zenodo.22923455
 
-**Citation:** Minier, Luis. (2026). *BULL: Blocking Unauthorized Logic Loopholes*.
-Zenodo. [https://doi.org/10.5281/zenodo.22922278](https://doi.org/10.5281/zenodo.22922278).
+[Publication record and artifact identity](docs/PUBLICATION.md).
 
 ## Review and present
 
