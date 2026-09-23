@@ -1,0 +1,28 @@
+{
+  "scope": "Local synthetic validation of BULL-governed HTTP decoy; no internet capture",
+  "base_revision": "437de3fd03da2e8d8ca15e7bcb9804e45317b58a",
+  "policy_and_parser_tests": {
+    "passed": 15,
+    "failed": 0,
+    "command": "PYTHONPATH=src python3 tools/honeypot/test_sensor.py PolicyTests ParserTests"
+  },
+  "socket_integration_tests": {
+    "cases": 6,
+    "status": "blocked in authoring environment",
+    "reason": "AF_UNIX socket creation raises PermissionError: Operation not permitted; initial full-suite attempt recorded six errors"
+  },
+  "docker_containment": {
+    "status": "not run",
+    "reason": "Docker unavailable in authoring environment"
+  },
+  "dashboard_javascript": "node --check passed",
+  "public_exposure": false,
+  "captured_internet_events": 0,
+  "launch_gate": "Preflight and full test suite must succeed inside restricted Codespace container before public port exposure",
+  "sha256": {
+    "tools/honeypot/dashboard.html": "3e0eb0e7869b8489e885f79e5c9ed46019bee6028d02e654f8317032e913903c",
+    "tools/honeypot/launch.py": "64d5a9d08d029216aafe57ad1c3a70168448b26241a59445f37aa84cc852c3e9",
+    "tools/honeypot/sensor.py": "7a5434628ea9aa320a75abbaa896261d97d297b62857b696531880faac23b522",
+    "tools/honeypot/test_sensor.py": "9eba6152e69e6688dcc24e05057a43f347a566a8966e2b52b95710a4c48caed2"
+  }
+}

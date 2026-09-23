@@ -78,6 +78,8 @@ workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
 
 ## Review and present
 
+- [Contained HTTP honeypot](tools/honeypot/README.md): experimental Codespaces sensor and private observer; public launch requires container preflight and integration tests.
+
 - [Five-minute presentation](docs/PRESENTATION.md): problem, boundary, proof and limits.
 - [Latest live-validation record](site/data/validation/603365e.json): exact source, image hashes and retained failures.
 - [MicroVM reproduction](microvm/README.md) and [historical integration report](docs/MICROVM_INTEGRATION_REPORT.md).
