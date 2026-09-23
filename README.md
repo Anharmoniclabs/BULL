@@ -88,12 +88,12 @@ physical unsigned BOOT gestures, USB/session hardening, and remaining signing
 gaps. [LaTeX and build instructions](docs/papers/bull-ii/README.md) ·
 [Evidence/source companion](site/assets/papers/bull-ii-companion.zip) ·
 [Artifact hashes](site/assets/papers/bull-ii-manifest.json).
-This is revision 3, prepared for Zenodo resubmission. The author reports removing
+This is revision 4, prepared for Zenodo resubmission. The author reports removing
 the previous deposit; a new DOI is pending. Until publication, cite the report
 using its repository artifact and documentation commit.
 
 **Citation:** Minier, Luis. (2026). *BULL II: Binding Authority to Execution*.
-Revised evidence edition, revision 3. Anharmoniclabs. Author-operated technical report.
+Revised evidence edition, revision 4. Anharmoniclabs. Author-operated technical report.
 
 [Submission metadata and announcement draft](docs/papers/bull-ii/SUBMISSION.md).
 

@@ -1,4 +1,4 @@
-# Zenodo submission — revision 3
+# Zenodo submission — revision 4
 
 Title: BULL II: Binding Authority to Execution
 
@@ -6,7 +6,7 @@ Author: Luis Minier (Anharmoniclabs)
 
 Resource type: Publication / Technical report
 
-Version: 3
+Version: 4
 
 License for original report/source: GPL-2.0-or-later, as supplied in the companion. Cited works retain their own rights.
 

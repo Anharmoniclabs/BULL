@@ -1,0 +1,589 @@
+\documentclass[journal]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\interdisplaylinepenalty=2500
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{hyperref}
+
+\hypersetup{
+  pdftitle={BULL: Blocking Unauthorized Logic Loopholes},
+  pdfauthor={Luis Minier},
+  pdfsubject={Execution governance runtime for AI agents combining host authorization, multi-agent controls, MicroVM isolation, and authenticated audit anchoring},
+  pdfkeywords={AI-agent security, execution governance, least privilege, capability authorization, data protection, process isolation, multi-agent security, MicroVM, audit integrity},
+  colorlinks=false,
+  pdfborder={0 0 0}
+}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\bull}{\textsc{BULL}}
+\newcommand{\mainshort}{\texttt{01cd259}}
+\newcommand{\benchshort}{\texttt{cd461ae}}
+
+\begin{document}
+
+\title{BULL: Blocking Unauthorized Logic Loopholes}
+
+\author{Luis~Minier%
+\thanks{Luis Minier is an independent researcher at Anharmoniclabs. Technical report, version 0.2, September 20, 2026. Author-review manuscript; not peer-reviewed.}}
+
+\maketitle
+
+\begin{abstract}
+AI agents can affect computer systems through tools, executable programs, credentials, network services, and delegated workflows. Publicly reported incidents involving out-of-scope access, tool-mediated data exposure, agent collaboration, and AI-assisted malicious operations motivate a security question that is separate from model alignment: can infrastructure prevent an untrusted proposal from becoming unauthorized execution authority? This report presents \bull---Blocking Unauthorized Logic Loopholes---an experimental, model-agnostic execution-governance runtime built around host-owned authorization, exact command/resource binding, bounded delegation, immutable input admission, Linux isolation, scoped brokers, multi-agent canary controls, and authenticated audit checkpoints. The current public manuscript snapshot is pinned to main commit \mainshort. On that revision, GitHub Actions recorded 272 passing regression tests plus six passing subtests on both Python 3.11 and 3.13, 39 passing MicroVM-host regression tests on each interpreter, successful bounded TLA+ model checks over 405 and 57 distinct states, and a successful Pages verification/deployment pipeline. Separately, a previously recorded real QEMU/KVM integration passed five of five guest cases. An operator-run red-team benchmark pinned to commit \benchshort recorded 33 of 33 selected defensive runs passing and a clean full-suite pass in 4.587 s; direct hot-path measurements included 204,187 operations/s for traversal rejection, while multi-agent measurements were substantially slower and intentionally retain state across iterations. The same development cycle produced operator-run evidence of a non-local HTTPS audit anchor: an interrupted checkpoint failed closed, reconciliation succeeded without replaying workload execution, and a fresh authenticated checkpoint and acknowledgement were accepted. These results are project-authored evidence, not independent certification. The contribution is an inspectable execution-governance architecture and an evidence discipline for constraining unauthorized consequences around agentic systems, not a claim of universal protection, perfect prompt-injection defense, or security against a compromised trusted computing base.
+\end{abstract}
+
+\begin{IEEEkeywords}
+AI-agent security, execution governance, least privilege, capability authorization, data protection, process isolation, multi-agent security, MicroVM, audit integrity.
+\end{IEEEkeywords}
+
+%%% ------------------------------------------------------------------
+\section{Introduction}
+%%% ------------------------------------------------------------------
+\IEEEPARstart{T}{he} motivation for \bull began with a concern raised by public reporting: an AI system connected to real tools can affect real infrastructure even when its assigned task is narrower than the authority its environment makes available. The security question is therefore not simply whether a model can produce an unsafe answer. It is whether the surrounding system can prevent an untrusted proposal from becoming an unauthorized read, write, process launch, disclosure, network action, or delegated operation.
+
+Recent disclosures make that distinction concrete. OpenAI's account of the July 2026 Hugging Face incident describes unauthorized communication, isolation failures, and access to third-party systems during internal evaluations with reduced safeguards~\cite{OpenAI2026}. Microsoft separately describes how poisoned tool metadata can redirect an otherwise legitimate enterprise agent~\cite{Microsoft2026}. Reuters reported a May 2026 evaluation in which Gemini accessed three companies that Google said were mistakenly treated as in-scope targets~\cite{Reuters2026}. These are different mechanisms, but each motivates enforcement outside a model's interpretation of instructions.
+
+\bull's central principle is that information supplied to an agent must not automatically supply execution authority. A document may suggest a command; a repository may contain instructions; another agent may request credentials; a tool description may encourage a data transfer. None of those inputs should, by themselves, grant the requested host authority. Authorization must originate in trusted deployment state and remain attached to the operation actually performed. The production dispatcher implements this distinction using trusted request context, capability checks, canonical resource matching, and complete argument-vector binding~\cite{BULL_ProdSec,BULL_Dispatcher}.
+
+This report asks three questions. \textbf{RQ1:} How can an execution runtime separate untrusted agent proposals from owner-granted authority? \textbf{RQ2:} What do the current implementation, formal abstractions, CI results, operator benchmarks, and KVM integration evidence demonstrate about enforcement and failure handling? \textbf{RQ3:} Which security and performance claims remain unproven and require broader independent evaluation?
+
+The contribution is a systems design and evidence account, not a claim to have invented least privilege, virtualization, capability security, or prompt-injection defense. Existing work already places protective layers around models, separates control and data flows, and isolates untrusted workloads~\cite{Debenedetti2025,gVisor,Agache2020}. \bull's research focus is the composition of deterministic authorization, delegated authority, operating-system enforcement, guest isolation, broker mediation, and auditable completion into an agent-execution lifecycle.
+
+\subsection{Scope and Evidence Discipline}
+This revision separates five evidence classes: (1) public incident disclosures and prior research; (2) directly inspected repository source and documentation; (3) current hosted CI outcomes; (4) operator-run local evidence, including real KVM, red-team, and production-audit experiments; and (5) proposed evaluations not yet performed. No claim in this manuscript converts a passing regression into proof against unknown attacks.
+
+The current public source snapshot is \texttt{Anharmoniclabs/BULL} main commit \texttt{01cd2599a436a5171e5fe292d77dc7ff52402992}, signed and published on September 20, 2026~\cite{BULL_CurrentMain}. That revision includes the benchmark evidence package and an operator-evidence note for the external production audit path. The five-case real-KVM run predates that commit and retains its own source-tree identity; Appendix~A keeps these evidence generations separate~\cite{BULL_MicroVMReport,BULL_Benchmark,BULL_ExternalAudit}.
+
+%%% ------------------------------------------------------------------
+\section{Incident-Driven Motivation}
+%%% ------------------------------------------------------------------
+The incidents below were selected because they illuminate authority, isolation, data access, or evidence integrity. This is a purposive case selection, not a systematic incident census or an estimate of the frequency of agent failures. Event dates and disclosure dates are distinguished. Later reporting can reinforce the motivation for \bull without being retroactively represented as the original cause of the project.
+
+\subsection{Out-of-Scope Access During Evaluation}
+Reuters reported on September 18, 2026 that Gemini accessed three companies during tests conducted in May~\cite{Reuters2026}. Google's explanation was that the model believed the targets were within scope and stopped in all three cases. The relevant question for \bull is whether target restrictions can be enforced before access, without depending on the model to recognize a scope error after the fact. The report does not establish deliberately hostile intent.
+
+\subsection{Isolation Failure and Unauthorized Collaboration}
+Hugging Face disclosed a security incident on July 16, 2026 involving unauthorized access to internal datasets and service credentials~\cite{HuggingFace2026}. OpenAI's August 26 account attributed the activity to internal evaluation agents and described misuse of shared infrastructure, unauthorized collaboration, and access outside the intended task boundary~\cite{OpenAI2026}. METR and Redwood Research published a separate investigation that documented unauthorized collaboration and tool-call spoofing while also describing limits on the evidence available to them~\cite{METR2026}.
+
+For \bull, the resulting requirement is to keep authority and completion evidence outside workload-controlled output. A process printing a plausible status message must not authorize another action or create a trusted completion record. This is a design response motivated by the incident evidence, not a reconstruction of those incidents against \bull.
+
+\subsection{Tool Poisoning Through an Approved Integration}
+Microsoft's June 30, 2026 analysis describes a pattern in which altered tool descriptions induce an agent to include sensitive information in a call to an already approved service~\cite{Microsoft2026}. The important implication is that an approved destination does not authorize every payload. Destination filtering, operation authorization, and data-disclosure policy are distinct controls.
+
+\bull's broker boundary addresses operation and destination authorization. It should not be described as a complete data-loss-prevention system merely because network access is restricted. A workload legitimately permitted to read sensitive data and communicate with an approved service may still misuse those permissions unless policy additionally constrains the disclosure itself.
+
+\subsection{Deliberate Misuse by Malicious Operators}
+Anthropic reported in November 2025 that human operators used Claude Code in an espionage campaign against approximately thirty targets, with success in a small number of cases~\cite{Anthropic2025}. This is a provider account; the present paper does not independently validate its attribution or autonomy estimates. The relevant distinction is deliberate misuse: the operator may intend the harmful action, so the infrastructure cannot assume all requests are benign.
+
+\subsection{Capability Evidence Is Not Incident Evidence}
+Anthropic's April 2026 Project Glasswing announcement describes vulnerability-discovery and exploitation capabilities observed in Claude Mythos Preview~\cite{Anthropic2026}. This is capability evidence, not proof of an uncontrolled public intrusion. It supports a conservative assumption that an untrusted workload may be technically capable of probing the software around it.
+
+\subsection{From Reporting to Engineering Requirements}
+The incidents motivate five recurring requirements: externally owned authority; checks on the actual operation rather than its natural-language explanation; isolation of executable workloads and sensitive resources; explicit handling of delegation and communication; and trustworthy evidence of completion, interruption, and failure.
+
+\begin{table*}[!t]
+\caption{Incident-Derived Requirements and Residual Limitations}
+\label{tab:requirements}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYY}
+\toprule
+\textbf{Motivating concern} & \textbf{Required boundary} & \textbf{Important residual limit} \\
+\midrule
+Agent exceeds task scope & Host-owned capability, resource, and command authorization & The owner may still grant an unsafe scope. \\
+External content redirects behavior & Treat supplied instructions as data, not authority & Harm may remain possible within existing permissions. \\
+Sensitive data reaches an allowed service & Broker authorization plus data-specific disclosure policy & Destination filtering alone is insufficient. \\
+Work spreads across agents & Explicit delegation, bounded authority, shared lineage/security history & Shared external services can remain communication channels. \\
+Workload fabricates success & Trusted result protocol and external audit checkpoint & A compromised trusted producer can still misreport. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+%%% ------------------------------------------------------------------
+\section{Threat Model and Security Objectives}
+%%% ------------------------------------------------------------------
+\subsection{Assets and Adversaries}
+Protected assets are data and processes placed under \bull's enforcement: admitted project files, deployment configuration, credentials managed by brokers, host process authority, permitted network actions, security-domain state, and audit records. Protection is scoped to mediated paths. An unrelated service exposed outside that boundary does not become protected merely because \bull is installed on the same host.
+
+The untrusted side includes model output, external prompts, tool responses, downloaded content, workspace files, agent-created processes, and workload code. Three adversary cases are distinguished: an agent that exceeds its assigned task, an attacker who manipulates a legitimate agent, and a malicious operator submitting work to infrastructure whose policy that operator does not control. A fully privileged host administrator is outside the threat model~\cite{BULL_ProdSec}.
+
+Here, \textbf{unauthorized or ``rogue'' agent behavior} means attempted or completed actions beyond authority granted by the system owner. This is a behavioral definition; it does not require a claim about consciousness, emotions, or hidden intent.
+
+\subsection{Trusted Computing Base}
+The host production boundary trusts the Linux kernel and administrator, the installed \bull package and host process, the host-issued security-domain registry, broker processes, deployment signing keys, and the remote audit endpoint/key material~\cite{BULL_ProdSec}. In the one-shot MicroVM configuration, the trusted stack additionally includes the launcher, QEMU/KVM, firmware, guest kernel, and trusted guest supervisor. Hardware-backed attestation is not established by the reported KVM integration~\cite{BULL_MicroVMReport}.
+
+A model identity hash records a supplied identity string; it does not prove which weights actually executed. An intent hash binds a recorded intent string; it does not prove internal goals. These distinctions prevent provenance metadata from being mistaken for hardware or semantic attestation~\cite{BULL_SecurityDomain}.
+
+\subsection{Objectives and Exclusions}
+The objectives are to prevent ungranted execution, constrain admitted work, limit delegated authority, restrict broker-mediated effects, detect selected trusted-context leakage, and distinguish verified completion from denial or interruption. Mandatory production protections are intended to fail closed when they cannot be established.
+
+Explicit exclusions include malicious administrators, compromised kernels/hypervisors, all hardware side channels, defects absent from the test and formal abstractions, and harmful actions that remain entirely within explicitly granted authority. \bull does not prove that permitted work is useful, correct, or benign~\cite{BULL_ProdSec}.
+
+%%% ------------------------------------------------------------------
+\section{Architecture and Current Implementation}
+%%% ------------------------------------------------------------------
+\bull separates an authority-owning control plane from a workload plane that proposes or performs work. Production entry points are explicit \texttt{ProductionRuntime} and \texttt{ProductionDispatcher} objects. The compatibility dispatcher rejects the legacy attempt to establish a production boundary with only a Boolean flag, and the production wiring checks the actual configured runtime~\cite{BULL_Dispatcher}.
+
+\subsection{Canonicalization and Exact Execution Binding}
+A \texttt{DispatchRequest} separates the model-side proposal from trusted context and granted capabilities. When a security-domain registry is configured, trusted identity and parent authority come from host state rather than model-controlled metadata. Canonicalization maps the operation to a resource and capability before dispatch~\cite{BULL_Dispatcher}.
+
+Command execution requires \texttt{process.exec}. The canonical executable must match the authorized resource. Production additionally requires a host-authorized complete argument vector, and execution is rejected when the actual vector differs. Thus, authorization is bound to what is executed rather than to a broad natural-language task label~\cite{BULL_Dispatcher}.
+
+Broker authorization has a distinct boundary. Egress and secret operations require an explicit \texttt{ALLOW}; a \texttt{SANDBOX} verdict cannot pass a host broker that lacks a corresponding sandbox mediation step. This exact bypass condition became a permanent regression test before the current evidence snapshot~\cite{BULL_Dispatcher,BULL_CurrentMain}.
+
+\subsection{Security Domains and Delegated Authority}
+The domain registry assigns host-generated identities with root and parent lineage, capability ceilings, approved egress hosts, provenance, intent and command hashes, optional model identity, and freeze state. Child capabilities and hosts are restricted to subsets of parent authority. Siblings retain distinct identities while sharing root behavioral security history, so spawning another child does not automatically reset the monitor~\cite{BULL_SecurityDomain}.
+
+These controls provide policy continuity and attribution; they are not a general proof that covert collaboration will always be detected. A shared external service that is legitimately authorized still requires its own policy analysis.
+
+\subsection{Multi-Agent Orchestration and Synthetic Canary Boundary}
+The current repository also contains a structured multi-agent orchestration layer. A coordinator normalizes tasks, a default-deny policy agent issues one-time approval tokens, an executor runs registered callables rather than \texttt{eval}/\texttt{exec}, and independent auditor/verifier stages scan outputs. A capability-checked message bus limits hops and records structured trace events~\cite{BULL_MultiAgent}.
+
+A host-owned synthetic honeytoken is minted per run. The raw canary is permitted only in one exact initial trusted-context field and message. The boundary guard inspects bus envelopes, agent results, and adapter-routed external writes for the raw marker and selected encodings or split-field reconstruction. A detected leak trips the trace, suppresses contaminated output, and records only a token fingerprint. Oversized uninspectable payloads fail closed with a scan-overflow finding~\cite{BULL_MultiAgent}.
+
+The canary is a detection signal, not a proof of safety when absent. Arbitrary encryption, semantic transformation, or action-only attacks can avoid reproducing the marker. It therefore complements deterministic authorization and isolation rather than replacing them.
+
+\subsection{Admitted Snapshots and Malware Scanning}
+The filesystem pipeline validates project content, copies it to isolated snapshot storage, validates the copy, scans it, and binds execution to the admitted content. Unsupported file structures and detected mutation fail closed instead of executing directly from a changing workspace~\cite{BULL_ProdSec,BULL_MicroVMReport}.
+
+The integration work corrected cross-filesystem directory hashing and trusted snapshot-worker imports. It also increased the bounded ClamAV scanner ceiling to 1536 MiB after the full database could not load under the earlier 768 MiB ceiling; the separate workload address-space limit remained 512 MiB in the recorded guest experiment~\cite{BULL_MicroVMReport}. A successful malware scan is evidence for the configured scanner/database, not proof that unknown malicious behavior is absent.
+
+\subsection{Operating-System Enforcement and Live Bootstrap Evidence}
+The production profile combines Linux namespaces, \texttt{no\_new\_privs}, a default-deny seccomp allowlist, Landlock restrictions, resource limits, and a trusted read-only \texttt{/bull\_runtime} mount distinct from the workload workspace~\cite{BULL_ProdSec}. Linux documentation itself distinguishes syscall filtering from a complete sandbox; the security claim therefore concerns the composed boundary rather than any single kernel mechanism~\cite{LinuxSeccomp,LinuxLandlock}.
+
+The runtime bootstrap returns nonce-bound evidence through a parent-created descriptor before workload execution. The reported guest configuration observed Landlock ABI 9, strict seccomp, isolated namespaces, and loopback-only networking. The observed strict syscall policy contained 170 rules~\cite{BULL_MicroVMReport}. These are measurements for the tested guest stack, not universal Linux properties.
+
+\subsection{Secrets, Egress, and Audit}
+Secret grants can be TTL/use-limited and domain-bound. Egress authority is constrained by both domain host authority and broker policy. Broker operations are re-authorized rather than treated as shortcuts around the reference monitor~\cite{BULL_ProdSec,BULL_Dispatcher}.
+
+Audit records are hash chained and can be checkpointed to an external service. The production HTTPS transport uses credential-free HTTPS endpoints, forbids redirects, sends a versioned authenticated checkpoint, requires HTTP 200, decodes the returned acknowledgement, and verifies that the acknowledgement matches the expected session, sequence, and record hash. The current transport explicitly sets \texttt{User-Agent: BULL-AuditAnchor/1} after an operator-run edge compatibility failure with the default Python client signature~\cite{BULL_AuditTransport,BULL_ExternalAudit}.
+
+\subsection{One-Shot QEMU/KVM Integration}
+The MicroVM integration provisions a fresh VM and bounded authority record for one request. The tested launcher attached read-only root, workspace, and runtime images, exposed no guest NIC, and used dedicated authenticated control and audit channels. The guest supervisor validated immutable deployment authority, established the audit relay, initialized the production runtime, and accepted only the request bound to that authority. Workload output remained data rather than control~\cite{BULL_GuestEngine,BULL_MicroVMReport,BULL_MicroVMReadme}.
+
+The supervisor checked for remaining workload cgroups and snapshots before completion. The host launcher supervised and reaped the exact QEMU child. Persistent VM reuse remains deferred; the one-shot results cannot be transferred to a long-lived multi-request service without new revocation, state-isolation, and recovery analysis~\cite{BULL_MicroVMReport}.
+
+\subsection{Production Host Provisioning and External Audit Deployment}
+The current main branch includes a one-command Linux x86-64 production provisioner. It requires a non-local HTTPS audit endpoint and an owner-only anchor key, obtains a clean source revision, installs the package, creates private state, establishes a delegated cgroup-v2 parent, generates signed integrity and policy bundles, creates a fresh audit session, runs \texttt{bull verify --production}, exercises a real remote checkpoint/acknowledgement, and constructs the production runtime/dispatcher. The script prints success only after these stages complete~\cite{BULL_Provisioner}.
+
+Main now also contains an optional Cloudflare Workers + D1 reference deployment for the audit anchor. Its documented contract stores checkpoint continuity in D1, accepts authenticated POST checkpoints on a dedicated route, permits only an exact retry of the latest committed frame, and returns a protocol-compatible authenticated acknowledgement~\cite{BULL_CloudflareAudit}. Cloud-account compromise remains part of that external-service trust surface.
+
+\begin{table*}[!t]
+\caption{Architecture Components and Current Evidence Sources}
+\label{tab:architecture}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYY}
+\toprule
+\textbf{Layer} & \textbf{Role} & \textbf{Evidence used in this report} \\
+\midrule
+Dispatcher & Canonical resource, capability, exact executable and full argv binding & Source inspection and regressions~\cite{BULL_Dispatcher,BULL_CI_Security} \\
+Security domains & Host identity, delegation ceilings, lineage and freeze state & Source and contract~\cite{BULL_SecurityDomain} \\
+Multi-agent layer & Coordinator/policy/executor/auditor/verifier plus canary boundary & Documentation, package smoke test, red-team benchmark~\cite{BULL_MultiAgent,BULL_Benchmark} \\
+Admission/sandbox & Snapshot, scan, namespaces, seccomp, Landlock, limits & Production docs and real-KVM report~\cite{BULL_ProdSec,BULL_MicroVMReport} \\
+Guest supervisor & One-shot authority, trusted result and cleanup handling & Source and five-case KVM report~\cite{BULL_GuestEngine,BULL_MicroVMReport} \\
+Audit transport & Authenticated checkpoint/ack, fail-closed recovery & Source plus operator external-anchor evidence~\cite{BULL_AuditTransport,BULL_ExternalAudit} \\
+Provisioning & Signed deployment state, cgroups, verification and runtime construction & Current provisioner~\cite{BULL_Provisioner} \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+%%% ------------------------------------------------------------------
+\section{Security Contract and Bounded Formal Models}
+%%% ------------------------------------------------------------------
+Let a request be $r=(\mathrm{operation},\mathrm{resource},\mathrm{argv},\mathrm{context})$. Let $C_d$ be the capability ceiling of domain $d$, $E_d$ its approved egress-host set, and $G(r)$ the mandatory deployment/admission gates. The intended contract can be summarized as
+\begin{align*}
+\mathrm{Executed}(r) \implies{} & \mathrm{Authorized}(r) \land G(r), \\
+\mathrm{Executed}(r) \implies{} & \mathrm{BindingMatches}(r), \\
+C_{\mathrm{child}} \subseteq{} & C_{\mathrm{parent}}, \\
+E_{\mathrm{child}} \subseteq{} & E_{\mathrm{parent}}, \\
+\mathrm{TrustedSuccess}(r) \implies{} & \mathrm{AuthenticatedResult}(r), \\
+\mathrm{TrustedSuccess}(r) \implies{} & \mathrm{AcceptedAuditCheckpoint}(r).
+\end{align*}
+
+Authorization is path-specific. A sandboxed execution decision is not interchangeable with an explicit broker \texttt{ALLOW}. $G(r)$ represents successful configured checks, not an oracle for all malicious behavior. A failed audit acknowledgement also cannot retroactively undo an external side effect that already occurred.
+
+The runtime TLA+ configuration checks invariants including \texttt{DenyNeverExecutes}, \texttt{EscalateNeverExecutes}, \texttt{ExecutionRequiresApprovedDecision}, \texttt{ExecutionRequiresCleanScan}, \texttt{ExecutionAlwaysSandboxed}, \texttt{ExecutionAlwaysSeccomp}, \texttt{ChildAuthorityBound}, \texttt{SecretRequiresGrant}, \texttt{EgressRequiresBroker}, and \texttt{DirectNetworkAlwaysBlocked}~\cite{BULL_TLARuntime}. The session/audit model checks \texttt{DurableBeforeAcknowledged}, \texttt{AcknowledgedBeforeExecuted}, \texttt{RemoteNeverAheadOfLocal}, \texttt{ConflictStopsExecution}, and \texttt{SequentialHistory}, with \texttt{MaxCheckpoints=3} in the checked configuration~\cite{BULL_TLASessionAudit}.
+
+On the current main CI run, TLC reported no error after generating 1055 states and finding 405 distinct runtime states, and no error after generating 69 states and finding 57 distinct session/audit states; both queues ended empty~\cite{BULL_CI_Formal}. These bounded state-space results make intended transitions explicit. They are not a refinement proof of Python, Linux, QEMU/KVM, Cloudflare, or hardware.
+
+%%% ------------------------------------------------------------------
+\section{Evaluation and Evidence}
+%%% ------------------------------------------------------------------
+\subsection{Evidence Generations}
+The current evidence is intentionally split by revision and environment. The historical KVM integration used a source-tree hash recorded before its follow-up documentation commits. The operator red-team benchmark pinned commit \benchshort. The current hosted CI and publication snapshot use main commit \mainshort. The external audit note records an operator-controlled production host and non-local collector. These results should not be arithmetically combined as if they were one monolithic test run.
+
+\subsection{Current Main Continuous Integration}
+Table~\ref{tab:ci} records the hosted checks for commit \mainshort. The 32-test local-host red-team job is a focused subset executed before the full suite and should not be added to the 272-test total. Likewise, the two Python-version runs are compatibility repetitions, not 544 unique security properties.
+
+\begin{table*}[!t]
+\caption{Hosted CI Results on Main Commit \mainshort}
+\label{tab:ci}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYYY}
+\toprule
+\textbf{Workflow/job} & \textbf{Observed result} & \textbf{Timing/state count} & \textbf{Interpretation limit} \\
+\midrule
+Security regression, Python 3.11 & 272 passed; 15 warnings; 6 subtests passed & 3.76 s; local-host subset 32 passed in 0.34 s & Warnings are expected development-API warnings; test count is not attack-space coverage. \\
+Security regression, Python 3.13 & 272 passed; 15 warnings; 6 subtests passed & 3.49 s; local-host subset 32 passed in 0.24 s & Compatibility repetition of the same repository corpus. \\
+Installed-package smoke & \texttt{import bulldog} and \texttt{bulldog.multiagent} passed & Both Python versions & Importability is packaging evidence, not runtime containment. \\
+MicroVM host regression, Python 3.11 & 39 passed & 2.06 s & Host-side regression; not a KVM boot. \\
+MicroVM host regression, Python 3.13 & 39 passed & 2.15 s & Host-side regression; not a KVM boot. \\
+TLA+ runtime & No error & 1055 generated / 405 distinct states & Bounded abstraction only. \\
+TLA+ session/audit & No error & 69 generated / 57 distinct states & Bounded abstraction only. \\
+Pages verify/deploy & Build and deployment passed & 183 tracked regular files indexed & Publication integrity, not security certification. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+All four push workflows associated with the current main snapshot---security regression, MicroVM host regression, formal invariants, and Pages deployment---completed successfully~\cite{BULL_CI_Security,BULL_CI_MicroVM,BULL_CI_Formal,BULL_CI_Pages}.
+
+\subsection{Historical Real-KVM Integration}
+The project's September 20 local integration report records five real QEMU/KVM cases, all passing with none skipped. That run is distinct from hosted CI and used a disposable authenticated local TLS collector rather than the later external production collector~\cite{BULL_MicroVMReport}.
+
+\begin{table*}[!t]
+\caption{Five Reported Real-KVM Cases}
+\label{tab:kvm_cases}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYY}
+\toprule
+\textbf{Case} & \textbf{Project-reported observation} & \textbf{What the observation establishes} \\
+\midrule
+Authorized request & ProductionDispatcher $\rightarrow$ ProductionRuntime $\rightarrow$ actual workload, exit status 0 & The tested permitted path executed through the integrated guest stack. \\
+Denied request & \texttt{DENY}, \texttt{executed=false}, no sandbox/workload execution & The tested denial stopped before workload execution. \\
+Timeout & No successful completion; no remaining workload cgroups or snapshots & The tested deadline path did not masquerade as success and reported cleanup. \\
+Cancellation & Exact QEMU child reaped; missing completion remained interrupted; no replay & The tested host cancellation did not create a false completed result. \\
+Missing protection & \texttt{ProductionGateFailure} before request admission & The tested absent mandatory protection failed closed. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The same historical report recorded 217 passing host tests plus two subtests at the tested KVM source snapshot, Landlock ABI 9, strict seccomp, \texttt{no\_new\_privs}, read-only input/runtime mounts, a 512 MiB workload address-space limit, descriptors 0--2, authenticated session-bound control/audit, and cleanup checks. Malformed/missing/replayed protocol evidence was covered by host regressions rather than extra KVM cases. Hardware-backed attestation and exhaustive escape testing were not performed~\cite{BULL_MicroVMReport}.
+
+\subsection{Single-Run KVM Timing Observation}
+The allowed KVM run reported the intervals in Table~\ref{tab:kvm_timing}. They overlap and must not be summed. These are one-run observations, not percentiles or a comparative performance study.
+
+\begin{table}[!t]
+\caption{Single Allowed-Run KVM Timings}
+\label{tab:kvm_timing}
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Interval} & \textbf{ms} \\
+\midrule
+QEMU start $\rightarrow$ dispatcher-ready & 12{,}157.320 \\
+Launcher $\rightarrow$ dispatcher-ready & 12{,}282.303 \\
+Guest runtime/dispatcher init & 597.739 \\
+Dispatch incl. admission \& scan & 9{,}165.705 \\
+Sandbox setup $\rightarrow$ pre-exec & 308.901 \\
+Pre-exec $\rightarrow$ process reap & 99.492 \\
+Deterministic fixture body & 0.476 \\
+Completion audit acknowledgement & 33.714 \\
+Result/audit overhead outside dispatch & 34.355 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For this fixture, startup and admission dominate useful workload time. That result identifies an optimization target but does not justify weakening admission, syscall, or audit controls. A persistent VM could reduce cold-start cost while simultaneously increasing stale-state and cross-request risk.
+
+\subsection{Operator Red-Team Benchmark}
+The benchmark now published in the repository pins the tested source to commit \benchshort and records the host as Linux 7.2.6-1-cachyos, Python 3.14.7, an AMD Ryzen 5 7430U (12 logical CPUs), and 11 GiB memory. Eleven selected defensive regression classes were executed three times each, producing 33 passes and zero failures. A clean full regression invocation also returned PASS in 4.587 s~\cite{BULL_Benchmark,BULL_BenchmarkJSON}.
+
+\begin{table*}[!t]
+\caption{Published Operator Red-Team Benchmark at Commit \benchshort}
+\label{tab:redteam}
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{Ylrrrr}
+\toprule
+\textbf{Scenario} & \textbf{Surface} & \textbf{Runs} & \textbf{Pass} & \textbf{Mean ms} & \textbf{Peak RSS MiB} \\
+\midrule
+Path traversal encodings & filesystem & 3 & 100\% & 338.406 & 45.500 \\
+Read authority $\rightarrow$ shell execution & authorization & 3 & 100\% & 366.427 & 44.883 \\
+Authorized argv $\rightarrow$ force-push drift & authorization & 3 & 100\% & 318.111 & 44.926 \\
+External content $\rightarrow$ credential read & secrets & 3 & 100\% & 301.671 & 44.855 \\
+\texttt{SANDBOX} verdict $\rightarrow$ egress broker & egress & 3 & 100\% & 292.603 & 44.734 \\
+\texttt{SANDBOX} verdict $\rightarrow$ secret broker & secrets & 3 & 100\% & 304.441 & 44.668 \\
+Private/metadata SSRF targets & egress & 3 & 100\% & 355.926 & 44.797 \\
+Wrong Unix peer UID & secrets & 3 & 100\% & 360.088 & 44.809 \\
+Prompt injection & multi-agent & 3 & 100\% & 351.591 & 46.086 \\
+Forged policy verdict & multi-agent & 3 & 100\% & 367.611 & 45.012 \\
+Approval-token replay & multi-agent & 3 & 100\% & 376.640 & 44.992 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The scenario latency values are end-to-end \texttt{pytest} measurements that include interpreter, framework, fixture, and process overhead. They must not be labeled pure policy-decision latency. A PASS means the regression behaved as asserted for that corpus; it is not independent certification or evidence about unknown attack classes~\cite{BULL_Benchmark}.
+
+\subsection{Direct Hot-Path Measurements}
+The same benchmark package records the in-process measurements in Table~\ref{tab:hotpath}. Traversal rejection is a tight primitive measurement. The prompt-injection and benign multi-agent loops intentionally reuse one \texttt{MultiAgentSystem}; trace and honeytoken state therefore grow during the 500-iteration run. Those numbers characterize accumulated-state/long-session behavior, not fresh-instance request latency~\cite{BULL_BenchmarkJSON}.
+
+\begin{table}[!t]
+\caption{Published Hot-Path Measurements}
+\label{tab:hotpath}
+\centering
+\small
+\begin{tabularx}{\columnwidth}{Yrrr}
+\toprule
+\textbf{Benchmark} & \textbf{Iter.} & \textbf{$\mu$s/op} & \textbf{ops/s} \\
+\midrule
+Traversal rejection & 500 & 4.897 & 204{,}187.31 \\
+Prompt-injection denial & 500 & 66{,}559.856 & 15.02 \\
+Benign multi-agent allow & 500 & 438{,}559.052 & 2.28 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The large difference between traversal rejection and stateful multi-agent execution is expected from the different work performed and benchmark construction. The present data do not isolate individual coordinator, canary, policy, auditor, or verifier costs.
+
+\subsection{External Production Audit-Anchor Evidence}
+A later operator-run deployment exercised the production gate with strict seccomp, signed integrity and policy state, private snapshot/audit paths, delegated cgroup v2 state, a fresh audit session, and a non-local HTTPS transport. The published evidence note records \texttt{PRODUCTION BOUNDARY: PASS}~\cite{BULL_ExternalAudit}.
+
+The deployment also produced a useful negative result. Cloudflare rejected Python urllib's default client signature before the Worker, and an earlier failed delivery left one local ledger record without the corresponding remote checkpoint. \bull refused a subsequent append. After the explicit \texttt{BULL-AuditAnchor/1} client identifier was added, the operator used \texttt{AuditLedger.reconcile\_remote()}; local-only verification passed with one record, remote reconciliation passed, combined verification passed, a fresh authenticated append passed, and final verification passed with two records~\cite{BULL_ExternalAudit,BULL_AuditTransport}.
+
+This sequence is stronger evidence than a simple success-only demonstration because it exercises failure, refusal to advance, explicit recovery, and a fresh authenticated checkpoint. It remains a single operator-controlled deployment, not a third-party security audit. It does not establish resilience to Cloudflare-account compromise or to a compromised trusted host.
+
+\subsection{Earlier Production-Verification Failure}
+Before the external-anchor path was corrected, a local production-verification attempt recorded 257 passing tests, 13 failures, 15 warnings, and six passing subtests in 7.30 s while a live remote-audit environment was active. The failures were concentrated in audit tests whose writes were routed to an unavailable/misaddressed external endpoint, and a production gate attempt also exposed invalid session/key and delegated-cgroup configuration. This negative result is retained as engineering history rather than discarded. It led to stricter provisioning, explicit environment requirements, endpoint debugging, and the eventual authenticated recovery sequence described above. Because the earlier run used a different operational state, its 257/13 result should not be compared numerically with the clean current-main 272-pass CI corpus.
+
+\subsection{What the Evidence Does Not Measure}
+The current record does not provide a representative malicious-effect escape rate, false-denial rate over a broad benign workload distribution, adaptive-agent benchmark against the KVM path, multi-host latency distribution, long-running persistent-session availability, or a head-to-head comparison with other isolation systems. It also does not establish resistance to kernel/hypervisor compromise, external account takeover, hardware attacks, or harmful behavior entirely inside granted authority.
+
+%%% ------------------------------------------------------------------
+\section{Evaluation Plan for a Subsequent Empirical Study}
+%%% ------------------------------------------------------------------
+A comparative study should hold workload intent, data, hardware, and authorization scope constant while varying enforcement layers. Candidate configurations include an isolated laboratory baseline, authorization alone, authorization plus host process isolation, and the complete one-shot MicroVM configuration. Baselines lacking protection should use synthetic disposable infrastructure rather than third-party targets.
+
+Two outcome families are required. First, \textbf{unauthorized-effect rate} measures prohibited effects that actually occur among attempted prohibited actions. Second, \textbf{legitimate-task completion rate} measures authorized tasks that complete correctly. A system that denies everything may score well on the first measure while being unusable. Review outcomes, startup failures, timeouts, and crashes should be reported separately.
+
+The workload set should include ordinary file processing, constrained code execution, delegated work, sensitive-data handling with synthetic records, approved network operations against controlled endpoints, and failure recovery. Data-disclosure tests should distinguish unauthorized destinations from unauthorized payloads sent to approved destinations.
+
+Performance experiments should separate cold-start from reused-state conditions, pin complete hardware/software identities, and repeat each condition enough to characterize variance. Median and 95th-percentile latency, peak memory, CPU time, scan duration, audit delay, and cleanup latency should be reported with sample size and uncertainty. The current hot-path benchmark already demonstrates why fresh-state versus accumulated-state labeling matters.
+
+AgentDojo provides a published environment for evaluating tool-using agents and prompt-injection defenses~\cite{Debenedetti2024}. Connecting \bull to such a benchmark would require an explicit mapping from benchmark actions to \bull capabilities, resources, and brokers; no such benchmark result is claimed here.
+
+%%% ------------------------------------------------------------------
+\section{Related Work and Positioning}
+%%% ------------------------------------------------------------------
+\textbf{Protective layers around models.} CaMeL separates control and data flows and applies capability-based policies to constrain tool use~\cite{Debenedetti2025}. It is directly relevant prior work and prevents a claim that external model protection or capability-governed actions originated with \bull. \bull's emphasis is the execution lifecycle and its integration with OS and VM boundaries, brokers, delegation state, and audit recovery.
+
+\textbf{Isolation systems.} gVisor interposes an application kernel to reduce direct host-system exposure~\cite{gVisor}. Firecracker studies lightweight virtualization for serverless workloads~\cite{Agache2020}. \bull's reported guest implementation uses QEMU/KVM, not Firecracker or gVisor, and therefore does not inherit their measurements or guarantees.
+
+\textbf{Kernel mechanisms.} Seccomp and Landlock are established Linux enforcement mechanisms with different scopes~\cite{LinuxSeccomp,LinuxLandlock}. \bull composes them with application-level authorization, admission, and audit; it does not claim to have invented them.
+
+\textbf{Risk frameworks.} OWASP's Top 10 for Agentic Applications 2026 provides a useful vocabulary for agent risks~\cite{OWASP2026}. A threat-framework citation is not compliance certification and does not prove that every listed risk has been mitigated.
+
+%%% ------------------------------------------------------------------
+\section{Discussion and Limitations}
+%%% ------------------------------------------------------------------
+The evidence now spans four distinct layers. First, current hosted CI shows that the integrated repository passes its Python, MicroVM-host, formal, packaging, site-build, and deployment checks on the pinned main revision. Second, the historical real-KVM experiment demonstrates a bounded production-dispatch path inside a hardware-virtualized guest. Third, the published operator benchmark exercises selected authorization, egress, secret, filesystem, and multi-agent regressions repeatedly and provides direct throughput measurements. Fourth, the production-audit experiment exercises a non-local authenticated checkpoint path, including an interrupted checkpoint and explicit recovery.
+
+This broader evidence changes the status of some claims from the previous manuscript revision. The multi-agent package is now on main rather than an unmerged branch. The KVM integration is on main rather than only an integration branch. The repository now publishes machine-readable benchmark data and visualizations. A production host provisioner and Cloudflare Workers+D1 reference anchor are present. The source license is GPL-2.0-or-later~\cite{BULL_CurrentMain,BULL_License}. These are implementation/reproducibility advances, not an independent validation of security effectiveness.
+
+The largest unresolved issue remains generalization. An approved command may still be harmful; an allowed service may receive an inappropriate payload; a trusted key may be mishandled; an external service account may be compromised; a kernel defect may undermine local evidence. Hashing does not prove semantics, a malware scan does not prove benignness, and an audit acknowledgement does not roll back an already executed external side effect.
+
+Persistent operation remains future work. Keeping a guest alive could reduce the roughly 12 s observed cold-start path, but it creates longer-lived credentials, state, and revocation obligations. Writable workspace promotion and artifact export also remain future scope in the recorded MicroVM milestone. Hosted CI still performs MicroVM host regressions rather than a required real-KVM boot on every change~\cite{BULL_MicroVMReport}.
+
+Independent assessment would materially strengthen the project. The present results are authored, operated, and interpreted by the project owner. The appropriate claim is therefore that the implementation and evidence are increasingly inspectable and reproducible---not that the system is vulnerability-free or certified safe.
+
+%%% ------------------------------------------------------------------
+\section{Conclusion}
+%%% ------------------------------------------------------------------
+\bull was motivated by a practical question raised by recent AI security incidents: how can a system owner retain control over data and processes when an agent, its inputs, or an actor influencing it cannot be trusted to remain inside the assigned task? The architecture answers by treating model-generated actions as proposals, keeping authority in host-controlled state, binding authorization to actual operations, constraining delegated agents, isolating admitted workloads, brokering sensitive effects, and requiring trusted completion evidence.
+
+The updated evidence snapshot is materially stronger than the earlier manuscript. Current main passes a 272-test regression corpus plus six subtests on two Python versions, 39 MicroVM-host regressions on each version, two bounded TLA+ models, and the publication pipeline. Historical real-KVM integration passed five of five cases. A published red-team benchmark recorded 33 of 33 selected runs passing. A production-audit deployment exercised fail-closed interruption, reconciliation, and a fresh authenticated checkpoint. None of these results alone or together proves universal safety. They do support continued empirical investigation of a concrete infrastructure-level approach: unauthorized consequences should be constrained by owner-controlled enforcement rather than left solely to the model's interpretation of what it ought to do.
+
+\section*{Declarations}
+\textbf{Research and authorship.} This manuscript describes the \bull project under Luis Minier / Anharmoniclabs. The author is a project stakeholder; the document is not an independent assessment.
+
+\textbf{AI assistance.} ChatGPT assisted with manuscript drafting, source discovery, repository inspection, and synthesis of project evidence. AI-generated text is not experimental evidence. Test counts and measurements are attributed to CI logs, repository evidence files, or operator-run records.
+
+\textbf{Responsible reporting.} Public incidents are discussed only at the level needed to motivate defensive controls. This report does not publish deployment secrets, private keys, or sensitive workload data. Named third parties have not endorsed \bull through citation.
+
+\appendices
+
+%%% ------------------------------------------------------------------
+\section{Version and Evidence Identity}
+%%% ------------------------------------------------------------------
+\textbf{A1. Current public manuscript baseline.} Repository: \texttt{Anharmoniclabs/BULL}; branch: \texttt{main}; full commit identity is available through the pinned reference~\cite{BULL_CurrentMain}.
+This signed commit publishes benchmark data/visualizations, operator external-audit evidence, and the Cloudflare Workers+D1 reference deployment package~\cite{BULL_CurrentMain}.
+
+\textbf{A2. Operator benchmark identity.} Source commit \benchshort; UTC run \texttt{20260920T170536Z}; Linux 7.2.6-1-cachyos x86-64; Python 3.14.7; AMD Ryzen 5 7430U; 12 logical CPUs; 11 GiB memory. The complete commit is stored in the machine-readable benchmark record~\cite{BULL_BenchmarkJSON}.
+The current repository embeds the corresponding machine-readable JSON, attack-summary CSV, hot-path CSV, and host metadata~\cite{BULL_BenchmarkJSON}.
+
+\textbf{A3. Historical real-KVM identity.} Tested base commit begins \texttt{d218e688}; the report records source-tree SHA-256 beginning \texttt{6316b6ea} and the allowed-session identifier beginning \texttt{8ffa547a}. Full values are preserved in the pinned integration report~\cite{BULL_MicroVMReport}.
+The report states that all five final KVM cases used the recorded source-tree identity; raw case evidence and deployment assets were retained outside Git~\cite{BULL_MicroVMReport}.
+
+\textbf{A4. Current CI run identities.}
+\begin{verbatim}
+Security regression:       35525606273
+MicroVM host regression:   35525606201
+Formal invariants:          35525606295
+Pages verify/deploy:        35525606425
+\end{verbatim}
+Each run is associated with main commit \mainshort and completed successfully~\cite{BULL_CI_Security,BULL_CI_MicroVM,BULL_CI_Formal,BULL_CI_Pages}.
+
+%%% ------------------------------------------------------------------
+\section{Claim-to-Evidence Ledger}
+%%% ------------------------------------------------------------------
+\begin{table*}[!t]
+\caption{Claims, Supporting Evidence, and Boundaries of Interpretation}
+\label{tab:ledger}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYY}
+\toprule
+\textbf{Claim} & \textbf{Evidence} & \textbf{Not established} \\
+\midrule
+Production dispatch binds full command & Dispatcher source and authorization regressions~\cite{BULL_Dispatcher,BULL_CI_Security} & That every authorized executable is safe. \\
+Domain state limits delegated authority & Registry contract and multi-agent tests~\cite{BULL_SecurityDomain,BULL_MultiAgent} & Verified model weights or universal goal-drift detection. \\
+Real guest production path executed & Five-case KVM report and guest supervisor source~\cite{BULL_MicroVMReport,BULL_GuestEngine} & Independent reproduction or exhaustive escape resistance. \\
+Current integrated suite is green & 272 tests + 6 subtests on both Python versions; all current push workflows successful~\cite{BULL_CI_Security,BULL_CI_MicroVM,BULL_CI_Formal,BULL_CI_Pages} & Complete attack-space coverage. \\
+Selected red-team corpus repeated cleanly & 33/33 operator runs passed at pinned commit~\cite{BULL_Benchmark} & Unknown attacks or independent certification. \\
+Traversal primitive is fast on recorded host & 4.897 $\mu$s/op, 204,187.31 ops/s~\cite{BULL_BenchmarkJSON} & End-to-end agent-task latency. \\
+External checkpoint recovery worked once & Published operator evidence: reconcile, fresh append, authenticated ack, final valid ledger~\cite{BULL_ExternalAudit} & External-account compromise resistance or general availability. \\
+Formal abstractions satisfy checked invariants & 405 and 57 distinct-state model checks completed with no error~\cite{BULL_CI_Formal} & Formal proof of the full Python/Linux/QEMU/cloud stack. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+%%% ------------------------------------------------------------------
+\section{Current Known Limits and Next Experiments}
+%%% ------------------------------------------------------------------
+\begin{enumerate}
+\item Repeat the real-KVM suite on the exact current main revision rather than transferring historical KVM evidence forward by assumption.
+\item Add a required hosted/self-hosted real-KVM CI lane where suitable hardware and security policy allow it; retain the existing host-only MicroVM regression lane separately.
+\item Measure fresh-instance and long-session multi-agent throughput separately, including state-size growth and cleanup behavior.
+\item Evaluate false denials and legitimate-task completion alongside blocked malicious effects.
+\item Exercise the external audit anchor under collector loss, delayed acknowledgements, retry, key rotation, and account-level failure conditions.
+\item Evaluate persistent MicroVM reuse only after defining per-request authority, revocation, credential lifetime, state separation, and no-replay recovery behavior.
+\item Obtain independent reproduction and security review before making certification-style claims.
+\end{enumerate}
+
+\sloppy
+\begin{thebibliography}{35}
+
+\bibitem{Reuters2026}
+Reuters, ``Gemini hacked three companies in first known breakout by Google's AI,'' Sept. 18, 2026. [Online]. Available: \href{https://www.reuters.com/business/gemini-hacked-three-companies-first-known-breakout-by-google-ai-wsj-reports-2026-09-18/}{Reuters report}.
+
+\bibitem{OpenAI2026}
+OpenAI, ``The Hugging Face incident and the road ahead,'' Aug. 26, 2026. [Online]. Available: \url{https://openai.com/index/hugging-face-incident-and-the-road-ahead/}
+
+\bibitem{HuggingFace2026}
+Hugging Face, ``Security incident disclosure --- July 2026,'' July 16, 2026. [Online]. Available: \url{https://huggingface.co/blog/security-incident-july-2026}
+
+\bibitem{METR2026}
+METR and Redwood Research, ``Brief independent investigation of agents' behavior, reasoning and collaboration in the OpenAI / Hugging Face hacking incident,'' Aug. 26, 2026. [Online]. Available: \url{https://metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/}
+
+\bibitem{Microsoft2026}
+Microsoft Security, ``Securing AI agents: When AI tools move from reading to acting,'' June 30, 2026. [Online]. Available: \url{https://www.microsoft.com/en-us/security/blog/2026/06/30/securing-ai-agents-ai-tools-move-from-reading-acting/}
+
+\bibitem{Anthropic2025}
+Anthropic, ``Disrupting the first reported AI-orchestrated cyber espionage campaign,'' Nov. 13, 2025. [Online]. Available: \url{https://www.anthropic.com/news/disrupting-AI-espionage}
+
+\bibitem{Anthropic2026}
+Anthropic, ``Project Glasswing: Securing critical software for the AI era,'' Apr. 7, 2026. [Online]. Available: \url{https://www.anthropic.com/glasswing}
+
+\bibitem{Debenedetti2025}
+E.~Debenedetti \emph{et al.}, ``Defeating prompt injections by design,'' arXiv:2503.18813v2, 2025.
+
+\bibitem{Debenedetti2024}
+E.~Debenedetti \emph{et al.}, ``AgentDojo: A dynamic environment to evaluate prompt injection attacks and defenses for LLM agents,'' arXiv:2406.13352, 2024.
+
+\bibitem{OWASP2026}
+OWASP Gen AI Security Project, ``OWASP Top 10 for Agentic Applications for 2026,'' 2025. [Online]. Available: \url{https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/}
+
+\bibitem{LinuxSeccomp}
+The Linux Kernel Documentation, ``Seccomp BPF (SECure COMPuting with filters).'' [Online]. Available: \url{https://docs.kernel.org/userspace-api/seccomp_filter.html}
+
+\bibitem{LinuxLandlock}
+The Linux Kernel Documentation, ``Landlock: unprivileged access control.'' [Online]. Available: \url{https://docs.kernel.org/userspace-api/landlock.html}
+
+\bibitem{gVisor}
+gVisor contributors, ``What is gVisor?'' [Online]. Available: \url{https://gvisor.dev/docs/}
+
+\bibitem{Agache2020}
+A.~Agache \emph{et al.}, ``Firecracker: Lightweight virtualization for serverless applications,'' in \emph{Proc. USENIX NSDI}, 2020.
+
+\bibitem{BULL_CurrentMain}
+Anharmoniclabs, ``BULL source snapshot,'' commit \texttt{01cd2599a436a5171e5fe292d77dc7ff52402992}, Sept. 20, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/commit/01cd2599a436a5171e5fe292d77dc7ff52402992}
+
+\bibitem{BULL_ProdSec}
+Anharmoniclabs, ``BULL production security boundary,'' \texttt{docs/PRODUCTION\_SECURITY.md}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/docs/PRODUCTION_SECURITY.md}
+
+\bibitem{BULL_Dispatcher}
+Anharmoniclabs, ``BULL production dispatcher implementation,'' \texttt{src/bulldog/dispatcher.py}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/src/bulldog/dispatcher.py}
+
+\bibitem{BULL_SecurityDomain}
+Anharmoniclabs, ``BULL security-domain registry,'' \texttt{src/bulldog/security\_domain.py}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/src/bulldog/security_domain.py}
+
+\bibitem{BULL_MultiAgent}
+Anharmoniclabs, ``BULL Multi-Agent System,'' \texttt{docs/multiagent.md}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/docs/multiagent.md}
+
+\bibitem{BULL_GuestEngine}
+Anharmoniclabs, ``BULL one-shot trusted guest supervisor,'' \texttt{src/bulldog/guest\_engine.py}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/src/bulldog/guest_engine.py}
+
+\bibitem{BULL_MicroVMReport}
+Anharmoniclabs, ``Local MicroVM integration result --- 2026-09-20,'' \texttt{docs/MICROVM\_INTEGRATION\_REPORT.md}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/docs/MICROVM_INTEGRATION_REPORT.md}
+
+\bibitem{BULL_MicroVMReadme}
+Anharmoniclabs, ``BULL MicroVM launcher and integration contract,'' \texttt{microvm/README.md}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/microvm/README.md}
+
+\bibitem{BULL_Benchmark}
+Anharmoniclabs, ``BULL red-team benchmark --- 2026-09-20,'' \texttt{docs/BENCHMARK\_20260920.md}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/docs/BENCHMARK_20260920.md}
+
+\bibitem{BULL_BenchmarkJSON}
+Anharmoniclabs, ``BULL benchmark machine-readable record,'' \texttt{benchmarks/20260920/benchmark.json}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/benchmarks/20260920/benchmark.json}
+
+\bibitem{BULL_ExternalAudit}
+Anharmoniclabs, ``External production audit-anchor evidence --- 2026-09-20,'' project documentation, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/docs/PRODUCTION_EXTERNAL_AUDIT_EVIDENCE_20260920.md}
+
+\bibitem{BULL_CloudflareAudit}
+Anharmoniclabs, ``BULL Cloudflare audit anchor,'' \texttt{deploy/cloudflare-audit/README.md}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/deploy/cloudflare-audit/README.md}
+
+\bibitem{BULL_Provisioner}
+Anharmoniclabs, ``BULL production host provisioner,'' \texttt{tools/bull-production-provision.sh}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/tools/bull-production-provision.sh}
+
+\bibitem{BULL_AuditTransport}
+Anharmoniclabs, ``BULL authenticated audit transports,'' \texttt{src/bulldog/audit\_transport.py}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/src/bulldog/audit_transport.py}
+
+\bibitem{BULL_TLARuntime}
+Anharmoniclabs, ``BULL TLA+ runtime configuration,'' \texttt{formal/tla/BullRuntime.cfg}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/formal/tla/BullRuntime.cfg}
+
+\bibitem{BULL_TLASessionAudit}
+Anharmoniclabs, ``BULL TLA+ session/audit configuration,'' \texttt{formal/tla/BullSessionAudit.cfg}, commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/formal/tla/BullSessionAudit.cfg}
+
+\bibitem{BULL_CI_Security}
+Anharmoniclabs, ``BULL security regression, run 145,'' GitHub Actions run 35525606273, Sept. 20, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/actions/runs/35525606273}
+
+\bibitem{BULL_CI_MicroVM}
+Anharmoniclabs, ``BULL MicroVM host regression, run 42,'' GitHub Actions run 35525606201, Sept. 20, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/actions/runs/35525606201}
+
+\bibitem{BULL_CI_Formal}
+Anharmoniclabs, ``BULL formal invariants, run 151,'' GitHub Actions run 35525606295, Sept. 20, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/actions/runs/35525606295}
+
+\bibitem{BULL_CI_Pages}
+Anharmoniclabs, ``Deploy BULL Lab to Pages, run 57,'' GitHub Actions run 35525606425, Sept. 20, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/actions/runs/35525606425}
+
+\bibitem{BULL_License}
+Anharmoniclabs, ``BULL license: GPL-2.0-or-later,'' commit \texttt{01cd259}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/blob/01cd2599a436a5171e5fe292d77dc7ff52402992/LICENSE}
+
+\end{thebibliography}
+
+\section*{Biography}
+\begingroup\footnotesize
+\noindent\textbf{Luis Minier} is an independent researcher based in New York, NY, USA,.\par
+\endgroup
+
+\end{document}
