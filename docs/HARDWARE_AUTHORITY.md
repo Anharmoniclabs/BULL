@@ -33,7 +33,10 @@ September 23 observed **two BOOT clicks → YES** and **three BOOT clicks → NO
 with distinct host challenges. Both requests cleared; the board was left idle.
 These responses were unsigned diagnostics, not production approval.
 [Public gesture evidence](../site/data/hardware/20260923-gestures.json) records
-the tested host commit, retained failures and raw-log hashes. Original firmware
+the tested host commit, retained failures and raw-log hashes. The successful
+NO retry used the unmodified CLI plus a separate read-only USB drain; the
+evidence includes that exact helper and its hash. Automatic draining was
+implemented afterward and tested separately. Original firmware
 backups and raw diagnostic logs remain private. The operator confirmed that only the KB2040 is present; no secure-element
 breakout is connected. No secure element has been provisioned or enrolled.
 

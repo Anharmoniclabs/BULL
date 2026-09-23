@@ -11,7 +11,7 @@
   "production_hardware_acceptance": false,
   "scope": "Physical BOOT gestures observed through unsigned diagnostic HID; not the separate-button hold ceremony or secure-element signing acceptance.",
   "format": "bull-hardware-gesture-evidence-v1",
-  "source_commit_scope": "Host diagnostic source used for the physical tests; firmware version is reported over unsigned HID, not attested.",
+  "source_commit_scope": "Unmodified host diagnostic CLI used for the physical tests. A separate manual USB queue drain ran before the successful NO retry; see manual_transport_preparation. Firmware version is reported over unsigned HID, not attested.",
   "secure_element_connected": false,
   "secure_signing": "BLOCKED",
   "test_logs_sha256": {
@@ -30,5 +30,18 @@
     "These are unsigned BOOT-button diagnostics, not signed approval or denial.",
     "Separate YES/NO buttons and the specified deliberate YES hold have not been physically accepted.",
     "No secure-element key generation, enrollment, signature, monotonic counter or signed replay demonstration was performed."
-  ]
+  ],
+  "tested_cli_sha256": "311de0118eb9c538fbb3cbca469be59ce28898cb98b0b5d6f9110ee2b017746b",
+  "manual_transport_preparation": {
+    "source_path": "docs/evidence/hardware-20260923/manual-drain.py",
+    "source_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f",
+    "when": "After the mismatched-challenge NO attempt and before the successful NO retry",
+    "observed_queued_replies_drained": 1,
+    "scope": "One-off read-only USB preparation; no commands, approval or signature generated"
+  },
+  "subsequent_automatic_fix": {
+    "source_path": "src/bulldog/hardware_approval/diagnostic.py",
+    "source_sha256": "ccd4ac6e608f02f217852dcea8f7bde48721c7431046989514276af02a9e4840",
+    "scope": "Implemented after the physical tests. Eight simulated transport tests and two live read-only status queries passed; the physical gesture results are not attributed to this later code."
+  }
 }
