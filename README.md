@@ -9,6 +9,11 @@ constrains execution, and records an authenticated audit checkpoint.
 [Presentation](docs/PRESENTATION.md) · [Evidence](docs/VALIDATION_20260923.md) ·
 [Architecture](docs/PRODUCTION_SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
+The software release work and hardware host integration are merged into `main`.
+See the [branch integration record](docs/BRANCH_INTEGRATION.md).
+The KB2040 is a diagnostic prototype: no secure element is connected, so it
+cannot authorize protected actions. See [hardware status](docs/HARDWARE_AUTHORITY.md).
+
 ## What it does
 
 ```text
@@ -57,8 +62,6 @@ Python 3.11+ and Git are required. These commands do not provision a deployment:
 ```sh
 git clone https://github.com/Anharmoniclabs/BULL.git
 cd BULL
-# For the current review branch, until PR #55 is merged:
-git switch --track origin/fix/production-validation-20260922
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[test]'
 .venv/bin/python -m pytest -q

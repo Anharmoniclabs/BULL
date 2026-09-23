@@ -69,8 +69,10 @@ key, a guest boot or external retention.
 - `SECURITY_CLAIMS.md`: implementation/test mapping and unsupported behaviors.
 - `VALIDATION_20260923.md`: latest pinned evidence; older records remain historical.
 - `BRANCH_AUDIT_20260922.md`: preserved branch inventory and historical caveats.
-- PR #55: latest exact candidate status and reviewed public result summary.
+- PR #55: software release work, now merged.
+- PR #57 and `BRANCH_INTEGRATION.md`: merged hardware host integration, branding and dependency updates.
+- Release candidate `VALIDATION.json`: exact artifact commit and current release checks.
 
-Do not merge, release, or promote production merely to prepare this presentation.
+Merging the source does not establish hardware acceptance or production approval.
 Hardware and independent review gaps should remain visible. No presentation date,
 slot duration or audience composition beyond the operator's report is assumed.
