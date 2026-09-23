@@ -4,17 +4,24 @@ version = "0.2.0rc1"
 description = "Local execution firewall and provenance-aware policy harness for AI agents"
 requires-python = ">=3.11"
 authors = [{name = "Anharmoniclabs"}]
-license = {text = "GPL-2.0-or-later"}
+readme = "README.md"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10", "cryptography>=43,<47"]
+test = ["pytest>=8,<10", "cryptography>=43,<47", "build>=1,<2"]
+
+[project.urls]
+Source = "https://github.com/Anharmoniclabs/BULL"
+Issues = "https://github.com/Anharmoniclabs/BULL/issues"
+Security = "https://github.com/Anharmoniclabs/BULL/security/policy"
 
 [project.scripts]
 bull = "bulldog.cli:main"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 # Explicit src-layout packaging. Do not rely on pytest's pythonpath setting or

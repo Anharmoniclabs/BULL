@@ -68,6 +68,10 @@ jobs:
         run: |
           cd /tmp
           python -I -c "import bulldog; import bulldog.multiagent; print('installed import OK:', bulldog.__file__)"
+      - name: Build source distribution and install its wheel in a fresh environment
+        run: |
+          python -m pip install 'setuptools>=77' wheel
+          python tools/check_package.py --output "$RUNNER_TEMP/bull-package"
       - name: Portable deployment ignores unrelated ambient authority
         shell: bash
         env:

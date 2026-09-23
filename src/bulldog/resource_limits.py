@@ -61,6 +61,8 @@ def _safe_limit(
 
 def apply_resource_budget(
     budget: ResourceBudget,
+    *,
+    enforce_uid_process_limit: bool = True,
 ) -> None:
 
     _safe_limit(
@@ -73,10 +75,11 @@ def apply_resource_budget(
         int(budget.cpu_seconds),
     )
 
-    _safe_limit(
-        resource.RLIMIT_NPROC,
-        int(budget.processes),
-    )
+    if enforce_uid_process_limit:
+        _safe_limit(
+            resource.RLIMIT_NPROC,
+            int(budget.processes),
+        )
 
     _safe_limit(
         resource.RLIMIT_NOFILE,

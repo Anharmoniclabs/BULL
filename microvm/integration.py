@@ -25,7 +25,10 @@ from bulldog.audit_transport import AnchorIdentity, HTTPSAnchorTransport, HostAn
 from bulldog.integrity import build_integrity_manifest, sign_integrity_manifest
 from bulldog.microvm_protocol import RemoteSessionError, SessionChannel
 from bulldog.policy_bundle import sign_policy_bundle
-from evidence import ReceiptTransport, anchor_master
+if __package__:
+    from .evidence import ReceiptTransport, anchor_master
+else:
+    from evidence import ReceiptTransport, anchor_master
 
 WORKLOAD = '''import json, os, resource, time
 started = time.monotonic_ns()
@@ -69,6 +72,24 @@ def save(path, data):
     Path(path).chmod(0o600)
 
 
+def stage_public_runtime(repo, runtime):
+    """Guest-readable code, independent of the evidence process's private umask.
+
+    Only public source is normalized; deployment secrets stay owner-only.
+    """
+    (runtime / 'src').mkdir(parents=True)
+    (runtime / 'src').chmod(0o755)
+    (runtime / 'bin').mkdir()
+    (runtime / 'bin').chmod(0o755)
+    destination = runtime / 'src/bulldog'
+    shutil.copytree(repo / 'src/bulldog', destination, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    for path in (destination, *destination.rglob('*')):
+        path.chmod(0o755 if path.is_dir() else 0o644)
+    (destination / '_namespace_launcher.sh').chmod(0o755)
+    shutil.copyfile(repo / 'microvm/guest/bull-engine', runtime / 'bin/bull-engine')
+    (runtime / 'bin/bull-engine').chmod(0o755)
+
+
 def vm_identity(launcher_pid):
     children = Path(f'/proc/{launcher_pid}/task/{launcher_pid}/children').read_text().split()
     if len(children) != 1:
@@ -90,14 +111,10 @@ def run(args):
     session, control_key, master = secrets.token_hex(32), secrets.token_bytes(32), secrets.token_bytes(32)
     identity = AnchorIdentity(session, session_key(master, session))
     runtime, workspace = out / 'runtime', out / 'workspace'
-    (runtime / 'src').mkdir(parents=True)
-    (runtime / 'bin').mkdir()
+    stage_public_runtime(repo, runtime)
     (runtime / 'deployment').mkdir(mode=0o700)
     workspace.mkdir()
     (workspace / 'input.txt').write_text('deterministic input\n')
-    shutil.copytree(repo / 'src/bulldog', runtime / 'src/bulldog', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
-    shutil.copyfile(repo / 'microvm/guest/bull-engine', runtime / 'bin/bull-engine')
-    (runtime / 'bin/bull-engine').chmod(0o755)
     signing_key = secrets.token_hex(32)
     deployment = runtime / 'deployment'
     save(deployment / 'integrity.json', sign_integrity_manifest(build_integrity_manifest(runtime / 'src/bulldog'), signing_key))

@@ -1,0 +1,119 @@
+{
+  "status": "PASS_WITH_SCOPED_LIMITS",
+  "model": {
+    "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+    "name": "qwen2.5:1.5b-instruct"
+  },
+  "sustained_agent": {
+    "status": "PASS",
+    "steps": 40,
+    "wall_seconds": 707.4835007830006,
+    "recovery_events": 2,
+    "credential_denials": 1,
+    "records": 130,
+    "head_hash": "4fdcdb59231ed5aa21b47855295d41e354d579ce352458303dc8193a5d134410",
+    "authenticated_receipt_verified": true
+  },
+  "regression": {
+    "passed": 380,
+    "subtests_passed": 6,
+    "skipped": 0,
+    "offline_reconstruction_passed": true
+  },
+  "fresh_reconstructed_deployment": "PASS",
+  "live_cgroup_fork_limit": "PASS",
+  "kvm": {
+    "allowed": "PASS",
+    "denied": "PASS",
+    "timeout": "PASS",
+    "cancel": "PASS",
+    "missing-protection": "PASS"
+  },
+  "formal": "PASS",
+  "physical_key_validation": "SKIPPED_AT_USER_REQUEST_NO_USB_KEY",
+  "approved_credential_release": "BLOCKED",
+  "limits": [
+    "fixed read-only tools only",
+    "trusted host supervisor and Ollama service",
+    "bounded measured soak, not multi-day reliability",
+    "read-only replay, not exactly-once side effects",
+    "no arbitrary-agent coverage claim",
+    "no physical approval or successful credential release",
+    "no independent security certification or collector durability audit"
+  ],
+  "development_findings": [
+    "Host UID process limit prevented unshare on busy desktop; attached cgroup now enforces workload process ceiling.",
+    "Initial model prompt repeated one tool; revised explicit workflow exercised both.",
+    "Supplemental process-limit probe corrected to test fork inside cgroup, not migration of existing processes."
+  ],
+  "source": {
+    "tested_base_commit": "974eb17081e3374e99ecd35f9ebb3ef6121beefa",
+    "tested_worktree_dirty": true,
+    "tested_commit_alone_is_insufficient": true,
+    "source_manifest": "source-manifest.json",
+    "source_manifest_sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c",
+    "integration_base_commit": "d7053d3306fd53ea0691883dd71731b82d7b4b2c",
+    "note": "Historical results apply to the base plus the exact file hashes, not to the later integrated PR commit."
+  },
+  "execution": {
+    "backend": "host NamespaceSandbox via ProductionDispatcher and ProductionRuntime",
+    "governed_actions_inside_microvm": false,
+    "tools": [
+      "inspect",
+      "checksum"
+    ],
+    "supervisor_and_model_location": "trusted host",
+    "separate_kvm_cases": true
+  },
+  "collector": {
+    "agent_run": "existing live collector",
+    "receipt_verification": "retained receipt authenticated locally with the private deployment key; no independent retention claim",
+    "separate_kvm_cases": "disposable local TLS collector",
+    "preview_version": "4e442dc2-a418-4958-aa21-9b25bb72ef08",
+    "preview_status": "PR #55 reports first authenticated checkpoint HTTP 409 on d7053d3; not validated by this agent run; do not promote"
+  },
+  "crash_recovery_phases": [
+    {
+      "phase": "after-plan",
+      "returncode": 75,
+      "expected": 75
+    },
+    {
+      "phase": "after-effect",
+      "returncode": 76,
+      "expected": 76
+    },
+    {
+      "phase": "soak",
+      "returncode": 0,
+      "expected": 0
+    }
+  ],
+  "fresh_reconstruction_run": {
+    "completed_steps": 2,
+    "pending_steps": 0,
+    "recovery_events": 2,
+    "credential_denials": 1,
+    "wall_seconds": 36.608958270000585
+  },
+  "publication_scope": "Reviewed aggregate results and source hashes only. Raw logs, deployment configuration, keys and raw evidence archive are excluded.",
+  "publication_validation": {
+    "implementation_commit": "da10181dc954d9f90380f63e19cbaf98b2065171",
+    "regression": {
+      "passed": 430,
+      "subtests_passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "environment": "local Linux host, Python 3.14.7",
+    "historical_ledgers_and_authenticated_receipts_rechecked": true,
+    "new_live_model_or_kvm_run": false,
+    "initial_restricted_sandbox_run": {
+      "passed": 416,
+      "failed": 14,
+      "subtests_passed": 6,
+      "reason": "socket and namespace restrictions; host-permission rerun passed"
+    },
+    "note": "Regression ran on the same implementation bytes immediately before committing; this does not reattribute the historical live run to this commit."
+  }
+}

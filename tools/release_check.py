@@ -75,7 +75,11 @@ def main():
             run(model + "-model", ["java", "-cp", str(jar), "tlc2.TLC", "-deadlock", "-workers", "1",
                 "-metadir", str(out / (model + "-states")), "-config", f"formal/tla/{model}.cfg", f"formal/tla/{model}.tla"])
     run("wheel", [sys.executable, "-m", "pip", "wheel", "--no-deps", "--no-build-isolation", ".", "-w", str(out / "wheel")])
+    run("distribution", [sys.executable, "tools/check_package.py", "--output", str(out / "distribution")])
     run("site", [sys.executable, "tools/build_site.py", "--output", str(out / "site")])
+    results.append({"gate": "unchanged-clean-source", "status": "PASS" if
+                    not dirty and git("rev-parse", "HEAD") == sha and
+                    not git("status", "--porcelain") else "FAIL"})
     source_pass = all(x["status"] == "PASS" for x in results)
     report = {"format": "bull-source-evidence-v1", "commit": sha, "dirty": dirty,
               "tracked_content_sha256": source_digest.hexdigest(), "python": platform.python_version(),

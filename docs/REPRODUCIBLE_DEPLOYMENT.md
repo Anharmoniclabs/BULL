@@ -18,7 +18,9 @@ not a guest boot, physical approval, independent review, or universal certificat
 ## 1. Install the selected source candidate
 
 Use a reviewed commit or release ref and record `git rev-parse HEAD`. Do not reset
-an existing checkout with uncommitted work. From the selected BULL checkout:
+an existing checkout with uncommitted work. Use `umask 022` when checking out source (directories/executables 0755, source
+files 0644). Private state and evidence use 0700/0600 separately. Never use
+world-writable permissions. From the selected BULL checkout:
 
 ```bash
 python3 -m venv .venv
@@ -52,9 +54,21 @@ provider filesystems or substitute fake cgroup files. Omit `--grant-kvm` for hos
 validation on a system without KVM; guest checks stay BLOCKED. Existing service
 managers may supply their own delegated subtree instead.
 
-Host setup reports `PROVISIONED_NOT_TESTED`. The deployment checker performs
-actual child placement and reads back its memory, process and CPU limits. This
-does not claim a memory-pressure, process-exhaustion or CPU-throttling test.
+Host setup reports `PROVISIONED_NOT_TESTED`. On CachyOS and other Linux hosts,
+its shell includes `/usr/sbin` and `/sbin` for e2fsprogs utilities. For a bounded
+noninteractive invocation, replace `--enter-shell` with `--run /absolute/command
+ARGUMENTS` as the last option. The helper moves only its own new process into the
+coordinator, refreshes groups, drops UID/GID, clears inherited authority, and then
+executes the command. It never moves the desktop or existing application processes.
+A shell outside this subtree may lack permission to migrate children across its
+common ancestor; run validation through the helper's shell or `--run`.
+
+The deployment checker verifies actual child placement and limit readback, then
+runs bounded enforcement probes: 64 MiB memory with swap disabled, at most eight
+fork attempts under a four-process limit, and one second of CPU work under a 25%
+quota. Kernel counters must show enforcement. Cancellation and timeout probes
+must remove their owned descendant scope. These workloads refuse UID 0. They
+are finite checks, not laptop stress tests or universal isolation proof.
 
 ## 3. Generate an installation's private authority
 
@@ -232,3 +246,54 @@ CI tests two independently initialized installations, cross-key/policy/manifest
 rejection, private permissions, stable authority on reruns, no ambient-authority
 fallback, and the actual public Buildroot configuration step. CI does not relabel
 synthetic SK tests as physical hardware or configuration checks as VM execution.
+
+## Dedicated systemd user-service validation
+
+Where the user manager already has delegated cpu/memory/pids controllers, a
+transient user service is an alternative to the administrator shell. On systemd
+254 or newer, `DelegateSubgroup=coordinator` leaves the service's root empty.
+Use a unique unit name and an absolute, operator-owned validation script:
+
+```bash
+systemd-run --user --wait --pipe --collect --unit=bull-validation-UNIQUE \
+  --property='Delegate=cpu memory pids' --property=DelegateSubgroup=coordinator \
+  /absolute/path/to/python /absolute/path/to/validation-script.py
+```
+
+Inside that script, identify its own `0::` entry in `/proc/self/cgroup`, require
+its final component to be `coordinator`, and use its parent under
+`/sys/fs/cgroup` as `BULL_CGROUP_PARENT`. Enable only `+cpu +memory +pids` in
+that parent's `cgroup.subtree_control`, then use the existing `init`/`configure`
+and deployment checker interfaces. Never move an existing desktop/session
+process. If the user manager does not delegate the required controllers, use
+administrator provisioning; do not change unrelated service permissions.
+The transient subtree disappears when the unit exits, so this is validation
+configuration, not persistent service deployment. Recreate the same dedicated
+unit before rechecking a deployment configured for that path.
+
+## Reruns, recovery and authority lifecycle
+
+`init` deliberately fails on existing state. Rerun `show`, `configure`, or
+`deployment_check.py` instead; none silently re-signs changed runtime code or
+rotates authority. After a reviewed source upgrade, provision a new installation
+with its own policy/integrity authority and explicitly import the existing
+collector key if that destination is retained. Preserve the old ledger, keys,
+receipts and approval database privately for review. Do not reset consumed
+approvals or replay uncertain operations. Collector recovery uses
+`AuditLedger.reconcile_remote()` as described in the
+[audit guide](../microvm/audit/README.md); reconciliation retries evidence,
+not execution.
+
+Remove only empty, owned test scopes after their processes have finished.
+A transient user unit is collected automatically; the administrator-created
+`bull-UID` subtree lasts until removed empty or the host reboots. Preserve
+private evidence and state until retention requirements are decided. This
+workflow does not uninstall packages, remove the operator's KVM membership,
+or delete production audit records.
+
+Authenticated receipts establish acceptance of an exact session, sequence and
+head by an endpoint possessing the configured authority. They are not independent
+proof of retention, backup restoration, availability, physical consent, or the
+latest remotely stored sequence. Finite tests and model checks do not establish
+universal protection against malicious AI or arbitrary host compromise; no
+certification is conferred.

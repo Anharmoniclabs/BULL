@@ -53,12 +53,17 @@ class CgroupV2Scope:
         path = self.parent / f"{self.name_prefix}-{suffix}"
         path.mkdir(mode=0o700)
         self.path = path
-        self._write("memory.max", str(int(self.memory_bytes)))
-        self._write("pids.max", str(int(self.processes)))
-        self._write(
-            "cpu.max",
-            f"{int(self.cpu_quota_us)} {int(self.cpu_period_us)}",
-        )
+        try:
+            self._write("memory.max", str(int(self.memory_bytes)))
+            self._write("pids.max", str(int(self.processes)))
+            self._write(
+                "cpu.max",
+                f"{int(self.cpu_quota_us)} {int(self.cpu_period_us)}",
+            )
+        except BaseException:
+            # __exit__ is not invoked when __enter__ fails.
+            self.__exit__(None, None, None)
+            raise
         return self
 
     def _write(self, name: str, value: str) -> None:

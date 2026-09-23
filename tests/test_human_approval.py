@@ -275,6 +275,28 @@ def test_dispatcher_protected_effect_waits_then_executes_once(setup):
     assert gate.inspect(proof.request_id)["outcome"] == "completed"
 
 
+@pytest.mark.parametrize("invalid", ["wrong-key", "expired", "cancelled", "action-mismatch"])
+def test_invalid_approval_never_reaches_protected_callback(setup, monkeypatch, invalid):
+    s = setup
+    dispatcher, request, calls, gate = dispatcher_fixture(s)
+    url = "https://example.com/result"
+    with pytest.raises(ApprovalRequired) as pending:
+        dispatcher.fetch_egress(url=url, request=request(url))
+    frozen = pending.value.request
+    proof = proof_for(s, frozen)
+    if invalid == "wrong-key":
+        proof = ApprovalProof(proof.request_id, "operator", SyntheticSK().sign(canonical_bytes(frozen)))
+    elif invalid == "expired":
+        monkeypatch.setattr("bulldog.approval.time.time", lambda: frozen["expires_at"])
+    elif invalid == "cancelled":
+        gate.cancel(proof.request_id)
+    else:
+        url = "https://example.com/another-result"
+    with pytest.raises(ApprovalError):
+        dispatcher.fetch_egress(url=url, request=request(url), approval=proof)
+    assert calls == []
+
+
 def test_dispatcher_hard_deny_precedes_approval(setup):
     dispatcher, request, calls, gate = dispatcher_fixture(setup)
     url = "https://example.com/result"
