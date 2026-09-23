@@ -401,9 +401,16 @@ class NamespaceSandbox:
                 preexec_fn = None
                 if resource_budget is not None:
                     def _apply_limits() -> None:
-                        apply_resource_budget(resource_budget)
                         if active_scope is not None:
                             active_scope.attach_current()
+                        # RLIMIT_NPROC counts the shared host UID before unshare.
+                        # A busy desktop may already exceed the workload budget.
+                        # Once attached, cgroup pids.max provides the narrower
+                        # per-workload ceiling, including all descendants.
+                        apply_resource_budget(
+                            resource_budget,
+                            enforce_uid_process_limit=active_scope is None,
+                        )
                     preexec_fn = _apply_limits
 
                 started_ns = time.monotonic_ns()

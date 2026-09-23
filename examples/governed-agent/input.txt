@@ -1,0 +1,3 @@
+BULL governed agent fixture
+alpha=3
+beta=5

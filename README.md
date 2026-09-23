@@ -109,6 +109,13 @@ The first command prepares private authority. The second reports missing host,
 collector, guest or hardware prerequisites as BLOCKED until provisioned using
 the linked workflow. Existing state is never overwritten or silently rotated.
 
+## Local-model agent and recovery checks
+
+The [governed agent procedure](docs/GOVERNED_AGENT_RUN.md) wires an already pulled
+local model to two fixed read-only tools through the production dispatcher, tests
+worker-exit recovery and credential denial, and exports auditable evidence. Its
+scope and remaining credential/hardware and duration limits are explicit.
+
 ## Current security controls
 
 - signed-policy-controlled, single-use human approval for consequential broker requests
