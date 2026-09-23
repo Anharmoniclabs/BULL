@@ -42,7 +42,7 @@ def test_missing_and_oversize_completion_are_failures(channels):
     with pytest.raises(AnchorError, match='deadline'):
         host.receive('result')
     b.sendall((65537).to_bytes(4, 'big'))
-    with pytest.raises(AnchorError, match='length'):
+    with pytest.raises(AnchorError, match='unusable'):
         host.receive('result')
 
 
@@ -62,3 +62,36 @@ def test_authenticated_guest_error_cannot_be_a_completion(channels):
     guest.send('error', {'type': 'ProductionGateFailure', 'detail': 'required protection unavailable'})
     with pytest.raises(RemoteSessionError, match='required protection'):
         host.receive('result')
+
+
+def test_fresh_sequence_cannot_reuse_execution_authority(channels):
+    host, guest, a, _ = channels
+    host.send('execute', {})
+    guest.receive('execute')
+    raw = canonical(authenticate({'version': 1, 'session': 'a' * 64,
+        'sequence': 2, 'kind': 'execute', 'payload': {}}, b'k' * 32,
+        purpose='control-host'))
+    a.sendall(len(raw).to_bytes(4, 'big') + raw)
+    with pytest.raises(AnchorError, match='one-shot'):
+        guest.receive('execute')
+    with pytest.raises(AnchorError, match='one-shot'):
+        host.send('execute', {})
+
+
+def test_timeout_prevents_late_result_reuse(channels):
+    host, guest, _, _ = channels
+    with pytest.raises(AnchorError, match='deadline'):
+        host.receive('result')
+    guest.send('result', {'returncode': 0})
+    with pytest.raises(AnchorError, match='unusable'):
+        host.receive('result')
+
+
+def test_invalid_frame_prevents_following_valid_frame(channels):
+    host, guest, a, _ = channels
+    a.sendall((0).to_bytes(4, 'big'))
+    with pytest.raises(AnchorError, match='length'):
+        guest.receive('execute')
+    host.send('execute', {})
+    with pytest.raises(AnchorError, match='unusable'):
+        guest.receive('execute')
