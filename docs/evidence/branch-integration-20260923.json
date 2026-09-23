@@ -1,5 +1,5 @@
 {
-  "scope": "All fetched origin branch tips and non-current local development tips; histories retained. Superseded experiments are accounted for, not restored over current implementations.",
+  "scope": "Recorded branch-tip snapshots through integration PR 63, not moving references. Histories are retained. Subsequent merge commits are identified by their PRs; superseded experiments are not restored over current implementations.",
   "remote_branches": [
     {
       "branch": "origin",
@@ -280,6 +280,46 @@
       "branch": "dependabot/pip/cryptography-gte-43-and-lt-51",
       "tip": "9ef9a49fb3d8b99499e8994d0e61628bd31b0d6d",
       "disposition": "PR 56 appeared during integration; dependency range merged and applied to both test and hardware extras, validated with cryptography 50.0.1."
+    },
+    {
+      "branch": "docs/main-presentation-20260923",
+      "tip": "1d8fd08a2c9ce95e9afff7081e8bf0cdea5df09c",
+      "disposition": "Merged PR 58"
+    },
+    {
+      "branch": "docs/zenodo-publication-22922278",
+      "tip": "f2f3e7c577368e7f6435ea28472b0dfe6b3c95de",
+      "disposition": "PR 62 citation verified and integrated through PR 63"
+    },
+    {
+      "branch": "fix/hardware-gesture-evidence-20260923",
+      "tip": "b4ea01a2f7f7ef82c432e02d9a52073969b12a50",
+      "disposition": "Merged PR 60"
+    },
+    {
+      "branch": "fix/session-export-boundaries",
+      "tip": "955fb203d21e6fdbc92df6315c318477f205e58e",
+      "disposition": "PR 61 reviewed and integrated through PR 63"
+    },
+    {
+      "branch": "integrate/latest-session-and-publication-20260923",
+      "tip": "48981fabb50837fb866ac2a2ce761d59a8c07168",
+      "disposition": "PR 63 integration snapshot before finalization; required checks and final main validation are separate evidence"
+    },
+    {
+      "branch": "integrate/main-and-hardware-20260923",
+      "tip": "637b5f093e56b2191b2e57ee9529979ece44c566",
+      "disposition": "Merged PR 57"
+    },
+    {
+      "branch": "main",
+      "tip": "c8c53128542f6fc54bbde559198338c2a53e8275",
+      "disposition": "Main snapshot after merged PR 60; later integration is identified by PR 63"
+    },
+    {
+      "branch": "site/current-evidence-no-video-20260923",
+      "tip": "a396d1e03c11e0984399d2561a1f7b92402ed697",
+      "disposition": "Merged PR 59"
     }
   ],
   "local_historical_branches": [
