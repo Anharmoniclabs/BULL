@@ -45,7 +45,9 @@ The architecture film illustrates the design; it is not an execution recording.
 ## 5. Limits and review request — 45 seconds
 
 The connected hardware is only a KB2040, with no secure element. Physical approval
-remains blocked. Persistent VM state recovery, host power loss,
+remains blocked. Live two-/three-click BOOT diagnostics returned YES and NO;
+these were unsigned and do not demonstrate secure approval.
+Persistent VM state recovery, host power loss,
 collector disaster recovery and broad third-party adapters remain unverified.
 There is no independent security certification or endorsement by a meeting organizer.
 Ask reviewers about mediation coverage, operator trust and recovery semantics.

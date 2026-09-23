@@ -28,9 +28,16 @@ Bring-up evidence (2026-09-23): the board currently reports `BULL-DIAG-3`,
 `approval_available=false`, no valid ATECC wake response, zero successful
 four-byte reads, and no pending diagnostic request. SDA and SCL read high at
 boot. This does not identify a chip or validate wiring, power, address or timing.
-The physical click test was cancelled; two-/three-click gestures are not yet
-verified on the board. Original firmware backups and raw diagnostic logs remain
-private. The operator confirmed that only the KB2040 is present; no secure-element
+The initial physical click test was cancelled. A subsequent live test on
+September 23 observed **two BOOT clicks → YES** and **three BOOT clicks → NO**
+with distinct host challenges. Both requests cleared; the board was left idle.
+These responses were unsigned diagnostics, not production approval.
+[Public gesture evidence](../site/data/hardware/20260923-gestures.json) records
+the tested host commit, retained failures and raw-log hashes. The successful
+NO retry used the unmodified CLI plus a separate read-only USB drain; the
+evidence includes that exact helper and its hash. Automatic draining was
+implemented afterward and tested separately. Original firmware
+backups and raw diagnostic logs remain private. The operator confirmed that only the KB2040 is present; no secure-element
 breakout is connected. No secure element has been provisioned or enrolled.
 
 The alternate Trust&GO and TrustFLEX defaults are documented in Microchip's
@@ -125,6 +132,14 @@ pending, green briefly indicates the diagnostic YES, and red indicates NO or
 cancellation. The device subsequently returns to flashing red because secure
 approval remains unavailable. The diagnostic response is **not signed**, cannot
 satisfy ApprovalGate, and must never be used to execute protected operations.
+The host clears the completed request immediately, so the brief result LED may
+be missed before flashing red resumes. Red after completion indicates that
+secure approval remains unavailable, not that a recorded diagnostic YES became NO.
+A cancellation can leave a status reply queued on USB. The host drains a bounded
+queue of valid diagnostic replies before issuing any new command. It discards
+their decisions and retains strict challenge matching for the new request.
+Malformed reports, unexpected authority flags and a queue that does not settle
+stop the operation. Eight transport regression tests cover this behavior.
 HID commands are status, arm diagnostic request, and cancellation only; there
 is no host command for generating a click or setting the decision. Reset clears
 the state without producing a signed denial. BOOT sampling runs from SRAM with
