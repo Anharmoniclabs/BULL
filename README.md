@@ -6,7 +6,7 @@ An experimental, open-source execution firewall for AI agents. The model propose
 an action; trusted host integration supplies authority. BULL checks that authority,
 constrains execution, and records an authenticated audit checkpoint.
 
-[Presentation](docs/PRESENTATION.md) · [Evidence](docs/VALIDATION_20260923.md) ·
+[Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/603365e.json) ·
 [Architecture](docs/PRODUCTION_SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 The software release work and hardware host integration are merged into `main`.
@@ -32,13 +32,13 @@ host-callable development orchestration, not an automatic production adapter.
 ## Recorded validation
 
 Full deployment evidence below belongs to clean candidate
-[`428db9c`](https://github.com/Anharmoniclabs/BULL/commit/428db9cf8740f755249b23d33ba71da0c39502b1).
+[`603365e`](https://github.com/Anharmoniclabs/BULL/commit/603365edd0164418a06ec0ee46250a2922b284bf).
 Later documentation or packaging commits do not inherit a new live-validation claim.
 
 | Check | Recorded result |
 |---|---|
-| Local regression | 437 tests + 6 subtests passed; no failures or skips |
-| GitHub validation | Seven jobs passed on the same commit |
+| Local regression | 489 tests + 21 subtests passed; no failures or skips |
+| GitHub validation | All six validation workflows passed on the same commit |
 | Real KVM | Five cases passed: allowed, denied, timeout, cancellation, missing protection |
 | Production enforcement | Strict host, cgroups, signed configuration and external host/guest receipts passed |
 | Fixed-tool adapter | Both tools executed; empty-grant request denied |
@@ -79,7 +79,7 @@ workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
 ## Review and present
 
 - [Five-minute presentation](docs/PRESENTATION.md): problem, boundary, proof and limits.
-- [Latest live-validation record](docs/VALIDATION_20260923.md): exact source, image hashes and retained failures.
+- [Latest live-validation record](site/data/validation/603365e.json): exact source, image hashes and retained failures.
 - [MicroVM reproduction](microvm/README.md) and [historical integration report](docs/MICROVM_INTEGRATION_REPORT.md).
 - [Engineering site](https://anharmoniclabs.github.io/BULL/): architecture and historical benchmarks; deployment follows its own branch workflow.
 
