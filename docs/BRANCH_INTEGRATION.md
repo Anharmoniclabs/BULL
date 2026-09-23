@@ -29,3 +29,9 @@ shares the normal gate and broker effect path; diagnostic firmware still cannot
 sign or authorize. Existing deployment integrity manifests must be regenerated
 for the changed trusted source. No hardware acceptance or stable release is implied
 by integrating the prototype source.
+
+The operator's Cloudflare setup deploys the audit worker from a separate audit
+branch. Integrating repository code into `main` does not repoint that deployment.
+Site publication and audit-collector deployment remain separate. An audit-worker
+check attached to a main/PR commit is not evidence that the branch-connected
+collector was promoted; live collector receipts are validated separately.
