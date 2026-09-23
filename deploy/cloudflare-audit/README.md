@@ -78,10 +78,10 @@ Do not use localhost, a test CA, or a committed key for production verification.
 
 ## Workers Builds root-directory errors
 
-This repository's root is a Python project, not a Worker entry point. The audit
+The root Wrangler configuration serves the `bull` website, not the collector. The audit
 Worker package and Wrangler configuration live in `deploy/cloudflare-audit/`;
 its checked-in Worker name is `bull-audit` and its entry point is `src/index.ts`
-relative to that directory. A root-directory trigger running
+relative to that directory. Before the root website configuration was added, a root-directory trigger running
 `npx wrangler versions upload` without a selected configuration fails with
 “Missing entry-point to Worker script or to assets directory”. Installing the
 Python package does not supply that entry point.
@@ -96,8 +96,9 @@ new production identity just to make CI green.
 
 The engineering website is built by `tools/build_site.py` and published through
 GitHub Pages. Its PR workflow deliberately skips the deployment job. A separate
-Cloudflare website mirror needs its own explicit assets configuration and build
-output; the audit Worker configuration is not a website configuration.
+Cloudflare website mirror uses the root `wrangler.jsonc` and `site/` assets;
+see [website instructions](../../site/README.md). The audit Worker configuration
+is not a website configuration.
 
 Cloudflare documents [trigger root directories](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
 and [matching Worker names](https://developers.cloudflare.com/workers/ci-cd/builds/).

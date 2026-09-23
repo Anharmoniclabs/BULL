@@ -304,11 +304,27 @@ unverified.
 Separately, GitHub reported `Workers Builds: bull` failed on `978ff4d` without
 an attached error log. The operator supplied its error and configuration:
 `npx wrangler versions upload`, root `/`, and “Missing entry-point to Worker
-script or to assets directory”. Repository inspection confirms there is no
-root Worker config; the audit package is nested and named `bull-audit`.
+script or to assets directory”. At that revision there was no root Worker
+config; the audit package is nested and named `bull-audit`.
 This is a build-trigger/configuration mismatch, not a Python package install
 failure or evidence that the running collector rejected audit receipts.
 The [collector guide](../deploy/cloudflare-audit/README.md#workers-builds-root-directory-errors)
 describes the configuration distinction. No successful Cloudflare rebuild,
 production settings change, or deployment is claimed. The GitHub Pages deploy
 job is intentionally skipped on PRs by its workflow condition.
+
+Subsequent operator-supplied successful `974eb17` build logs establish that
+`bull` is a separate static website mirror: `npx wrangler deploy` automatically
+generated a config for `site/` and deployed 37 assets. The failed branch command
+did not generate that config. Disconnecting `bull` was therefore not the fix;
+the operator reports restoring its repository connection.
+
+The local correction adds that explicit root website configuration and leaves
+the collector configuration separate. Executed validation: 16 website unittest
+cases passed (`python3 -m unittest discover -s tests -p 'test_*site*.py' -v`),
+and `npx --offline wrangler deploy --dry-run --config wrangler.jsonc` passed
+with locally cached Wrangler 4.130.0, recognizing 37 assets and no bindings.
+The supplied Cloudflare logs used Wrangler 4.136.3; this local dry run is not
+evidence of a successful remote build with that version. Private evidence is
+under `/home/al/bull-evidence/website-config-20260922/`. No version upload or
+production deployment was executed for this correction; push remains on hold.
