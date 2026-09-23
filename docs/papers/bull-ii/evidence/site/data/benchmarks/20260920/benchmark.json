@@ -1,0 +1,212 @@
+{
+  "schema": "bull-benchmark-v1",
+  "source_commit": "cd461ae05a0925d6bd32381f8ef4da9e99bb2ccb",
+  "run": {
+    "timestamp_utc": "20260920T170536Z",
+    "commit": "cd461ae05a0925d6bd32381f8ef4da9e99bb2ccb",
+    "kernel": "Linux 7.2.6-1-cachyos x86_64 GNU/Linux",
+    "python": "Python 3.14.7",
+    "repeats": 3,
+    "hot_iters": 500,
+    "cpu_model": "AMD Ryzen 5 7430U with Radeon Graphics",
+    "cpu_count": 12,
+    "memory": "11Gi"
+  },
+  "selected_redteam": {
+    "runs": 33,
+    "passes": 33,
+    "failures": 0,
+    "attacks": [
+      {
+        "attack_id": "path_traversal",
+        "attack": "Path traversal encodings",
+        "surface": "filesystem",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 338.406,
+        "median_ms": 328.454,
+        "min_ms": 310.374,
+        "max_ms": 376.391,
+        "peak_rss_mb": 45.5
+      },
+      {
+        "attack_id": "unbound_command",
+        "attack": "Read authority → shell execution",
+        "surface": "authorization",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 366.427,
+        "median_ms": 360.8,
+        "min_ms": 360.342,
+        "max_ms": 378.14,
+        "peak_rss_mb": 44.883
+      },
+      {
+        "attack_id": "argv_drift",
+        "attack": "Authorized argv → force-push drift",
+        "surface": "authorization",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 318.111,
+        "median_ms": 326.729,
+        "min_ms": 298.313,
+        "max_ms": 329.291,
+        "peak_rss_mb": 44.926
+      },
+      {
+        "attack_id": "credential_from_external",
+        "attack": "External content → credential read",
+        "surface": "secrets",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 301.671,
+        "median_ms": 299.895,
+        "min_ms": 295.504,
+        "max_ms": 309.615,
+        "peak_rss_mb": 44.855
+      },
+      {
+        "attack_id": "sandbox_egress_bypass",
+        "attack": "SANDBOX verdict → egress broker",
+        "surface": "egress",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 292.603,
+        "median_ms": 292.307,
+        "min_ms": 291.569,
+        "max_ms": 293.934,
+        "peak_rss_mb": 44.734
+      },
+      {
+        "attack_id": "sandbox_secret_bypass",
+        "attack": "SANDBOX verdict → secret broker",
+        "surface": "secrets",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 304.441,
+        "median_ms": 308.532,
+        "min_ms": 295.086,
+        "max_ms": 309.706,
+        "peak_rss_mb": 44.668
+      },
+      {
+        "attack_id": "ssrf_private_addresses",
+        "attack": "Private/metadata SSRF targets",
+        "surface": "egress",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 355.926,
+        "median_ms": 381.879,
+        "min_ms": 301.842,
+        "max_ms": 384.057,
+        "peak_rss_mb": 44.797
+      },
+      {
+        "attack_id": "wrong_peer_uid",
+        "attack": "Wrong Unix peer UID",
+        "surface": "secrets",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 360.088,
+        "median_ms": 365.086,
+        "min_ms": 349.124,
+        "max_ms": 366.053,
+        "peak_rss_mb": 44.809
+      },
+      {
+        "attack_id": "prompt_injection",
+        "attack": "Prompt injection",
+        "surface": "multi-agent",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 351.591,
+        "median_ms": 348.819,
+        "min_ms": 345.773,
+        "max_ms": 360.182,
+        "peak_rss_mb": 46.086
+      },
+      {
+        "attack_id": "forged_policy_verdict",
+        "attack": "Forged policy verdict",
+        "surface": "multi-agent",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 367.611,
+        "median_ms": 384.904,
+        "min_ms": 331.814,
+        "max_ms": 386.116,
+        "peak_rss_mb": 45.012
+      },
+      {
+        "attack_id": "approval_replay",
+        "attack": "Approval-token replay",
+        "surface": "multi-agent",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "pass_rate_pct": 100,
+        "mean_ms": 376.64,
+        "median_ms": 378.265,
+        "min_ms": 369.628,
+        "max_ms": 382.027,
+        "peak_rss_mb": 44.992
+      }
+    ]
+  },
+  "full_regression_suite": {
+    "status": "PASS",
+    "return_code": 0,
+    "duration_seconds": 4.587
+  },
+  "hotpath": [
+    {
+      "benchmark": "Traversal rejection",
+      "iterations": 500,
+      "expected_matches": 500,
+      "elapsed_seconds": 0.002449,
+      "mean_us": 4.897,
+      "ops_per_second": 204187.31
+    },
+    {
+      "benchmark": "Prompt-injection denial",
+      "iterations": 500,
+      "expected_matches": 500,
+      "elapsed_seconds": 33.279928,
+      "mean_us": 66559.856,
+      "ops_per_second": 15.02
+    },
+    {
+      "benchmark": "Benign multi-agent allow",
+      "iterations": 500,
+      "expected_matches": 500,
+      "elapsed_seconds": 219.279526,
+      "mean_us": 438559.052,
+      "ops_per_second": 2.28
+    }
+  ],
+  "caveats": [
+    "Selected red-team latency is end-to-end pytest latency, not pure policy-decision latency.",
+    "Prompt-injection and benign multi-agent hot-path measurements reuse one MultiAgentSystem and include retained trace/honeytoken state growth.",
+    "A PASS is evidence for the defined regression corpus, not independent security certification."
+  ]
+}

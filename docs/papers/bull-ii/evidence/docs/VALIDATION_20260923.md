@@ -1,24 +1,5 @@
 # Validation recorded 2026-09-23
 
-## Latest qualified runtime
-
-Clean commit `ab53f563bcbcaf60820acb318b8212796ce502ff` passed **501 tests and
-21 subtests**, with no failures or skips, all five real KVM cases, three bounded
-formal models, strict host/cgroup checks and authenticated existing-collector
-host/guest receipts. Both fixed host tools and empty-grant denial passed; a fresh
-guest after cancellation passed. The wheel built from the source distribution
-and installed in a fresh environment. All six recorded GitHub workflows passed.
-
-[Sanitized exact-source results, artifact hashes and CI URLs](../site/data/validation/ab53f56.json).
-[Revised Paper II with native LaTeX and evidence companion](papers/bull-ii/README.md).
-
-The later source includes one-shot channel failure/reuse hardening and eight
-diagnostic transport regressions. Physical YES/NO results below retain their
-original CLI/manual-preparation identity. Secure signing remains BLOCKED.
-The main-attached audit Worker build failure remains recorded separately from
-the passing existing-collector receipt tests. This documentation publication
-does not reattribute those live results to a later commit.
-
 ## Integrated main candidate
 
 Clean commit `603365edd0164418a06ec0ee46250a2922b284bf` passed 489 tests and 21

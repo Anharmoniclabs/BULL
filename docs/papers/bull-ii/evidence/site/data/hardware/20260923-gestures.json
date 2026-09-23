@@ -1,0 +1,47 @@
+{
+  "checked_at": "2026-09-23T14:04:21.290260+00:00",
+  "source_commit": "437de3fd03da2e8d8ca15e7bcb9804e45317b58a",
+  "firmware": "BULL-DIAG-3",
+  "two_boot_clicks": "YES",
+  "three_boot_clicks": "NO",
+  "distinct_diagnostic_challenges": true,
+  "pending_request": false,
+  "approval_available": false,
+  "cryptographic_signature_produced": false,
+  "production_hardware_acceptance": false,
+  "scope": "Physical BOOT gestures observed through unsigned diagnostic HID; not the separate-button hold ceremony or secure-element signing acceptance.",
+  "format": "bull-hardware-gesture-evidence-v1",
+  "source_commit_scope": "Unmodified host diagnostic CLI used for the physical tests. A separate manual USB queue drain ran before the successful NO retry; see manual_transport_preparation. Firmware version is reported over unsigned HID, not attested.",
+  "secure_element_connected": false,
+  "secure_signing": "BLOCKED",
+  "test_logs_sha256": {
+    "yes-gesture.log": "672146e0f3c188f016a08b6b380c442a3654cf80b4efe4e1c1f8126fa9debee5",
+    "yes-gesture-retry-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "yes-gesture-retry-2.log": "115415fce12e508c553e0ebfba90824a7734e88a2a2297e20d85947eedb61925",
+    "no-gesture-retry-1.log": "0defcc22168b06a2c5c6ffe206ad3fd72b712f07a6c7279d05f460a5b3ec49b6",
+    "no-gesture-retry-2.log": "9e7446821489b328214b3a5cdd57ea9bf4829262a073802fa7e373c6a77164e3"
+  },
+  "retained_failures": [
+    "Initial gesture test returned CANCELLED.",
+    "A retry found the board in RP2 Boot mode; only that USB device was restarted into its installed application. No firmware was flashed.",
+    "The first NO attempt rejected a mismatched diagnostic challenge. One queued status reply was drained before the successful retry."
+  ],
+  "production_acceptance_limits": [
+    "These are unsigned BOOT-button diagnostics, not signed approval or denial.",
+    "Separate YES/NO buttons and the specified deliberate YES hold have not been physically accepted.",
+    "No secure-element key generation, enrollment, signature, monotonic counter or signed replay demonstration was performed."
+  ],
+  "tested_cli_sha256": "311de0118eb9c538fbb3cbca469be59ce28898cb98b0b5d6f9110ee2b017746b",
+  "manual_transport_preparation": {
+    "source_path": "docs/evidence/hardware-20260923/manual-drain.py",
+    "source_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f",
+    "when": "After the mismatched-challenge NO attempt and before the successful NO retry",
+    "observed_queued_replies_drained": 1,
+    "scope": "One-off read-only USB preparation; no commands, approval or signature generated"
+  },
+  "subsequent_automatic_fix": {
+    "source_path": "src/bulldog/hardware_approval/diagnostic.py",
+    "source_sha256": "ccd4ac6e608f02f217852dcea8f7bde48721c7431046989514276af02a9e4840",
+    "scope": "Implemented after the physical tests. Eight simulated transport tests and two live read-only status queries passed; the physical gesture results are not attributed to this later code."
+  }
+}
