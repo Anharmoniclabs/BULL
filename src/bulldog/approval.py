@@ -60,9 +60,15 @@ def validate_config(config: dict) -> dict:
     for identity, public_key in credentials.items():
         if not isinstance(identity, str) or not re.fullmatch(r"[A-Za-z0-9_.@-]{1,128}", identity):
             raise ApprovalError("invalid credential identity")
-        if not isinstance(public_key, str):
+        if isinstance(public_key, dict):
+            from .hardware_approval.provider import validate_credential
+            validate_credential(public_key)
+            if ttl != 30:
+                raise ApprovalError("custom hardware requires a 30-second lifetime")
+        elif isinstance(public_key, str):
+            validate_public_key(public_key)
+        else:
             raise ApprovalError("invalid enrolled key")
-        validate_public_key(public_key)
     from urllib.parse import urlsplit
     urls = config["routine_egress_urls"]
     if not isinstance(urls, list) or len(urls) > 256:
@@ -131,6 +137,8 @@ class ApprovalGate:
                   state TEXT NOT NULL, credential TEXT, outcome TEXT);
                 CREATE TABLE IF NOT EXISTS clock (id INTEGER PRIMARY KEY, highwater INTEGER NOT NULL);
                 INSERT OR IGNORE INTO clock VALUES (1, 0);
+                CREATE TABLE IF NOT EXISTS hardware_counters (
+                  key_identity TEXT PRIMARY KEY, counter INTEGER NOT NULL);
             """)
 
     @contextmanager
@@ -190,7 +198,15 @@ class ApprovalGate:
             raise ApprovalError("approval is missing, changed, cancelled, or already consumed")
         if binding.get("policy_digest") != self.policy_digest:
             raise ApprovalError("approval policy changed")
-        verify_hardware_signature(bytes(row["message"]), proof.signature, key)
+        hardware_assertion = None
+        hardware_request = None
+        if isinstance(key, dict):
+            from .hardware_approval.protocol import Assertion
+            from .hardware_approval.provider import request_for
+            hardware_assertion = Assertion.decode(proof.signature)
+            hardware_request = request_for(bytes(row["message"]), proof.credential_id)
+        else:
+            verify_hardware_signature(bytes(row["message"]), proof.signature, key)
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             now = self._now(db)
@@ -199,14 +215,52 @@ class ApprovalGate:
                 raise ApprovalError("approval has already been consumed or cancelled")
             if now >= row["expires"] or now < row["issued"]:
                 raise ApprovalError("approval has expired or clock is invalid")
+            denied = False
+            if hardware_assertion is not None:
+                from .hardware_approval.protocol import Decision
+                from .hardware_approval.provider import counter_identity
+                from .hardware_approval.verifier import verify
+                identity = counter_identity(key)
+                prior = db.execute("SELECT counter FROM hardware_counters WHERE key_identity=?", (identity,)).fetchone()
+                verify(hardware_assertion, hardware_request, public_key=bytes.fromhex(key["public_key"]),
+                       device_id=bytes.fromhex(key["device_id"]), enabled=key["enabled"],
+                       last_counter=prior[0] if prior else 0, now=now)
+                db.execute("INSERT INTO hardware_counters VALUES (?, ?) ON CONFLICT(key_identity) "
+                           "DO UPDATE SET counter=excluded.counter", (identity, hardware_assertion.counter))
+                denied = hardware_assertion.decision == Decision.DENY
             # Commit consumption BEFORE effect/audit delivery. Failure afterwards
             # leaves a terminal, uncertain request, never a replayable approval.
-            db.execute("UPDATE requests SET state='consumed', credential=?, outcome='uncertain' WHERE id=?",
-                       (proof.credential_id, proof.request_id))
+            db.execute("UPDATE requests SET state=?, credential=?, outcome=? WHERE id=?",
+                       ("denied" if denied else "consumed", proof.credential_id,
+                        "human-denied" if denied else "uncertain", proof.request_id))
             db.commit()
-        self.audit("approval.consumed", {"request_id": proof.request_id,
-                   "binding_digest": expected, "credential_id": proof.credential_id})
+        detail = {"request_id": proof.request_id, "binding_digest": expected, "credential_id": proof.credential_id}
+        if hardware_assertion is not None:
+            detail.update(provider=key["type"], counter=hardware_assertion.counter,
+                          decision="DENY" if denied else "APPROVE", device_id=key["device_id"])
+        self.audit("approval.human_denied" if denied else "approval.consumed", detail)
+        if denied:
+            raise ApprovalError("physical human denial")
         return proof.request_id
+
+    def hardware_request(self, request_id: str, credential_id: str) -> bytes:
+        """Export exact pending bytes; never authorizes, signs or changes a request."""
+        from .hardware_approval.provider import request_for
+        credential = self.config["credentials"].get(credential_id)
+        if not isinstance(credential, dict) or credential["enabled"] is not True:
+            raise ApprovalError("custom hardware credential is not enrolled and enabled")
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            now = self._now(db)
+            row = db.execute("SELECT * FROM requests WHERE id=?", (request_id,)).fetchone()
+            if row is None or row["state"] != "pending" or not row["issued"] <= now < row["expires"]:
+                raise ApprovalError("hardware request is not pending or has expired")
+            message = bytes(row["message"])
+            if json.loads(message)["action"]["policy_digest"] != self.policy_digest:
+                raise ApprovalError("hardware request policy changed")
+            packet = request_for(message, credential_id).encode()
+            db.commit()
+        return packet
 
     def finish(self, request_id: str, outcome: str) -> None:
         if outcome not in {"completed", "uncertain"}:

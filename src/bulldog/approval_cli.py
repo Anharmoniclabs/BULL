@@ -46,6 +46,12 @@ def run(args) -> int:
         elif args.approval_command == "cancel":
             _host_gate().cancel(args.request_id)
             print("Approval request cancelled; no action executed.")
+        elif args.approval_command == "hardware-request":
+            gate = _host_gate()
+            packet = gate.hardware_request(args.request_id, args.credential)
+            print(json.dumps(gate.inspect(args.request_id), indent=2, ensure_ascii=True))
+            _write_new(args.output, packet)
+            print("Bound request exported. A signed device assertion is required; no action executed.")
         elif args.approval_command == "sign":
             # Freeze the bytes before display/signing to avoid a file-change race.
             raw = args.request.read_bytes()
@@ -91,5 +97,9 @@ def add_parser(subparsers):
     sign.add_argument("--request", type=Path, required=True)
     sign.add_argument("--key", type=Path, required=True)
     sign.add_argument("--output", type=Path, required=True)
-    for command in (show, cancel, sign):
+    hardware = commands.add_parser("hardware-request", help="Export a pending request for an enrolled custom token.")
+    hardware.add_argument("request_id")
+    hardware.add_argument("--credential", required=True)
+    hardware.add_argument("--output", type=Path, required=True)
+    for command in (show, cancel, sign, hardware):
         command.set_defaults(handler=run)

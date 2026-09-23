@@ -1,0 +1,307 @@
+{
+  "scope": "All fetched origin branch tips and non-current local development tips; histories retained. Superseded experiments are accounted for, not restored over current implementations.",
+  "remote_branches": [
+    {
+      "branch": "origin",
+      "tip": "ee96355359b99eb24191303516ff8cf00765165d",
+      "disposition": "Already contained in integration history"
+    },
+    {
+      "branch": "brand/approved-b-logo-20260919",
+      "tip": "54cc2e0294cce84d5a21ce278c4934eafeedb03d",
+      "disposition": "Previously merged PR(s): 30"
+    },
+    {
+      "branch": "branding/approved-bulldog-b-20260919",
+      "tip": "99d244facba2f79e700cfa2a0e8f04ea1414e0aa",
+      "disposition": "Merged into this integration branch: approved raster, vector variants, provenance manifest, generator and tests."
+    },
+    {
+      "branch": "copilot/fix-132678602-1369267866-fce47232-30a3-4c95-83fc-0e490010bab0",
+      "tip": "67c0ce8be4447fa5cbe49c28b88595c688517ecc",
+      "disposition": "No content change (Initial plan only); superseded by integrated branding PR 29."
+    },
+    {
+      "branch": "design/bull-premium-site-v2",
+      "tip": "55f64d3c262f909231145a3fda822368c219753f",
+      "disposition": "Previously merged PR(s): 45"
+    },
+    {
+      "branch": "docs/site-repo-parity-20260920",
+      "tip": "b1ebd1777812ab6c9fe3001072ee722094b3c44b",
+      "disposition": "Previously merged PR(s): 35"
+    },
+    {
+      "branch": "docs/site-repo-parity-signed-stage-20260920",
+      "tip": "26eede4eac402d135f642113102bd7aeafdb64e2",
+      "disposition": "Previously merged PR(s): 36"
+    },
+    {
+      "branch": "feat/codespace-deployment-checks-20260922",
+      "tip": "7c4d9da9f2e0509ee84b40041782a4620b1ed1df",
+      "disposition": "Previously merged PR(s): 49"
+    },
+    {
+      "branch": "feat/multiagent-system",
+      "tip": "85dccea506e0e4ab233a61924eab025dd7184b9a",
+      "disposition": "Previously merged PR(s): 15"
+    },
+    {
+      "branch": "feat/portable-deployment-authority",
+      "tip": "1d558e690c93401ca971ce47bfe24bb111f851a3",
+      "disposition": "Previously merged PR(s): 50"
+    },
+    {
+      "branch": "feat/publish-verified-guest-artifact",
+      "tip": "f62b8429a6265a308bd610d6504794560015fb7f",
+      "disposition": "Previously merged PR(s): 52"
+    },
+    {
+      "branch": "feature/benchmark-evidence-and-cloudflare-20260920",
+      "tip": "fc0378eb3c1e5b6d54f95fbaa443a5e70307a792",
+      "disposition": "Previously merged PR(s): 43"
+    },
+    {
+      "branch": "feature/benchmark-evidence-and-cloudflare-signed-20260920",
+      "tip": "9f4514671745d0b536deaa7451ab104afa01cdb9",
+      "disposition": "Previously merged PR(s): 44"
+    },
+    {
+      "branch": "feature/bull-brand-story-20260919",
+      "tip": "a2752efb79fcbc46dc03699dee7863baa34a3759",
+      "disposition": "Previously merged PR(s): 27"
+    },
+    {
+      "branch": "feature/bull-control-dashboard-rebased-20260918",
+      "tip": "b44b4eda808f4dda392e6d59fd02218bbbc2d025",
+      "disposition": "Previously merged PR(s): 18"
+    },
+    {
+      "branch": "feature/bull-pages-live-lab-20260918",
+      "tip": "8a7454492b83f8116f011a0d30cb6853cb88318d",
+      "disposition": "Previously merged PR(s): 16"
+    },
+    {
+      "branch": "feature/cloudflare-audit-anchor-20260920",
+      "tip": "f58050702cb0673dac0b9e7e3c21967cf1d7c3ef",
+      "disposition": "Previously merged PR(s): 39"
+    },
+    {
+      "branch": "feature/cloudflare-audit-anchor-signed-20260920",
+      "tip": "b8a38e3f6abc0edcbb2624ba668d203630a237b8",
+      "disposition": "Collector implementation integrated through PRs 39 and 42; current authenticated collector contract supersedes this staging tip."
+    },
+    {
+      "branch": "feature/dashboard-console-ui-20260918",
+      "tip": "691c8603359de5c62d0e98395213effede3666ab",
+      "disposition": "Superseded by PRs 18, 28 and 45; the public execution console was intentionally removed."
+    },
+    {
+      "branch": "feature/microvm-output-bridge",
+      "tip": "160b1b17d682473d37dc9101425a77f79de2a9f7",
+      "disposition": "Superseded by PR 31 and subsequent guest releases: guest_engine/microvm_protocol and public Buildroot recipe replace the older workload-file/output-disk adapter."
+    },
+    {
+      "branch": "fix/architecture-film-no-public-lab-20260919",
+      "tip": "82157fc1666f8ce151bb593c6319fcdb0c461fee",
+      "disposition": "Previously merged PR(s): 28"
+    },
+    {
+      "branch": "fix/audit-anchor-user-agent",
+      "tip": "cdc7a640c86401f5b9f113541be27f9f5c380956",
+      "disposition": "Previously merged PR(s): 41"
+    },
+    {
+      "branch": "fix/audit-anchor-user-agent-signed-20260920",
+      "tip": "a0d443cce3e1dbba00017fce6f8e843a3a4b3366",
+      "disposition": "Previously merged PR(s): 42"
+    },
+    {
+      "branch": "fix/codespace-permission-fixtures-20260922",
+      "tip": "6dbcc03cb172aea2f090085769d242e8c3079c21",
+      "disposition": "Previously merged PR(s): 48"
+    },
+    {
+      "branch": "fix/freshclam-permitted-paths",
+      "tip": "5a1f7eb460f5a1e4f4ef618a513258520f029fbe",
+      "disposition": "Previously merged PR(s): 54"
+    },
+    {
+      "branch": "fix/guest-release-freshclam",
+      "tip": "056b4a5427ff3e6a7c3c7ae786a1b4358606f6b8",
+      "disposition": "Previously merged PR(s): 53"
+    },
+    {
+      "branch": "fix/local-only-microvm-assets-20260919",
+      "tip": "52b71e68a74df0dc7fc4167f04ef1ce35cc425ff",
+      "disposition": "Previously merged PR(s): 26"
+    },
+    {
+      "branch": "fix/microvm-guest-integration-r3",
+      "tip": "45b036e9441699b417a75bc9971498c453a94d12",
+      "disposition": "Previously merged PR(s): 31"
+    },
+    {
+      "branch": "fix/production-validation-20260922",
+      "tip": "5e0737b0a2a73861ee2c44ebe6b83d2bd2c0e905",
+      "disposition": "Merged to main in PR 55 at ee96355359b99eb24191303516ff8cf00765165d."
+    },
+    {
+      "branch": "hardening/authorization-binding-fix",
+      "tip": "940b3d0e506862b1f285ee79b21ba4efa63922e8",
+      "disposition": "Previously merged PR(s): 8"
+    },
+    {
+      "branch": "hardening/broker-argv-binding-v2",
+      "tip": "a95cb19542eabeb799d3f383e55ae8f1d76d1bb5",
+      "disposition": "Superseded by PR 11 and production-boundary PR 14; exact argv binding remains tested."
+    },
+    {
+      "branch": "hardening/ci-main-gate",
+      "tip": "292918ae42ed1c5e31e26341442c3bbc7b4aad9a",
+      "disposition": "Previously merged PR(s): 6"
+    },
+    {
+      "branch": "hardening/fail-closed-broker-argv-v2",
+      "tip": "131ea75f35603d18afc6c399e995d2e4209e6a6c",
+      "disposition": "Previously merged PR(s): 11"
+    },
+    {
+      "branch": "hardening/human-auditable-adversarial-flags",
+      "tip": "5e949c97b717858b0a0a191376f970f9631a9716",
+      "disposition": "Superseded by runtime/security-domain integrations (PRs 2, 5, 7, 8); current security flags and policy are retained."
+    },
+    {
+      "branch": "hardening/microvm-audit",
+      "tip": "1f8e600650b45d4da0f6f7512ac0bed2be3c7986",
+      "disposition": "Integrated through signed PR 24; later audit size and transport fixes are already present."
+    },
+    {
+      "branch": "hardening/microvm-audit-signed",
+      "tip": "7d4a0bf6b756b84244072935b4fab68209f7f8df",
+      "disposition": "Previously merged PR(s): 24"
+    },
+    {
+      "branch": "hardening/microvm-ci",
+      "tip": "96be3f19167f868f8a5a4d18bb72c33a2b691229",
+      "disposition": "Integrated through signed PR 25; current workflows include the later CI fixes."
+    },
+    {
+      "branch": "hardening/microvm-ci-signed",
+      "tip": "07c14641ffcf1f1c5c58747e94640a557a49c024",
+      "disposition": "Previously merged PR(s): 25"
+    },
+    {
+      "branch": "hardening/microvm-launcher",
+      "tip": "4d31eb433bd8e027f8531024412681e65701a9e4",
+      "disposition": "Previously merged PR(s): 21"
+    },
+    {
+      "branch": "hardening/multi-agent-isolation-v1",
+      "tip": "87463232d2fd109e998e4d769f3220add6eb01d8",
+      "disposition": "Superseded by security-domain PRs 5 and 7; no restoration of the older parallel agent_isolation authority path."
+    },
+    {
+      "branch": "hardening/ollama-redteam-20260918-182423",
+      "tip": "19f16ed72fd2c5bbcad09b8def686100eec2c073",
+      "disposition": "Canonicalization/session hardening incorporated into later production and strict-boundary work; current regression suite retained."
+    },
+    {
+      "branch": "hardening/production-boundary-v1",
+      "tip": "6628b8796e536dadac9558a92b96c9cc930115f6",
+      "disposition": "Previously merged PR(s): 10"
+    },
+    {
+      "branch": "hardening/production-boundary-v3",
+      "tip": "d55760d20e9722986efcaf0c1aaf74e7c2486634",
+      "disposition": "Previously merged PR(s): 14"
+    },
+    {
+      "branch": "hardening/runtime-enforcement-fix",
+      "tip": "bfe799393723267ab4407491a9637d063a64ad64",
+      "disposition": "Previously merged PR(s): 2"
+    },
+    {
+      "branch": "hardening/security-domain-audit-v2",
+      "tip": "b90bb6c8acfa5151a35f7eb85cf84a9a6ced7e60",
+      "disposition": "Previously merged PR(s): 7"
+    },
+    {
+      "branch": "hardening/security-domains-v1",
+      "tip": "55bc3da464d141e4958f05a830cb5f2654ee4829",
+      "disposition": "Previously merged PR(s): 5"
+    },
+    {
+      "branch": "hardening/strict-no-sockets-20260921T011646Z",
+      "tip": "f01871e4287b8b1586cfb0fd79c51aab9b83e10e",
+      "disposition": "Integrated in human-approval release PR 47 and subsequent production validation; strict no-socket and pre-exec attestation tests retained."
+    },
+    {
+      "branch": "license/gpl-2-or-later-20260920",
+      "tip": "616d876e58d32cbe43ac753673e19f01931a0c71",
+      "disposition": "Previously merged PR(s): 32"
+    },
+    {
+      "branch": "redteam/authorization-binding-v1",
+      "tip": "e1d8d274dc6fe709cc45ecef9c1c397a99c600f0",
+      "disposition": "Previously merged PR(s): 3"
+    },
+    {
+      "branch": "redteam/sandbox-decision-bypass-v1",
+      "tip": "bd0ebf170c145396e24f591367dd84ea921d3f3a",
+      "disposition": "Previously merged PR(s): 13"
+    },
+    {
+      "branch": "redteam/test-harness",
+      "tip": "769928609c6b68aee8e051cedde474efc31183e0",
+      "disposition": "Integrated as tools/adversarial_check.py; corrected denied-result handling, exact argv setup and hop forwarding. 49 source/API probes pass."
+    },
+    {
+      "branch": "release/human-approval-20260922",
+      "tip": "77a348526ec206ff17e87adf41857a4536725a21",
+      "disposition": "Previously merged PR(s): 47"
+    },
+    {
+      "branch": "site/longform-technical-20260918",
+      "tip": "1d5313c4769b13f8e3d73f1d5ace17832320f58f",
+      "disposition": "Previously merged PR(s): 19"
+    },
+    {
+      "branch": "tools/production-provision-20260920",
+      "tip": "7f660b3c960a5020002698a10fce8487ec67a47d",
+      "disposition": "Previously merged PR(s): 37"
+    },
+    {
+      "branch": "tools/production-provision-signed-stage-20260920",
+      "tip": "a79a8fbb92ad906b969ccd90a224a8879de57cb0",
+      "disposition": "Previously merged PR(s): 38"
+    },
+    {
+      "branch": "dependabot/pip/cryptography-gte-43-and-lt-51",
+      "tip": "9ef9a49fb3d8b99499e8994d0e61628bd31b0d6d",
+      "disposition": "PR 56 appeared during integration; dependency range merged and applied to both test and hardware extras, validated with cryptography 50.0.1."
+    }
+  ],
+  "local_historical_branches": [
+    {
+      "branch": "design/bull-premium-site-v2",
+      "tip": "01cd2599a436a5171e5fe292d77dc7ff52402992",
+      "disposition": "Historical local tip; current signed/main integrations contain the successor implementation. Original branch retained; no force reset or deletion."
+    },
+    {
+      "branch": "hardening/microvm-ci",
+      "tip": "31cac8fe59bfd889e61280b4ac71cba8220d429d",
+      "disposition": "Historical local tip; current signed/main integrations contain the successor implementation. Original branch retained; no force reset or deletion."
+    },
+    {
+      "branch": "hardening/microvm-production",
+      "tip": "79a548343e87e3217b7447457902e75af9285ce3",
+      "disposition": "Historical local tip; current signed/main integrations contain the successor implementation. Original branch retained; no force reset or deletion."
+    },
+    {
+      "branch": "fix/microvm-guest-integration-r3",
+      "tip": "e3adc03c00e898c792e3a0ed8fdf5f4b39d524b4",
+      "disposition": "Historical local tip; current signed/main integrations contain the successor implementation. Original branch retained; no force reset or deletion."
+    }
+  ]
+}

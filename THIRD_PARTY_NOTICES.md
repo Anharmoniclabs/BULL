@@ -13,7 +13,7 @@ Installed development metadata reviewed on 2026-09-23 records:
 | Package | Reviewed version | Declared license | Role |
 |---|---|---|---|
 | pytest | 9.1.1 | MIT | Tests |
-| cryptography | 46.0.7 | Apache-2.0 OR BSD-3-Clause | Test credentials |
+| cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause | Test credentials and optional custom hardware verifier |
 | setuptools | 84.0.0 | MIT | Packaging |
 | wheel | 0.48.0 | MIT | Packaging |
 | build | 1.6.1 | MIT | Source distribution and wheel validation |
@@ -53,3 +53,8 @@ tools and video bytes are not bundled in this repository.
 
 A model's license is separate from BULL's. Operators obtain their own local model
 and check its terms; the Qwen test result does not grant rights to model weights.
+
+The hardware source targets external Raspberry Pi Pico SDK 2.2.0 (BSD-3-Clause),
+its pinned TinyUSB dependency (MIT), ARM GNU/newlib tools and picotool. Their
+sources and licenses are obtained separately; no SDK, toolchain, private keys or
+flashed device images are bundled in Git.

@@ -10,7 +10,8 @@ license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10", "cryptography>=43,<47", "build>=1,<2"]
+hardware = ["cryptography>=43,<51"]
+test = ["pytest>=8,<10", "cryptography>=43,<51", "build>=1,<2"]
 
 [project.urls]
 Source = "https://github.com/Anharmoniclabs/BULL"
