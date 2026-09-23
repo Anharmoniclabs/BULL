@@ -37,12 +37,11 @@ def test_authenticated_wrong_session_sequence_or_operation_rejected(channels, ch
         guest.receive('execute')
 
 
-def test_missing_and_oversize_completion_are_failures(channels):
+@pytest.mark.parametrize('length', [0, 65537])
+def test_invalid_completion_length_fails_before_payload(channels, length):
     host, _, _, b = channels
-    with pytest.raises(AnchorError, match='deadline'):
-        host.receive('result')
-    b.sendall((65537).to_bytes(4, 'big'))
-    with pytest.raises(AnchorError, match='unusable'):
+    b.sendall(length.to_bytes(4, 'big'))
+    with pytest.raises(AnchorError, match='length'):
         host.receive('result')
 
 

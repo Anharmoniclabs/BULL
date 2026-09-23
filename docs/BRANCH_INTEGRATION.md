@@ -35,3 +35,12 @@ branch. Integrating repository code into `main` does not repoint that deployment
 Site publication and audit-collector deployment remain separate. An audit-worker
 check attached to a main/PR commit is not evidence that the branch-connected
 collector was promoted; live collector receipts are validated separately.
+
+Subsequent updates include PR 60's unsigned physical BOOT gesture evidence and
+bounded diagnostic queue draining, PR 61's one-shot control-channel hardening
+and session/export requirements, and PR 62's verified Zenodo preprint citation.
+The session changes reject reuse after execution or protocol failure; they do
+not enable persistent guests or writable exports. The integration retains a
+fresh-channel check for oversized completion frames as well as timeout/reuse
+regressions. The original PR 61 sandbox limitations remain in its historical
+validation record; final deployment checks are tied to the release source.
