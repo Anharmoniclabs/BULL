@@ -328,3 +328,62 @@ The supplied Cloudflare logs used Wrangler 4.136.3; this local dry run is not
 evidence of a successful remote build with that version. Private evidence is
 under `/home/al/bull-evidence/website-config-20260922/`. No version upload or
 production deployment was executed for this correction; push remains on hold.
+
+## October presentation audit candidate
+
+The branch audit inventories 65 local/remote refs after fetching origin; see
+[branch scope](BRANCH_AUDIT_20260922.md). It is not a claim that every historical
+branch was executed or independently reviewed. A scan of 497 unique tracked
+blobs at branch tips found no matches for the existing validation deployment's
+keys, no private-key PEM markers and no blob over 5 MiB. This does not scan every
+historical commit or recognize every possible credential format.
+
+GitHub independently reported website preview `Workers Builds: bull` successful
+at `c09629a`, together with both Python jobs, both MicroVM host jobs, formal
+models, guest configuration and website verification. The Pages deployment job
+was SKIPPED by design. The separate `Workers Builds: bull-audit` check FAILED
+(build `749945f7-297f-46e2-9b6f-b499d632b9d3`). GitHub's check output has no
+error details. No authenticated Cloudflare tool is available in this session;
+the failure's cause remains unknown pending a Cloudflare log. It must not be
+inferred from the website's now-fixed preview error or counted as passing.
+
+A preliminary full run under `production-20260922/presentation-c09629a` passed
+source, strict host, cgroups, policy/integrity, external host, and all five guest
+cases with authenticated external receipts. Hardware stayed BLOCKED. The
+unchanged-source gate FAILED because documentation was written during that run.
+That run is retained as unsuccessful final-candidate validation, not relabeled
+as a clean pass. No enforcement assertion was weakened to change this result.
+
+The presentation candidate adds five effect-aware authorization regressions for
+issue #51 and documents the active ruleset relevant to issue #9. These are
+fixture-based authorization tests, separate from the real-host/VM suite.
+The final acceptance run is performed after committing these changes, without
+editing source while it runs. Its exact commit, source digest, tool versions,
+asset hashes, commands and gate outcomes are retained in private evidence under
+`/home/al/bull-evidence/presentation-20260922/` and summarized on PR #55. Any
+later documentation-only evidence update is identified separately from the
+acceptance candidate; unchanged runtime is not called a new runtime test.
+
+Reproduction uses the existing documented interface:
+
+```sh
+python tools/deployment_check.py --deployment /PRIVATE/existing-deployment \
+  --tla-jar /PRIVATE/verified-tla2tools.jar --output /PRIVATE/new-acceptance
+```
+
+The operator must supply their own existing authority, verified asset manifest,
+collector credentials and delegated cgroup parent. The local operator run uses
+an existing delegated systemd user service (`Delegate=cpu memory pids`,
+`DelegateSubgroup=coordinator`); workloads run as UID 1000, not root. Private
+`validate.py` captures the exact command/environment setup and refuses authority
+overwrite. Source checks invoke `tools/release_check.py`; cgroup probes use
+`tools/deployment_setup.py cgroup-check`; guest execution uses
+`microvm/integration.py --case all`. No hardware arguments are provided, so
+physical approval must remain BLOCKED and the aggregate checker exits nonzero.
+
+Cleanup: the runners clean up their owned workload scopes, VM processes and
+local disposable collectors. Retain private evidence for review; do not delete
+live deployment authority, remote checkpoints or shared guest assets as cleanup.
+For interrupted runs, inspect only the named validation user service and
+recorded owned processes/scopes before cleanup; do not terminate unrelated
+operator sessions. See the portable deployment guide for provisioning/recovery.

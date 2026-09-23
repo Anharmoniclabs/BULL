@@ -4,13 +4,35 @@
 
 **BULL** is an experimental open-source, model-agnostic execution-governance runtime for AI agents.
 
-[The story, implementation and live policy demo](https://anharmoniclabs.github.io/BULL/) · [Shared brand assets](docs/BRAND.md)
+[Architecture, implementation and recorded evidence](https://anharmoniclabs.github.io/BULL/) · [Shared brand assets](docs/BRAND.md)
 
 Its core rule is:
 
 > Untrusted data may influence an agent, but it must not automatically become execution authority.
 
 BULL sits between a model or agent and sensitive host capabilities such as process execution, filesystems, network egress, credentials, repositories, APIs, and other agents.
+
+## Scope and evidence
+
+- **Protects:** operations explicitly routed through BULL's production dispatcher
+  and its governed workload/broker paths. BULL is not a system-wide interceptor.
+- **Enforces:** host-owned capability and exact-command authorization before
+  execution, constrained snapshots/sandboxes, broker approval and audit gates.
+- **Trusts:** the operator, host/kernel, BULL runtime, policy/authority storage,
+  enrolled approval channel, guest assets and configured audit service. A hostile
+  administrator or compromised kernel is outside the demonstrated boundary.
+- **Tested:** source regression, bounded formal models, real Linux resource
+  enforcement, five one-shot KVM cases and authenticated external receipts on
+  recorded candidates. Read the [validation record](docs/VALIDATION_20260922.md)
+  for exact revisions, failures and missing inputs; website builds are separate.
+- **Unverified:** real hardware approval, trusted action display, independent
+  security assessment, arbitrary adapter coverage and collector disaster recovery.
+  Synthetic credentials do not establish physical touch or informed consent.
+
+Use [security claims](docs/SECURITY_CLAIMS.md) for the requirement-to-test mapping,
+[branch inventory](docs/BRANCH_AUDIT_20260922.md) for historical scope, and
+[presentation notes](docs/OCTOBER_REVIEW.md) for the demo and reviewer questions.
+Development/compatibility APIs are not the production security boundary.
 
 ## Architecture
 
@@ -142,7 +164,7 @@ Production mode fails closed unless the deployment supplies:
 - `BULL_SECCOMP_PROFILE=strict`
 - a signed TCB integrity manifest plus an out-of-package signing key
 - an authenticated HTTPS remote audit-anchor endpoint
-- a successful live namespace/seccomp backend certification
+- successful live namespace/seccomp backend checks (internal attestation, not independent certification)
 
 The live attestation is sent over a parent-created nonce-bound pipe that is closed before the untrusted workload begins. It verifies that the sandbox bootstrap is PID 1, `no_new_privs` and the requested seccomp profile are active, only loopback networking is visible, and BULL security code was loaded from the read-only `/bull_runtime` mount rather than the agent workspace.
 

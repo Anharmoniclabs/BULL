@@ -37,12 +37,12 @@ pass on the final candidate commit. Synthetic security-key tests verify protocol
 behavior, not hardware identity or human presence. Historical KVM evidence is
 not reused as a pass for this changed runtime.
 
-Release gates still requiring operator/independent work:
+Release gates (local results are revision-specific; consult the validation record):
 
 1. Real authenticator enrollment, physical ceremony and credential revocation.
-2. Current-candidate live Linux production prerequisite checks.
-3. Current-candidate real KVM cases with rebuilt/pinned assets.
-4. A current guest action correlated with the actual external collector receipt.
+2. Current-candidate live Linux production prerequisite checks; previously demonstrated locally.
+3. Current-candidate real KVM cases with verified pinned assets; previously demonstrated locally.
+4. A current guest action correlated with the actual external collector receipt; previously demonstrated locally.
 5. Review of all agent adapters and operator-channel authentication.
 6. Independent assessment before high-risk deployment.
 
