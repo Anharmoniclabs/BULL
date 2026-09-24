@@ -106,7 +106,7 @@ jobs:
           mkdir -p "$release"
           "$RUNNER_TEMP/cdx-tools/bin/cyclonedx-buildroot" \
             -i "$guest/output/legal-info/manifest.csv" \
-            -o "$release/bull-guest.cdx.json" \
+            -o "$release/bull-guest.cdx" \
             -n "BULL guest" \
             -v "$RELEASE_TAG" \
             -m "Anharmoniclabs" \
