@@ -56,6 +56,11 @@ def main():
             source_digest.update(name.encode() + b"\0" + hashlib.sha256(path.read_bytes()).digest())
     run("diff-check", ["git", "diff", "--check"])
     run("compile", [sys.executable, "-m", "compileall", "-q", "src/bulldog"])
+    run("assurance-registry", [sys.executable, "-c",
+        "from bulldog.assurance import evaluate_assurance,load_control_registry; "
+        "r=load_control_registry(); a=evaluate_assurance(dynamic=False); "
+        "assert r['schema']=='bull-assurance-control-registry-v1'; "
+        "assert a.source_complete is True and a.certified is False"])
     run("pytest", [sys.executable, "-m", "pytest", "-q", "--junitxml=" + str(out / "pytest.xml")])
     counts = {}
     if (out / "pytest.xml").exists():
