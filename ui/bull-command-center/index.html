@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BULL Command Center</title>
+<link rel="icon" href="/brand/bull-favicon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand-stack"><img src="/brand/bull-stacked.svg" alt="BULL"></div>
+  <nav id="nav">
+    <button class="active" data-view="main">⌂ <span>Main</span></button>
+    <button data-view="repo">▤ <span>File / Repo</span></button>
+    <button data-view="workspace">□ <span>Working Folder</span></button>
+    <button data-view="visualization">◉ <span>Visualization</span></button>
+    <button data-view="controls">♢ <span>Controls / Compliance</span></button>
+    <button data-view="logs">☷ <span>BULL Logs</span></button>
+    <button data-view="agents">◎ <span>Agents / Models</span></button>
+    <button data-view="settings">⚙ <span>Settings / Brand</span></button>
+  </nav>
+  <section class="system-status">
+    <h3>SYSTEM STATUS</h3>
+    <p>● BULL Engine <b id="st-engine">...</b></p>
+    <p>● Policy <b id="st-policy">...</b></p>
+    <p>● Sandbox / MicroVM <b id="st-vm">...</b></p>
+    <p>● Audit Ledger <b id="st-audit">...</b></p>
+    <p>● Malware Scanner <b id="st-malware">...</b></p>
+    <p>● Agent Sentinel <b id="st-agent">...</b></p>
+  </section>
+</aside>
+
+<main>
+<header class="topbar">
+  <div class="wordmark">
+    <img src="/brand/bull-primary-dark.svg" alt="BULL">
+    <div><strong>EXECUTION FIREWALL FOR AI AGENTS</strong><small>MONITOR · CONTROL · CONTAIN · AUDIT</small></div>
+  </div>
+  <div class="top-right"><span id="clock"></span><b id="protection">BULL STATUS LOADING</b></div>
+</header>
+
+<section class="view active" id="view-main">
+  <div class="section-title"><h1>MAIN</h1><span id="repo-pill">repository loading…</span></div>
+  <div class="dashboard-grid">
+    <article class="panel activity">
+      <div class="panel-title"><h2>AGENT / SWARM ACTIVITY</h2><small>EVIDENCE-DERIVED</small></div>
+      <div class="map-area">
+        <svg viewBox="0 0 1000 440" class="world-lines" aria-hidden="true">
+          <path d="M72 115 L145 82 214 92 260 130 225 162 174 170 144 212 102 188Z M280 210 L325 186 363 214 348 286 315 353 285 300Z M460 95 L525 76 575 96 600 132 566 160 535 199 495 174 470 137Z M560 175 L622 156 685 180 720 226 698 278 647 282 614 238Z M620 77 L711 62 798 82 864 122 834 159 756 162 704 140 650 149Z M820 280 L875 260 918 286 900 326 848 332Z"></path>
+          <path d="M70 114 C245 20 420 40 618 174 M145 85 C330 180 540 36 795 85 M310 220 C480 140 675 205 870 285 M500 99 C680 50 798 142 897 304"></path>
+        </svg>
+        <div id="activity-nodes"></div>
+        <div class="map-note">No geographic claim is made without location evidence. Prototype nodes visualize observed relationships.</div>
+      </div>
+      <div class="metric-strip">
+        <div><b id="m-observed">0</b><span>Observed records</span></div>
+        <div><b id="m-swarms">0</b><span>Swarms</span></div>
+        <div><b id="m-quarantine">0</b><span>Quarantine records</span></div>
+        <div><b id="m-audit">0</b><span>Audit records</span></div>
+      </div>
+    </article>
+
+    <article class="panel live-logs">
+      <div class="panel-title"><h2>BULL LOGS (LIVE)</h2><button data-open="logs">VIEW ALL →</button></div>
+      <table><thead><tr><th>TIME</th><th>DECISION</th><th>ACTOR</th><th>ACTION</th></tr></thead><tbody id="main-log"></tbody></table>
+    </article>
+
+    <article class="panel repo-card">
+      <div class="panel-title"><h2>FILE / REPO / WORKING FOLDER</h2><button data-open="repo">OPEN →</button></div>
+      <div class="repo-summary" id="repo-summary">Loading Git state…</div>
+      <div class="mini-files" id="mini-files"></div>
+    </article>
+
+    <article class="panel flow-card">
+      <div class="panel-title"><h2>VISUALIZATION</h2><button data-open="visualization">OPEN →</button></div>
+      <div class="flow">
+        <span>User / Agent Input</span><i>↓</i>
+        <span>BULL Authority + Policy</span><i>↓</i>
+        <span>ALLOW · SANDBOX · ESCALATE · DENY</span><i>↓</i>
+        <span>Sandbox / MicroVM</span><i>↓</i>
+        <span>Authenticated Audit</span>
+      </div>
+    </article>
+
+    <article class="panel controls-card">
+      <div class="panel-title"><h2>CONTROLS / COMPLIANCE</h2><button data-open="controls">OPEN →</button></div>
+      <div id="main-controls"></div>
+    </article>
+
+    <article class="panel threat-card">
+      <div class="panel-title"><h2>THREAT / AGENT INTELLIGENCE</h2><button data-open="agents">OPEN →</button></div>
+      <div class="threat-metrics">
+        <div><b id="t-agent">0</b><span>Agent signals</span></div>
+        <div><b id="t-swarm">0</b><span>Swarm signals</span></div>
+        <div><b id="t-botnet">0</b><span>Botnet terms</span></div>
+      </div>
+      <div id="recent-alerts" class="alerts"></div>
+    </article>
+  </div>
+</section>
+
+<section class="view" id="view-repo">
+  <div class="section-title"><h1>FILE / REPO</h1><button id="repo-refresh">REFRESH</button></div>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>GIT STATE</h2></div>
+      <pre id="repo-json"></pre>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>CHANGED FILES</h2></div>
+      <div id="changed-files" class="list"></div>
+    </article>
+  </div>
+  <article class="panel wide">
+    <div class="panel-title"><h2>REPOSITORY BROWSER</h2><span id="repo-path">.</span></div>
+    <div class="browser">
+      <div id="repo-browser" class="file-list"></div>
+      <pre id="file-preview">Select a text file to preview it.</pre>
+    </div>
+  </article>
+</section>
+
+<section class="view" id="view-workspace">
+  <div class="section-title"><h1>WORKING FOLDER</h1><span>BOUND TO BULL REPOSITORY ROOT FOR THIS PROTOTYPE</span></div>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>WORKSPACE TREE</h2></div>
+      <div id="workspace-tree" class="file-list tall"></div>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>MALWARE ADMISSION SCAN</h2></div>
+      <div class="form-stack">
+        <input id="malware-path" placeholder="Path inside repository, e.g. README.md">
+        <button id="malware-scan">SCAN WITH BULL</button>
+      </div>
+      <pre id="malware-result">Uses BULL's bounded ClamAV scanner when installed.</pre>
+    </article>
+  </div>
+</section>
+
+<section class="view" id="view-visualization">
+  <div class="section-title"><h1>VISUALIZATION</h1><span>ACTUAL BULL COMPONENT GRAPH + TRACE MODEL</span></div>
+  <article class="panel wide">
+    <div class="panel-title"><h2>BULL EXECUTION PATH</h2></div>
+    <div id="architecture-graph" class="architecture"></div>
+  </article>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>POLICY EVALUATION LAB</h2></div>
+      <div class="form-grid">
+        <label>Actor<input id="p-actor" value="ui-test-agent"></label>
+        <label>Operation<input id="p-operation" value="file.read"></label>
+        <label>Resource<input id="p-resource" value="/workspace/BULL/README.md"></label>
+        <label>Capability<select id="p-capability"></select></label>
+        <label>Provenance<select id="p-provenance"></select></label>
+        <label>Granted capabilities<select id="p-granted" multiple></select></label>
+      </div>
+      <button id="policy-evaluate">EVALUATE THROUGH BULL POLICY</button>
+      <pre id="policy-result"></pre>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>TRACE MODEL TEST</h2></div>
+      <textarea id="trace-events" rows="12">[
+  {"transition":"Evaluate","data":{"decision":"SANDBOX"}},
+  {"transition":"ScanClean","data":{}},
+  {"transition":"Execute","data":{"sandboxed":true,"seccomp":true}}
+]</textarea>
+      <button id="trace-run">VALIDATE TRACE</button>
+      <pre id="trace-result"></pre>
+    </article>
+  </div>
+</section>
+
+<section class="view" id="view-controls">
+  <div class="section-title"><h1>CONTROLS / COMPLIANCE</h1><button id="assurance-refresh">REFRESH EVIDENCE</button></div>
+  <div class="summary-cards">
+    <div><span>Source</span><b id="a-source">...</b></div>
+    <div><span>Deployment</span><b id="a-deploy">...</b></div>
+    <div><span>Release</span><b id="a-release">...</b></div>
+    <div><span>Profile</span><b id="a-profile">...</b></div>
+  </div>
+  <article class="panel wide"><div class="panel-title"><h2>BULL ASSURANCE CONTROL REGISTRY</h2></div><div id="assurance-controls" class="control-table"></div></article>
+</section>
+
+<section class="view" id="view-logs">
+  <div class="section-title"><h1>BULL LOGS</h1><button id="log-refresh">VERIFY + REFRESH</button></div>
+  <div class="summary-cards">
+    <div><span>Configured</span><b id="l-config">...</b></div>
+    <div><span>Integrity</span><b id="l-valid">...</b></div>
+    <div><span>Records</span><b id="l-records">0</b></div>
+    <div><span>Head</span><b id="l-head">—</b></div>
+  </div>
+  <article class="panel wide"><div class="panel-title"><h2>AUTHENTICATED AUDIT EVENTS</h2></div><div id="audit-events" class="audit-events"></div></article>
+</section>
+
+<section class="view" id="view-agents">
+  <div class="section-title"><h1>AGENTS / MODELS</h1><span>DISCOVERY · SENTINEL · SWARM CORRELATION</span></div>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>AGENT SENTINEL</h2></div>
+      <div class="sentinel-score"><b id="sentinel-score">0.00</b><span id="sentinel-verdict">CLEAN</span></div>
+      <pre id="sentinel-signals"></pre>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>AGENT / SWARM FINDER</h2></div>
+      <div class="form-stack">
+        <input id="agent-url" placeholder="Optional public http(s) URL">
+        <textarea id="agent-text" rows="8" placeholder="Or paste text / HTML / captured artifact"></textarea>
+        <button id="agent-scan">SCAN ARTIFACT</button>
+      </div>
+      <pre id="agent-scan-result"></pre>
+    </article>
+  </div>
+  <article class="panel wide">
+    <div class="panel-title"><h2>OBSERVED ADVERSARY / SWARM REGISTRY</h2><button id="agent-refresh">REFRESH</button></div>
+    <div id="adversary-registry" class="registry"></div>
+  </article>
+</section>
+
+<section class="view" id="view-settings">
+  <div class="section-title"><h1>SETTINGS / BRAND</h1><span>LIVE CONFIGURATION + APPROVED BULL LOGO PACK</span></div>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>RUNTIME CONFIGURATION</h2></div>
+      <pre id="runtime-json"></pre>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>APPROVED BULL BRAND PACK</h2></div>
+      <div id="brand-meta"></div>
+    </article>
+  </div>
+  <article class="panel wide">
+    <div class="panel-title"><h2>LOGO ASSETS</h2></div>
+    <div id="brand-assets" class="brand-assets"></div>
+  </article>
+</section>
+
+<footer>BULL <span>BLOCKING UNAUTHORIZED LOGIC LOOPHOLES</span><i>ANHARMONICLABS</i></footer>
+<script src="app.js"></script>
+</main>
+</body>
+</html>
