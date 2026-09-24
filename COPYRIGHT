@@ -1,0 +1,42 @@
+# BULL Copyright Notice
+
+BULL — Blocking Unauthorized Logic Loopholes
+
+Copyright © 2026 Luis Minier.
+
+This notice applies to copyrightable human-authored portions of the original
+BULL source code, documentation, tests, diagrams, configuration text, and other
+project materials, except where a file or section states otherwise.
+
+BULL was developed through human-directed, AI-assisted work. This notice does
+not claim copyright in material that is not copyrightable human authorship. It
+does cover copyrightable human-authored expression and, where applicable,
+human-authored selection, coordination, arrangement, editing, and modification.
+
+Original BULL software remains distributed under GPL-2.0-or-later. This
+copyright notice does not change the project's open-source license.
+
+Third-party material remains copyright of its respective owners and is governed
+by its own license terms. In particular, this notice does not claim ownership of:
+
+- Raspberry Pi material identified in `firmware/src/boot_button.c` and
+  `firmware/PICO_EXAMPLES_LICENSE.txt`;
+- `docs/papers/bull-ii/IEEEtran.cls`;
+- the GNU GPL license text contained in `LICENSE` and
+  `docs/papers/bull-ii/LICENSE`;
+- external dependencies, model weights, toolchains, guest-image packages,
+  firmware SDKs, media, or other separately licensed material.
+
+See `THIRD_PARTY_NOTICES.md` and `docs/AUTHORSHIP_PROVENANCE.md`.
+
+## Methods and technical ideas
+
+The BULL repository contains original descriptions and implementations of
+execution-governance architecture, security controls, workflows, and technical
+methods. Copyright protects eligible expression in those descriptions and
+implementations; it does not itself create exclusive rights in an underlying
+idea, procedure, process, system, method of operation, concept, principle,
+discovery, formula, or algorithm.
+
+Any potential patent rights in a technical invention are separate from
+copyright and are not created or claimed by this notice.
