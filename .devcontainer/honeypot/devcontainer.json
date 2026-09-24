@@ -1,0 +1,14 @@
+{
+  "name": "BULL contained HTTP honeypot",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [8080, 8081],
+  "portsAttributes": {
+    "8080": {"label": "BULL decoy HTTP — private by default", "onAutoForward": "silent"},
+    "8081": {"label": "BULL observer — KEEP PRIVATE", "onAutoForward": "silent"}
+  },
+  "remoteUser": "vscode"
+}
