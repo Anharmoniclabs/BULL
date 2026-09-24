@@ -108,6 +108,9 @@ Zenodo. https://doi.org/10.5281/zenodo.22923455
 ## License and contributions
 
 BULL's original source is **GPL-2.0-or-later**; see [LICENSE](LICENSE).
+The project-wide copyright notice is [COPYRIGHT](COPYRIGHT), with the backed
+authorship and provenance record in
+[docs/AUTHORSHIP_PROVENANCE.md](docs/AUTHORSHIP_PROVENANCE.md).
 Third-party tools, guest-image packages and referenced media retain their own
 licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) and the
 [distribution checklist](docs/DISTRIBUTION.md). Source publication is distinct
