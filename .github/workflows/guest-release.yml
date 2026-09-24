@@ -10,6 +10,9 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   build-guest:
@@ -31,6 +34,14 @@ jobs:
             perl tar cpio unzip rsync file bc wget git curl xz-utils flex bison \
             libssl-dev libelf-dev pkg-config qemu-system-x86 e2fsprogs openssl \
             clamav clamav-freshclam
+      - name: Install pinned CycloneDX Buildroot generator
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/cdx-tools"
+          "$RUNNER_TEMP/cdx-tools/bin/python" -m pip install --disable-pip-version-check \
+            "CycloneDX-Buildroot==2.0.0"
+          "$RUNNER_TEMP/cdx-tools/bin/python" -m pip freeze \
+            > "$RUNNER_TEMP/cyclonedx-toolchain.txt"
       - name: Configure and fetch pinned sources
         run: |
           set -euo pipefail
@@ -85,6 +96,32 @@ jobs:
           with tarfile.open(guest / 'source-materials.tar.gz', 'w:gz', dereference=False) as archive:
               archive.add(materials, arcname='source-materials')
           PY
+      - name: Generate and validate CycloneDX guest SBOM
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          guest="$RUNNER_TEMP/bull-guest"
+          release="$RUNNER_TEMP/release"
+          mkdir -p "$release"
+          "$RUNNER_TEMP/cdx-tools/bin/cyclonedx-buildroot" \
+            -i "$guest/output/legal-info/manifest.csv" \
+            -o "$release/bull-guest.cdx.json" \
+            -n "BULL guest" \
+            -v "$RELEASE_TAG" \
+            -m "Anharmoniclabs" \
+            -s "Anharmoniclabs" \
+            -a "BULL guest release workflow"
+          test -s "$release/bull-guest.cdx.json"
+          cp "$RUNNER_TEMP/cyclonedx-toolchain.txt" "$release/cyclonedx-toolchain.txt"
+          PYTHONPATH=src python3 - <<'PY'
+          from bulldog.release_evidence import inspect_cyclonedx
+          import os
+          from pathlib import Path
+          report = inspect_cyclonedx(Path(os.environ["RUNNER_TEMP"]) / "release/bull-guest.cdx.json")
+          assert report["valid"] is True
+          print(report)
+          PY
       - name: Verify and package immutable release assets
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -110,7 +147,10 @@ jobs:
           printf '%s\n' "BULL guest image $RELEASE_TAG" > "$RUNNER_TEMP/release/RELEASE_SCOPE.txt"
           cat >> "$RUNNER_TEMP/release/RELEASE_SCOPE.txt" <<'EOF'
           This release was built from the pinned public recipe and its official ClamAV
-          database signatures. SHA256SUMS covers every file. BUILT_NOT_BOOT_TESTED means
+          database signatures. It includes a CycloneDX guest SBOM plus signed GitHub
+          Artifact Attestations for SLSA provenance and the rootfs SBOM. The workflow
+          verifies those attestations before release creation, then SHA256SUMS covers
+          every release file. BUILT_NOT_BOOT_TESTED means
           the image was compiled and hash-checked; it is not proof of VM boot, physical
           approval, independent review, or universal security certification. Run the five
           KVM cases from docs/CODESPACES_VM_AND_KEY_CHECKS.md after downloading it.
@@ -118,9 +158,97 @@ jobs:
           Reassemble source materials with:
             cat source-materials.tar.gz.part-* > source-materials.tar.gz
           Inspect legal-info manifests, license files, sources and warnings. Generation
-          alone is not a completeness review. Follow docs/DISTRIBUTION.md before publishing.
+          alone is not a completeness review. Verify downloaded runtime artifacts with
+          "gh attestation verify ARTIFACT -R Anharmoniclabs/BULL" in addition to SHA256SUMS.
+          Follow docs/DISTRIBUTION.md before publishing.
           EOF
-          (cd "$RUNNER_TEMP/release" && sha256sum -- * > SHA256SUMS)
+          PYTHONPATH=src python3 -m bulldog.release_evidence checksums \
+            --directory "$RUNNER_TEMP/release" \
+            --output SUBJECT_SHA256SUMS \
+            --exclude "provenance.sigstore.json" \
+            --exclude "guest-sbom.sigstore.json" \
+            --exclude "attestation-verification.json" \
+            --exclude "provenance-verification.json" \
+            --exclude "guest-sbom-verification.json" \
+            --exclude "SHA256SUMS"
+      - name: Resolve copied rootfs subject
+        id: rootfs
+        run: |
+          set -euo pipefail
+          release="$RUNNER_TEMP/release"
+          rootfs="$(python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          guest = Path(os.environ["RUNNER_TEMP"]) / "bull-guest"
+          assets = json.loads((guest / "assets.json").read_text())
+          print(Path(assets["rootfs"]["path"]).name)
+          PY
+          )"
+          test -f "$release/$rootfs"
+          echo "path=$release/$rootfs" >> "$GITHUB_OUTPUT"
+
+      - name: Generate signed SLSA provenance attestation
+        id: provenance
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-checksums: ${{ runner.temp }}/release/SUBJECT_SHA256SUMS
+
+      - name: Preserve provenance Sigstore bundle
+        run: |
+          set -euo pipefail
+          cp "${{ steps.provenance.outputs.bundle-path }}" \
+            "$RUNNER_TEMP/release/provenance.sigstore.json"
+
+      - name: Generate signed CycloneDX SBOM attestation for rootfs
+        id: guest-sbom
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-path: ${{ steps.rootfs.outputs.path }}
+          sbom-path: ${{ runner.temp }}/release/bull-guest.cdx.json
+
+      - name: Preserve SBOM Sigstore bundle
+        run: |
+          set -euo pipefail
+          cp "${{ steps.guest-sbom.outputs.bundle-path }}" \
+            "$RUNNER_TEMP/release/guest-sbom.sigstore.json"
+
+      - name: Verify signed attestations before release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          release="$RUNNER_TEMP/release"
+          gh attestation verify "${{ steps.rootfs.outputs.path }}" \
+            -R "$GITHUB_REPOSITORY" --format json \
+            > "$release/provenance-verification.json"
+          predicate="$(PYTHONPATH=src python3 -m bulldog.release_evidence predicate-type \
+            --bundle "$release/guest-sbom.sigstore.json")"
+          gh attestation verify "${{ steps.rootfs.outputs.path }}" \
+            -R "$GITHUB_REPOSITORY" --predicate-type "$predicate" --format json \
+            > "$release/guest-sbom-verification.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "release"
+          for name in ("provenance-verification.json", "guest-sbom-verification.json"):
+              value = json.loads((root / name).read_text())
+              if not value:
+                  raise SystemExit("empty GitHub attestation verification result: " + name)
+          (root / "attestation-verification.json").write_text(json.dumps({
+              "format": "bull-attestation-verification-v1",
+              "provenance_verified": True,
+              "sbom_verified": True,
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "commit": os.environ["GITHUB_SHA"],
+          }, sort_keys=True, indent=2) + "\n")
+          PY
+          PYTHONPATH=src python3 -m bulldog.release_evidence checksums \
+            --directory "$release" --output SHA256SUMS
+          PYTHONPATH=src python3 -m bulldog.release_evidence verify \
+            --directory "$release" --checksum SHA256SUMS
+          PYTHONPATH=src python3 -m bulldog.release_evidence inspect \
+            --directory "$release"
+
       - name: Create the draft versioned GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -136,4 +264,4 @@ jobs:
             --target "$GITHUB_SHA" \
             --draft --prerelease \
             --title "BULL guest image $RELEASE_TAG" \
-            --notes "Draft for source/license review and guest qualification. Verify SHA256SUMS. Reassemble source-materials.tar.gz.part-* before extracting. Read RELEASE_SCOPE.txt and docs/DISTRIBUTION.md. The image is BUILT_NOT_BOOT_TESTED."
+            --notes "Draft for source/license review and guest qualification. Verify SHA256SUMS and GitHub Artifact Attestations before use. Reassemble source-materials.tar.gz.part-* before extracting. Read RELEASE_SCOPE.txt and docs/DISTRIBUTION.md. The image is BUILT_NOT_BOOT_TESTED."
