@@ -1,0 +1,542 @@
+{
+  "schema": "bull-assurance-control-registry-v1",
+  "profile": {
+    "id": "bull-assurance-v1",
+    "title": "BULL Assurance Profile v1",
+    "source_required": [
+      "AUTH.CAPABILITY_ENFORCEMENT",
+      "AUTH.EXACT_COMMAND",
+      "AUTH.DOMAIN_CEILING",
+      "FILE.ADMISSION",
+      "EGRESS.BROKERED",
+      "AUDIT.HASH_CHAIN",
+      "SUPPLY.SECURITY_TESTS"
+    ],
+    "deployment_required": [
+      "INTEGRITY.SIGNED_POLICY",
+      "INTEGRITY.SIGNED_RUNTIME",
+      "AUDIT.REMOTE_ANCHOR_CONFIG",
+      "AUDIT.LEDGER_CONFIG",
+      "SANDBOX.CGROUP_DELEGATION",
+      "SANDBOX.SECCOMP_STRICT",
+      "SANDBOX.LANDLOCK",
+      "SANDBOX.NO_NEW_PRIVS",
+      "SANDBOX.NETWORK_ISOLATION",
+      "SANDBOX.PID_NAMESPACE",
+      "STORAGE.SNAPSHOT_SCRATCH",
+      "SANDBOX.BACKEND_CERTIFICATION"
+    ],
+    "conditional": [
+      "APPROVAL.CONSEQUENTIAL_GATE"
+    ],
+    "release_required": [
+      "SUPPLY.CYCLONEDX_GUEST_SBOM",
+      "SUPPLY.SLSA_PROVENANCE",
+      "SUPPLY.SIGSTORE_ATTESTATION",
+      "SUPPLY.ATTESTATION_VERIFIED"
+    ],
+    "external": [
+      "EXT.ISO27001_ISMS",
+      "EXT.SOC2_EXAMINATION",
+      "EXT.FIPS1403_VALIDATED_MODULE",
+      "EXT.EU_AI_ACT_CONFORMITY",
+      "EXT.NIS2_ENTITY_COMPLIANCE"
+    ]
+  },
+  "controls": [
+    {
+      "id": "AUTH.CAPABILITY_ENFORCEMENT",
+      "title": "Explicit capability enforcement before effects",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/policy.py",
+          "src/bulldog/dispatcher.py",
+          "src/bulldog/profiles.py"
+        ],
+        "tests": [
+          "tests/test_policy.py",
+          "tests/test_full_argv_and_production_wiring.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "AC-3",
+          "AC-6"
+        ],
+        "nist-csf-2.0": [
+          "PR.AA-05"
+        ],
+        "owasp-llm-2025": [
+          "LLM06"
+        ],
+        "cis-v8.1": [
+          "6"
+        ]
+      }
+    },
+    {
+      "id": "AUTH.EXACT_COMMAND",
+      "title": "Exact host-authorized argv binding",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/dispatcher.py",
+          "src/bulldog/profiles.py"
+        ],
+        "tests": [
+          "tests/test_full_argv_and_production_wiring.py",
+          "tests/test_redteam_authorization_binding.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "AC-3",
+          "AC-6"
+        ],
+        "owasp-llm-2025": [
+          "LLM05",
+          "LLM06"
+        ]
+      }
+    },
+    {
+      "id": "AUTH.DOMAIN_CEILING",
+      "title": "Child authority cannot exceed parent domain ceiling",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/security_domain.py"
+        ],
+        "tests": [
+          "tests/test_security_domains.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "AC-3",
+          "AC-6"
+        ],
+        "nist-csf-2.0": [
+          "PR.AA-05"
+        ],
+        "owasp-llm-2025": [
+          "LLM06"
+        ]
+      }
+    },
+    {
+      "id": "FILE.ADMISSION",
+      "title": "Bounded filesystem admission and scan-to-execute integrity",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/filesystem_manifest.py",
+          "src/bulldog/secure_fs.py",
+          "src/bulldog/snapshot.py",
+          "src/bulldog/malware_scanner.py"
+        ],
+        "tests": [
+          "tests/test_snapshot_content.py",
+          "tests/redteam_local_host/test_workspace_admission.py",
+          "tests/test_policy_hardening_v2.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "SI-3",
+          "SI-7",
+          "SI-10"
+        ],
+        "owasp-llm-2025": [
+          "LLM03",
+          "LLM04",
+          "LLM05"
+        ],
+        "cis-v8.1": [
+          "10",
+          "16"
+        ]
+      }
+    },
+    {
+      "id": "EGRESS.BROKERED",
+      "title": "Secrets and outbound network effects use separate broker authorization",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/secret_broker.py",
+          "src/bulldog/egress_proxy.py",
+          "src/bulldog/pinned_egress.py",
+          "src/bulldog/dispatcher.py"
+        ],
+        "tests": [
+          "tests/test_policy_hardening_v2.py",
+          "tests/test_security_domains.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "AC-4",
+          "SC-7"
+        ],
+        "owasp-llm-2025": [
+          "LLM02",
+          "LLM06"
+        ]
+      }
+    },
+    {
+      "id": "AUDIT.HASH_CHAIN",
+      "title": "Tamper-evident local audit chain",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          "src/bulldog/audit.py"
+        ],
+        "tests": [
+          "tests/test_audit_integrity.py",
+          "tests/test_audit_fail_closed.py"
+        ]
+      },
+      "frameworks": {
+        "nist-800-53": [
+          "AU-2",
+          "AU-9",
+          "AU-12"
+        ],
+        "cis-v8.1": [
+          "8"
+        ],
+        "eu-ai-act": [
+          "Article 12"
+        ]
+      }
+    },
+    {
+      "id": "SUPPLY.SECURITY_TESTS",
+      "title": "Security regression and bounded formal checks gate source changes",
+      "phase": "source",
+      "evidence": {
+        "source": [
+          ".github/workflows/pytest.yml",
+          ".github/workflows/formal.yml",
+          "formal/tla/BullRuntime.tla"
+        ],
+        "tests": []
+      },
+      "frameworks": {
+        "nist-ssdf": [
+          "PW",
+          "RV"
+        ],
+        "cis-v8.1": [
+          "16"
+        ],
+        "owasp-llm-2025": [
+          "LLM03"
+        ]
+      }
+    },
+    {
+      "id": "INTEGRITY.SIGNED_POLICY",
+      "title": "Signed deployment policy is configured and verifies",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "AC-3",
+          "SI-7"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ]
+      }
+    },
+    {
+      "id": "INTEGRITY.SIGNED_RUNTIME",
+      "title": "Signed trusted-runtime integrity manifest verifies",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "SI-7"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ],
+        "owasp-llm-2025": [
+          "LLM03"
+        ]
+      }
+    },
+    {
+      "id": "AUDIT.REMOTE_ANCHOR_CONFIG",
+      "title": "Authenticated production audit anchor is configured",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "AU-9",
+          "AU-12"
+        ],
+        "nist-csf-2.0": [
+          "DE.CM"
+        ],
+        "cis-v8.1": [
+          "8"
+        ]
+      }
+    },
+    {
+      "id": "AUDIT.LEDGER_CONFIG",
+      "title": "Production audit ledger has a usable host-owned path",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "AU-2",
+          "AU-12"
+        ],
+        "cis-v8.1": [
+          "8"
+        ]
+      }
+    },
+    {
+      "id": "STORAGE.SNAPSHOT_SCRATCH",
+      "title": "Private bounded production snapshot scratch is configured",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "CM-7",
+          "SC-39",
+          "SI-7"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.BACKEND_CERTIFICATION",
+      "title": "Required sandbox backend prerequisites and requested attestation pass",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "CM-7",
+          "SC-39"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS",
+          "PR.IR"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.CGROUP_DELEGATION",
+      "title": "Delegated cgroup v2 boundary is configured",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "SC-39"
+        ],
+        "owasp-llm-2025": [
+          "LLM10"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.SECCOMP_STRICT",
+      "title": "Strict seccomp profile is installed and attested",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "CM-7",
+          "SC-39"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ],
+        "owasp-llm-2025": [
+          "LLM06"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.LANDLOCK",
+      "title": "Landlock filesystem restriction is installed and attested",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "AC-3",
+          "SC-39"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.NO_NEW_PRIVS",
+      "title": "no_new_privs is installed and attested",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "CM-7",
+          "SC-39"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.NETWORK_ISOLATION",
+      "title": "Workload network namespace is isolated and attested",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "AC-4",
+          "SC-7",
+          "SC-39"
+        ],
+        "owasp-llm-2025": [
+          "LLM02",
+          "LLM06"
+        ]
+      }
+    },
+    {
+      "id": "SANDBOX.PID_NAMESPACE",
+      "title": "Trusted sandbox bootstrap is PID 1 in its PID namespace",
+      "phase": "deployment",
+      "frameworks": {
+        "nist-800-53": [
+          "SC-39"
+        ],
+        "nist-csf-2.0": [
+          "PR.PS"
+        ]
+      }
+    },
+    {
+      "id": "APPROVAL.CONSEQUENTIAL_GATE",
+      "title": "Signed policy configures fresh credentialed approval for consequential broker actions",
+      "phase": "deployment",
+      "conditional": true,
+      "frameworks": {
+        "nist-ai-rmf": [
+          "MANAGE"
+        ],
+        "owasp-llm-2025": [
+          "LLM06"
+        ],
+        "eu-ai-act": [
+          "Article 14"
+        ]
+      }
+    },
+    {
+      "id": "SUPPLY.CYCLONEDX_GUEST_SBOM",
+      "title": "Guest release includes a validated CycloneDX SBOM",
+      "phase": "release",
+      "frameworks": {
+        "nist-ssdf": [
+          "PS",
+          "PW"
+        ],
+        "owasp-llm-2025": [
+          "LLM03"
+        ]
+      }
+    },
+    {
+      "id": "SUPPLY.SLSA_PROVENANCE",
+      "title": "Release subjects receive SLSA build provenance in in-toto format",
+      "phase": "release",
+      "frameworks": {
+        "nist-ssdf": [
+          "PS",
+          "PW"
+        ],
+        "slsa-v1.2": [
+          "Build provenance"
+        ]
+      }
+    },
+    {
+      "id": "SUPPLY.SIGSTORE_ATTESTATION",
+      "title": "Release attestations use short-lived Sigstore identity",
+      "phase": "release",
+      "frameworks": {
+        "nist-ssdf": [
+          "PS"
+        ],
+        "slsa-v1.2": [
+          "Build provenance"
+        ]
+      }
+    },
+    {
+      "id": "SUPPLY.ATTESTATION_VERIFIED",
+      "title": "Release workflow verifies generated provenance before publication",
+      "phase": "release",
+      "frameworks": {
+        "nist-ssdf": [
+          "PS",
+          "PW"
+        ],
+        "slsa-v1.2": [
+          "Build provenance"
+        ]
+      }
+    },
+    {
+      "id": "EXT.ISO27001_ISMS",
+      "title": "Organization operates an independently certified ISO/IEC 27001 ISMS",
+      "phase": "external",
+      "frameworks": {
+        "iso-27001": [
+          "ISMS"
+        ]
+      }
+    },
+    {
+      "id": "EXT.SOC2_EXAMINATION",
+      "title": "Service organization has an applicable independent SOC 2 examination",
+      "phase": "external",
+      "frameworks": {
+        "soc-2": [
+          "Trust Services Criteria"
+        ]
+      }
+    },
+    {
+      "id": "EXT.FIPS1403_VALIDATED_MODULE",
+      "title": "Deployment uses an applicable CMVP-validated cryptographic module and environment",
+      "phase": "external",
+      "frameworks": {
+        "fips-140-3": [
+          "CMVP"
+        ]
+      }
+    },
+    {
+      "id": "EXT.EU_AI_ACT_CONFORMITY",
+      "title": "Applicable AI system obligations and conformity assessment are satisfied",
+      "phase": "external",
+      "frameworks": {
+        "eu-ai-act": [
+          "Articles 9-15 and applicable conformity obligations"
+        ]
+      }
+    },
+    {
+      "id": "EXT.NIS2_ENTITY_COMPLIANCE",
+      "title": "Covered entity satisfies applicable NIS2 organizational and reporting obligations",
+      "phase": "external",
+      "frameworks": {
+        "nis2": [
+          "Article 21 and national transposition"
+        ]
+      }
+    }
+  ]
+}
