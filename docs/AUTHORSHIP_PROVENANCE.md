@@ -6,8 +6,8 @@ conservative: it records only facts supported by contemporaneous project/chat
 history and repository evidence, and it does not claim that one person manually
 wrote every line of the AI-assisted implementation.
 
-It is an internal project provenance record, not a copyright registration,
-patent filing, court finding, or independent legal opinion.
+It is an internal project provenance record, not a government copyright
+registration, court finding, or independent legal opinion.
 
 ## Human-originated project direction
 
@@ -101,28 +101,37 @@ The current review identified the following explicit exceptions:
 
 See `THIRD_PARTY_NOTICES.md` for the maintained third-party inventory.
 
-## AI-assisted implementation boundary
+## AI-assisted development and human-in-the-loop authorship
 
 BULL is accurately described as **human-directed and AI-assisted**.
 
-The recovered record supports human origination of the problem definition,
-security goals, project identity, requested architecture direction, threat
-model, many implementation constraints, corrections, and testing requirements.
+Luis Minier does not claim to be a traditional software programmer who manually
+typed the BULL codebase. AI systems were used as coding and implementation tools.
 
-This record does **not** claim that Luis Minier manually typed every implementation
-line or that every AI-generated fragment is independently copyrightable.
-Copyright claims should remain limited to copyrightable human-authored
-expression and qualifying human selection, coordination, arrangement, editing,
-or modification.
+The finished project resulted from repeated human-in-the-loop work by Minier,
+including:
 
-## Methods and inventions
+- originating the BULL problem definition and project identity;
+- specifying desired behavior and security boundaries in natural language;
+- directing architectural changes and integrations;
+- choosing which proposed implementations to keep, reject, or revise;
+- designing and requesting experiments, adversarial tests, and validation runs;
+- reviewing observed results and requiring corrections when results were
+  insufficient;
+- selecting, coordinating, and arranging the components that became the BULL
+  system; and
+- iterating until those components formed the resulting published project.
 
-The conversation history is useful evidence of chronology and human conception
-of BULL's design direction. It does not turn an underlying method, system,
-process, or algorithm into copyrighted subject matter.
+The recovered record therefore supports human origination and direction of the
+project while accurately acknowledging that substantial source-code
+implementation was AI-assisted.
 
-Potential patentability of a technical invention is a separate question and
-should be evaluated separately from copyright.
+This record does **not** claim that Luis Minier personally typed every
+implementation line or that every machine-generated fragment is independently
+copyrightable. The project copyright notice is intended to identify and preserve
+the copyrightable human contributions and protectable human expression embodied
+in the finished BULL project while accurately disclosing the role of AI-assisted
+coding.
 
 ## Future provenance discipline
 
@@ -132,7 +141,6 @@ For future releases:
 2. review new Git authors and co-authors;
 3. document newly bundled third-party source;
 4. keep dependency/SBOM evidence for distributed binaries and guest images;
-5. distinguish human-authored material from purely machine-generated material
-   if formal copyright registration is pursued;
+5. keep the human-in-the-loop and AI-assisted development record accurate; and
 6. do not represent future multi-author code as solely owned by one person
    without re-checking contributor rights.
