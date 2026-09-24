@@ -2,6 +2,10 @@
 
 # BULL
 
+> Copyright © 2026 Luis Minier. BULL is a human-directed, AI-assisted project:
+> the code was developed with AI coding tools under human-in-the-loop guidance,
+> experimentation, testing, correction, selection, and integration.
+
 An experimental, open-source execution firewall for AI agents. The model proposes
 an action; trusted host integration supplies authority. BULL checks that authority,
 constrains execution, and records an authenticated audit checkpoint.
