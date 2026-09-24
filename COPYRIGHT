@@ -1,0 +1,36 @@
+# BULL Copyright Notice
+
+BULL — Blocking Unauthorized Logic Loopholes
+
+Copyright © 2026 Luis Minier.
+
+Unless otherwise indicated, copyrightable human-authored portions of the original
+BULL source code, documentation, tests, diagrams, and project materials are
+copyright Luis Minier.
+
+Original BULL software is distributed under the GNU General Public License,
+version 2 or (at your option) any later version (GPL-2.0-or-later), as identified
+by the repository license metadata and applicable file or project notices.
+
+This notice does not claim ownership of third-party material. Third-party code,
+license texts, templates, dependencies, media, and other incorporated or
+referenced works remain copyright of their respective owners and remain subject
+to their respective licenses. See THIRD_PARTY_NOTICES.md and per-file notices.
+
+In particular:
+
+- `firmware/src/boot_button.c` contains material adapted from Raspberry Pi
+  `pico-examples` and retains the Raspberry Pi copyright and BSD-3-Clause
+  license notice.
+- `firmware/PICO_EXAMPLES_LICENSE.txt` contains the applicable Raspberry Pi
+  BSD-3-Clause license text.
+- `docs/papers/bull-ii/IEEEtran.cls` is third-party IEEEtran material and
+  retains its original contributor copyrights and LPPL 1.3 notice.
+- `LICENSE` and `docs/papers/bull-ii/LICENSE` contain the GNU GPL license text
+  published by the Free Software Foundation.
+
+Copyright protects copyrightable expression. It does not by itself grant
+exclusive rights in ideas, procedures, processes, systems, methods of operation,
+concepts, principles, discoveries, or algorithms embodied in BULL.
+
+For a maintained provenance record, see `docs/IP_PROVENANCE.md`.
