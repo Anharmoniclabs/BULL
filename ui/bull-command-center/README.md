@@ -70,10 +70,12 @@ The **Runtime / VM** page is wired to the repository's actual KVM/deployment
 paths, not a simulated VM status card.
 
 The published BULL guest release `guest-2026-09-22` already contains the real
-`rootfs.ext4`, `bzImage`, and `qboot.rom`. In Codespaces, open **Runtime / VM**
-and click **DOWNLOAD + VERIFY PUBLISHED GUEST**. The command center streams those
-release assets into its private state directory, verifies their pinned SHA-256
-digests, writes an `assets-local.json`, and then uses that manifest for KVM runs.
+`rootfs.ext4`, `bzImage`, and `qboot.rom`. You do **not** need a separate manual
+download step. On **START / RUN REAL KVM**, if no verified local guest is present,
+the command center automatically pulls the pinned release assets into private
+Codespace state, verifies their SHA-256 digests, writes `assets-local.json`, and
+continues directly into the real KVM run. **OPTIONAL: PRE-CACHE PUBLISHED GUEST**
+only performs that fetch ahead of time.
 
 If you already downloaded the release yourself, you can override the automatic
 location:
