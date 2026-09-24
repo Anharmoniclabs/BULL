@@ -85,3 +85,19 @@ def test_command_center_agent_scan_is_evidence_not_attribution():
     assert result["counts"]["swarm"] >= 1
     assert result["counts"]["botnet"] >= 1
     assert "not attribution" in result["note"].lower()
+
+
+def test_command_center_exposes_real_kvm_architecture_state():
+    ui = load_dashboard()
+    state = ui.vm_state()
+    assert state["architecture"]["mode"] == "one-shot KVM guest"
+    assert state["architecture"]["software_emulation_fallback"] is False
+    assert state["kvm"]["status"] in {"PASS", "BLOCKED"}
+
+
+def test_command_center_does_not_fake_verified_guest_assets(monkeypatch):
+    ui = load_dashboard()
+    monkeypatch.delenv("BULL_DEPLOYMENT_ASSETS", raising=False)
+    state = ui.vm_state()
+    assert state["assets_verified"] is False
+    assert state["asset_manifest"] is None
