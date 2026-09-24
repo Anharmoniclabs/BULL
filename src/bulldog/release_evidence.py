@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import base64
 import fnmatch
 import hashlib
@@ -180,3 +181,64 @@ def inspect_release_evidence(directory: str | Path) -> dict:
             "record": verification,
         },
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m bulldog.release_evidence",
+        description="Create and inspect BULL release-evidence artifacts.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    checksums = subparsers.add_parser("checksums")
+    checksums.add_argument("--directory", type=Path, required=True)
+    checksums.add_argument("--output", required=True)
+    checksums.add_argument("--exclude", action="append", default=[])
+
+    verify = subparsers.add_parser("verify")
+    verify.add_argument("--directory", type=Path, required=True)
+    verify.add_argument("--checksum", default="SHA256SUMS")
+    verify.add_argument("--partial", action="store_true")
+
+    inspect = subparsers.add_parser("inspect")
+    inspect.add_argument("--directory", type=Path, required=True)
+    inspect.add_argument("--json", type=Path)
+
+    predicate = subparsers.add_parser("predicate-type")
+    predicate.add_argument("--bundle", type=Path, required=True)
+
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "checksums":
+            path = write_checksums(
+                args.directory,
+                args.output,
+                exclude=args.exclude,
+            )
+            print(path)
+            return 0
+        if args.command == "verify":
+            verify_checksums(
+                args.directory,
+                args.checksum,
+                complete=not args.partial,
+            )
+            return 0
+        if args.command == "inspect":
+            report = inspect_release_evidence(args.directory)
+            encoded = json.dumps(report, indent=2, sort_keys=True) + "\n"
+            if args.json is not None:
+                args.json.write_text(encoded, encoding="utf-8")
+            else:
+                print(encoded, end="")
+            return 0
+        if args.command == "predicate-type":
+            print(predicate_type_from_bundle(args.bundle))
+            return 0
+    except (OSError, ValueError, KeyError, ReleaseEvidenceError) as exc:
+        parser.error(str(exc))
+    raise AssertionError("unreachable")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
