@@ -69,7 +69,14 @@ authority.
 The **Runtime / VM** page is wired to the repository's actual KVM/deployment
 paths, not a simulated VM status card.
 
-For the five-case KVM runner, export the verified asset manifest used by BULL:
+The published BULL guest release `guest-2026-09-22` already contains the real
+`rootfs.ext4`, `bzImage`, and `qboot.rom`. In Codespaces, open **Runtime / VM**
+and click **DOWNLOAD + VERIFY PUBLISHED GUEST**. The command center streams those
+release assets into its private state directory, verifies their pinned SHA-256
+digests, writes an `assets-local.json`, and then uses that manifest for KVM runs.
+
+If you already downloaded the release yourself, you can override the automatic
+location:
 
 ```bash
 export BULL_DEPLOYMENT_ASSETS="$HOME/bull-guest-release/assets-local.json"
