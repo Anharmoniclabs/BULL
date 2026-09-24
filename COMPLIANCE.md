@@ -1,7 +1,7 @@
 # BULL standards and compliance crosswalk
 
 **Assessment date:** 2026-09-24  
-**Source baseline:** \`927906dc157e7f4822a1b9cffc34f67ac16ecb7b\` (\`main\` when this crosswalk was prepared)  
+**Source baseline:** `927906dc157e7f4822a1b9cffc34f67ac16ecb7b` (`main` when this crosswalk was prepared)  
 **Project:** BULL — Blocking Unauthorized Logic Loopholes  
 **Scope:** source-code and repository-control mapping only
 
@@ -38,13 +38,13 @@ The repository does **not** currently justify claims such as "NIST compliant,"
 | **NIST SP 800-53 Rev. 5** | **Partial** | Direct technical overlap with AC-3, AC-4, AC-6, AU-2/AU-9/AU-12, CM-7, SC-7, SC-39, SI-3, SI-7 and related controls. | A selected baseline, SSP, control implementation statements for a real information system, 800-53A assessment, RMF authorization, or ATO. |
 | **NIST AI RMF 1.0** | **Partial** | Technical evidence contributes to GOVERN/MAP/MEASURE/MANAGE activities: threat boundaries, tests, measured enforcement, approval, audit, and fail-closed operation. | Full lifecycle AI risk management, impact analysis, intended-purpose assessment, organizational governance, model accuracy/fairness/explainability, or independent evaluation. |
 | **NIST SSDF SP 800-218 v1.1** and **SP 800-218A** | **Partial** | Security policy, protected development workflow, tests/red-team probes, release hashing, pinned build inputs in several workflows, vulnerability reporting, and reproducibility documentation. | Complete software provenance, a standards-format SBOM, hermetic/reproducible builds for every artifact, or a full SSDF practice assessment. |
-| **OWASP Top 10 for LLM Applications 2025** | **Meaningful technical alignment** | Particularly strong mitigation at the execution boundary for Prompt Injection impact, Improper Output Handling in governed command paths, Excessive Agency, and Unbounded Consumption. | Prevention/detection of every prompt injection, truthfulness, RAG/vector security, all application sinks, or security of integrations that bypass \`ProductionDispatcher\`. |
+| **OWASP Top 10 for LLM Applications 2025** | **Meaningful technical alignment** | Particularly strong mitigation at the execution boundary for Prompt Injection impact, Improper Output Handling in governed command paths, Excessive Agency, and Unbounded Consumption. | Prevention/detection of every prompt injection, truthfulness, RAG/vector security, all application sinks, or security of integrations that bypass `ProductionDispatcher`. |
 | **MITRE ATLAS** | **Mitigation mapping** | BULL provides controls relevant to agent tool invocation, prompt-injection impact, credential/tool abuse, host escape/sandbox evasion, exfiltration through tools, supply-chain compromise, and denial/resource abuse. | ATLAS is an adversary-technique knowledge base, not a compliance certification; BULL does not claim coverage of every ATLAS technique. |
 | **CIS Controls v8.1** | **Partial** | Technical overlap with secure configuration, access control, audit logging, malware defenses, and application software security. | Enterprise asset/account inventories, training, recovery, incident-response operations, or a CIS Controls assessment. |
 | **SLSA v1.2** | **No claimed level** | Build-as-code, pinned GitHub Actions, source pinning/hashing for guest inputs, release hashes, and build records are useful prerequisites. | BULL does not currently publish a SLSA-conformant provenance attestation for its release artifacts, so this document does not claim Build L1 or higher. |
 | **Sigstore / cosign / Rekor** | **Gap** | BULL has its own HMAC-signed integrity/policy material and SHA-256 release hashes. | Those mechanisms are not Sigstore signatures, Fulcio identity certificates, cosign bundles, or Rekor transparency-log entries. |
 | **in-toto** | **Gap** | BULL records several build inputs and hashes. | No in-toto layout, signed link metadata, or in-toto verification chain is implemented. |
-| **SBOM (CycloneDX / SPDX)** | **Gap** | \`THIRD_PARTY_NOTICES.md\` and guest \`legal-info\` materials document dependencies/licenses. | The repository explicitly says its short inventory is **not an exhaustive dependency SBOM**. No generated CycloneDX or SPDX SBOM is published as a release control. |
+| **SBOM (CycloneDX / SPDX)** | **Gap** | `THIRD_PARTY_NOTICES.md` and guest `legal-info` materials document dependencies/licenses. | The repository explicitly says its short inventory is **not an exhaustive dependency SBOM**. No generated CycloneDX or SPDX SBOM is published as a release control. |
 | **ISO/IEC 27001:2022** | **External** | BULL can support technical controls inside an ISMS, especially access control, secure configuration, logging, development security, and supplier/software-integrity evidence. | ISO 27001 certifies an organization's ISMS, not a Git repository. No accredited certification is evidenced here. |
 | **SOC 2** | **External** | BULL can contribute controls relevant to Security, Availability, Processing Integrity, and Confidentiality depending on deployment. | A SOC 2 report requires management assertions and an independent CPA examination of a service organization's system/controls. None is evidenced by this repository. |
 | **FIPS 140-3** | **Not validated** | BULL uses cryptographic primitives and OpenSSH security-key formats; its paper also cites FIPS 199. | Algorithm use or a FIPS citation does not equal CMVP module validation. No BULL FIPS 140-3 certificate or validated operational environment is claimed. |
@@ -62,23 +62,23 @@ source baseline above.
 
 **Relevant source**
 
-- \`src/bulldog/models.py\`
-- \`src/bulldog/policy.py\`
-- \`src/bulldog/canonicalizer.py\`
-- \`src/bulldog/dispatcher.py\`
-- \`src/bulldog/profiles.py\`
-- \`src/bulldog/security_domain.py\`
-- \`src/bulldog/session_guard.py\`
-- \`tests/test_full_argv_and_production_wiring.py\`
-- \`tests/test_redteam_authorization_binding.py\`
-- \`tests/test_security_domains.py\`
+- `src/bulldog/models.py`
+- `src/bulldog/policy.py`
+- `src/bulldog/canonicalizer.py`
+- `src/bulldog/dispatcher.py`
+- `src/bulldog/profiles.py`
+- `src/bulldog/security_domain.py`
+- `src/bulldog/session_guard.py`
+- `tests/test_full_argv_and_production_wiring.py`
+- `tests/test_redteam_authorization_binding.py`
+- `tests/test_security_domains.py`
 
 **Implemented behavior**
 
 - Explicit capabilities are represented separately from model text/provenance.
-- Production execution goes through \`ProductionDispatcher\` /
-  \`ProductionRuntime\`.
-- OS execution requires \`process.exec\`.
+- Production execution goes through `ProductionDispatcher` /
+  `ProductionRuntime`.
+- OS execution requires `process.exec`.
 - Production command authorization is bound to the exact host-authorized argv,
   rather than treating a generic capability as permission to execute arbitrary
   commands.
@@ -100,8 +100,8 @@ source baseline above.
 **Limit**
 
 These properties only protect effects that actually pass through the trusted
-BULL integration boundary. \`CapabilityDispatcher\` exists for compatibility and
-development. Integrations that bypass \`ProductionDispatcher\`, expose trusted
+BULL integration boundary. `CapabilityDispatcher` exists for compatibility and
+development. Integrations that bypass `ProductionDispatcher`, expose trusted
 host methods directly, or give the workload broker sockets are outside the
 production mediation claim.
 
@@ -109,10 +109,10 @@ production mediation claim.
 
 **Relevant source**
 
-- \`src/bulldog/approval.py\`
-- \`src/bulldog/approval_crypto.py\`
-- \`docs/HUMAN_APPROVAL.md\`
-- \`tests/test_human_approval.py\`
+- `src/bulldog/approval.py`
+- `src/bulldog/approval_crypto.py`
+- `docs/HUMAN_APPROVAL.md`
+- `tests/test_human_approval.py`
 
 **Implemented behavior**
 
@@ -144,24 +144,24 @@ trusted.
 
 **Relevant source**
 
-- \`src/bulldog/namespace_sandbox.py\`
-- \`src/bulldog/_namespace_launcher.sh\`
-- \`src/bulldog/seccomp_policy.py\`
-- \`src/bulldog/landlock_policy.py\`
-- \`src/bulldog/resource_limits.py\`
-- \`src/bulldog/cgroup_scope.py\`
-- \`src/bulldog/host_certify.py\`
-- \`src/bulldog/microvm.py\`
-- \`src/bulldog/guest_engine.py\`
-- \`microvm/guest/init\`
-- \`docs/PRODUCTION_SECURITY.md\`
-- \`docs/MICROVM_RELEASE_STATUS.md\`
+- `src/bulldog/namespace_sandbox.py`
+- `src/bulldog/_namespace_launcher.sh`
+- `src/bulldog/seccomp_policy.py`
+- `src/bulldog/landlock_policy.py`
+- `src/bulldog/resource_limits.py`
+- `src/bulldog/cgroup_scope.py`
+- `src/bulldog/host_certify.py`
+- `src/bulldog/microvm.py`
+- `src/bulldog/guest_engine.py`
+- `microvm/guest/init`
+- `docs/PRODUCTION_SECURITY.md`
+- `docs/MICROVM_RELEASE_STATUS.md`
 
 **Implemented behavior**
 
 - PID, mount, user, network and IPC namespace isolation on the supported Linux
   production path.
-- \`no_new_privs\`.
+- `no_new_privs`.
 - Strict production seccomp profile using default-deny/EPERM with an explicit
   userland syscall allowlist.
 - Landlock filesystem restrictions.
@@ -196,12 +196,12 @@ inside deliberately granted authority.
 
 **Relevant source**
 
-- \`src/bulldog/filesystem_manifest.py\`
-- \`src/bulldog/secure_fs.py\`
-- \`src/bulldog/workspace_limits.py\`
-- \`src/bulldog/snapshot.py\`
-- \`src/bulldog/snapshot_worker.py\`
-- \`src/bulldog/malware_scanner.py\`
+- `src/bulldog/filesystem_manifest.py`
+- `src/bulldog/secure_fs.py`
+- `src/bulldog/workspace_limits.py`
+- `src/bulldog/snapshot.py`
+- `src/bulldog/snapshot_worker.py`
+- `src/bulldog/malware_scanner.py`
 
 **Implemented behavior**
 
@@ -231,11 +231,11 @@ not provide model-weight provenance or dataset governance.
 
 **Relevant source**
 
-- \`src/bulldog/secret_broker.py\`
-- \`src/bulldog/egress_proxy.py\`
-- \`src/bulldog/pinned_egress.py\`
-- \`src/bulldog/socket_hardening.py\`
-- \`src/bulldog/dispatcher.py\`
+- `src/bulldog/secret_broker.py`
+- `src/bulldog/egress_proxy.py`
+- `src/bulldog/pinned_egress.py`
+- `src/bulldog/socket_hardening.py`
+- `src/bulldog/dispatcher.py`
 
 **Implemented behavior**
 
@@ -265,11 +265,11 @@ every authorized application flow.
 
 **Relevant source**
 
-- \`src/bulldog/policy_bundle.py\`
-- \`src/bulldog/integrity.py\`
-- \`src/bulldog/production_gate.py\`
-- \`src/bulldog/host_certify.py\`
-- \`tools/deployment_setup.py\`
+- `src/bulldog/policy_bundle.py`
+- `src/bulldog/integrity.py`
+- `src/bulldog/production_gate.py`
+- `src/bulldog/host_certify.py`
+- `tools/deployment_setup.py`
 
 **Implemented behavior**
 
@@ -298,12 +298,11 @@ FIPS 140-3 validation.
 
 **Relevant source**
 
-- \`src/bulldog/audit.py\`
-- \`src/bulldog/audit_transport.py\`
-- \`src/bulldog/anchor_service.py\`
-- \`src/bulldog/microvm/evidence.py\` where applicable
-- \`microvm/evidence.py\`
-- \`deploy/cloudflare-audit/\`
+- `src/bulldog/audit.py`
+- `src/bulldog/audit_transport.py`
+- `src/bulldog/anchor_service.py`
+- `microvm/evidence.py`
+- `deploy/cloudflare-audit/`
 
 **Implemented behavior**
 
@@ -336,17 +335,17 @@ responsibilities.
 
 **Relevant source**
 
-- \`.github/workflows/pytest.yml\`
-- \`.github/workflows/formal.yml\`
-- \`.github/workflows/guest-release.yml\`
-- \`.github/dependabot.yml\`
-- \`formal/tla/BullRuntime.tla\`
-- \`formal/tla/BullSessionAudit.tla\`
-- \`formal/tla/BullApproval.tla\`
-- \`SECURITY.md\`
-- \`docs/SECURITY_CLAIMS.md\`
-- \`docs/REPRODUCIBLE_DEPLOYMENT.md\`
-- \`microvm/governance/\`
+- `.github/workflows/pytest.yml`
+- `.github/workflows/formal.yml`
+- `.github/workflows/guest-release.yml`
+- `.github/dependabot.yml`
+- `formal/tla/BullRuntime.tla`
+- `formal/tla/BullSessionAudit.tla`
+- `formal/tla/BullApproval.tla`
+- `SECURITY.md`
+- `docs/SECURITY_CLAIMS.md`
+- `docs/REPRODUCIBLE_DEPLOYMENT.md`
+- `microvm/governance/`
 
 **Implemented repository controls**
 
@@ -480,7 +479,7 @@ BULL has useful evidence across SSDF practice groups:
   actions, SHA-256 release checks.
 - **Produce Well-Secured Software (PW):** regression testing, adversarial probes,
   formal design checks, package installation smoke tests, guest build checks.
-- **Respond to Vulnerabilities (RV):** \`SECURITY.md\` and GitHub private
+- **Respond to Vulnerabilities (RV):** `SECURITY.md` and GitHub private
   vulnerability reporting.
 
 Key gaps remain: no generated standards-format SBOM, no published SLSA provenance,
@@ -501,7 +500,7 @@ defensive correspondences, **not claims that every technique is defeated**.
 | AI agent tool invocation abuse | Production dispatcher mediates approved tool/command paths. |
 | Tool credential harvesting | Secret broker, scoped grants, domain binding, protected broker sockets. |
 | Exfiltration through agent tools | Separate network capabilities, egress broker policy, networkless sandbox/MicroVM path. |
-| Escape to host / sandbox evasion | strict seccomp, Landlock, namespaces, \`no_new_privs\`, cgroups, optional KVM MicroVM. |
+| Escape to host / sandbox evasion | strict seccomp, Landlock, namespaces, `no_new_privs`, cgroups, optional KVM MicroVM. |
 | Runtime-capability discovery | Exposed authority is intentionally constrained; this reduces impact but does not prevent reconnaissance. |
 | AI/software supply-chain compromise | Signed BULL policy/integrity, pinned/hash-checked build inputs and actions; incomplete without SBOM/provenance/signing ecosystem. |
 | Denial/resource abuse | CPU, memory, pids, timeouts, workspace and output budgets; not a complete service-level DoS solution. |
@@ -561,7 +560,7 @@ steps.
 
 **Status: Gap for a machine-readable release SBOM.**
 
-\`THIRD_PARTY_NOTICES.md\` explicitly states:
+`THIRD_PARTY_NOTICES.md` explicitly states:
 
 > These are direct tools, not an exhaustive dependency SBOM.
 
@@ -676,7 +675,7 @@ These are evidence/control gaps, not prerequisites for experimenting with BULL.
 4. **Add in-toto only if the threat model needs step/functionary authorization.**
    Define the intended supply-chain layout and verify signed link metadata.
 5. **Create machine-readable control evidence.** Maintain a versioned
-   \`compliance/control-map.json\` or equivalent that ties each framework item to
+   `compliance/control-map.json` or equivalent that ties each framework item to
    code, test, environment requirement, evidence artifact and known limitation.
 6. **Require independent security review for high-risk promotion.** Current
    documentation calls for it, but the repository's documented ruleset does not
@@ -712,7 +711,7 @@ These are evidence/control gaps, not prerequisites for experimenting with BULL.
   credential authority.
 - Malware scanning is not proof that admitted data is benign.
 - Signed policy/integrity manifests do not equal public supply-chain provenance.
-- A project's \`certification/\` filenames or self-verification outputs are not
+- A project's `certification/` filenames or self-verification outputs are not
   third-party standards certification.
 - Framework alignment must never be rewritten as external certification without
   the required assessor/authority evidence.
