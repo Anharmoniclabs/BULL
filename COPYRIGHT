@@ -4,14 +4,23 @@ BULL — Blocking Unauthorized Logic Loopholes
 
 Copyright © 2026 Luis Minier.
 
-This notice applies to copyrightable human-authored portions of the original
-BULL source code, documentation, tests, diagrams, configuration text, and other
-project materials, except where a file or section states otherwise.
+BULL is a human-directed, AI-assisted software and research project. The project
+was conceived, specified, guided, tested, corrected, selected, organized, and
+iteratively developed through human-in-the-loop direction and experiments by
+Luis Minier, with AI systems used as implementation and coding tools.
 
-BULL was developed through human-directed, AI-assisted work. This notice does
-not claim copyright in material that is not copyrightable human authorship. It
-does cover copyrightable human-authored expression and, where applicable,
-human-authored selection, coordination, arrangement, editing, and modification.
+The resulting BULL project combines that human direction with AI-assisted source
+code, documentation, tests, diagrams, configurations, and other project
+materials. This notice identifies Luis Minier as the project creator and
+copyright claimant for the copyrightable human-authored contributions,
+specifications, documentation, selection, coordination, arrangement, editing,
+modification, and other protectable human expression embodied in the finished
+project.
+
+This notice does not represent that Luis Minier personally typed or manually
+programmed every line of source code. The codebase was substantially developed
+with AI-assisted coding under continuous human-in-the-loop guidance,
+experimentation, testing, rejection, correction, and integration.
 
 Original BULL software remains distributed under GPL-2.0-or-later. This
 copyright notice does not change the project's open-source license.
@@ -28,15 +37,3 @@ by its own license terms. In particular, this notice does not claim ownership of
   firmware SDKs, media, or other separately licensed material.
 
 See `THIRD_PARTY_NOTICES.md` and `docs/AUTHORSHIP_PROVENANCE.md`.
-
-## Methods and technical ideas
-
-The BULL repository contains original descriptions and implementations of
-execution-governance architecture, security controls, workflows, and technical
-methods. Copyright protects eligible expression in those descriptions and
-implementations; it does not itself create exclusive rights in an underlying
-idea, procedure, process, system, method of operation, concept, principle,
-discovery, formula, or algorithm.
-
-Any potential patent rights in a technical invention are separate from
-copyright and are not created or claimed by this notice.
