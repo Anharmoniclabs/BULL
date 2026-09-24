@@ -2,6 +2,10 @@
 
 # BULL
 
+> Copyright © 2026 Luis Minier. BULL is a human-directed, AI-assisted project:
+> the code was developed with AI coding tools under human-in-the-loop guidance,
+> experimentation, testing, correction, selection, and integration.
+
 An experimental, open-source execution firewall for AI agents. The model proposes
 an action; trusted host integration supplies authority. BULL checks that authority,
 constrains execution, and records an authenticated audit checkpoint.
@@ -108,6 +112,9 @@ Zenodo. https://doi.org/10.5281/zenodo.22923455
 ## License and contributions
 
 BULL's original source is **GPL-2.0-or-later**; see [LICENSE](LICENSE).
+The project-wide copyright notice is [COPYRIGHT](COPYRIGHT), with the backed
+authorship and provenance record in
+[docs/AUTHORSHIP_PROVENANCE.md](docs/AUTHORSHIP_PROVENANCE.md).
 Third-party tools, guest-image packages and referenced media retain their own
 licenses; see [third-party notices](THIRD_PARTY_NOTICES.md) and the
 [distribution checklist](docs/DISTRIBUTION.md). Source publication is distinct

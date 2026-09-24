@@ -1,0 +1,39 @@
+# BULL Copyright Notice
+
+BULL — Blocking Unauthorized Logic Loopholes
+
+Copyright © 2026 Luis Minier.
+
+BULL is a human-directed, AI-assisted software and research project. The project
+was conceived, specified, guided, tested, corrected, selected, organized, and
+iteratively developed through human-in-the-loop direction and experiments by
+Luis Minier, with AI systems used as implementation and coding tools.
+
+The resulting BULL project combines that human direction with AI-assisted source
+code, documentation, tests, diagrams, configurations, and other project
+materials. This notice identifies Luis Minier as the project creator and
+copyright claimant for the copyrightable human-authored contributions,
+specifications, documentation, selection, coordination, arrangement, editing,
+modification, and other protectable human expression embodied in the finished
+project.
+
+This notice does not represent that Luis Minier personally typed or manually
+programmed every line of source code. The codebase was substantially developed
+with AI-assisted coding under continuous human-in-the-loop guidance,
+experimentation, testing, rejection, correction, and integration.
+
+Original BULL software remains distributed under GPL-2.0-or-later. This
+copyright notice does not change the project's open-source license.
+
+Third-party material remains copyright of its respective owners and is governed
+by its own license terms. In particular, this notice does not claim ownership of:
+
+- Raspberry Pi material identified in `firmware/src/boot_button.c` and
+  `firmware/PICO_EXAMPLES_LICENSE.txt`;
+- `docs/papers/bull-ii/IEEEtran.cls`;
+- the GNU GPL license text contained in `LICENSE` and
+  `docs/papers/bull-ii/LICENSE`;
+- external dependencies, model weights, toolchains, guest-image packages,
+  firmware SDKs, media, or other separately licensed material.
+
+See `THIRD_PARTY_NOTICES.md` and `docs/AUTHORSHIP_PROVENANCE.md`.
