@@ -169,7 +169,10 @@ def runtime_state() -> dict:
 
 def _asset_manifest_path() -> Path | None:
     raw = os.environ.get("BULL_DEPLOYMENT_ASSETS", "").strip()
-    return Path(raw).expanduser() if raw else None
+    if raw:
+        return Path(raw).expanduser()
+    default = STATE_ROOT / "guest-2026-09-22" / "assets-local.json"
+    return default if default.exists() else None
 
 def vm_state() -> dict:
     readiness = probe_kvm()
@@ -302,6 +305,23 @@ def job_log(job_id: str) -> dict:
     if len(data) > 256 * 1024:
         data = data[-256 * 1024:]
     return {"id": job_id, "log": data.decode("utf-8", "replace")}
+
+def start_guest_install_job() -> dict:
+    target = STATE_ROOT / "guest-2026-09-22"
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    marker = STATE_ROOT / f"guest-install-{stamp}-{uuid.uuid4().hex[:6]}"
+    cmd = [
+        sys.executable,
+        str(WEB / "install_guest_assets.py"),
+        "--output",
+        str(target),
+    ]
+    return _start_job(
+        "guest-asset-install",
+        cmd,
+        marker,
+        "Download + verify published BULL guest",
+    )
 
 def start_vm_job(payload: dict) -> dict:
     case = str(payload.get("case", "all"))
@@ -549,6 +569,7 @@ class Handler(SimpleHTTPRequestHandler):
             if p == "/api/malware/scan": return self.send_json(scan_file(payload))
             if p == "/api/agent-scan": return self.send_json(agent_scan(payload))
             if p == "/api/adversary/quarantine": return self.send_json(quarantine_record(payload))
+            if p == "/api/vm/install-assets": return self.send_json(start_guest_install_job(), 202)
             if p == "/api/vm/run": return self.send_json(start_vm_job(payload), 202)
             if p == "/api/deployment/run": return self.send_json(start_deployment_job(), 202)
             return self.send_json({"error": "unknown endpoint"}, 404)
