@@ -62,3 +62,37 @@ blocks local/private/reserved destinations.
 Buttons that later perform consequential changes should be routed through BULL's
 existing dispatcher/approval/authority mechanisms rather than browser-granted
 authority.
+
+
+## Real KVM runtime view
+
+The **Runtime / VM** page is wired to the repository's actual KVM/deployment
+paths, not a simulated VM status card.
+
+For the five-case KVM runner, export the verified asset manifest used by BULL:
+
+```bash
+export BULL_DEPLOYMENT_ASSETS="$HOME/bull-guest-release/assets-local.json"
+```
+
+Then start the command center. The Runtime / VM page calls the real
+`tools.deployment_check.probe_kvm()`, validates the manifest with
+`checked_assets()`, and can launch `microvm/integration.py` for one selected
+case or all five cases. Logs and evidence paths are surfaced in the UI.
+
+To validate a private raw launcher configuration without booting it:
+
+```bash
+export BULL_MICROVM_CONFIG_FILE="/absolute/private/path/deployment.env"
+```
+
+The **Validate configured launcher** button invokes BULL's
+`microvm/run-bull-microvm.sh --print-command` path. The full deployment check
+button invokes `tools/deployment_check.py` in a background job. Optional
+`BULL_TLA_JAR` and `BULL_DEPLOYMENT_STATE` are forwarded when configured.
+
+BULL's current supported MicroVM architecture is intentionally a **one-shot
+Linux/KVM guest**. The repository explicitly defers persistent VM sessions, so
+the dashboard does not misrepresent it as a continuously running desktop Linux
+VM. When KVM or verified guest assets are missing, the UI reports BLOCKED rather
+than substituting software emulation or fake success.
