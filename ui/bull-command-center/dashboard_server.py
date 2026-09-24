@@ -158,7 +158,7 @@ def runtime_state() -> dict:
     return {
         "policy_bundle": bool(os.environ.get("BULL_POLICY_BUNDLE")),
         "integrity_manifest": bool(os.environ.get("BULL_INTEGRITY_MANIFEST")),
-        "microvm_configured": bool(os.environ.get("BULL_MICROVM_CONFIG") or os.environ.get("BULL_MICROVM_KERNEL")),
+        "microvm_configured": bool(os.environ.get("BULL_MICROVM_CONFIG_FILE") or os.environ.get("BULL_DEPLOYMENT_ASSETS")),
         "audit_ledger": bool(audit_path()),
         "remote_anchor": bool(os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL") or os.environ.get("BULL_AUDIT_TRANSPORT")),
         "seccomp_profile": os.environ.get("BULL_SECCOMP_PROFILE", "") or "unset",
