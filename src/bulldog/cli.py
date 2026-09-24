@@ -134,6 +134,19 @@ def _run_assurance_status(args: argparse.Namespace) -> int:
         complete = complete and report.release_complete
     return 1 if args.require_complete and not complete else 0
 
+
+def _run_console(args: argparse.Namespace) -> int:
+    from .control_plane import serve_console
+
+    return serve_console(
+        host=args.host,
+        port=args.port,
+        workspace=args.workspace,
+        refresh_seconds=args.refresh_seconds,
+        auto_scan=not args.no_auto_scan,
+        dynamic_attestation=not args.no_dynamic_attestation,
+    )
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="bull",
@@ -163,6 +176,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Require strict production security gates and live backend attestation.",
     )
     verify_parser.set_defaults(handler=_run_verify)
+
+    console_parser = subparsers.add_parser(
+        "console",
+        help="Run the local BULL command/control operator console.",
+    )
+    console_parser.add_argument("--host", default="127.0.0.1")
+    console_parser.add_argument("--port", type=int, default=11510)
+    console_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    console_parser.add_argument("--refresh-seconds", type=float, default=2.0)
+    console_parser.add_argument(
+        "--no-auto-scan",
+        action="store_true",
+        help="Initialize ClamAV but do not start the bounded workspace scan on boot.",
+    )
+    console_parser.add_argument(
+        "--no-dynamic-attestation",
+        action="store_true",
+        help="Do not start the live assurance probe on boot.",
+    )
+    console_parser.set_defaults(handler=_run_console)
 
     assurance_parser = subparsers.add_parser(
         "assurance",
