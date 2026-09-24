@@ -1,9 +1,9 @@
 # BULL standards and compliance crosswalk
 
 **Assessment date:** 2026-09-24  
-**Source baseline:** `927906dc157e7f4822a1b9cffc34f67ac16ecb7b` (`main` when this crosswalk was prepared)  
+**Implementation baseline:** `71e9d9fe9570f7b61770b9d5cca247d8ad269d1e` (assurance implementation merged to `main`)  
 **Project:** BULL — Blocking Unauthorized Logic Loopholes  
-**Scope:** source-code and repository-control mapping only
+**Scope:** source-code, deployment-control, and release-pipeline mapping
 
 > **Important:** This document is a project-authored technical crosswalk, not a
 > certification, legal opinion, SOC report, conformity assessment, NIST
@@ -30,6 +30,26 @@ The repository does **not** currently justify claims such as "NIST compliant,"
 | **External** | Compliance depends mainly on deployment, organizational process, independent assessment, legal classification, or a third party. |
 | **Out of scope** | The framework item addresses a function BULL is not designed to provide. |
 
+## Machine-enforced assurance layer
+
+BULL now packages a machine-readable control registry at
+`src/bulldog/data/assurance_controls.json` and evaluates it through
+`src/bulldog/assurance.py`. The command `bull assurance status` separates:
+
+- `IMPLEMENTED` — source/test controls exist, but this is not live deployment proof;
+- `PASS / FAIL / BLOCKED` — deployment or release evidence with fail-closed semantics;
+- `EXTERNAL` — organizational, legal, assessor, or validated-module obligations
+  that BULL is not allowed to self-certify.
+
+`bull assurance status --dynamic` invokes the existing live host-certification
+path for seccomp, Landlock, `no_new_privs`, network isolation and PID-namespace
+evidence. `--require-complete` returns non-zero when required in-scope evidence is
+missing. Project-authored assurance reports always set `certified: false`.
+
+The production gate remains the enforcement authority. The assurance layer emits
+structured evidence from that boundary; it does not create a second permission
+engine or convert framework mappings into execution policy.
+
 ## Executive crosswalk
 
 | Framework / standard | BULL status | What the repository supports | What it does **not** prove |
@@ -37,14 +57,14 @@ The repository does **not** currently justify claims such as "NIST compliant,"
 | **NIST Cybersecurity Framework (CSF) 2.0** | **Partial** | Strong technical overlap with access authorization, least privilege, data/security boundaries, platform protection, resilience, and monitoring/evidence. | Organization-wide GOVERN/IDENTIFY/RESPOND/RECOVER outcomes, risk ownership, asset inventory, business continuity, incident program, or a CSF assessment. |
 | **NIST SP 800-53 Rev. 5** | **Partial** | Direct technical overlap with AC-3, AC-4, AC-6, AU-2/AU-9/AU-12, CM-7, SC-7, SC-39, SI-3, SI-7 and related controls. | A selected baseline, SSP, control implementation statements for a real information system, 800-53A assessment, RMF authorization, or ATO. |
 | **NIST AI RMF 1.0** | **Partial** | Technical evidence contributes to GOVERN/MAP/MEASURE/MANAGE activities: threat boundaries, tests, measured enforcement, approval, audit, and fail-closed operation. | Full lifecycle AI risk management, impact analysis, intended-purpose assessment, organizational governance, model accuracy/fairness/explainability, or independent evaluation. |
-| **NIST SSDF SP 800-218 v1.1** and **SP 800-218A** | **Partial** | Security policy, protected development workflow, tests/red-team probes, release hashing, pinned build inputs in several workflows, vulnerability reporting, and reproducibility documentation. | Complete software provenance, a standards-format SBOM, hermetic/reproducible builds for every artifact, or a full SSDF practice assessment. |
+| **NIST SSDF SP 800-218 v1.1** and **SP 800-218A** | **Partial** | Security policy, protected development workflow, tests/red-team probes, release hashing, machine-readable assurance controls, a CycloneDX guest-SBOM release path, GitHub Artifact Attestation provenance/signing hooks, vulnerability reporting, and reproducibility documentation. | A complete all-artifact SBOM, hermetic/reproducible builds for every artifact, an executed signed guest release on this baseline, or a full SSDF practice assessment. |
 | **OWASP Top 10 for LLM Applications 2025** | **Meaningful technical alignment** | Particularly strong mitigation at the execution boundary for Prompt Injection impact, Improper Output Handling in governed command paths, Excessive Agency, and Unbounded Consumption. | Prevention/detection of every prompt injection, truthfulness, RAG/vector security, all application sinks, or security of integrations that bypass `ProductionDispatcher`. |
 | **MITRE ATLAS** | **Mitigation mapping** | BULL provides controls relevant to agent tool invocation, prompt-injection impact, credential/tool abuse, host escape/sandbox evasion, exfiltration through tools, supply-chain compromise, and denial/resource abuse. | ATLAS is an adversary-technique knowledge base, not a compliance certification; BULL does not claim coverage of every ATLAS technique. |
 | **CIS Controls v8.1** | **Partial** | Technical overlap with secure configuration, access control, audit logging, malware defenses, and application software security. | Enterprise asset/account inventories, training, recovery, incident-response operations, or a CIS Controls assessment. |
-| **SLSA v1.2** | **No claimed level** | Build-as-code, pinned GitHub Actions, source pinning/hashing for guest inputs, release hashes, and build records are useful prerequisites. | BULL does not currently publish a SLSA-conformant provenance attestation for its release artifacts, so this document does not claim Build L1 or higher. |
-| **Sigstore / cosign / Rekor** | **Gap** | BULL has its own HMAC-signed integrity/policy material and SHA-256 release hashes. | Those mechanisms are not Sigstore signatures, Fulcio identity certificates, cosign bundles, or Rekor transparency-log entries. |
-| **in-toto** | **Gap** | BULL records several build inputs and hashes. | No in-toto layout, signed link metadata, or in-toto verification chain is implemented. |
-| **SBOM (CycloneDX / SPDX)** | **Gap** | `THIRD_PARTY_NOTICES.md` and guest `legal-info` materials document dependencies/licenses. | The repository explicitly says its short inventory is **not an exhaustive dependency SBOM**. No generated CycloneDX or SPDX SBOM is published as a release control. |
+| **SLSA v1.2** | **Provenance pipeline implemented; no claimed level** | The guest-release workflow is wired to generate signed SLSA build provenance for its release subjects and verify attestations before draft release creation. | The new path has not yet been exercised by an intentional guest release on this baseline; this document therefore does not claim Build L1 or higher, nor does it assess every SLSA requirement. |
+| **Sigstore / GitHub Artifact Attestations** | **Implemented release path; live release evidence pending** | The guest-release workflow uses GitHub Artifact Attestations with OIDC-backed short-lived signing identity, preserves Sigstore bundles, and verifies attestations before release creation. | This is separate from BULL's deployment HMAC trust model, does not certify runtime behavior, and has not yet produced a release artifact on this implementation baseline. |
+| **in-toto** | **Partial** | The guest-release provenance/SBOM attestation path uses signed DSSE/in-toto statements through GitHub Artifact Attestations. | BULL does not define a custom in-toto layout with authorized functionaries/link metadata for every supply-chain step. |
+| **SBOM (CycloneDX / SPDX)** | **Partial** | The guest-release workflow generates and validates a CycloneDX 1.6 SBOM from Buildroot `legal-info/manifest.csv`, then attests it for the rootfs. | This does not yet provide a complete Python/application/development-tool SBOM or prove that a signed guest release has been executed on this baseline. |
 | **ISO/IEC 27001:2022** | **External** | BULL can support technical controls inside an ISMS, especially access control, secure configuration, logging, development security, and supplier/software-integrity evidence. | ISO 27001 certifies an organization's ISMS, not a Git repository. No accredited certification is evidenced here. |
 | **SOC 2** | **External** | BULL can contribute controls relevant to Security, Availability, Processing Integrity, and Confidentiality depending on deployment. | A SOC 2 report requires management assertions and an independent CPA examination of a service organization's system/controls. None is evidenced by this repository. |
 | **FIPS 140-3** | **Not validated** | BULL uses cryptographic primitives and OpenSSH security-key formats; its paper also cites FIPS 199. | Algorithm use or a FIPS citation does not equal CMVP module validation. No BULL FIPS 140-3 certificate or validated operational environment is claimed. |
@@ -482,10 +502,11 @@ BULL has useful evidence across SSDF practice groups:
 - **Respond to Vulnerabilities (RV):** `SECURITY.md` and GitHub private
   vulnerability reporting.
 
-Key gaps remain: no generated standards-format SBOM, no published SLSA provenance,
-non-hermetic dependency ranges in parts of the development environment,
-bit-for-bit guest-image reproducibility not demonstrated, and no independent
-security assessment requirement enforced by repository rules.
+Key gaps remain: the CycloneDX/SLSA/Sigstore guest-release path still needs its
+first intentional live release on this baseline; SBOM coverage is not complete
+for Python/application/development tooling; parts of the build environment remain
+non-hermetic; bit-for-bit guest-image reproducibility is not demonstrated; and no
+independent security assessment requirement is enforced by repository rules.
 
 ---
 
@@ -514,7 +535,7 @@ defensive correspondences, **not claims that every technique is defeated**.
 SLSA v1.2 is the current approved specification as of this assessment. Its Build
 track requires provenance starting at Build L1.
 
-**Current BULL conclusion: no SLSA level is claimed.**
+**Current BULL conclusion: the provenance path is implemented, but no SLSA level is claimed.**
 
 Positive prerequisites already present:
 
@@ -527,46 +548,59 @@ Positive prerequisites already present:
 - SHA-256 release sums;
 - explicit refusal to overwrite existing guest-release tags.
 
-Missing evidence that blocks a Build L1+ claim in this crosswalk:
+The guest-release workflow now creates SLSA build provenance through a pinned
+GitHub Artifact Attestations action, preserves the generated Sigstore bundle, and
+runs `gh attestation verify` before draft release creation. The provenance is
+built from a deterministic checksum inventory of the release subjects.
 
-- a SLSA-conformant provenance attestation for released artifacts;
-- publication/distribution of that provenance with releases;
-- verification policy consuming that provenance.
+What is still missing before making a level claim:
 
-Higher levels require additional guarantees. The existing controls must not be
-renamed "SLSA" until the normative v1.2 requirements are implemented and checked.
+- an intentional guest-release run on this implementation baseline with retained
+  release/attestation evidence;
+- a control-by-control assessment against the normative SLSA v1.2 Build track;
+- confirmation that the exact release workflow/builder satisfies the requirements
+  of any level claimed, rather than inferring a level merely from the presence of
+  provenance.
 
-### 5.2 Sigstore
+Higher levels require additional guarantees. BULL therefore continues to report
+**no claimed SLSA level**.
 
-**Status: Gap.**
+### 5.2 Sigstore / GitHub Artifact Attestations
 
-BULL's HMAC-signed policy/integrity data is useful but is a different trust model.
-There is no evidence of:
+**Status: release pipeline implemented; first live release evidence pending.**
 
-- cosign artifact signing;
-- Fulcio short-lived identity certificates;
-- Rekor transparency-log inclusion;
-- Sigstore verification bundles/policy in release consumption.
+BULL's deployment HMAC-signed policy/integrity data remains a separate trust
+model. The guest-release workflow now requests the GitHub OIDC/attestation
+permissions, uses a pinned `actions/attest` revision, preserves the generated
+Sigstore bundles, and cryptographically verifies the provenance and SBOM
+attestations before it can create the draft release.
+
+This is supply-chain evidence, not a statement that the resulting runtime is
+safe or externally certified. The workflow has not been dispatched solely for
+this documentation update, so there is no new signed guest release being claimed.
 
 ### 5.3 in-toto
 
-**Status: Gap.**
+**Status: Partial.**
 
-BULL does not currently define an in-toto layout describing authorized supply
-chain steps/functionaries or publish signed in-toto link metadata for those
-steps.
+The GitHub Artifact Attestation path emits signed DSSE attestations using in-toto
+statement semantics for SLSA provenance/SBOM evidence. BULL still does not define
+a custom in-toto layout describing authorized functionaries and signed link
+metadata for every build/test/package step. Add such a layout only if the threat
+model requires that extra step-level authorization model.
 
 ### 5.4 SBOM
 
-**Status: Gap for a machine-readable release SBOM.**
+**Status: Partial machine-readable SBOM coverage.**
 
-`THIRD_PARTY_NOTICES.md` explicitly states:
+`THIRD_PARTY_NOTICES.md` still correctly states that its short package inventory
+is not an exhaustive dependency SBOM. In addition to that inventory, the
+**guest-release workflow now generates CycloneDX 1.6 JSON/XML from Buildroot
+`legal-info/manifest.csv`, validates the JSON, records the SBOM generator
+resolved toolchain, and creates a signed SBOM attestation for the copied rootfs.**
 
-> These are direct tools, not an exhaustive dependency SBOM.
-
-The guest-release workflow collects Buildroot legal-info, sources, licenses and
-configuration, which is valuable distribution evidence, but it is not a
-CycloneDX/SPDX SBOM pipeline for BULL releases.
+Remaining gap: this is guest/rootfs coverage, not a complete Python package,
+development environment, model, or deployment SBOM.
 
 ---
 
@@ -666,17 +700,21 @@ or national-law implementation.
 
 These are evidence/control gaps, not prerequisites for experimenting with BULL.
 
-1. **Generate a release SBOM.** Produce CycloneDX and/or SPDX for the Python
-   package and guest release; archive it with immutable release assets.
-2. **Generate SLSA v1.2 provenance.** Emit standards-conformant provenance from
-   the hosted build and verify it before release/promotion.
-3. **Sign release artifacts and attestations with Sigstore/cosign.** Verify
-   identity, certificate/trust root and transparency-log inclusion.
-4. **Add in-toto only if the threat model needs step/functionary authorization.**
-   Define the intended supply-chain layout and verify signed link metadata.
-5. **Create machine-readable control evidence.** Maintain a versioned
-   `compliance/control-map.json` or equivalent that ties each framework item to
-   code, test, environment requirement, evidence artifact and known limitation.
+1. **Run and retain the first intentional assured guest release.** Exercise the
+   new CycloneDX + SLSA + Sigstore path on a reviewed release candidate, retain
+   its release bundle/attestation verification, and record the exact source SHA.
+2. **Extend SBOM coverage beyond the guest rootfs.** Add CycloneDX/SPDX coverage
+   for the Python package and release/development dependencies without merging
+   those distinct inventories into a misleading single component list.
+3. **Harden the SBOM toolchain.** The top-level CycloneDX-Buildroot version is
+   pinned and the resolved environment is recorded; add hashes/lock material for
+   the generator dependency graph if practical for the release environment.
+4. **Assess SLSA v1.2 requirements explicitly before claiming a level.** The
+   provenance path exists, but the level must come from a normative requirement
+   review plus retained release evidence, not from naming the technology.
+5. **Add a custom in-toto layout only if the threat model needs functionary-level
+   step authorization.** GitHub attestations already provide signed in-toto/SLSA
+   statements; a separate layout should solve a defined security problem.
 6. **Require independent security review for high-risk promotion.** Current
    documentation calls for it, but the repository's documented ruleset does not
    require a second approving reviewer.
@@ -710,7 +748,7 @@ These are evidence/control gaps, not prerequisites for experimenting with BULL.
 - Human approval trusts enrollment, operator channel/UI, the host and the
   credential authority.
 - Malware scanning is not proof that admitted data is benign.
-- Signed policy/integrity manifests do not equal public supply-chain provenance.
+- Signed deployment policy/integrity manifests do not equal public supply-chain provenance; the guest-release attestation path is separate evidence and must be evaluated on its own exact release run.
 - A project's `certification/` filenames or self-verification outputs are not
   third-party standards certification.
 - Framework alignment must never be rewritten as external certification without
@@ -729,6 +767,7 @@ These are evidence/control gaps, not prerequisites for experimenting with BULL.
 - MITRE ATLAS: <https://atlas.mitre.org/>
 - SLSA v1.2: <https://slsa.dev/spec/v1.2/>
 - Sigstore: <https://docs.sigstore.dev/>
+- GitHub Artifact Attestations: <https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds>
 - in-toto: <https://in-toto.io/>
 - CycloneDX: <https://cyclonedx.org/>
 - SPDX: <https://spdx.dev/>
@@ -750,9 +789,12 @@ The correct claim today is:
 
 > **BULL implements technical controls that align with portions of NIST CSF,
 > NIST SP 800-53, NIST AI RMF, NIST SSDF, OWASP LLM Top 10, MITRE ATLAS and CIS
-> Controls. It is not independently certified or fully compliant with those
-> frameworks, and it does not currently claim SLSA, Sigstore, in-toto, SBOM,
-> ISO 27001, SOC 2, FIPS 140-3, EU AI Act or NIS2 conformity.**
+> Controls. Its guest-release pipeline now includes machine-readable CycloneDX
+> SBOM generation plus signed SLSA/Sigstore/in-toto attestation and verification
+> hooks, but no SLSA level is claimed and no new live release is implied by the
+> presence of that workflow. BULL is not independently certified or fully
+> compliant with ISO 27001, SOC 2, FIPS 140-3, EU AI Act, NIS2, NIST or the
+> other frameworks listed here.**
 
 That statement should be updated whenever the production boundary, release
 pipeline, deployment evidence, or external assessment status changes.
