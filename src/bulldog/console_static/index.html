@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BULL Command / Control</title>
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <img src="/bull-mark.svg" alt="" class="brand-mark">
+        <div class="brand-type">
+          <strong>BULL</strong>
+          <span>BLOCKING UNAUTHORIZED LOGIC LOOPHOLES</span>
+        </div>
+      </div>
+
+      <label class="global-search">
+        <span class="sr-only">Search the BULL console</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+        <input id="global-search" type="search" autocomplete="off" placeholder="Search entities, processes, controls, capabilities…">
+        <kbd>/</kbd>
+      </label>
+
+      <div class="topbar-status">
+        <span id="runtime-pill" class="status-pill neutral"><i></i> Loading runtime</span>
+        <span class="version-stack"><b id="version-label">source</b><small>BULL Core</small></span>
+        <span class="operator"><span class="avatar">O</span><span><b>operator</b><small>Local console</small></span></span>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <nav id="nav">
+        <button class="nav-item active" data-view="overview"><span>⌂</span>Overview</button>
+        <button class="nav-item" data-view="agents"><span>⌁</span>Agent Scan</button>
+        <button class="nav-item" data-view="runtime"><span>⬡</span>Runtime</button>
+        <button class="nav-item" data-view="policy"><span>◆</span>Policy Engine</button>
+        <button class="nav-item" data-view="capabilities"><span>⌘</span>Capability Graph</button>
+        <button class="nav-item" data-view="audit"><span>▤</span>Audit Ledger</button>
+        <button class="nav-item" data-view="malware"><span>✣</span>Malware Scan</button>
+        <button class="nav-item" data-view="microvm"><span>⬢</span>MicroVM</button>
+        <button class="nav-item" data-view="swarms"><span>✥</span>Swarm Registry</button>
+        <button class="nav-item" data-view="attestation"><span>✓</span>Attestation</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span>Settings</button>
+      </nav>
+
+      <div class="side-brand">
+        <div class="side-words">CONTAIN<br>INSPECT<br>VERIFY<br>TRUST</div>
+        <img src="/bull-mark.svg" alt="" class="side-mark">
+        <strong>BULL</strong>
+        <small>A safer runtime<br>for an open world.</small>
+      </div>
+    </aside>
+
+    <main id="main">
+      <section class="view active" data-view-panel="overview">
+        <div class="overview-grid">
+          <section class="panel scan-hero">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">AGENT SCAN</span>
+                <h1>From Discovery to Enforcement</h1>
+                <p>Identify autonomous tooling, observe runtime behavior, correlate activity, and place every proposed effect behind BULL policy and isolation boundaries.</p>
+              </div>
+              <div class="live-block">
+                <span class="status-pill good"><i></i> Live Scan Active</span>
+                <small id="scan-age">waiting for first scan</small>
+              </div>
+            </div>
+            <div class="flow-grid">
+              <article><b>1</b><span class="flow-icon">⌁</span><h3>Active Service<br>Discovery</h3><p>Local process markers<br>Listening TCP services<br>Observed runtime services</p></article>
+              <article><b>2</b><span class="flow-icon">◎</span><h3>Bot / Agent<br>Fingerprinting</h3><p>Process identities<br>Harness family markers<br>Confidence + behavior</p></article>
+              <article><b>3</b><span class="flow-icon">⌘</span><h3>Runtime & Network<br>Observation</h3><p>Processes + children<br>Open sockets<br>Live /proc signals</p></article>
+              <article><b>4</b><span class="flow-icon">⛓</span><h3>Identity &<br>Correlation</h3><p>Shared parents<br>Common families<br>Swarm clusters</p></article>
+              <article class="enforce"><b>5</b><span class="flow-icon">⬡</span><h3>Enforcement</h3><p>Policy decisions<br>Sandbox / deny<br>Audit + verify</p></article>
+            </div>
+          </section>
+
+          <section class="panel health-panel">
+            <div class="compact-heading"><h2><span>ϟ</span> System Health</h2><span id="health-badge" class="mini-badge">checking</span></div>
+            <div class="health-grid">
+              <div><span class="metric-icon blue">●</span><strong id="metric-entities">0</strong><small>Observed Entities</small></div>
+              <div><span class="metric-icon red">⊘</span><strong id="metric-denied">0</strong><small>Recent Denied Actions</small></div>
+              <div><span class="metric-icon orange">✣</span><strong id="metric-malware">0</strong><small>Malware Detections</small></div>
+              <div><span class="metric-icon blue">▤</span><strong id="metric-audit">0</strong><small>Audit Records</small></div>
+            </div>
+            <div class="integrity-card">
+              <div><span class="shield">⬡</span><strong id="metric-protection">0/0</strong><small>Protection Controls Passing</small></div>
+              <div id="mini-bars" class="mini-bars" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <section class="panel policy-panel">
+            <div class="compact-heading">
+              <div><h2>⚙ Policy Decision Engine</h2><small>Actions gated by capability, provenance, and session rules</small></div>
+              <button class="text-button" data-nav="policy">Evaluate →</button>
+            </div>
+            <div id="decision-cards" class="decision-grid"></div>
+            <div class="rule-strip">
+              <span>▤</span>
+              <div><b>Policy Enforcement Rule</b><p id="policy-rule">Loading active policy state…</p></div>
+            </div>
+          </section>
+
+          <section class="panel capability-panel">
+            <div class="compact-heading">
+              <div><h2>▰ Capability Boundaries</h2><small>Signed ceiling when configured; development state is labeled explicitly</small></div>
+              <button class="text-button" data-nav="capabilities">Inspect →</button>
+            </div>
+            <div id="capability-grid" class="capability-grid"></div>
+          </section>
+
+          <section class="panel isolation-panel">
+            <div class="compact-heading">
+              <div><h2>⬢ Runtime Isolation</h2><small>Live assurance controls, not decorative status</small></div>
+              <span id="isolation-summary" class="mini-badge">pending</span>
+            </div>
+            <div id="isolation-grid" class="isolation-grid"></div>
+          </section>
+
+          <section class="panel entities-panel">
+            <div class="compact-heading">
+              <div><h2>● Observed Bots / Entities</h2><small>Live local process observations; no HTML scraping</small></div>
+              <button class="text-button" data-nav="agents">View All →</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Entity</th><th>Family</th><th>Behavior</th><th>Confidence</th><th>State</th><th>Last Seen</th></tr></thead>
+                <tbody id="overview-entity-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel swarm-panel">
+            <div class="compact-heading">
+              <div><h2>✥ Swarm Correlation</h2><small>Shared parent/family evidence only</small></div>
+              <button class="text-button" data-nav="swarms">Expand →</button>
+            </div>
+            <div id="swarm-visual" class="swarm-visual empty-state">No correlated cluster observed.</div>
+          </section>
+
+          <section class="panel audit-panel">
+            <div class="compact-heading">
+              <div><h2>▤ Audit Ledger</h2><small>Local hash-chain verification and recent activity</small></div>
+              <button class="text-button" data-nav="audit">View Ledger →</button>
+            </div>
+            <div id="audit-summary" class="kv-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="agents">
+        <div class="page-heading">
+          <div><span class="eyebrow">AGENT SCAN</span><h1>Live process discovery</h1><p>Direct host/runtime observation. The console only labels what it can support with local process evidence.</p></div>
+          <button class="primary-button" data-action="rescan">Run Discovery Scan</button>
+        </div>
+        <div class="detail-grid three">
+          <section class="panel stat-panel"><small>Candidate entities</small><strong id="agents-count">0</strong><p>Processes matching explicit agent/runtime markers.</p></section>
+          <section class="panel stat-panel"><small>Listening TCP services</small><strong id="agents-listeners">0</strong><p>Count from /proc/net/tcp*.</p></section>
+          <section class="panel stat-panel"><small>Established TCP</small><strong id="agents-connections">0</strong><p>Observed established host TCP connections.</p></section>
+        </div>
+        <section class="panel section-panel">
+          <div class="compact-heading"><div><h2>Observed processes</h2><small>Executable names only; command arguments and environment secrets are not exposed.</small></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>PID</th><th>PPID</th><th>Family</th><th>Executable</th><th>Behavior</th><th>Confidence</th><th>State</th></tr></thead>
+              <tbody id="agent-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="runtime">
+        <div class="page-heading"><div><span class="eyebrow">RUNTIME</span><h1>Isolation & enforcement state</h1><p>Each tile is backed by the assurance evaluator. BLOCKED and FAIL remain visible instead of being rendered as green.</p></div><button class="primary-button" data-action="attest">Run Live Attestation</button></div>
+        <section class="panel section-panel"><div id="runtime-control-grid" class="control-grid"></div></section>
+        <section class="panel section-panel">
+          <div class="compact-heading"><div><h2>Runtime events</h2><small>Operator-readable control-plane activity</small></div></div>
+          <div id="event-list" class="event-list"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="policy">
+        <div class="page-heading"><div><span class="eyebrow">POLICY ENGINE</span><h1>Deterministic action evaluation</h1><p>Simulate the exact BULL policy path without executing the requested action.</p></div></div>
+        <div class="detail-grid policy-workbench">
+          <section class="panel section-panel">
+            <h2>Evaluate an action</h2>
+            <form id="policy-form" class="policy-form">
+              <label>Actor<input name="actor" value="operator-simulation"></label>
+              <label>Operation<input name="operation" value="process.exec"></label>
+              <label>Resource<input name="resource" value="/workspace/tool"></label>
+              <label>Capability<select name="capability" id="policy-capability"></select></label>
+              <label>Provenance<select name="provenance" id="policy-provenance"></select></label>
+              <label class="check-row"><input type="checkbox" name="external_side_effect"> External side effect</label>
+              <label class="check-row"><input type="checkbox" name="irreversible"> Irreversible</label>
+              <button class="primary-button" type="submit">Evaluate Policy</button>
+            </form>
+          </section>
+          <section class="panel section-panel result-panel">
+            <h2>Decision</h2>
+            <div id="policy-result" class="empty-state">Submit an action to see the deterministic policy result.</div>
+          </section>
+        </div>
+        <section class="panel section-panel"><div class="compact-heading"><div><h2>Observed decision distribution</h2><small>Counts from the recent audit-ledger window</small></div></div><div id="policy-decision-detail" class="decision-grid"></div></section>
+      </section>
+
+      <section class="view" data-view-panel="capabilities">
+        <div class="page-heading"><div><span class="eyebrow">CAPABILITY GRAPH</span><h1>Authority is explicit</h1><p>Capabilities come from BULL's signed deployment ceiling when configured. Development mode is not represented as production protection.</p></div></div>
+        <section class="panel section-panel">
+          <div id="capability-detail-grid" class="capability-detail-grid"></div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="audit">
+        <div class="page-heading"><div><span class="eyebrow">AUDIT LEDGER</span><h1>Human-readable execution history</h1><p>Hash-chain integrity is verified locally. Query strings are redacted in the UI so tokens do not become display data.</p></div><button class="primary-button" data-action="audit-verify">Verify Ledger</button></div>
+        <div id="audit-detail-cards" class="detail-grid four"></div>
+        <section class="panel section-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Actor / Type</th><th>Operation</th><th>Capability</th><th>Decision</th><th>Risk</th><th>Resource</th><th>Reason</th></tr></thead>
+              <tbody id="audit-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="malware">
+        <div class="page-heading"><div><span class="eyebrow">MALWARE SCAN</span><h1>Bounded ClamAV admission scan</h1><p>BULL uses the real MalwareScanner class with file, byte, recursion, CPU, and memory bounds. This console does not fake scanner availability.</p></div><button class="primary-button" data-action="malware-scan">Scan Workspace</button></div>
+        <div id="malware-cards" class="detail-grid four"></div>
+        <section class="panel section-panel">
+          <div class="compact-heading"><div><h2>Detections</h2><small>Only detections are displayed; clean-file inventories remain local.</small></div></div>
+          <div id="malware-detections" class="detection-list empty-state">No detection data yet.</div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="microvm">
+        <div class="page-heading"><div><span class="eyebrow">MICROVM</span><h1>KVM boundary readiness</h1><p>This page probes readiness and running state. It does not silently launch a privileged VM merely because a browser was opened.</p></div><button class="primary-button" data-action="microvm-probe">Probe Readiness</button></div>
+        <div id="microvm-grid" class="control-grid"></div>
+        <section class="panel section-panel note-panel"><h2>Execution boundary</h2><p>The existing <code>bulldog.microvm</code> launcher remains authoritative. The console reports KVM/QEMU/config readiness and whether a matching QEMU MicroVM process is observed.</p></section>
+      </section>
+
+      <section class="view" data-view-panel="swarms">
+        <div class="page-heading"><div><span class="eyebrow">SWARM REGISTRY</span><h1>Correlation without guesswork</h1><p>Clusters are emitted only when two or more observed candidates share a parent process or an explicit family marker.</p></div></div>
+        <section class="panel section-panel"><div id="swarm-detail" class="cluster-list"></div></section>
+      </section>
+
+      <section class="view" data-view-panel="attestation">
+        <div class="page-heading"><div><span class="eyebrow">ATTESTATION</span><h1>Source, deployment & runtime controls</h1><p>IMPLEMENTED is not treated as PASS. BLOCKED, FAIL, and EXTERNAL remain separate states.</p></div><button class="primary-button" data-action="attest">Run Dynamic Attestation</button></div>
+        <div id="attestation-cards" class="detail-grid four"></div>
+        <section class="panel section-panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Control</th><th>Phase</th><th>Status</th><th>Detail</th></tr></thead>
+              <tbody id="attestation-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="settings">
+        <div class="page-heading"><div><span class="eyebrow">SETTINGS</span><h1>Console scope</h1><p>The browser console intentionally exposes no shell, no environment dump, and no arbitrary process-kill endpoint.</p></div></div>
+        <section class="panel section-panel">
+          <div id="settings-list" class="settings-list"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
