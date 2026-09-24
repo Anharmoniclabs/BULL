@@ -1,0 +1,64 @@
+# BULL Command Center
+
+Local interface prototype for **BULL — Blocking Unauthorized Logic Loopholes**.
+
+This is the full BULL desktop/dashboard concept. Agent Scan is one view inside the
+system, alongside repository/workspace inspection, policy evaluation, trace
+visualization, assurance/compliance evidence, authenticated audit logs,
+AgentSentinel, adversary/swarm correlation, malware admission scanning, runtime
+configuration, and the approved BULL brand pack.
+
+The browser is an interface layer. Enforcement stays in BULL's existing runtime
+and authority paths.
+
+## Codespaces
+
+```bash
+cd /workspaces/BULL
+git fetch origin
+git switch ui/bull-command-center-v1
+PYTHONPATH=src python ui/bull-command-center/dashboard_server.py --port 8000
+```
+
+Open port **8000** from the Codespaces Ports panel.
+
+Or run:
+
+```bash
+bash scripts/launch-command-center.sh
+```
+
+## Wired views
+
+- **Main** — aggregated BULL status, live audit window, repo state, control
+  evidence and observed adversary/swarm registry.
+- **File / Repo** — actual Git branch/commit/status plus a bounded repository
+  text-file browser.
+- **Working Folder** — repository-root workspace view and the real bounded
+  `MalwareScanner` path when ClamAV is installed.
+- **Visualization** — BULL component topology, real deterministic policy
+  evaluation and runtime trace-model simulation.
+- **Controls / Compliance** — actual `evaluate_assurance()` control results.
+- **BULL Logs** — verification and recent records from `BULL_AUDIT_LEDGER`.
+- **Agents / Models** — actual `AgentSentinel`, passive artifact discovery,
+  BULL `AdversaryRegistry` swarm clustering and quarantine classification.
+- **Settings / Brand** — deployment/configuration presence and every asset from
+  `site/assets/brand/manifest.json`.
+
+## Brand source
+
+The UI serves the existing approved BULL pack directly from
+`site/assets/brand/`; it does not invent or redraw a replacement logo.
+
+## Safety boundary for interface testing
+
+There is intentionally no generic shell endpoint, arbitrary file write, Git
+push, policy bypass, approval bypass, or unrestricted command execution endpoint.
+Policy evaluation and trace simulation are real BULL code paths but do not execute
+the requested operation. Malware scan targets are restricted to files inside the
+repository. Public URL agent discovery is passive, text-only, size-bounded and
+blocks local/private/reserved destinations.
+
+Buttons that later perform consequential changes should be routed through BULL's
+existing dispatcher/approval/authority mechanisms rather than browser-granted
+authority.
