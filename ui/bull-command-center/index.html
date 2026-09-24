@@ -15,6 +15,7 @@
     <button data-view="repo">▤ <span>File / Repo</span></button>
     <button data-view="workspace">□ <span>Working Folder</span></button>
     <button data-view="visualization">◉ <span>Visualization</span></button>
+    <button data-view="runtime">▧ <span>Runtime / VM</span></button>
     <button data-view="controls">♢ <span>Controls / Compliance</span></button>
     <button data-view="logs">☷ <span>BULL Logs</span></button>
     <button data-view="agents">◎ <span>Agents / Models</span></button>
@@ -170,6 +171,58 @@
       <pre id="trace-result"></pre>
     </article>
   </div>
+</section>
+
+
+<section class="view" id="view-runtime">
+  <div class="section-title"><h1>RUNTIME / VM</h1><span>REAL BULL LINUX/KVM EXECUTION PATH</span></div>
+  <div class="summary-cards">
+    <div><span>KVM device</span><b id="vm-kvm">...</b></div>
+    <div><span>Guest assets</span><b id="vm-assets">...</b></div>
+    <div><span>QEMU tools</span><b id="vm-tools">...</b></div>
+    <div><span>Architecture</span><b id="vm-mode">...</b></div>
+  </div>
+  <div class="two-col">
+    <article class="panel">
+      <div class="panel-title"><h2>MICROVM READINESS</h2><button id="vm-refresh">PROBE KVM</button></div>
+      <pre id="vm-state">Loading BULL MicroVM state…</pre>
+      <div class="runtime-actions">
+        <button id="vm-plan">VALIDATE CONFIGURED LAUNCHER</button>
+        <select id="vm-case">
+          <option value="allowed">allowed</option>
+          <option value="denied">denied</option>
+          <option value="timeout">timeout</option>
+          <option value="cancel">cancel</option>
+          <option value="missing-protection">missing-protection</option>
+          <option value="all" selected>all five cases</option>
+        </select>
+        <button id="vm-run">RUN REAL KVM TEST</button>
+        <button id="deployment-run">RUN FULL DEPLOYMENT CHECK</button>
+      </div>
+      <div class="runtime-note">
+        BULL's current validated VM architecture is a one-shot Linux/KVM guest, not a persistent desktop VM.
+        The dashboard launches the repository's real integration/deployment paths only when KVM and verified external guest assets are present.
+      </div>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><h2>LAUNCH / DEPLOYMENT JOBS</h2><button id="jobs-refresh">REFRESH</button></div>
+      <div id="job-list" class="job-list"></div>
+      <pre id="job-log">Select a job to stream its captured console/evidence log.</pre>
+    </article>
+  </div>
+  <article class="panel wide">
+    <div class="panel-title"><h2>FULL EXECUTION ARCHITECTURE</h2></div>
+    <div class="runtime-pipeline">
+      <span>Host / Codespace</span><i>→</i>
+      <span>Production Dispatcher</span><i>→</i>
+      <span>Signed Policy + Authority</span><i>→</i>
+      <span>Admission Scan</span><i>→</i>
+      <span>QEMU / KVM Linux Guest</span><i>→</i>
+      <span>Guest BULL Engine</span><i>→</i>
+      <span>Namespaces + Seccomp + Landlock + Cgroups</span><i>→</i>
+      <span>Authenticated Audit Receipt</span>
+    </div>
+  </article>
 </section>
 
 <section class="view" id="view-controls">
