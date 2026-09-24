@@ -11,11 +11,12 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
-import argparse, ipaddress, json, os, re, socket, subprocess, sys, time
+import argparse, ipaddress, json, os, re, shutil, socket, subprocess, sys, threading, time, uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = Path(__file__).resolve().parent
 BRAND = ROOT / "site" / "assets" / "brand"
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from bulldog.engine import BulldogEngine
@@ -28,10 +29,19 @@ from bulldog.adversary.registry import AdversaryRegistry
 from bulldog.adversary.quarantine import QuarantineManager
 from bulldog.trace_runtime import RuntimeTraceVerifier
 from bulldog.multiagent.system import MultiAgentSystem
+from tools.deployment_check import checked_assets, probe_kvm
 
 REGISTRY = AdversaryRegistry()
 QUARANTINE = QuarantineManager()
 SENTINEL = AgentSentinel()
+JOBS: dict[str, dict] = {}
+JOBS_LOCK = threading.Lock()
+STATE_ROOT = Path(os.environ.get("BULL_COMMAND_CENTER_STATE", str(Path.home() / ".local/share/bull/command-center"))).expanduser()
+STATE_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+try:
+    STATE_ROOT.chmod(0o700)
+except OSError:
+    pass
 
 SIGNALS = {
     "agent": re.compile(r"\b(agentic|autonomous\s+agent|ai[- ]agent|tool[- ]using\s+agent|function[_ -]?call|mcp\s+server|langgraph|autogen|crewai|agent\s+executor)\b", re.I),
@@ -157,6 +167,198 @@ def runtime_state() -> dict:
         "hardware_approval": bool(os.environ.get("BULL_HARDWARE_APPROVAL") or os.environ.get("BULL_APPROVAL_CONFIG")),
     }
 
+def _asset_manifest_path() -> Path | None:
+    raw = os.environ.get("BULL_DEPLOYMENT_ASSETS", "").strip()
+    return Path(raw).expanduser() if raw else None
+
+def vm_state() -> dict:
+    readiness = probe_kvm()
+    manifest = _asset_manifest_path()
+    assets = None
+    asset_error = None
+    if manifest is not None:
+        try:
+            assets = checked_assets(manifest.resolve(strict=True))
+        except Exception as exc:
+            asset_error = f"{type(exc).__name__}: {exc}"
+    tools = {
+        name: shutil.which(name)
+        for name in ("qemu-system-x86_64", "openssl", "mkfs.ext4", "debugfs")
+    }
+    config_raw = os.environ.get("BULL_MICROVM_CONFIG_FILE", "").strip()
+    config = None
+    config_error = None
+    if config_raw:
+        try:
+            config = str(Path(config_raw).expanduser().resolve(strict=True))
+        except Exception as exc:
+            config_error = f"{type(exc).__name__}: {exc}"
+    return {
+        "kvm": readiness,
+        "asset_manifest": str(manifest) if manifest else None,
+        "assets_verified": assets is not None,
+        "assets": assets,
+        "asset_error": asset_error,
+        "tools": tools,
+        "microvm_config": config,
+        "config_error": config_error,
+        "architecture": {
+            "mode": "one-shot KVM guest",
+            "persistent_session": False,
+            "software_emulation_fallback": False,
+            "guest_network_device": False,
+            "control_channel": "virtio-serial when configured",
+            "audit_channel": "virtio-serial when configured",
+        },
+    }
+
+def _job_public(job: dict) -> dict:
+    return {
+        "id": job["id"],
+        "kind": job["kind"],
+        "status": job["status"],
+        "started": job["started"],
+        "finished": job.get("finished"),
+        "returncode": job.get("returncode"),
+        "output_dir": job["output_dir"],
+        "log": job["log"],
+        "command_label": job["command_label"],
+    }
+
+def _job_runner(job_id: str, command: list[str], env: dict[str, str]) -> None:
+    with JOBS_LOCK:
+        job = JOBS[job_id]
+        log_path = Path(job["log"])
+    try:
+        with log_path.open("wb") as stream:
+            proc = subprocess.Popen(
+                command,
+                cwd=ROOT,
+                env=env,
+                stdout=stream,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            with JOBS_LOCK:
+                JOBS[job_id]["pid"] = proc.pid
+            code = proc.wait()
+        with JOBS_LOCK:
+            JOBS[job_id]["returncode"] = code
+            JOBS[job_id]["status"] = "PASS" if code == 0 else "FAIL"
+            JOBS[job_id]["finished"] = time.time()
+    except Exception as exc:
+        try:
+            with log_path.open("ab") as stream:
+                stream.write(("\nJOB ERROR: " + f"{type(exc).__name__}: {exc}" + "\n").encode())
+        except OSError:
+            pass
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "FAIL"
+            JOBS[job_id]["error"] = f"{type(exc).__name__}: {exc}"
+            JOBS[job_id]["finished"] = time.time()
+
+def _start_job(kind: str, command: list[str], output_dir: Path, label: str) -> dict:
+    output_dir = output_dir.expanduser().resolve()
+    if ROOT == output_dir or ROOT in output_dir.parents:
+        raise ValueError("runtime evidence must remain outside the repository")
+    output_dir.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if output_dir.exists():
+        raise ValueError("job output path already exists")
+    log_path = output_dir.parent / (output_dir.name + ".log")
+    job_id = uuid.uuid4().hex[:12]
+    job = {
+        "id": job_id,
+        "kind": kind,
+        "status": "RUNNING",
+        "started": time.time(),
+        "output_dir": str(output_dir),
+        "log": str(log_path),
+        "command_label": label,
+    }
+    with JOBS_LOCK:
+        JOBS[job_id] = job
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(ROOT / "src")
+    thread = threading.Thread(target=_job_runner, args=(job_id, command, env), daemon=True)
+    thread.start()
+    return _job_public(job)
+
+def jobs_state() -> list[dict]:
+    with JOBS_LOCK:
+        return [_job_public(JOBS[key]) for key in sorted(JOBS, key=lambda x: JOBS[x]["started"], reverse=True)]
+
+def job_state(job_id: str) -> dict:
+    with JOBS_LOCK:
+        if job_id not in JOBS:
+            raise ValueError("unknown command-center job")
+        return _job_public(JOBS[job_id])
+
+def job_log(job_id: str) -> dict:
+    job = job_state(job_id)
+    path = Path(job["log"])
+    if not path.exists():
+        return {"id": job_id, "log": ""}
+    data = path.read_bytes()
+    if len(data) > 256 * 1024:
+        data = data[-256 * 1024:]
+    return {"id": job_id, "log": data.decode("utf-8", "replace")}
+
+def start_vm_job(payload: dict) -> dict:
+    case = str(payload.get("case", "all"))
+    if case not in {"all", "allowed", "denied", "timeout", "cancel", "missing-protection"}:
+        raise ValueError("invalid KVM integration case")
+    state = vm_state()
+    if state["kvm"].get("status") != "PASS":
+        raise ValueError("KVM is not ready: " + str(state["kvm"].get("reason", "unknown")))
+    if not state["assets_verified"]:
+        raise ValueError("verified guest assets are required; set BULL_DEPLOYMENT_ASSETS")
+    missing = [name for name, value in state["tools"].items() if not value]
+    if missing:
+        raise ValueError("missing required VM tools: " + ", ".join(missing))
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    out = STATE_ROOT / f"kvm-{case}-{stamp}-{uuid.uuid4().hex[:6]}"
+    cmd = [
+        sys.executable, "microvm/integration.py",
+        "--case", case,
+        "--output", str(out),
+        "--cpu-profile", os.environ.get("BULL_MICROVM_CPU_PROFILE", "host"),
+    ]
+    for name, entry in state["assets"].items():
+        cmd.extend(["--" + name, entry["path"]])
+    return _start_job("kvm-integration", cmd, out, f"BULL KVM {case}")
+
+def start_deployment_job() -> dict:
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    out = STATE_ROOT / f"deployment-{stamp}-{uuid.uuid4().hex[:6]}"
+    cmd = [sys.executable, "tools/deployment_check.py", "--output", str(out)]
+    assets = _asset_manifest_path()
+    if assets is not None:
+        cmd.extend(["--assets", str(assets.expanduser().resolve(strict=True))])
+    tla = os.environ.get("BULL_TLA_JAR", "").strip()
+    if tla:
+        cmd.extend(["--tla-jar", str(Path(tla).expanduser().resolve(strict=True))])
+    deployment = os.environ.get("BULL_DEPLOYMENT_STATE", "").strip()
+    if deployment:
+        cmd.extend(["--deployment", str(Path(deployment).expanduser().resolve(strict=True))])
+    return _start_job("deployment-check", cmd, out, "BULL deployment check")
+
+def microvm_plan() -> dict:
+    raw = os.environ.get("BULL_MICROVM_CONFIG_FILE", "").strip()
+    if not raw:
+        raise ValueError("BULL_MICROVM_CONFIG_FILE is not configured")
+    config = Path(raw).expanduser().resolve(strict=True)
+    proc = subprocess.run(
+        [str(ROOT / "microvm/run-bull-microvm.sh"), "--config", str(config), "--print-command"],
+        cwd=ROOT,
+        env=dict(os.environ, PYTHONPATH=str(ROOT / "src")),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return {"returncode": proc.returncode, "output": proc.stdout, "validated": proc.returncode == 0}
+
 def system_state() -> dict:
     a = assurance_state(False)
     return {
@@ -176,6 +378,8 @@ def system_state() -> dict:
             "error": a.get("error"),
         },
         "adversary": REGISTRY.tabulate(),
+        "vm": vm_state(),
+        "jobs": jobs_state(),
     }
 
 def brand_manifest() -> dict:
@@ -318,6 +522,11 @@ class Handler(SimpleHTTPRequestHandler):
             if p == "/api/brand": return self.send_json(brand_manifest())
             if p == "/api/architecture": return self.send_json(architecture())
             if p == "/api/adversary": return self.send_json(adversary_state())
+            if p == "/api/vm": return self.send_json(vm_state())
+            if p == "/api/jobs": return self.send_json(jobs_state())
+            if p == "/api/job": return self.send_json(job_state(q.get("id", [""])[0]))
+            if p == "/api/job/log": return self.send_json(job_log(q.get("id", [""])[0]))
+            if p == "/api/microvm/plan": return self.send_json(microvm_plan())
             if p.startswith("/brand/"):
                 name = p.removeprefix("/brand/")
                 if "/" in name or name not in brand_manifest().get("files", {}):
@@ -340,6 +549,8 @@ class Handler(SimpleHTTPRequestHandler):
             if p == "/api/malware/scan": return self.send_json(scan_file(payload))
             if p == "/api/agent-scan": return self.send_json(agent_scan(payload))
             if p == "/api/adversary/quarantine": return self.send_json(quarantine_record(payload))
+            if p == "/api/vm/run": return self.send_json(start_vm_job(payload), 202)
+            if p == "/api/deployment/run": return self.send_json(start_deployment_job(), 202)
             return self.send_json({"error": "unknown endpoint"}, 404)
         except Exception as exc:
             return self.send_json({"error": f"{type(exc).__name__}: {exc}"}, 400)
