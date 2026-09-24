@@ -36,6 +36,24 @@ legal-info manifests, license texts, corresponding sources, patches and configs;
 this short inventory cannot substitute for them. Qboot is built separately and
 must have its source and license included too. See [DISTRIBUTION.md](docs/DISTRIBUTION.md).
 
+## Bundled third-party source
+
+The repository intentionally contains a small amount of third-party source or
+source-adjacent material with its original notices preserved:
+
+- `firmware/src/boot_button.c` adapts BOOTSEL sampling from Raspberry Pi
+  `pico-examples/picoboard/button`. It retains the Raspberry Pi 2020 copyright
+  and BSD-3-Clause identifier; the complete license text is in
+  `firmware/PICO_EXAMPLES_LICENSE.txt`.
+- `docs/papers/bull-ii/IEEEtran.cls` is IEEEtran V1.8b third-party LaTeX class
+  material. Its header identifies its contributors and copyright holders and
+  states distribution under LPPL 1.3. Those notices must be retained.
+- `LICENSE` and `docs/papers/bull-ii/LICENSE` contain the GNU GPL license text,
+  including the Free Software Foundation copyright notice for that license text.
+
+These files are excluded from any claim that all repository bytes are original
+BULL authorship. See `COPYRIGHT` and `docs/AUTHORSHIP_PROVENANCE.md`.
+
 ## Presentation assets
 
 The paper is the user-supplied author-review manuscript by Luis Minier, published
