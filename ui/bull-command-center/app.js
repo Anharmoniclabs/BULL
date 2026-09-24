@@ -10,6 +10,7 @@ function openView(name){
   if(name==="repo")loadRepo();
   if(name==="workspace")loadWorkspace();
   if(name==="visualization")loadArchitecture();
+  if(name==="runtime")loadRuntime();
   if(name==="controls")loadAssurance();
   if(name==="logs")loadLogs();
   if(name==="agents")loadAgents();
@@ -54,7 +55,7 @@ async function refreshMain(){
     lastSystem=s;
     $("st-engine").textContent="ONLINE";
     $("st-policy").textContent=s.runtime.policy_bundle?"SIGNED":"DEV";
-    $("st-vm").textContent=s.runtime.microvm_configured?"CONFIGURED":"UNSET";
+    $("st-vm").textContent=s.vm?.kvm?.status==="PASS"?(s.vm.assets_verified?"KVM READY":"KVM / NO ASSETS"):(s.vm?.kvm?.status||"BLOCKED");
     $("st-audit").textContent=s.audit.configured?(s.audit.valid?"VALID":"CHECK"):"UNSET";
     $("st-malware").textContent=s.malware.available?"ACTIVE":"UNAVAILABLE";
     $("st-agent").textContent=String(s.sentinel.verdict||"unknown").toUpperCase();
@@ -113,6 +114,45 @@ $("policy-evaluate").onclick=async()=>{
   try{$("policy-result").textContent=JSON.stringify(await post("/api/policy/evaluate",payload),null,2)}catch(e){$("policy-result").textContent=e.message}
 };
 $("trace-run").onclick=async()=>{try{$("trace-result").textContent=JSON.stringify(await post("/api/trace/simulate",{events:JSON.parse($("trace-events").value)}),null,2)}catch(e){$("trace-result").textContent=e.message}};
+
+
+let selectedJob=null;
+async function loadRuntime(){
+  try{
+    const v=await api("/api/vm");
+    $("vm-kvm").textContent=v.kvm?.status||"UNKNOWN";
+    $("vm-assets").textContent=v.assets_verified?"VERIFIED":v.asset_manifest?"INVALID":"UNSET";
+    const missing=Object.entries(v.tools||{}).filter(([,x])=>!x).map(([k])=>k);
+    $("vm-tools").textContent=missing.length?"MISSING "+missing.length:"READY";
+    $("vm-mode").textContent=v.architecture?.mode||"—";
+    $("vm-state").textContent=JSON.stringify(v,null,2);
+  }catch(e){
+    $("vm-state").textContent=e.message;
+  }
+  await refreshJobs();
+}
+async function refreshJobs(){
+  try{
+    const jobs=await api("/api/jobs");
+    $("job-list").innerHTML=jobs.length?jobs.map(j=>'<button class="job '+String(j.status).toLowerCase()+'" data-job="'+esc(j.id)+'"><b>'+esc(j.status)+'</b><span>'+esc(j.command_label)+'</span><small>'+esc(new Date((j.started||0)*1000).toLocaleString())+'</small></button>').join(""):'<div class="empty">No BULL runtime jobs launched from this dashboard session.</div>';
+    $("job-list").querySelectorAll("[data-job]").forEach(b=>b.onclick=()=>selectJob(b.dataset.job));
+    if(selectedJob) await selectJob(selectedJob,false);
+  }catch(e){$("job-list").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}
+}
+async function selectJob(id,remember=true){
+  if(remember)selectedJob=id;
+  try{
+    const [j,l]=await Promise.all([api("/api/job?id="+encodeURIComponent(id)),api("/api/job/log?id="+encodeURIComponent(id))]);
+    $("job-log").textContent=JSON.stringify(j,null,2)+"\n\n"+(l.log||"");
+  }catch(e){$("job-log").textContent=e.message}
+}
+$("vm-refresh").onclick=loadRuntime;
+$("jobs-refresh").onclick=refreshJobs;
+$("vm-plan").onclick=async()=>{try{$("job-log").textContent="Validating configured BULL MicroVM launcher…";$("job-log").textContent=JSON.stringify(await api("/api/microvm/plan"),null,2)}catch(e){$("job-log").textContent=e.message}};
+$("vm-run").onclick=async()=>{try{const j=await post("/api/vm/run",{case:$("vm-case").value});selectedJob=j.id;$("job-log").textContent="Started "+j.command_label+"\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
+$("deployment-run").onclick=async()=>{try{const j=await post("/api/deployment/run",{});selectedJob=j.id;$("job-log").textContent="Started full BULL deployment check\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
+setInterval(()=>{if(document.getElementById("view-runtime").classList.contains("active"))refreshJobs()},2500);
+
 
 async function loadAssurance(){
   const a=await api("/api/assurance");
