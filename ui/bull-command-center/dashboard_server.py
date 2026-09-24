@@ -330,22 +330,36 @@ def start_vm_job(payload: dict) -> dict:
     state = vm_state()
     if state["kvm"].get("status") != "PASS":
         raise ValueError("KVM is not ready: " + str(state["kvm"].get("reason", "unknown")))
-    if not state["assets_verified"]:
-        raise ValueError("verified guest assets are required; set BULL_DEPLOYMENT_ASSETS")
     missing = [name for name, value in state["tools"].items() if not value]
     if missing:
         raise ValueError("missing required VM tools: " + ", ".join(missing))
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     out = STATE_ROOT / f"kvm-{case}-{stamp}-{uuid.uuid4().hex[:6]}"
-    cmd = [
-        sys.executable, "microvm/integration.py",
-        "--case", case,
-        "--output", str(out),
-        "--cpu-profile", os.environ.get("BULL_MICROVM_CPU_PROFILE", "host"),
-    ]
-    for name, entry in state["assets"].items():
-        cmd.extend(["--" + name, entry["path"]])
-    return _start_job("kvm-integration", cmd, out, f"BULL KVM {case}")
+
+    # Custom/operator-provided verified assets remain supported. Otherwise the
+    # one-click wrapper transparently fetches the pinned published BULL guest
+    # release into private command-center state, verifies hashes, and boots it.
+    if state["assets_verified"]:
+        cmd = [
+            sys.executable, "microvm/integration.py",
+            "--case", case,
+            "--output", str(out),
+            "--cpu-profile", os.environ.get("BULL_MICROVM_CPU_PROFILE", "host"),
+        ]
+        for name, entry in state["assets"].items():
+            cmd.extend(["--" + name, entry["path"]])
+        label = f"BULL KVM {case}"
+    else:
+        asset_dir = STATE_ROOT / "guest-2026-09-22"
+        cmd = [
+            sys.executable, str(WEB / "run_release_kvm.py"),
+            "--case", case,
+            "--output", str(out),
+            "--asset-dir", str(asset_dir),
+            "--cpu-profile", os.environ.get("BULL_MICROVM_CPU_PROFILE", "host"),
+        ]
+        label = f"BULL KVM {case} (auto-pull published guest)"
+    return _start_job("kvm-integration", cmd, out, label)
 
 def start_deployment_job() -> dict:
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
