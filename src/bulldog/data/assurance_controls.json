@@ -95,7 +95,7 @@
           "src/bulldog/snapshot.py",
           "src/bulldog/malware_scanner.py"
         ],
-        "tests": ["tests/test_snapshot_admission.py", "tests/test_policy_hardening_v2.py"]
+        "tests": ["tests/test_snapshot_content.py", "tests/redteam_local_host/test_workspace_admission.py", "tests/test_policy_hardening_v2.py"]
       },
       "frameworks": {
         "nist-800-53": ["SI-3", "SI-7", "SI-10"],
