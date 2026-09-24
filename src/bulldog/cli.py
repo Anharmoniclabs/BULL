@@ -92,6 +92,48 @@ def _run_policy(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def _run_assurance_status(args: argparse.Namespace) -> int:
+    from .assurance import evaluate_assurance
+
+    try:
+        report = evaluate_assurance(
+            dynamic=args.dynamic,
+            release_dir=args.release_dir,
+        )
+    except Exception as exc:
+        print(f"unable to evaluate assurance profile: {exc}", file=sys.stderr)
+        return 2
+
+    payload = report.to_dict()
+    if args.json is not None:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    print(f"{report.profile_id}  digest={report.profile_digest}")
+    for phase in ("source", "deployment", "release", "external"):
+        phase_controls = [item for item in report.controls if item.phase == phase]
+        if not phase_controls:
+            continue
+        print(f"\n{phase.upper()}")
+        for item in phase_controls:
+            suffix = f" — {item.detail}" if item.detail else ""
+            print(f"  {item.status:<11} {item.control_id}{suffix}")
+    print("\nSUMMARY")
+    print("  source_complete:", str(report.source_complete).lower())
+    print("  deployment_complete:", str(report.deployment_complete).lower())
+    if report.release_complete is not None:
+        print("  release_complete:", str(report.release_complete).lower())
+    print("  certified: false")
+
+    complete = report.source_complete and report.deployment_complete
+    if report.release_complete is not None:
+        complete = complete and report.release_complete
+    return 1 if args.require_complete and not complete else 0
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="bull",
@@ -121,6 +163,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Require strict production security gates and live backend attestation.",
     )
     verify_parser.set_defaults(handler=_run_verify)
+
+    assurance_parser = subparsers.add_parser(
+        "assurance",
+        help="Inspect BULL machine-readable assurance evidence.",
+    )
+    assurance_subparsers = assurance_parser.add_subparsers(dest="assurance_command")
+    assurance_status = assurance_subparsers.add_parser(
+        "status",
+        help="Report source, deployment, release, and external control status.",
+    )
+    assurance_status.add_argument(
+        "--dynamic",
+        action="store_true",
+        help="Launch the real namespace backend and require live security attestation.",
+    )
+    assurance_status.add_argument(
+        "--release-dir",
+        type=Path,
+        help="Optional release directory containing SBOM and attestation evidence.",
+    )
+    assurance_status.add_argument(
+        "--json",
+        type=Path,
+        help="Optional path for a machine-readable assurance report.",
+    )
+    assurance_status.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="Return non-zero unless all in-scope required controls pass.",
+    )
+    assurance_status.set_defaults(handler=_run_assurance_status)
 
     manifest_parser = subparsers.add_parser(
         "manifest",
