@@ -148,6 +148,7 @@ async function selectJob(id,remember=true){
 }
 $("vm-refresh").onclick=loadRuntime;
 $("jobs-refresh").onclick=refreshJobs;
+$("vm-install-assets").onclick=async()=>{try{const j=await post("/api/vm/install-assets",{});selectedJob=j.id;$("job-log").textContent="Downloading and verifying the published BULL guest into this Codespace...\nJob "+j.id+"\nThis includes the ~1.5 GiB rootfs.ext4 image.";await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
 $("vm-plan").onclick=async()=>{try{$("job-log").textContent="Validating configured BULL MicroVM launcher…";$("job-log").textContent=JSON.stringify(await api("/api/microvm/plan"),null,2)}catch(e){$("job-log").textContent=e.message}};
 $("vm-run").onclick=async()=>{try{const j=await post("/api/vm/run",{case:$("vm-case").value});selectedJob=j.id;$("job-log").textContent="Started "+j.command_label+"\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
 $("deployment-run").onclick=async()=>{try{const j=await post("/api/deployment/run",{});selectedJob=j.id;$("job-log").textContent="Started full BULL deployment check\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
