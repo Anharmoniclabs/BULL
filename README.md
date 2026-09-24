@@ -80,6 +80,22 @@ with your own private authority, signed ClamAV databases, delegated cgroups and
 collector. Hardware approval is a separate step. For the bounded local-model
 workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
 
+## Command Center prototype
+
+The current interface prototype is under `ui/bull-command-center/`. It exposes
+BULL's repository/workspace state, deterministic policy evaluation, trace model,
+assurance controls, audit verification, AgentSentinel, bounded malware scanning,
+adversary/swarm registry, passive agent-discovery evidence and the approved logo
+pack for local interface testing.
+
+```sh
+bash scripts/launch-command-center.sh
+```
+
+Open the forwarded port (default `8000`) in Codespaces. The interface does not
+replace the enforcement boundary and does not expose a generic shell or policy
+bypass endpoint.
+
 ## Publication and citation
 
 [**BULL II: Binding Authority to Execution — revised PDF**](site/assets/papers/bull-ii.pdf)
