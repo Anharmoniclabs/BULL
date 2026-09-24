@@ -54,7 +54,8 @@ def main():
             if required not in metadata:
                 raise RuntimeError("missing package metadata: " + required)
         for suffix in ("/licenses/LICENSE", "/licenses/THIRD_PARTY_NOTICES.md",
-                       "bulldog/_namespace_launcher.sh"):
+                       "bulldog/_namespace_launcher.sh",
+                       "bulldog/data/assurance_controls.json"):
             if not any(name.endswith(suffix) for name in names):
                 raise RuntimeError("missing wheel material: " + suffix)
     environment = out / "installed"
@@ -63,9 +64,13 @@ def main():
     run(python, "-I", "-m", "pip", "install", "--no-index", "--no-deps", str(wheels[0]))
     run(python, "-I", "-m", "pip", "check")
     run(python, "-I", "-c", "import bulldog, bulldog.dispatcher, bulldog.production_gate; "
+        "from bulldog.assurance import load_control_registry; "
         "from importlib.resources import files; "
-        "assert files('bulldog').joinpath('_namespace_launcher.sh').is_file()")
+        "assert files('bulldog').joinpath('_namespace_launcher.sh').is_file(); "
+        "assert files('bulldog').joinpath('data/assurance_controls.json').is_file(); "
+        "assert load_control_registry()['profile']['id'] == 'bull-assurance-v1'")
     run(str(environment / "bin/bull"), "--help")
+    run(str(environment / "bin/bull"), "assurance", "status", "--help")
     hashes = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(artifacts.iterdir())}
     (artifacts / "SHA256SUMS").write_text("".join(f"{digest}  {name}\n" for name, digest in hashes.items()))
     (out / "report.json").write_text(json.dumps({"commit": commit, "status": "PASS",
