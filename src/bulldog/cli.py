@@ -139,6 +139,7 @@ def _run_assurance_status(args: argparse.Namespace) -> int:
 def _run_up(args: argparse.Namespace) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
     server = workspace / "ui" / "bull-command-center" / "dashboard_server.py"
+    setup = workspace / "ui" / "bull-command-center" / "host_setup.py"
     if not server.is_file():
         print(
             "BULL command center is not present in this workspace: " + str(server),
@@ -159,6 +160,19 @@ def _run_up(args: argparse.Namespace) -> int:
     os.environ.setdefault("BULL_COMMAND_CENTER_STATE", str(state))
     os.environ.setdefault("BULL_AUDIT_LEDGER", str(audit_dir / "ledger.jsonl"))
     os.environ.setdefault("BULL_SNAPSHOT_ROOT", str(snapshot_dir))
+
+    codespaces = os.environ.get("CODESPACES", "").lower() == "true"
+    should_install = bool(args.install_deps or (codespaces and not args.skip_host_setup))
+    if setup.is_file():
+        setup_command = [sys.executable, str(setup)]
+        if should_install:
+            setup_command.append("--install")
+            print("BULL host bootstrap: installing/repairing fixed host dependencies")
+        else:
+            print("BULL host bootstrap: checking host dependencies")
+        result = subprocess.run(setup_command, cwd=workspace, env=dict(os.environ), check=False)
+        if result.returncode != 0:
+            print("BULL host bootstrap is partial; the command center will still start and show unavailable controls honestly.", file=sys.stderr)
 
     command = [
         sys.executable,
@@ -231,6 +245,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not open a local browser automatically.",
     )
+    up_parser.add_argument("--install-deps", action="store_true", help="Install/repair the fixed BULL host tools before launch.")
+    up_parser.add_argument("--skip-host-setup", action="store_true", help="Skip host dependency checking/automatic Codespaces bootstrap.")
     up_parser.set_defaults(handler=_run_up)
 
     assurance_parser = subparsers.add_parser(
