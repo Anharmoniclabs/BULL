@@ -29,7 +29,7 @@ main{margin-left:220px;min-height:100vh}.topbar{height:64px;padding:0 22px;displ
 :root{
   --brand-ink:#202830;--brand-slate:#8c98a4;--brand-paper:#fafbf9;--brand-mist:#d4dde2;
   --bg:#e8edf0;--panel:#ffffff;--panel2:#f5f7f8;--line:#d5dce1;--line2:#e6eaed;
-  --text:#202830;--muted:#6f7a84;--soft:#8c98a4;--green:#2f9b64;--amber:#c68824;
+  --text:#202830;--muted:#6f7a84;--soft:#8c98a4;--orange:#8c98a4;--green:#2f9b64;--amber:#c68824;
   --red:#cc4a50;--blue:#2f7cc0;--cyan:#4e9ba6;--purple:#7b62b6
 }
 html,body{background:var(--bg);color:var(--brand-ink);color-scheme:light}
