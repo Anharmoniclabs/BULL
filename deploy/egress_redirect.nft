@@ -1,0 +1,38 @@
+#!/usr/sbin/nft -f
+# BULL egress redirect - FAIL-CLOSED.
+# Loads inside the MicroVM guest. Every locally generated packet is either
+# redirected into the BULL gateway or dropped. There is no passthrough.
+#
+# Trust model: the gateway process runs as user "bullgw" and is the ONLY
+# identity allowed to open outbound connections. Everything else must go
+# through the transparent ports (9443) or the DNS interceptor (953).
+#
+# Verify before applying:  nft -c -f egress_redirect.nft
+# Remove (opens egress!): nft delete table inet bull_egress
+
+table inet bull_egress {
+
+    chain output {
+        type filter hook output priority -100; policy drop;
+
+        # loopback (gateway listens here; REDIRECT delivers to it)
+        oifname "lo" accept
+
+        # the gateway's own upstream connections must not be redirected,
+        # otherwise we build an infinite loop. bullgw is the trust anchor:
+        # it is the only uid with direct egress rights.
+        meta skuid "bullgw" accept
+
+        # all DNS is forced through the gateway's allowlisting resolver
+        udp dport 53 redirect to :953
+
+        # QUIC / HTTP-3 is killed outright: SNI policy must not be
+        # bypassable over UDP 443
+        udp dport 443 drop
+
+        # all web egress (plaintext and TLS) -> transparent gateway
+        tcp dport { 80, 443 } redirect to :9443
+
+        # everything else hits the chain policy: DROP
+    }
+}
