@@ -151,6 +151,7 @@ def audit_events(limit: int = 60) -> list[dict]:
             "risk": x.get("risk"),
             "reasons": x.get("reasons", []),
             "record_hash": x.get("record_hash"),
+            "metadata": x.get("metadata") or {},
         })
     return rows
 
@@ -506,16 +507,302 @@ def architecture() -> dict:
         "provenance": [p.value for p in Provenance],
     }
 
-def policy_evaluate(payload: dict) -> dict:
+def command_center_policy() -> tuple[DeterministicPolicy, dict]:
+    path = os.environ.get("BULL_POLICY_BUNDLE", "").strip()
+    key = os.environ.get("BULL_POLICY_BUNDLE_KEY", "")
+    if path or key:
+        if not path or not key:
+            raise ValueError(
+                "signed policy configuration is incomplete; both "
+                "BULL_POLICY_BUNDLE and BULL_POLICY_BUNDLE_KEY are required"
+            )
+        from bulldog.policy_bundle import load_policy_bundle
+        bundle = load_policy_bundle(path, key)
+        return (
+            DeterministicPolicy(
+                project_root=bundle.project_root,
+                global_capability_ceiling=bundle.capability_ceiling,
+            ),
+            {
+                "mode": "signed deployment policy",
+                "signed": True,
+                "project_root": bundle.project_root,
+                "capability_count": len(bundle.capability_ceiling),
+                "key_id": bundle.key_id,
+            },
+        )
+    return (
+        DeterministicPolicy(project_root=str(ROOT)),
+        {
+            "mode": "local development policy",
+            "signed": False,
+            "project_root": str(ROOT),
+            "capability_count": len(Capability),
+            "key_id": None,
+        },
+    )
+
+
+def _evaluate_payload(payload: dict) -> tuple[ActionRequest, object, dict]:
+    policy, policy_meta = command_center_policy()
     action = ActionRequest.from_dict(payload)
-    engine = BulldogEngine(policy=DeterministicPolicy(project_root=str(ROOT)))
-    ev = engine.evaluate(action)
+    engine = BulldogEngine(policy=policy)
+    evaluation = engine.evaluate(action)
+    return action, evaluation, policy_meta
+
+
+def policy_evaluate(payload: dict) -> dict:
+    _action, ev, policy_meta = _evaluate_payload(payload)
     return {
         "decision": ev.decision.value,
         "risk": ev.risk,
         "reasons": list(ev.reasons),
         "hard_block": ev.hard_block,
-        "simulation_root": str(ROOT),
+        "policy": policy_meta,
+        "mode": "policy dry-run; no host effect executed",
+    }
+
+
+def _scenario_definitions(project_root: str) -> list[dict]:
+    return [
+        {
+            "id": "trusted-read",
+            "title": "Trusted project read",
+            "category": "Normal work",
+            "summary": "A human-approved agent reads a file inside the project.",
+            "request": "Read the project README so the agent can answer a question.",
+            "action": {
+                "actor": "trusted-local-agent",
+                "task": "Read project documentation",
+                "operation": "read",
+                "resource": str(Path(project_root) / "README.md"),
+                "capability": "fs.read.project",
+                "granted_capabilities": ["fs.read.project"],
+                "provenance": ["human", "local_trusted"],
+                "external_side_effect": False,
+                "irreversible": False,
+            },
+        },
+        {
+            "id": "prompt-injection-exec",
+            "title": "Prompt injection drives execution",
+            "category": "Prompt injection",
+            "summary": "Untrusted internet content influences an agent to request process execution.",
+            "request": "External content causes the agent to request running a local program.",
+            "action": {
+                "actor": "web-influenced-agent",
+                "task": "Execute a command suggested by external content",
+                "operation": "execute",
+                "resource": "/usr/bin/python3",
+                "capability": "process.exec",
+                "granted_capabilities": ["process.exec"],
+                "provenance": ["internet"],
+                "external_side_effect": False,
+                "irreversible": False,
+            },
+        },
+        {
+            "id": "credential-theft",
+            "title": "Untrusted credential access",
+            "category": "Secret protection",
+            "summary": "Externally influenced logic asks the agent to retrieve a credential.",
+            "request": "Read a deployment API token after processing untrusted content.",
+            "action": {
+                "actor": "external-influenced-agent",
+                "task": "Retrieve a credential",
+                "operation": "credential.read",
+                "resource": "credential://deployment/api-token",
+                "capability": "credential.read",
+                "granted_capabilities": ["credential.read"],
+                "provenance": ["internet"],
+                "external_side_effect": False,
+                "irreversible": False,
+            },
+        },
+        {
+            "id": "outbound-post",
+            "title": "Externally influenced data post",
+            "category": "Egress",
+            "summary": "An internet-influenced agent tries to send data to an external service.",
+            "request": "POST data to an external endpoint after reading untrusted content.",
+            "action": {
+                "actor": "external-influenced-agent",
+                "task": "Send data outside the local boundary",
+                "operation": "post",
+                "resource": "https://example.com/upload",
+                "capability": "network.post",
+                "granted_capabilities": ["network.post"],
+                "provenance": ["internet"],
+                "external_side_effect": True,
+                "irreversible": False,
+            },
+        },
+        {
+            "id": "child-agent-spawn",
+            "title": "Untrusted child-agent spawn",
+            "category": "Agent authority",
+            "summary": "An external agent asks to create another agent with process authority.",
+            "request": "Spawn a child agent after receiving instructions from an external agent.",
+            "action": {
+                "actor": "external-agent",
+                "task": "Create a child agent",
+                "operation": "spawn",
+                "resource": "agent://child-worker",
+                "capability": "agent.spawn",
+                "granted_capabilities": ["agent.spawn"],
+                "provenance": ["external_agent"],
+                "external_side_effect": True,
+                "irreversible": False,
+            },
+        },
+    ]
+
+
+def scenario_catalog() -> dict:
+    policy, policy_meta = command_center_policy()
+    scenarios = []
+    for item in _scenario_definitions(policy_meta["project_root"]):
+        action = ActionRequest.from_dict(dict(item["action"]))
+        ev = BulldogEngine(policy=policy).evaluate(action)
+        scenarios.append(
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "category": item["category"],
+                "summary": item["summary"],
+                "request": item["request"],
+                "capability": action.capability.value,
+                "provenance": [value.value for value in action.provenance],
+                "preview": {
+                    "decision": ev.decision.value,
+                    "risk": ev.risk,
+                    "reasons": list(ev.reasons),
+                    "hard_block": ev.hard_block,
+                },
+            }
+        )
+    return {
+        "mode": "real BULL policy dry-run; scenario previews do not execute host effects",
+        "policy": policy_meta,
+        "scenarios": scenarios,
+    }
+
+
+def _enforcement_text(decision: str) -> str:
+    return {
+        "ALLOW": "Policy permits the requested action to continue to the authorized runtime path.",
+        "SANDBOX": "Policy requires constrained execution rather than direct host execution.",
+        "ESCALATE": "Policy stops automatic execution and requires operator review.",
+        "DENY": "Policy blocks the action before the requested effect.",
+    }.get(decision, "Policy returned an unknown decision.")
+
+
+def run_scenario(payload: dict) -> dict:
+    scenario_id = str(payload.get("id", "")).strip()
+    policy, policy_meta = command_center_policy()
+    definitions = {
+        item["id"]: item
+        for item in _scenario_definitions(policy_meta["project_root"])
+    }
+    if scenario_id not in definitions:
+        raise ValueError("unknown BULL firewall scenario")
+
+    scenario = definitions[scenario_id]
+    action_payload = dict(scenario["action"])
+    action_payload["metadata"] = {
+        "simulation": "true",
+        "scenario_id": scenario_id,
+        "source": "bull-command-center",
+    }
+    action = ActionRequest.from_dict(action_payload)
+    ev = BulldogEngine(policy=policy).evaluate(action)
+
+    audit_result = {
+        "recorded": False,
+        "record_hash": None,
+        "error": None,
+    }
+    raw_audit = audit_path()
+    if raw_audit:
+        try:
+            record_hash = AuditLedger(raw_audit).append(action, ev)
+            audit_result.update(
+                {
+                    "recorded": True,
+                    "record_hash": record_hash,
+                }
+            )
+        except Exception as exc:
+            audit_result["error"] = f"{type(exc).__name__}: {exc}"
+
+    decision = ev.decision.value
+    pipeline = [
+        {
+            "id": "intake",
+            "title": "1 · Request",
+            "status": "OBSERVED",
+            "detail": scenario["request"],
+        },
+        {
+            "id": "provenance",
+            "title": "2 · Provenance",
+            "status": "CHECKED",
+            "detail": ", ".join(value.value for value in action.provenance),
+        },
+        {
+            "id": "authority",
+            "title": "3 · Capability",
+            "status": "CHECKED",
+            "detail": action.capability.value,
+        },
+        {
+            "id": "decision",
+            "title": "4 · Policy",
+            "status": decision,
+            "detail": "; ".join(ev.reasons),
+        },
+        {
+            "id": "enforcement",
+            "title": "5 · Enforcement",
+            "status": decision,
+            "detail": _enforcement_text(decision),
+        },
+        {
+            "id": "evidence",
+            "title": "6 · Evidence",
+            "status": "RECORDED" if audit_result["recorded"] else "LOCAL RESULT",
+            "detail": (
+                "Simulation decision written to the BULL audit ledger."
+                if audit_result["recorded"]
+                else "Policy result returned to the operator; no host effect was executed."
+            ),
+        },
+    ]
+    return {
+        "scenario": {
+            "id": scenario["id"],
+            "title": scenario["title"],
+            "category": scenario["category"],
+            "summary": scenario["summary"],
+            "request": scenario["request"],
+        },
+        "mode": "policy simulation",
+        "host_effect_executed": False,
+        "decision": decision,
+        "risk": ev.risk,
+        "hard_block": ev.hard_block,
+        "reasons": list(ev.reasons),
+        "policy": policy_meta,
+        "action": {
+            "actor": action.actor,
+            "operation": action.operation,
+            "resource": action.resource,
+            "capability": action.capability.value,
+            "provenance": [value.value for value in action.provenance],
+        },
+        "enforcement": _enforcement_text(decision),
+        "audit": audit_result,
+        "pipeline": pipeline,
     }
 
 def trace_simulate(payload: dict) -> dict:
@@ -673,6 +960,7 @@ class Handler(SimpleHTTPRequestHandler):
             if p == "/api/audit/events": return self.send_json(audit_events(int(q.get("limit", ["60"])[0])))
             if p == "/api/brand": return self.send_json(brand_manifest())
             if p == "/api/architecture": return self.send_json(architecture())
+            if p == "/api/scenarios": return self.send_json(scenario_catalog())
             if p == "/api/adversary": return self.send_json(adversary_state())
             if p == "/api/vm": return self.send_json(vm_state())
             if p == "/api/jobs": return self.send_json(jobs_state())
@@ -698,6 +986,7 @@ class Handler(SimpleHTTPRequestHandler):
             payload = self.body()
             if p == "/api/host/install": return self.send_json(start_host_setup_job(), 202)
             if p == "/api/policy/evaluate": return self.send_json(policy_evaluate(payload))
+            if p == "/api/scenario/run": return self.send_json(run_scenario(payload))
             if p == "/api/trace/simulate": return self.send_json(trace_simulate(payload))
             if p == "/api/malware/scan": return self.send_json(scan_file(payload))
             if p == "/api/agent-scan": return self.send_json(agent_scan(payload))
