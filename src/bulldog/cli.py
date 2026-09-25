@@ -145,7 +145,48 @@ def _run_console(args: argparse.Namespace) -> int:
         refresh_seconds=args.refresh_seconds,
         auto_scan=not args.no_auto_scan,
         dynamic_attestation=not args.no_dynamic_attestation,
+        open_browser=args.open_browser,
     )
+
+
+def _run_setup(args: argparse.Namespace) -> int:
+    from .bootstrap import prepare_launch_environment, summary_lines
+
+    try:
+        launch = prepare_launch_environment(args.workspace, preferred_port=args.port, host=args.host)
+    except Exception as exc:
+        print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
+        return 2
+    print("BULL COMMAND CENTER SETUP")
+    for line in summary_lines(launch):
+        print("  " + line)
+    return 0
+
+
+def _run_up(args: argparse.Namespace) -> int:
+    from .bootstrap import prepare_launch_environment, summary_lines
+    from .control_plane import serve_console
+
+    try:
+        launch = prepare_launch_environment(args.workspace, preferred_port=args.port, host=args.host)
+    except Exception as exc:
+        print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
+        return 2
+    print("BULL COMMAND CENTER")
+    for line in summary_lines(launch):
+        print("  " + line)
+    return serve_console(
+        host=launch.host,
+        port=launch.port,
+        workspace=launch.workspace,
+        refresh_seconds=args.refresh_seconds,
+        auto_scan=not args.no_auto_scan,
+        dynamic_attestation=not args.no_dynamic_attestation,
+        state_dir=launch.state_dir,
+        external_url=launch.url,
+        open_browser=not args.no_open_browser,
+    )
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -185,6 +226,7 @@ def build_parser() -> argparse.ArgumentParser:
     console_parser.add_argument("--port", type=int, default=11510)
     console_parser.add_argument("--workspace", type=Path, default=Path.cwd())
     console_parser.add_argument("--refresh-seconds", type=float, default=2.0)
+    console_parser.add_argument("--open-browser", action="store_true")
     console_parser.add_argument(
         "--no-auto-scan",
         action="store_true",
@@ -196,6 +238,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not start the live assurance probe on boot.",
     )
     console_parser.set_defaults(handler=_run_console)
+
+    setup_parser = subparsers.add_parser(
+        "setup",
+        help="Prepare portable local state and report BULL command-center readiness.",
+    )
+    setup_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    setup_parser.add_argument("--host", default=None)
+    setup_parser.add_argument("--port", type=int, default=11510)
+    setup_parser.set_defaults(handler=_run_setup)
+
+    up_parser = subparsers.add_parser(
+        "up",
+        help="Prepare and launch the complete local BULL command center.",
+    )
+    up_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    up_parser.add_argument("--host", default=None)
+    up_parser.add_argument("--port", type=int, default=11510)
+    up_parser.add_argument("--refresh-seconds", type=float, default=2.0)
+    up_parser.add_argument("--no-auto-scan", action="store_true")
+    up_parser.add_argument("--no-dynamic-attestation", action="store_true")
+    up_parser.add_argument("--no-open-browser", action="store_true")
+    up_parser.set_defaults(handler=_run_up)
 
     assurance_parser = subparsers.add_parser(
         "assurance",

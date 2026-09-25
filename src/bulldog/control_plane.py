@@ -30,7 +30,10 @@ import os
 import platform
 import shutil
 import socket
+import subprocess
+import sys
 import time
+import webbrowser
 
 from .assurance import evaluate_assurance
 from .audit import AuditLedger
@@ -284,8 +287,18 @@ class ControlPlane:
         auto_scan: bool = True,
         dynamic_attestation: bool = True,
         proc_root: str | Path = "/proc",
+        state_dir: str | Path | None = None,
+        launch_url: str | None = None,
     ) -> None:
         self.workspace = Path(workspace or os.getcwd()).resolve()
+        self.state_dir = Path(
+            state_dir or os.environ.get("BULL_STATE_DIR") or (self.workspace / ".bull-console")
+        ).resolve()
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        self.launch_url = launch_url
+        self._managed_microvm: subprocess.Popen | None = None
+        self._managed_microvm_started_at: str | None = None
+        self._managed_microvm_log = self.state_dir / "microvm.log"
         self.refresh_seconds = max(0.5, float(refresh_seconds))
         self.auto_scan = bool(auto_scan)
         self.dynamic_attestation = bool(dynamic_attestation)
@@ -381,6 +394,10 @@ class ControlPlane:
 
     def stop(self) -> None:
         self._stop.set()
+        try:
+            self.stop_managed_microvm()
+        except Exception:
+            pass
         if self._thread is not None:
             self._thread.join(timeout=max(1.0, self.refresh_seconds * 2))
 
@@ -656,12 +673,27 @@ class ControlPlane:
         qemu_name = os.environ.get("BULL_MICROVM_QEMU", "qemu-system-x86_64")
         kvm = Path("/dev/kvm")
         qemu_path = shutil.which(qemu_name)
-        running = any(entity.kind == "microvm" for entity in entities)
+        observed_running = any(entity.kind == "microvm" for entity in entities)
         config_exists = bool(config_raw and Path(config_raw).is_file())
         kernel_raw = os.environ.get("BULL_MICROVM_KERNEL", "")
         rootfs_raw = os.environ.get("BULL_MICROVM_ROOTFS", "")
+        managed = self._managed_microvm
+        managed_running = managed is not None and managed.poll() is None
+        managed_exit = None if managed is None or managed_running else managed.returncode
+        ready = bool(
+            kvm.exists()
+            and os.access(kvm, os.R_OK | os.W_OK)
+            and qemu_path
+            and (config_exists or (kernel_raw and rootfs_raw))
+        )
         return {
-            "running": running,
+            "running": observed_running or managed_running,
+            "observed_running": observed_running,
+            "managed_running": managed_running,
+            "managed_exit_code": managed_exit,
+            "managed_started_at": self._managed_microvm_started_at,
+            "managed_log": str(self._managed_microvm_log),
+            "managed_start_allowed": bool(ready and config_exists),
             "kvm_available": kvm.exists() and os.access(kvm, os.R_OK | os.W_OK),
             "qemu_available": bool(qemu_path),
             "qemu_path": qemu_path,
@@ -672,13 +704,53 @@ class ControlPlane:
             "accel": os.environ.get("BULL_MICROVM_ACCEL", "kvm"),
             "memory_mib": os.environ.get("BULL_MICROVM_MEMORY_MIB", "4096"),
             "cpus": os.environ.get("BULL_MICROVM_CPUS", "2"),
-            "ready": bool(
-                kvm.exists()
-                and os.access(kvm, os.R_OK | os.W_OK)
-                and qemu_path
-                and (config_exists or (kernel_raw and rootfs_raw))
-            ),
+            "ready": ready,
         }
+
+    def start_managed_microvm(self) -> dict[str, Any]:
+        with self._lock:
+            if self._managed_microvm is not None and self._managed_microvm.poll() is None:
+                return {"started": False, "message": "Managed MicroVM is already running."}
+        config_raw = os.environ.get("BULL_MICROVM_CONFIG_FILE", "").strip()
+        if not config_raw:
+            raise ValueError("BULL_MICROVM_CONFIG_FILE is required for console-managed launch")
+        config = Path(config_raw).resolve(strict=True)
+        if not config.is_file():
+            raise ValueError("configured MicroVM deployment file is not a regular file")
+        status = self._microvm(list(self._entities))
+        if not status["ready"]:
+            raise ValueError("MicroVM launch prerequisites are not ready")
+        log = self._managed_microvm_log.open("ab", buffering=0)
+        try:
+            proc = subprocess.Popen(
+                [sys.executable, "-m", "bulldog.microvm", "--config", str(config)],
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                close_fds=True,
+                start_new_session=True,
+            )
+        finally:
+            log.close()
+        with self._lock:
+            self._managed_microvm = proc
+            self._managed_microvm_started_at = _utcnow()
+        self._event("microvm", f"Managed MicroVM launcher started as PID {proc.pid}.")
+        return {"started": True, "message": "Managed MicroVM launch requested.", "pid": proc.pid}
+
+    def stop_managed_microvm(self) -> dict[str, Any]:
+        with self._lock:
+            proc = self._managed_microvm
+        if proc is None or proc.poll() is not None:
+            return {"stopped": False, "message": "No console-managed MicroVM is running."}
+        proc.terminate()
+        try:
+            proc.wait(timeout=8)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+        self._event("microvm", "Console-managed MicroVM stopped.")
+        return {"stopped": True, "message": "Managed MicroVM stopped."}
 
     @staticmethod
     def _swarm_snapshot(entities: list[ObservedEntity]) -> dict[str, Any]:
@@ -803,6 +875,8 @@ class ControlPlane:
                 "platform": platform.system(),
                 "updated_at": _utcnow(),
                 "refresh_seconds": self.refresh_seconds,
+                "state_dir": str(self.state_dir),
+                "launch_url": self.launch_url,
             },
             "system_health": {
                 "observed_entities": len(entities),
@@ -970,6 +1044,14 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                     }
                 )
                 return
+            if parsed.path == "/api/v1/actions/microvm-start":
+                result = control.start_managed_microvm()
+                self._json({"ok": True, **result})
+                return
+            if parsed.path == "/api/v1/actions/microvm-stop":
+                result = control.stop_managed_microvm()
+                self._json({"ok": True, **result})
+                return
             if parsed.path == "/api/v1/actions/policy-evaluate":
                 result = control.evaluate_policy(body)
                 self._json({"ok": True, "result": result})
@@ -991,12 +1073,17 @@ def serve_console(
     refresh_seconds: float = 2.0,
     auto_scan: bool = True,
     dynamic_attestation: bool = True,
+    state_dir: str | Path | None = None,
+    external_url: str | None = None,
+    open_browser: bool = False,
 ) -> int:
     control = ControlPlane(
         workspace=workspace,
         refresh_seconds=refresh_seconds,
         auto_scan=auto_scan,
         dynamic_attestation=dynamic_attestation,
+        state_dir=state_dir,
+        launch_url=external_url,
     )
     server = _ConsoleServer((host, int(port)), ConsoleHandler, control)
     control.start()
@@ -1005,7 +1092,16 @@ def serve_console(
     print("BULL COMMAND / CONTROL")
     print("=" * 78)
     print(f"workspace: {control.workspace}")
+    local_url = (
+        f"http://127.0.0.1:{bind_port}/"
+        if bind_host in {"0.0.0.0", "::"}
+        else f"http://{bind_host}:{bind_port}/"
+    )
+    operator_url = external_url or local_url
     print(f"listening: http://{bind_host}:{bind_port}")
+    print(f"open: {operator_url}")
+    if open_browser and bind_host in {"127.0.0.1", "::1", "localhost"}:
+        Thread(target=webbrowser.open, args=(operator_url,), daemon=True).start()
     if host not in {"127.0.0.1", "::1", "localhost"}:
         print("warning: console is not bound to loopback; rely on a private trusted port tunnel.")
     print("live discovery: active")
