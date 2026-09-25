@@ -11,21 +11,36 @@ configuration, and the approved BULL brand pack.
 The browser is an interface layer. Enforcement stays in BULL's existing runtime
 and authority paths.
 
-## Codespaces
+## Run it
+
+After pulling this branch and installing BULL editable, the normal entry point is:
 
 ```bash
 cd /workspaces/BULL
-git fetch origin
-git switch ui/bull-command-center-v1
-PYTHONPATH=src python ui/bull-command-center/dashboard_server.py --port 8000
+git pull
+python -m pip install -e .
+bull up --workspace "$PWD" --host 0.0.0.0 --port 11510 --no-open-browser
 ```
 
-Open port **8000** from the Codespaces Ports panel.
+In Codespaces, open port **11510** from the Ports panel. The server also prints
+the authenticated Codespaces forwarded URL when the Codespace environment
+provides it.
 
-Or run:
+On a local desktop you can simply run:
 
 ```bash
-bash scripts/launch-command-center.sh
+bull up --workspace "$PWD"
+```
+
+BULL creates private command-center state under
+`~/.local/share/bull/command-center` when explicit operator paths are absent,
+including a local audit ledger and snapshot scratch directory. Explicit
+deployment environment variables still take precedence.
+
+The direct development launcher remains available:
+
+```bash
+PYTHONPATH=src python ui/bull-command-center/dashboard_server.py --port 8000
 ```
 
 ## Wired views
@@ -105,3 +120,14 @@ Linux/KVM guest**. The repository explicitly defers persistent VM sessions, so
 the dashboard does not misrepresent it as a continuously running desktop Linux
 VM. When KVM or verified guest assets are missing, the UI reports BLOCKED rather
 than substituting software emulation or fake success.
+
+
+## Human-readable data contract
+
+The HTTP adapter still uses JSON as an internal machine transport, but the
+operator surface does not expose raw JSON dumps as its normal presentation.
+Repository state, runtime readiness, policy decisions, trace results, malware
+results, Sentinel signals, configuration state, job metadata, and scan evidence
+are rendered as labeled rows, status badges, cards, chips, and readable
+explanations. Raw text is retained only where it is inherently useful to a
+human operator, such as source-file previews and captured process logs.
