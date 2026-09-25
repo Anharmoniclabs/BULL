@@ -239,7 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Bind host. Defaults to 0.0.0.0 in Codespaces and 127.0.0.1 locally.",
     )
-    up_parser.add_argument("--port", type=int, default=8000)
+    up_parser.add_argument("--port", type=int, default=11510)
     up_parser.add_argument(
         "--no-open-browser",
         action="store_true",
