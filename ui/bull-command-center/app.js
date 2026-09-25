@@ -4,6 +4,59 @@ const post=(path,obj)=>api(path,{method:"POST",headers:{"Content-Type":"applicat
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const statusClass=s=>String(s||"").toLowerCase();
 
+const HUMAN_LABELS={
+  root:"Repository root",branch:"Branch",commit:"Commit",remote:"Git remote",dirty:"Working tree changed",
+  status:"Status",configured:"Configured",valid:"Integrity valid",records:"Records",head_hash:"Head checkpoint",
+  policy_bundle:"Signed policy bundle",integrity_manifest:"Signed runtime manifest",microvm_configured:"MicroVM configuration",
+  audit_ledger:"Audit ledger",remote_anchor:"Remote audit anchor",seccomp_profile:"Seccomp profile",
+  cgroup_parent:"Delegated cgroup v2",snapshot_root:"Snapshot scratch",hardware_approval:"Hardware approval",
+  assets_verified:"Guest assets verified",asset_manifest:"Guest asset manifest",asset_error:"Guest asset error",
+  microvm_config:"MicroVM config",config_error:"Config error",software_emulation_fallback:"Software-emulation fallback",
+  persistent_session:"Persistent VM session",guest_network_device:"Guest network device",control_channel:"Control channel",
+  audit_channel:"Audit channel",returncode:"Return code",output_dir:"Evidence directory",command_label:"Operation",
+  started:"Started",finished:"Finished",signals:"Signals",counts:"Signal counts",findings:"Findings"
+};
+function humanLabel(k){
+  k=String(k||"");
+  if(HUMAN_LABELS[k])return HUMAN_LABELS[k];
+  return k.replace(/[_-]+/g," ").replace(/\b\w/g,m=>m.toUpperCase());
+}
+function humanScalar(key,v){
+  if(v===null||v===undefined||v==="")return '<span class="human-muted">Not available</span>';
+  if(typeof v==="boolean")return '<span class="human-badge '+(v?"yes":"no")+'">'+(v?"YES":"NO")+'</span>';
+  if(typeof v==="number"){
+    if(String(key).includes("time")||String(key).includes("started")||String(key).includes("finished")){
+      if(v>1000000000)return '<span>'+esc(new Date(v*1000).toLocaleString())+'</span>';
+    }
+    return '<strong class="human-number">'+esc(v.toLocaleString())+'</strong>';
+  }
+  const s=String(v);
+  const upper=s.toUpperCase();
+  if(["PASS","FAIL","BLOCKED","RUNNING","READY","VALID","INVALID","ALLOW","SANDBOX","ESCALATE","DENY","IMPLEMENTED","EXTERNAL","CLEAN","SUSPICIOUS","AGENT"].includes(upper)){
+    return '<span class="human-badge '+statusClass(upper)+'">'+esc(upper)+'</span>';
+  }
+  const codeLike=String(key).includes("path")||String(key).includes("hash")||String(key).includes("commit")||String(key).includes("url")||s.startsWith("/")||/^[a-f0-9]{32,}$/i.test(s);
+  return codeLike?'<code class="human-code">'+esc(s)+'</code>':'<span class="human-text">'+esc(s)+'</span>';
+}
+function humanRender(v,key="",depth=0){
+  if(depth>4)return '<span class="human-muted">Nested detail omitted</span>';
+  if(Array.isArray(v)){
+    if(!v.length)return '<span class="human-muted">None</span>';
+    if(v.every(x=>x===null||["string","number","boolean"].includes(typeof x))){
+      return '<div class="human-chips">'+v.map(x=>'<span class="human-chip">'+humanScalar(key,x)+'</span>').join("")+'</div>';
+    }
+    return '<div class="human-list">'+v.map((x,i)=>'<article class="human-card"><div class="human-card-title">'+esc(humanLabel(key||("Item "+(i+1))))+'</div>'+humanRender(x,key,depth+1)+'</article>').join("")+'</div>';
+  }
+  if(v&&typeof v==="object"){
+    const entries=Object.entries(v);
+    if(!entries.length)return '<span class="human-muted">No data</span>';
+    return '<div class="human-grid">'+entries.map(([k,val])=>'<div class="human-row"><div class="human-label">'+esc(humanLabel(k))+'</div><div class="human-value">'+humanRender(val,k,depth+1)+'</div></div>').join("")+'</div>';
+  }
+  return humanScalar(key,v);
+}
+function showHuman(id,value){$(id).innerHTML=humanRender(value)}
+function showMessage(id,message,tone="info"){$(id).innerHTML='<div class="human-message '+tone+'">'+esc(message)+'</div>'}
+
 function openView(name){
   document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id==="view-"+name));
   document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===name));
@@ -86,7 +139,7 @@ async function browse(path="."){
 }
 async function previewFile(path){try{const x=await api("/api/file?path="+encodeURIComponent(path));$("file-preview").textContent=x.content}catch(e){$("file-preview").textContent=e.message}}
 async function loadRepo(){
-  const s=await api("/api/repo");$("repo-json").textContent=JSON.stringify(s,null,2);
+  const s=await api("/api/repo");showHuman("repo-json",s);
   $("changed-files").innerHTML=s.status.length?s.status.map(x=>'<div>'+esc(x)+'</div>').join(""):"<div>Working tree clean.</div>";
   await browse(currentRepoPath);
 }
@@ -97,7 +150,7 @@ async function loadWorkspace(){
   $("workspace-tree").innerHTML=x.items.map(it=>'<button data-p="'+esc(it.path)+'" class="'+(it.dir?"dir":"")+'">'+(it.dir?"▣ ":"· ")+esc(it.path)+'</button>').join("");
   $("workspace-tree").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("malware-path").value=b.dataset.p});
 }
-$("malware-scan").onclick=async()=>{try{$("malware-result").textContent="Scanning…";$("malware-result").textContent=JSON.stringify(await post("/api/malware/scan",{path:$("malware-path").value}),null,2)}catch(e){$("malware-result").textContent=e.message}};
+$("malware-scan").onclick=async()=>{try{showMessage("malware-result","Scanning with BULL's bounded malware admission path…");showHuman("malware-result",await post("/api/malware/scan",{path:$("malware-path").value}))}catch(e){showMessage("malware-result",e.message,"error")}};
 
 let arch=null;
 async function loadArchitecture(){
@@ -111,9 +164,14 @@ async function loadArchitecture(){
 $("policy-evaluate").onclick=async()=>{
   const granted=[...$("p-granted").selectedOptions].map(o=>o.value);
   const payload={actor:$("p-actor").value,task:"BULL UI policy test",operation:$("p-operation").value,resource:$("p-resource").value,capability:$("p-capability").value,granted_capabilities:granted,provenance:[$("p-provenance").value]};
-  try{$("policy-result").textContent=JSON.stringify(await post("/api/policy/evaluate",payload),null,2)}catch(e){$("policy-result").textContent=e.message}
+  try{showHuman("policy-result",await post("/api/policy/evaluate",payload))}catch(e){showMessage("policy-result",e.message,"error")}
 };
-$("trace-run").onclick=async()=>{try{$("trace-result").textContent=JSON.stringify(await post("/api/trace/simulate",{events:JSON.parse($("trace-events").value)}),null,2)}catch(e){$("trace-result").textContent=e.message}};
+$("trace-run").onclick=async()=>{
+  const events=[{transition:"Evaluate",data:{decision:$("trace-decision").value}}];
+  if($("trace-scan").checked)events.push({transition:"ScanClean",data:{}});
+  if($("trace-execute").checked)events.push({transition:"Execute",data:{sandboxed:$("trace-sandbox").checked,seccomp:$("trace-seccomp").checked}});
+  try{showHuman("trace-result",await post("/api/trace/simulate",{events}))}catch(e){showMessage("trace-result",e.message,"error")}
+};
 
 
 let selectedJob=null;
@@ -125,9 +183,9 @@ async function loadRuntime(){
     const missing=Object.entries(v.tools||{}).filter(([,x])=>!x).map(([k])=>k);
     $("vm-tools").textContent=missing.length?"MISSING "+missing.length:"READY";
     $("vm-mode").textContent=v.architecture?.mode||"—";
-    $("vm-state").textContent=JSON.stringify(v,null,2);
+    showHuman("vm-state",v);
   }catch(e){
-    $("vm-state").textContent=e.message;
+    showMessage("vm-state",e.message,"error");
   }
   await refreshJobs();
 }
@@ -143,15 +201,15 @@ async function selectJob(id,remember=true){
   if(remember)selectedJob=id;
   try{
     const [j,l]=await Promise.all([api("/api/job?id="+encodeURIComponent(id)),api("/api/job/log?id="+encodeURIComponent(id))]);
-    $("job-log").textContent=JSON.stringify(j,null,2)+"\n\n"+(l.log||"");
-  }catch(e){$("job-log").textContent=e.message}
+    $("job-log").innerHTML='<div class="job-meta">'+humanRender(j)+'</div><div class="console-log"><div class="console-log-title">Captured runtime log</div><pre>'+esc(l.log||"No log output yet.")+'</pre></div>';
+  }catch(e){showMessage("job-log",e.message,"error")}
 }
 $("vm-refresh").onclick=loadRuntime;
 $("jobs-refresh").onclick=refreshJobs;
-$("vm-install-assets").onclick=async()=>{try{const j=await post("/api/vm/install-assets",{});selectedJob=j.id;$("job-log").textContent="Downloading and verifying the published BULL guest into this Codespace...\nJob "+j.id+"\nThis includes the ~1.5 GiB rootfs.ext4 image.";await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
-$("vm-plan").onclick=async()=>{try{$("job-log").textContent="Validating configured BULL MicroVM launcher…";$("job-log").textContent=JSON.stringify(await api("/api/microvm/plan"),null,2)}catch(e){$("job-log").textContent=e.message}};
-$("vm-run").onclick=async()=>{try{const j=await post("/api/vm/run",{case:$("vm-case").value});selectedJob=j.id;$("job-log").textContent="Started "+j.command_label+"\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
-$("deployment-run").onclick=async()=>{try{const j=await post("/api/deployment/run",{});selectedJob=j.id;$("job-log").textContent="Started full BULL deployment check\nJob "+j.id;await refreshJobs()}catch(e){$("job-log").textContent=e.message}};
+$("vm-install-assets").onclick=async()=>{try{const j=await post("/api/vm/install-assets",{});selectedJob=j.id;showHuman("job-log",{status:"RUNNING",operation:j.command_label,job:j.id,note:"Downloading and verifying the published BULL guest. The rootfs image is approximately 1.5 GiB."});await refreshJobs()}catch(e){showMessage("job-log",e.message,"error")}};
+$("vm-plan").onclick=async()=>{try{showMessage("job-log","Validating configured BULL MicroVM launcher…");showHuman("job-log",await api("/api/microvm/plan"))}catch(e){showMessage("job-log",e.message,"error")}};
+$("vm-run").onclick=async()=>{try{const j=await post("/api/vm/run",{case:$("vm-case").value});selectedJob=j.id;showHuman("job-log",{status:"RUNNING",operation:j.command_label,job:j.id});await refreshJobs()}catch(e){showMessage("job-log",e.message,"error")}};
+$("deployment-run").onclick=async()=>{try{const j=await post("/api/deployment/run",{});selectedJob=j.id;showHuman("job-log",{status:"RUNNING",operation:"Full BULL deployment check",job:j.id});await refreshJobs()}catch(e){showMessage("job-log",e.message,"error")}};
 setInterval(()=>{if(document.getElementById("view-runtime").classList.contains("active"))refreshJobs()},2500);
 
 
@@ -161,7 +219,7 @@ async function loadAssurance(){
   $("a-deploy").textContent=String(a.deployment_complete).toUpperCase();
   $("a-release").textContent=a.release_complete===null?"NOT RUN":String(a.release_complete).toUpperCase();
   $("a-profile").textContent=a.profile||"—";
-  $("assurance-controls").innerHTML=(a.controls||[]).map(c=>'<div class="control-detail"><div class="status '+statusClass(c.status)+'">'+esc(c.status)+'</div><div>'+esc(c.id)+'</div><div>'+esc(c.detail||c.title||"")+'</div><div>'+esc(c.phase)+'</div></div>').join("");
+  $("assurance-controls").innerHTML=(a.controls||[]).map(c=>'<div class="control-detail"><div class="status '+statusClass(c.status)+'">'+esc(c.status)+'</div><div><b>'+esc(c.title||humanLabel(c.id))+'</b><small>'+esc(c.id)+'</small></div><div>'+esc(c.detail||"No additional deployment detail.")+'</div><div>'+esc(humanLabel(c.phase))+'</div></div>').join("");
 }
 $("assurance-refresh").onclick=loadAssurance;
 
@@ -181,18 +239,18 @@ async function refreshRegistry(){
 }
 async function loadAgents(){
   const [s,a]=await Promise.all([api("/api/sentinel"),api("/api/adversary")]);
-  $("sentinel-score").textContent=Number(s.score||0).toFixed(3);$("sentinel-verdict").textContent=String(s.verdict||"unknown").toUpperCase();$("sentinel-signals").textContent=JSON.stringify(s.signals||{},null,2);
+  $("sentinel-score").textContent=Number(s.score||0).toFixed(3);$("sentinel-verdict").textContent=String(s.verdict||"unknown").toUpperCase();showHuman("sentinel-signals",s.signals||{});
   $("adversary-registry").innerHTML=registryHtml(a);await refreshRegistry();
 }
 $("agent-refresh").onclick=refreshRegistry;
 $("agent-scan").onclick=async()=>{
   const payload={};if($("agent-url").value.trim())payload.url=$("agent-url").value.trim();else payload.text=$("agent-text").value;
-  try{const r=await post("/api/agent-scan",payload);$("agent-scan-result").textContent=JSON.stringify(r,null,2);lastScan=r.counts||lastScan;$("t-agent").textContent=lastScan.agent||0;$("t-swarm").textContent=lastScan.swarm||0;$("t-botnet").textContent=lastScan.botnet||0;refreshRegistry();refreshMain()}catch(e){$("agent-scan-result").textContent=e.message}
+  try{const r=await post("/api/agent-scan",payload);showHuman("agent-scan-result",r);lastScan=r.counts||lastScan;$("t-agent").textContent=lastScan.agent||0;$("t-swarm").textContent=lastScan.swarm||0;$("t-botnet").textContent=lastScan.botnet||0;refreshRegistry();refreshMain()}catch(e){showMessage("agent-scan-result",e.message,"error")}
 };
 
 async function loadSettings(){
   const [s,b]=await Promise.all([api("/api/system"),api("/api/brand")]);
-  $("runtime-json").textContent=JSON.stringify(s.runtime,null,2);
+  showHuman("runtime-json",s.runtime);
   $("brand-meta").innerHTML="<b>Revision:</b> "+esc(b.revision)+"<br><b>Approved source:</b> "+esc(b.source?.file||"")+"<br><b>Source SHA-256:</b><br>"+esc(b.source?.sha256||"")+"<br><b>Note:</b> "+esc(b.source?.note||"");
   $("brand-assets").innerHTML=Object.keys(b.files||{}).map(name=>'<div class="brand-asset '+(name.includes("primary.svg")?"light":"")+'"><img src="/brand/'+encodeURIComponent(name)+'" alt="'+esc(name)+'"><span>'+esc(name)+'</span></div>').join("");
 }
