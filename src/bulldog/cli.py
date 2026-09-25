@@ -161,8 +161,7 @@ def _run_up(args: argparse.Namespace) -> int:
     os.environ.setdefault("BULL_AUDIT_LEDGER", str(audit_dir / "ledger.jsonl"))
     os.environ.setdefault("BULL_SNAPSHOT_ROOT", str(snapshot_dir))
 
-    codespaces = os.environ.get("CODESPACES", "").lower() == "true"
-    should_install = bool(args.install_deps or (codespaces and not args.skip_host_setup))
+    should_install = not args.skip_host_setup
     if setup.is_file():
         setup_command = [sys.executable, str(setup)]
         if should_install:
@@ -245,8 +244,16 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not open a local browser automatically.",
     )
-    up_parser.add_argument("--install-deps", action="store_true", help="Install/repair the fixed BULL host tools before launch.")
-    up_parser.add_argument("--skip-host-setup", action="store_true", help="Skip host dependency checking/automatic Codespaces bootstrap.")
+    up_parser.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Compatibility flag; host dependency repair is now attempted by default.",
+    )
+    up_parser.add_argument(
+        "--skip-host-setup",
+        action="store_true",
+        help="Opt out of automatic fixed host dependency installation/checking.",
+    )
     up_parser.set_defaults(handler=_run_up)
 
     assurance_parser = subparsers.add_parser(
