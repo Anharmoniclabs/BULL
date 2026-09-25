@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from bulldog.engine import BulldogEngine
 from bulldog.models import ActionRequest, Capability, Provenance
+from bulldog.policy import DeterministicPolicy
 from bulldog.agent_sentinel import AgentSentinel
 from bulldog.assurance import evaluate_assurance
 from bulldog.audit import AuditLedger
@@ -507,8 +508,15 @@ def architecture() -> dict:
 
 def policy_evaluate(payload: dict) -> dict:
     action = ActionRequest.from_dict(payload)
-    ev = BulldogEngine().evaluate(action)
-    return {"decision": ev.decision.value, "risk": ev.risk, "reasons": list(ev.reasons), "hard_block": ev.hard_block}
+    engine = BulldogEngine(policy=DeterministicPolicy(project_root=str(ROOT)))
+    ev = engine.evaluate(action)
+    return {
+        "decision": ev.decision.value,
+        "risk": ev.risk,
+        "reasons": list(ev.reasons),
+        "hard_block": ev.hard_block,
+        "simulation_root": str(ROOT),
+    }
 
 def trace_simulate(payload: dict) -> dict:
     v = RuntimeTraceVerifier()
@@ -519,14 +527,63 @@ def trace_simulate(payload: dict) -> dict:
     return {"states": states, "events": [{"transition": e.transition, "data": e.data} for e in v.events]}
 
 def scan_file(payload: dict) -> dict:
-    scanner = malware_state()
-    if not scanner.get("ready"):
-        raise ValueError(scanner.get("error") or "malware scanner is not ready")
-    path = resolve_repo_path(str(payload.get("path", "")))
-    if not path.is_file():
-        raise ValueError("scan target must be a file inside the BULL repository")
-    r = MalwareScanner().scan_file(path, timeout_seconds=float(payload.get("timeout", 30)))
-    return asdict(r)
+    scanner_state = malware_state()
+    if not scanner_state.get("ready"):
+        raise ValueError(scanner_state.get("error") or "malware scanner is not ready")
+
+    raw = str(payload.get("path", ".") or ".").strip()
+    path = resolve_repo_path(raw)
+    timeout = float(payload.get("timeout", 120))
+    scanner = MalwareScanner()
+
+    if path.is_dir():
+        result = scanner.scan_project(
+            path,
+            timeout_seconds=timeout,
+            max_total_bytes=int(os.environ.get("BULL_UI_SCAN_MAX_BYTES", str(256 * 1024 * 1024))),
+            max_files=int(os.environ.get("BULL_UI_SCAN_MAX_FILES", "10000")),
+        )
+        return {
+            "target": str(path.relative_to(ROOT)) if path != ROOT else ".",
+            "target_type": "folder",
+            "engine": "ClamAV",
+            "clean": result.clean,
+            "files_scanned": result.files_scanned,
+            "detections": [
+                {
+                    "path": item.path,
+                    "signature": item.signature or "detected",
+                    "sha256": item.sha256,
+                    "size": item.size,
+                }
+                for item in result.detections[:100]
+            ],
+            "note": "Bounded repository scan completed. Clean files are not listed individually.",
+        }
+
+    if path.is_file():
+        result = scanner.scan_file(path, timeout_seconds=timeout)
+        return {
+            "target": str(path.relative_to(ROOT)),
+            "target_type": "file",
+            "engine": "ClamAV",
+            "clean": result.clean,
+            "files_scanned": 1,
+            "detections": (
+                []
+                if result.clean
+                else [{
+                    "path": result.path,
+                    "signature": result.signature or "detected",
+                    "sha256": result.sha256,
+                    "size": result.size,
+                }]
+            ),
+            "sha256": result.sha256,
+            "size": result.size,
+        }
+
+    raise ValueError("scan target does not exist inside the BULL repository")
 
 def public_host(host: str) -> bool:
     try:
