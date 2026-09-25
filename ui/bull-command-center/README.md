@@ -32,6 +32,12 @@ On a local desktop you can simply run:
 bull up --workspace "$PWD"
 ```
 
+Host dependencies are repaired automatically on supported Linux hosts unless
+you pass `--skip-host-setup`. The fixed package set includes ClamAV,
+`freshclam`, QEMU x86-64, ext4 tools, OpenSSL and OpenSSH. Supported package
+managers are APT, pacman and DNF. ClamAV's signed databases are refreshed with
+`freshclam` when they are missing.
+
 BULL creates private command-center state under
 `~/.local/share/bull/command-center` when explicit operator paths are absent,
 including a local audit ledger and snapshot scratch directory. Explicit
@@ -40,7 +46,7 @@ deployment environment variables still take precedence.
 The direct development launcher remains available:
 
 ```bash
-PYTHONPATH=src python ui/bull-command-center/dashboard_server.py --port 8000
+PYTHONPATH=src python ui/bull-command-center/dashboard_server.py --port 11510
 ```
 
 ## Wired views
