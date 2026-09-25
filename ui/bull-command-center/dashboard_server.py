@@ -153,14 +153,56 @@ def audit_events(limit: int = 60) -> list[dict]:
         })
     return rows
 
+def _clamav_databases() -> list[str]:
+    root = Path("/var/lib/clamav")
+    if not root.is_dir():
+        return []
+    files = []
+    for pattern in ("*.cvd", "*.cld"):
+        files.extend(str(path) for path in root.glob(pattern) if path.is_file())
+    return sorted(files)
+
+def host_dependencies() -> dict:
+    commands = (
+        ("clamav", "Malware scanner", "clamscan"),
+        ("qemu", "QEMU x86_64", "qemu-system-x86_64"),
+        ("mkfs", "ext4 image builder", "mkfs.ext4"),
+        ("debugfs", "ext4 inspection", "debugfs"),
+        ("openssl", "OpenSSL", "openssl"),
+        ("ssh", "OpenSSH key utility", "ssh-keygen"),
+    )
+    items = []
+    for item_id, label, command in commands:
+        binary = shutil.which(command)
+        items.append({"id": item_id, "label": label, "command": command, "installed": bool(binary), "path": binary})
+    databases = _clamav_databases()
+    clamav = next(item for item in items if item["id"] == "clamav")
+    clamav["database_ready"] = bool(databases)
+    clamav["database_count"] = len(databases)
+    manager = "apt" if shutil.which("apt-get") else "pacman" if shutil.which("pacman") else "dnf" if shutil.which("dnf") else None
+    sudo_ready = os.geteuid() == 0
+    if not sudo_ready and shutil.which("sudo"):
+        try:
+            sudo_ready = subprocess.run(["sudo", "-n", "true"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3, check=False).returncode == 0
+        except Exception:
+            sudo_ready = False
+    missing = [item["id"] for item in items if not item["installed"]]
+    return {"manager": manager, "sudo_ready": sudo_ready, "install_supported": bool(manager and sudo_ready), "items": items, "missing": missing, "clamav_database_ready": bool(databases), "clamav_database_count": len(databases), "ready": not missing and bool(databases)}
+
 def malware_state() -> dict:
+    binary = shutil.which("clamscan")
+    databases = _clamav_databases()
+    if not binary:
+        return {"available": False, "ready": False, "status": "NOT_INSTALLED", "engine": "clamav", "error": "ClamAV clamscan is not installed on this host."}
+    if not databases:
+        return {"available": True, "ready": False, "status": "SIGNATURES_MISSING", "engine": "clamav", "binary": binary, "database_count": 0, "error": "ClamAV is installed but no signed malware database is available."}
     try:
         s = MalwareScanner()
-        return {"available": True, "engine": "clamav", "bounded": s.bounded_scan, "binary": s.clamscan}
+        return {"available": True, "ready": True, "status": "READY", "engine": "clamav", "bounded": s.bounded_scan, "binary": s.clamscan, "database_count": len(databases)}
     except MalwareScannerUnavailable as exc:
-        return {"available": False, "error": str(exc)}
+        return {"available": False, "ready": False, "status": "UNAVAILABLE", "error": str(exc)}
     except Exception as exc:
-        return {"available": False, "error": f"{type(exc).__name__}: {exc}"}
+        return {"available": False, "ready": False, "status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
 
 def runtime_state() -> dict:
     return {
@@ -369,6 +411,11 @@ def start_vm_job(payload: dict) -> dict:
         label = f"BULL KVM {case} (auto-pull published guest)"
     return _start_job("kvm-integration", cmd, out, label)
 
+def start_host_setup_job() -> dict:
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    marker = STATE_ROOT / f"host-setup-{stamp}-{uuid.uuid4().hex[:6]}"
+    return _start_job("host-setup", [sys.executable, str(WEB / "host_setup.py"), "--install"], marker, "Install / repair BULL host tools")
+
 def start_deployment_job() -> dict:
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     out = STATE_ROOT / f"deployment-{stamp}-{uuid.uuid4().hex[:6]}"
@@ -410,6 +457,8 @@ def system_state() -> dict:
         "sentinel": sentinel_state(),
         "audit": audit_state(),
         "malware": malware_state(),
+        "dependencies": host_dependencies(),
+        "environment": {"codespaces": os.environ.get("CODESPACES", "").lower() == "true", "hostname": socket.gethostname(), "platform": sys.platform, "python": sys.version.split()[0], "state_root": str(STATE_ROOT)},
         "runtime": runtime_state(),
         "assurance": {
             "profile": a.get("profile"),
@@ -470,6 +519,9 @@ def trace_simulate(payload: dict) -> dict:
     return {"states": states, "events": [{"transition": e.transition, "data": e.data} for e in v.events]}
 
 def scan_file(payload: dict) -> dict:
+    scanner = malware_state()
+    if not scanner.get("ready"):
+        raise ValueError(scanner.get("error") or "malware scanner is not ready")
     path = resolve_repo_path(str(payload.get("path", "")))
     if not path.is_file():
         raise ValueError("scan target must be a file inside the BULL repository")
@@ -554,6 +606,7 @@ class Handler(SimpleHTTPRequestHandler):
         p, q = u.path, parse_qs(u.query)
         try:
             if p == "/api/system": return self.send_json(system_state())
+            if p == "/api/host/dependencies": return self.send_json(host_dependencies())
             if p == "/api/repo": return self.send_json(repo_state())
             if p == "/api/files": return self.send_json(list_files(q.get("path", ["."])[0]))
             if p == "/api/file": return self.send_json(read_file(q.get("path", [""])[0]))
@@ -586,6 +639,7 @@ class Handler(SimpleHTTPRequestHandler):
         p = urlparse(self.path).path
         try:
             payload = self.body()
+            if p == "/api/host/install": return self.send_json(start_host_setup_job(), 202)
             if p == "/api/policy/evaluate": return self.send_json(policy_evaluate(payload))
             if p == "/api/trace/simulate": return self.send_json(trace_simulate(payload))
             if p == "/api/malware/scan": return self.send_json(scan_file(payload))
