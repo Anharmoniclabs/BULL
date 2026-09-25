@@ -106,7 +106,7 @@
   <div class="two-col">
     <article class="panel">
       <div class="panel-title"><h2>GIT STATE</h2></div>
-      <pre id="repo-json"></pre>
+      <div id="repo-json" class="human-data"></div>
     </article>
     <article class="panel">
       <div class="panel-title"><h2>CHANGED FILES</h2></div>
@@ -135,7 +135,7 @@
         <input id="malware-path" placeholder="Path inside repository, e.g. README.md">
         <button id="malware-scan">SCAN WITH BULL</button>
       </div>
-      <pre id="malware-result">Uses BULL's bounded ClamAV scanner when installed.</pre>
+      <div id="malware-result" class="human-data"><div class="human-empty">Choose a repository file or folder, then run the bounded BULL malware scan.</div></div>
     </article>
   </div>
 </section>
@@ -158,17 +158,26 @@
         <label>Granted capabilities<select id="p-granted" multiple></select></label>
       </div>
       <button id="policy-evaluate">EVALUATE THROUGH BULL POLICY</button>
-      <pre id="policy-result"></pre>
+      <div id="policy-result" class="human-data"><div class="human-empty">Run an evaluation to see the policy decision, risk, and reasons.</div></div>
     </article>
     <article class="panel">
       <div class="panel-title"><h2>TRACE MODEL TEST</h2></div>
-      <textarea id="trace-events" rows="12">[
-  {"transition":"Evaluate","data":{"decision":"SANDBOX"}},
-  {"transition":"ScanClean","data":{}},
-  {"transition":"Execute","data":{"sandboxed":true,"seccomp":true}}
-]</textarea>
+      <div class="trace-builder">
+        <label>Policy decision
+          <select id="trace-decision">
+            <option>ALLOW</option>
+            <option selected>SANDBOX</option>
+            <option>ESCALATE</option>
+            <option>DENY</option>
+          </select>
+        </label>
+        <label class="toggle-line"><input id="trace-scan" type="checkbox" checked> Malware admission completed cleanly</label>
+        <label class="toggle-line"><input id="trace-execute" type="checkbox" checked> Workload reached execution</label>
+        <label class="toggle-line"><input id="trace-sandbox" type="checkbox" checked> Sandbox boundary active</label>
+        <label class="toggle-line"><input id="trace-seccomp" type="checkbox" checked> Seccomp active</label>
+      </div>
       <button id="trace-run">VALIDATE TRACE</button>
-      <pre id="trace-result"></pre>
+      <div id="trace-result" class="human-data"><div class="human-empty">Build the trace above and validate it through BULL's trace model.</div></div>
     </article>
   </div>
 </section>
@@ -185,7 +194,7 @@
   <div class="two-col">
     <article class="panel">
       <div class="panel-title"><h2>MICROVM READINESS</h2><button id="vm-refresh">PROBE KVM</button></div>
-      <pre id="vm-state">Loading BULL MicroVM state…</pre>
+      <div id="vm-state" class="human-data"><div class="human-empty">Loading BULL MicroVM state…</div></div>
       <div class="runtime-actions">
         <button id="vm-install-assets">OPTIONAL: PRE-CACHE PUBLISHED GUEST</button>
         <button id="vm-plan">VALIDATE CONFIGURED LAUNCHER</button>
@@ -208,7 +217,7 @@
     <article class="panel">
       <div class="panel-title"><h2>LAUNCH / DEPLOYMENT JOBS</h2><button id="jobs-refresh">REFRESH</button></div>
       <div id="job-list" class="job-list"></div>
-      <pre id="job-log">Select a job to stream its captured console/evidence log.</pre>
+      <div id="job-log" class="job-output"><div class="human-empty">Select a job to view readable job details and its captured console/evidence log.</div></div>
     </article>
   </div>
   <article class="panel wide">
@@ -254,16 +263,16 @@
     <article class="panel">
       <div class="panel-title"><h2>AGENT SENTINEL</h2></div>
       <div class="sentinel-score"><b id="sentinel-score">0.00</b><span id="sentinel-verdict">CLEAN</span></div>
-      <pre id="sentinel-signals"></pre>
+      <div id="sentinel-signals" class="human-data compact"></div>
     </article>
     <article class="panel">
-      <div class="panel-title"><h2>AGENT / SWARM FINDER</h2></div>
+      <div class="panel-title"><h2>ARTIFACT / INTAKE SIGNAL SCAN</h2><small>TEXT EVIDENCE, NOT IDENTITY PROOF</small></div>
       <div class="form-stack">
         <input id="agent-url" placeholder="Optional public http(s) URL">
         <textarea id="agent-text" rows="8" placeholder="Or paste text / HTML / captured artifact"></textarea>
         <button id="agent-scan">SCAN ARTIFACT</button>
       </div>
-      <pre id="agent-scan-result"></pre>
+      <div id="agent-scan-result" class="human-data"><div class="human-empty">Paste an artifact or provide a public URL to summarize observable agent/swarm indicators.</div></div>
     </article>
   </div>
   <article class="panel wide">
@@ -277,7 +286,7 @@
   <div class="two-col">
     <article class="panel">
       <div class="panel-title"><h2>RUNTIME CONFIGURATION</h2></div>
-      <pre id="runtime-json"></pre>
+      <div id="runtime-json" class="human-data"></div>
     </article>
     <article class="panel">
       <div class="panel-title"><h2>APPROVED BULL BRAND PACK</h2></div>
