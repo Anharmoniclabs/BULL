@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
+from urllib.request import urlopen
 
 from .models import Capability
 from .profiles import DEVELOPMENT_WARNING
@@ -134,6 +136,98 @@ def _run_assurance_status(args: argparse.Namespace) -> int:
         complete = complete and report.release_complete
     return 1 if args.require_complete and not complete else 0
 
+
+def _existing_command_center(port: int) -> bool:
+    try:
+        with urlopen(f"http://127.0.0.1:{int(port)}/api/system", timeout=1.0) as response:
+            payload = json.loads(response.read(64 * 1024))
+        return isinstance(payload, dict) and payload.get("product") == "BULL"
+    except Exception:
+        return False
+
+
+def _run_up(args: argparse.Namespace) -> int:
+    workspace = Path(args.workspace).expanduser().resolve()
+    server = workspace / "ui" / "bull-command-center" / "dashboard_server.py"
+    setup = workspace / "ui" / "bull-command-center" / "host_setup.py"
+    if not server.is_file():
+        print(
+            "BULL command center is not present in this workspace: " + str(server),
+            file=sys.stderr,
+        )
+        return 2
+
+    state = Path(
+        os.environ.get(
+            "BULL_COMMAND_CENTER_STATE",
+            str(Path.home() / ".local" / "share" / "bull" / "command-center"),
+        )
+    ).expanduser()
+    audit_dir = state / "audit"
+    snapshot_dir = state / "snapshots"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("BULL_COMMAND_CENTER_STATE", str(state))
+    os.environ.setdefault("BULL_AUDIT_LEDGER", str(audit_dir / "ledger.jsonl"))
+    os.environ.setdefault("BULL_SNAPSHOT_ROOT", str(snapshot_dir))
+
+    should_install = not args.skip_host_setup
+    if setup.is_file():
+        setup_command = [sys.executable, str(setup)]
+        if should_install:
+            setup_command.append("--install")
+            print("BULL host bootstrap: installing/repairing fixed host dependencies")
+        else:
+            print("BULL host bootstrap: checking host dependencies")
+        result = subprocess.run(setup_command, cwd=workspace, env=dict(os.environ), check=False)
+        if result.returncode != 0:
+            print("BULL host bootstrap is partial; the command center will still start and show unavailable controls honestly.", file=sys.stderr)
+
+    if _existing_command_center(args.port):
+        codespace_name = os.environ.get("CODESPACE_NAME", "").strip()
+        domain = os.environ.get(
+            "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
+            "app.github.dev",
+        ).strip()
+        url = (
+            f"https://{codespace_name}-{args.port}.{domain}/"
+            if codespace_name
+            else f"http://127.0.0.1:{args.port}/"
+        )
+        print("=" * 78)
+        print("BULL COMMAND CENTER")
+        print("=" * 78)
+        print(f"already running on port {args.port}")
+        print("open:", url)
+        print("No second server was started.")
+        print("=" * 78)
+        return 0
+
+    command = [
+        sys.executable,
+        str(server),
+        "--port",
+        str(args.port),
+    ]
+    if args.host:
+        command.extend(["--host", args.host])
+    if not args.no_open_browser:
+        command.append("--open-browser")
+
+    print("=" * 78)
+    print("BULL COMMAND CENTER")
+    print("=" * 78)
+    print("workspace:", workspace)
+    print("state:", state)
+    print("audit:", os.environ["BULL_AUDIT_LEDGER"])
+    print("snapshot scratch:", os.environ["BULL_SNAPSHOT_ROOT"])
+    print("=" * 78)
+    try:
+        return subprocess.call(command, cwd=workspace, env=dict(os.environ))
+    except KeyboardInterrupt:
+        return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="bull",
@@ -163,6 +257,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="Require strict production security gates and live backend attestation.",
     )
     verify_parser.set_defaults(handler=_run_verify)
+
+    up_parser = subparsers.add_parser(
+        "up",
+        help="Start the BULL Command Center for this repository.",
+    )
+    up_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    up_parser.add_argument(
+        "--host",
+        default=None,
+        help="Bind host. Defaults to 0.0.0.0 in Codespaces and 127.0.0.1 locally.",
+    )
+    up_parser.add_argument("--port", type=int, default=11510)
+    up_parser.add_argument(
+        "--no-open-browser",
+        action="store_true",
+        help="Do not open a local browser automatically.",
+    )
+    up_parser.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Compatibility flag; host dependency repair is now attempted by default.",
+    )
+    up_parser.add_argument(
+        "--skip-host-setup",
+        action="store_true",
+        help="Opt out of automatic fixed host dependency installation/checking.",
+    )
+    up_parser.set_defaults(handler=_run_up)
 
     assurance_parser = subparsers.add_parser(
         "assurance",

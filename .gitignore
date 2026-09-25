@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .bulldog/
+.bull/
 dist/
 build/
 *.egg-info/
