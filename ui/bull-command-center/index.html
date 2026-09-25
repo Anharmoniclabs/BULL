@@ -3,24 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#111315">
+  <meta name="theme-color" content="#202830">
   <title>BULL Command Center</title>
   <link rel="icon" href="/brand/bull-favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260925-3">
+  <link rel="stylesheet" href="styles.css?v=20260925-4">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand-lockup">
-      <img src="/brand/bull-mark.svg" alt="">
-      <div><strong>BULL</strong><span>COMMAND CENTER</span></div>
+      <img src="/brand/bull-primary-dark.svg" alt="BULL">
     </div>
 
     <nav id="nav">
       <button class="active" data-view="overview"><i>⌂</i><span>Overview</span></button>
-      <button data-view="activity"><i>◎</i><span>Activity</span></button>
-      <button data-view="policy"><i>◆</i><span>Policy</span></button>
-      <button data-view="workspace"><i>▣</i><span>Files & Scans</span></button>
+      <button data-view="firewall"><i>⇄</i><span>Firewall Demo</span></button>
+      <button data-view="activity"><i>◎</i><span>Detection</span></button>
+      <button data-view="policy"><i>◆</i><span>Policy Lab</span></button>
+      <button data-view="workspace"><i>▣</i><span>Files & Malware</span></button>
       <button data-view="runtime"><i>⬢</i><span>Runtime</span></button>
       <button data-view="audit"><i>☷</i><span>Audit</span></button>
       <button data-view="controls"><i>◇</i><span>Controls</span></button>
@@ -37,23 +37,24 @@
     <header class="topbar">
       <div class="crumb"><small>BULL / COMMAND CENTER</small><strong id="page-title">Protection Overview</strong></div>
       <label class="top-search"><span>⌕</span><input id="global-search" placeholder="Search this page"><kbd>/</kbd></label>
-      <div class="top-actions"><span id="env-badge">HOST</span><span id="clock"></span><span id="top-protection">LOADING</span></div>
+      <div class="top-actions"><span id="env-badge">HOST</span><button id="presentation-toggle" class="presentation-toggle">Presentation mode</button><span id="clock"></span><span id="top-protection">LOADING</span></div>
     </header>
 
     <section class="view active" id="view-overview">
-      <div class="page-heading">
-        <div><span class="eyebrow">OVERVIEW</span><h1>Protection Overview</h1><p>What BULL is protecting, what needs attention, and what happened recently.</p></div>
-        <button class="button" id="overview-refresh">Refresh</button>
-      </div>
-
-      <article class="protection-summary">
-        <div class="summary-mark"><img src="/brand/bull-mark.svg" alt=""></div>
-        <div class="summary-copy">
-          <small>OVERALL STATE</small>
-          <h2 id="overall-state">Checking protections…</h2>
-          <p id="overall-detail">BULL is reading the live host and runtime state.</p>
+      <article class="firewall-hero">
+        <div class="firewall-hero-mark"><img src="/brand/bull-mark.svg" alt=""></div>
+        <div class="firewall-hero-copy">
+          <span class="eyebrow">EXECUTION FIREWALL FOR AI AGENTS</span>
+          <h1>BULL stands between an agent and the action it wants to take.</h1>
+          <p>Before a sensitive action reaches the host, BULL checks provenance, authority and risk, then allows it, constrains it, stops it for review, or denies it — with an audit trail.</p>
+          <div class="hero-buttons"><button class="button primary" data-open="firewall">Run a firewall scenario</button><button class="button" data-open="policy">Test your own action</button><button class="button" id="overview-refresh">Refresh</button></div>
         </div>
-        <div class="summary-score"><strong id="layer-score">0/4</strong><span>core checks ready</span></div>
+        <div class="firewall-hero-state">
+          <small>CURRENT SESSION</small>
+          <strong id="overall-state">Checking BULL…</strong>
+          <span id="overall-detail">Reading live protection state.</span>
+          <div class="summary-score"><strong id="layer-score">0/4</strong><span>core checks ready</span></div>
+        </div>
       </article>
 
       <div class="section-kicker">WHAT THIS MEANS</div><div id="action-required" class="attention-list"></div>
@@ -64,6 +65,18 @@
         <article><small>REVIEW</small><b id="metric-review">0</b><span>recent escalations</span></article>
         <article><small>OBSERVED AGENTS</small><b id="metric-agents">0</b><span>evidence records</span></article>
       </div>
+
+      <article class="panel firewall-story-panel">
+        <div class="panel-head"><div><small>LIVE FIREWALL STORY</small><h2>See a request move through BULL</h2><p>Real BULL policy evaluation. No requested host effect is executed by these presentation scenarios.</p></div><button class="link-button" data-open="firewall">Open full demo →</button></div>
+        <div class="story-layout">
+          <div id="overview-scenario-list" class="scenario-list"></div>
+          <div class="story-workbench">
+            <div class="story-request"><small>REQUEST</small><strong id="overview-demo-title">Choose a scenario</strong><p id="overview-demo-request">Select a use case to visualize BULL's decision path.</p></div>
+            <div id="overview-pipeline" class="firewall-pipeline"></div>
+            <div id="overview-demo-result" class="demo-result empty">No scenario selected.</div>
+          </div>
+        </div>
+      </article>
 
       <div class="overview-grid">
         <article class="panel layers-panel">
@@ -81,7 +94,7 @@
 
         <article class="panel recent-panel">
           <div class="panel-head"><div><small>ACTIVITY</small><h2>Recent BULL decisions</h2></div><button class="link-button" data-open="audit">Open audit →</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Decision</th><th>Actor</th><th>Action</th><th>Resource</th></tr></thead><tbody id="overview-events"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Decision</th><th>Actor</th><th>Action</th><th>Resource</th><th>Type</th></tr></thead><tbody id="overview-events"></tbody></table></div>
         </article>
 
         <article class="panel repo-panel">
@@ -113,6 +126,29 @@
         <div class="panel-head"><div><small>OBSERVATIONS</small><h2>Observed agent / swarm records</h2></div></div>
         <div class="table-wrap"><table><thead><tr><th>Record</th><th>Label</th><th>Swarm</th><th>Model family</th><th>State</th></tr></thead><tbody id="registry-rows"></tbody></table></div>
       </article>
+    </section>
+
+    <section class="view" id="view-firewall">
+      <div class="page-heading">
+        <div><span class="eyebrow">FIREWALL DEMO</span><h1>Watch BULL make the decision</h1><p>Choose a realistic agent request and run it through BULL's actual deterministic policy engine. The demonstration does not execute the requested host effect.</p></div>
+        <span class="dry-run-badge">POLICY DRY RUN</span>
+      </div>
+      <div class="firewall-demo-layout">
+        <aside class="scenario-browser">
+          <div class="scenario-browser-head"><small>USE CASES</small><strong>Choose a request</strong></div>
+          <div id="scenario-list" class="scenario-list vertical"></div>
+        </aside>
+        <article class="panel firewall-stage">
+          <div class="firewall-request-head">
+            <div><small id="firewall-category">SCENARIO</small><h2 id="firewall-title">Choose a scenario</h2><p id="firewall-request">BULL will show the request, provenance, capability, policy decision, enforcement result, and evidence.</p></div>
+            <button id="scenario-run" class="button primary" disabled>Run through BULL</button>
+          </div>
+          <div id="firewall-pipeline" class="firewall-pipeline large"></div>
+          <div id="firewall-result" class="firewall-result empty">Choose a use case from the left.</div>
+          <div class="simulation-note"><b>Presentation-safe:</b> the scenario evaluates real BULL policy and may record the simulated decision in the audit ledger, but it never executes the requested command, network call, credential access, or agent spawn.</div>
+        </article>
+      </div>
+      <article class="panel wide"><div class="panel-head"><div><small>USE CASES</small><h2>Where an execution firewall changes the outcome</h2></div></div><div id="scenario-cards" class="scenario-cards"></div></article>
     </section>
 
     <section class="view" id="view-policy">
@@ -242,6 +278,6 @@
   </main>
 </div>
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20260925-3"></script>
+<script src="app.js?v=20260925-4"></script>
 </body>
 </html>
