@@ -31,6 +31,8 @@ Avoid making raw implementation details the primary interface.
 
 Agent Sentinel and artifact scanning are observational inputs. They can add operator context or scrutiny, but must not be presented as identity, attribution, or a replacement for policy and enforcement.
 
+Signal categories are allowed to overlap when the underlying language carries more than one useful observation. For example, "multi-agent" can be counted as both agent-oriented evidence and coordination/swarm evidence. The UI should present those counts as observations, never as mutually exclusive labels or proof of intent.
+
 ## Runtime status
 
 Local policy, malware scanning, audit verification, Sentinel, host sandbox evidence, and MicroVM readiness are different layers. A missing KVM device in Codespaces should be presented as a host limitation rather than as failure of the entire BULL product.
