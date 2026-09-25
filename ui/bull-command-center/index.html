@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#202830">
   <title>BULL Command Center</title>
   <link rel="icon" href="/brand/bull-favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=20260925-4">
+  <link rel="stylesheet" href="styles.css?v=20260925-5">
 </head>
 <body>
 <div class="app-shell">
@@ -39,6 +39,11 @@
       <label class="top-search"><span>⌕</span><input id="global-search" placeholder="Search this page"><kbd>/</kbd></label>
       <div class="top-actions"><span id="env-badge">HOST</span><button id="presentation-toggle" class="presentation-toggle">Presentation mode</button><span id="clock"></span><span id="top-protection">LOADING</span></div>
     </header>
+    <div id="zoom-warning" class="zoom-warning" hidden>
+      <strong>Display is zoomed out.</strong>
+      <span>For the intended BULL layout, reset browser zoom to 100% with <kbd>Ctrl</kbd> + <kbd>0</kbd>.</span>
+      <button id="zoom-dismiss" aria-label="Dismiss zoom notice">×</button>
+    </div>
 
     <section class="view active" id="view-overview">
       <article class="firewall-hero">
@@ -278,6 +283,6 @@
   </main>
 </div>
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20260925-4"></script>
+<script src="app.js?v=20260925-5"></script>
 </body>
 </html>
