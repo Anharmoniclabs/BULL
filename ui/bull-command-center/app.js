@@ -3,13 +3,15 @@ const api=async(path,opts={})=>{const r=await fetch(path,{cache:"no-store",...op
 const post=(path,obj={})=>api(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj)});
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const tone=v=>{v=String(v||"").toUpperCase();if(["READY","PASS","VALID","SIGNED","ONLINE","CLEAN","ALLOW","YES","ACTIVE"].includes(v))return"pass";if(["FAIL","INVALID","ERROR","DENY"].includes(v))return"fail";if(["BLOCKED","DEV","PARTIAL","UNAVAILABLE","NOT_INSTALLED","SIGNATURES_MISSING","SANDBOX"].includes(v))return"warn";return"info"};
-const titles={overview:"Protection Overview",activity:"Agent & Intake Activity",policy:"Policy",workspace:"Files & Scans",runtime:"Runtime",audit:"Audit",controls:"Controls",system:"System"};
-let currentPath=".", selectedJob=null, systemCache=null;
+const titles={overview:"Overview",firewall:"Firewall Demo",activity:"Detection",policy:"Policy Lab",workspace:"Files & Malware",runtime:"Runtime",audit:"Audit",controls:"Controls",system:"System"};
+let currentPath=".", selectedJob=null, systemCache=null, scenarioCatalog=null, selectedScenario=null, presentationMode=false;
 function toast(msg,type=""){const n=$("toast");n.textContent=msg;n.className="toast show "+type;clearTimeout(toast.t);toast.t=setTimeout(()=>n.className="toast",3200)}
 function statusPill(status){return '<span class="status-pill '+tone(status)+'">'+esc(status)+'</span>'}
 function decisionChip(v){v=String(v||"EVENT").toUpperCase();return '<span class="decision-chip '+v.toLowerCase()+'">'+esc(v)+'</span>'}
-function openView(name){$$(".view").forEach(n=>n.classList.toggle("active",n.id==="view-"+name));$$("#nav button").forEach(n=>n.classList.toggle("active",n.dataset.view===name));$("page-title").textContent=titles[name]||name;window.scrollTo(0,0);({overview:loadOverview,activity:loadActivity,policy:loadPolicy,workspace:loadWorkspace,runtime:loadRuntime,audit:loadAudit,controls:loadControls,system:loadSystem}[name]||(()=>{}))()}
+function typeChip(e){return e?.metadata?.simulation==="true"?'<span class="type-chip">DEMO</span>':'<span class="type-chip">LIVE / RUNTIME</span>'}
+function openView(name){if(presentationMode&&name!=="overview"){presentationMode=false;document.body.classList.remove("presentation-mode");$("presentation-toggle").textContent="Presentation mode"}$$(".view").forEach(n=>n.classList.toggle("active",n.id==="view-"+name));$$("#nav button").forEach(n=>n.classList.toggle("active",n.dataset.view===name));$("page-title").textContent=titles[name]||name;window.scrollTo(0,0);({overview:loadOverview,firewall:loadFirewall,activity:loadActivity,policy:loadPolicy,workspace:loadWorkspace,runtime:loadRuntime,audit:loadAudit,controls:loadControls,system:loadSystem}[name]||(()=>{}))()}
 $$("[data-view]").forEach(b=>b.onclick=()=>openView(b.dataset.view));$$("[data-open]").forEach(b=>b.onclick=()=>openView(b.dataset.open));
+$("presentation-toggle").onclick=()=>{presentationMode=!presentationMode;document.body.classList.toggle("presentation-mode",presentationMode);$("presentation-toggle").textContent=presentationMode?"Exit presentation":"Presentation mode";if(presentationMode){$$(".view").forEach(n=>n.classList.toggle("active",n.id==="view-overview"));$("page-title").textContent="Overview";window.scrollTo(0,0)}};
 setInterval(()=>{$("clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})},1000);
 const search=$("global-search");search.addEventListener("input",()=>{const q=search.value.trim().toLowerCase(),v=document.querySelector(".view.active");v.querySelectorAll("article,.control-row-card,.dependency-row,.read-row,tr").forEach(n=>n.classList.toggle("search-hidden",!!q&&!n.textContent.toLowerCase().includes(q)))});document.addEventListener("keydown",e=>{if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||"")){e.preventDefault();search.focus()}});
 
@@ -24,6 +26,25 @@ function attention(title,detail,type="warn"){
 function getControl(s,id){return (s.assurance?.controls||[]).find(c=>c.id===id)||{}}
 function controlUsable(s,id){return getControl(s,id).status==="PASS"}
 function kvmReason(vm){return vm?.kvm?.reason||vm?.kvm?.error||"This host does not expose usable /dev/kvm hardware virtualization."}
+
+async function getScenarios(){if(!scenarioCatalog)scenarioCatalog=await api("/api/scenarios");return scenarioCatalog}
+function enforcementText(d){return({ALLOW:"BULL would let the authorized runtime path continue.",SANDBOX:"BULL would force constrained execution instead of direct host execution.",ESCALATE:"BULL would stop automatic execution and require operator review.",DENY:"BULL would block the action before the requested effect."}[d]||"Awaiting policy decision.")}
+function previewPipeline(s){const d=s.preview||{};return[
+  {title:"1 · Request",status:"OBSERVED",detail:s.request},
+  {title:"2 · Provenance",status:"CHECKED",detail:(s.provenance||[]).join(", ")},
+  {title:"3 · Capability",status:"CHECKED",detail:s.capability},
+  {title:"4 · Policy",status:d.decision||"PREVIEW",detail:(d.reasons||[]).join("; ")},
+  {title:"5 · Enforcement",status:d.decision||"PREVIEW",detail:enforcementText(d.decision)},
+  {title:"6 · Evidence",status:"PREVIEW",detail:"Preview only. Run the scenario to record the simulated decision."}
+]}
+function renderPipeline(el,pipeline){el.innerHTML=(pipeline||[]).map(x=>'<article class="stage '+tone(x.status)+'"><small>'+esc(x.title)+'</small><strong>'+esc(x.status)+'</strong><p>'+esc(x.detail||"")+'</p></article>').join("")}
+function renderScenarioResult(el,r,preview=false){const d=preview?r.preview:r;if(!d){el.textContent="No result.";return}const decision=d.decision||"UNKNOWN";el.classList.remove("empty");el.innerHTML='<div class="decision-hero"><b class="'+decision.toLowerCase()+'">'+esc(decision)+'</b><span>Risk '+Number(d.risk||0).toFixed(2)+(d.hard_block?" · hard block":"")+(preview?" · preview":"")+'</span></div><div class="reason-list">'+(d.reasons||[]).map(x=>'<div>'+esc(x)+'</div>').join("")+'</div>'}
+function scenarioButtons(target,selected,overview){target.innerHTML=(scenarioCatalog?.scenarios||[]).map(s=>'<button class="scenario-button '+(s.id===selected?"active":"")+'" data-scenario="'+esc(s.id)+'"><small>'+esc(s.category)+'</small><strong>'+esc(s.title)+'</strong><span>'+esc(s.summary)+'</span></button>').join("");target.querySelectorAll("[data-scenario]").forEach(b=>b.onclick=()=>selectScenario(b.dataset.scenario,overview))}
+function selectScenario(id,overview=false){const s=(scenarioCatalog?.scenarios||[]).find(x=>x.id===id);if(!s)return;selectedScenario=id;if(overview){scenarioButtons($("overview-scenario-list"),id,true);$("overview-demo-title").textContent=s.title;$("overview-demo-request").textContent=s.request;renderPipeline($("overview-pipeline"),previewPipeline(s));renderScenarioResult($("overview-demo-result"),s,true)}else{scenarioButtons($("scenario-list"),id,false);$("firewall-category").textContent=s.category.toUpperCase();$("firewall-title").textContent=s.title;$("firewall-request").textContent=s.request;$("scenario-run").disabled=false;renderPipeline($("firewall-pipeline"),previewPipeline(s));renderScenarioResult($("firewall-result"),s,true)}}
+async function loadOverviewScenarios(){try{await getScenarios();const id=selectedScenario||(scenarioCatalog.scenarios?.[0]?.id);scenarioButtons($("overview-scenario-list"),id,true);if(id)selectScenario(id,true)}catch(e){$("overview-demo-result").textContent=e.message}}
+async function loadFirewall(){try{await getScenarios();const id=selectedScenario||(scenarioCatalog.scenarios?.[0]?.id);scenarioButtons($("scenario-list"),id,false);$("scenario-cards").innerHTML=(scenarioCatalog.scenarios||[]).map(s=>'<article class="scenario-card"><small>'+esc(s.category)+'</small><h3>'+esc(s.title)+'</h3><p>'+esc(s.summary)+'</p><footer>'+decisionChip(s.preview?.decision)+'<button class="link-button" data-card-scenario="'+esc(s.id)+'">Open →</button></footer></article>').join("");$$("[data-card-scenario]").forEach(b=>b.onclick=()=>{selectScenario(b.dataset.cardScenario,false);window.scrollTo(0,0)});if(id)selectScenario(id,false)}catch(e){toast(e.message,"error")}}
+async function runSelectedScenario(){if(!selectedScenario)return;const b=$("scenario-run");b.disabled=true;b.textContent="Running…";try{const r=await post("/api/scenario/run",{id:selectedScenario});renderPipeline($("firewall-pipeline"),r.pipeline);renderScenarioResult($("firewall-result"),r,false);$("firewall-result").insertAdjacentHTML("beforeend",'<div class="scenario-proof"><div><b>Enforcement</b><span>'+esc(r.enforcement)+'</span></div><div><b>Host effect executed</b><span>NO</span></div><div><b>Audit</b><span>'+(r.audit?.recorded?"Simulation decision recorded":"Not recorded")+'</span></div></div>');toast("BULL policy scenario complete","success");scenarioCatalog=null;await loadOverview()}catch(e){toast(e.message,"error")}finally{b.disabled=false;b.textContent="Run through BULL"}}
+$("scenario-run").onclick=runSelectedScenario;
 
 async function loadOverview(){
   try{
@@ -97,8 +118,9 @@ async function loadOverview(){
     $("decision-legend").innerHTML=total
       ? ["ALLOW","SANDBOX","ESCALATE","DENY"].map(k=>'<div class="legend-row"><i style="background:'+colors[k]+'"></i><span>'+k+'</span><b>'+counts[k]+'</b></div>').join("")
       : '<div class="empty-decision"><b>No decisions yet</b><span>Use the Policy page to test an action. Nothing has been executed.</span></div>';
-    $("overview-events").innerHTML=events.length?events.slice(-12).reverse().map(e=>'<tr><td>'+esc(e.timestamp?new Date(e.timestamp).toLocaleTimeString():"—")+'</td><td>'+decisionChip(e.decision||e.record_type)+'</td><td>'+esc(e.actor||"runtime")+'</td><td>'+esc(e.operation||"—")+'</td><td>'+esc(e.resource||"—")+'</td></tr>').join(""):'<tr><td colspan="5">No audit decisions recorded yet.</td></tr>';
+    $("overview-events").innerHTML=events.length?events.slice(-12).reverse().map(e=>'<tr><td>'+esc(e.timestamp?new Date(e.timestamp).toLocaleTimeString():"—")+'</td><td>'+decisionChip(e.decision||e.record_type)+'</td><td>'+esc(e.actor||"runtime")+'</td><td>'+esc(e.operation||"—")+'</td><td>'+esc(e.resource||"—")+'</td><td>'+typeChip(e)+'</td></tr>').join(""):'<tr><td colspan="6">No decisions recorded yet. Run a firewall scenario to see the path.</td></tr>';
     $("overview-repo").innerHTML=simpleRow("Branch",s.repo?.branch)+simpleRow("Commit",s.repo?.commit)+simpleRow("Working tree",s.repo?.dirty?"Changed":"Clean")+simpleRow("Remote",s.repo?.remote);
+    await loadOverviewScenarios();
   }catch(e){toast(e.message,"error")}
 }
 $("overview-refresh").onclick=loadOverview;
@@ -141,4 +163,4 @@ async function loadSystem(){try{const [s,d,b]=await Promise.all([api("/api/syste
 $("system-install").onclick=async()=>{try{const j=await post("/api/host/install");selectedJob=j.id;toast("Host dependency repair started","success");openView("runtime");refreshJobs()}catch(e){toast(e.message,"error")}};
 
 loadOverview();
-setInterval(()=>{if($("view-overview").classList.contains("active"))loadOverview()},5000);
+setInterval(()=>{if($("view-overview").classList.contains("active")&&!presentationMode)loadOverview()},5000);
