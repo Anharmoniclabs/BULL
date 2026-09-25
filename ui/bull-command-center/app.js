@@ -72,8 +72,10 @@ function renderReadable(obj){
   return Object.entries(obj).map(([k,v])=>readRow(k,v)).join("");
 }
 
+const routeAliases={activity:"signals",workspace:"files",controls:"assurance"};
 function openView(name){
-  const page=pages[name]?name:"overview";
+  const requested=routeAliases[name]||name;
+  const page=pages[requested]?requested:"overview";
   $$(".view").forEach(view=>{
     const active=view.id==="view-"+page;
     view.hidden=!active;
@@ -597,5 +599,5 @@ $("system-install").addEventListener("click",async()=>{
 });
 
 const initial=(location.hash||"#overview").slice(1);
-openView(pages[initial]?initial:"overview");
+openView(initial);
 setInterval(()=>{if($("view-overview").classList.contains("active")&&!presentation)loadOverview().catch(()=>{})},6000);
