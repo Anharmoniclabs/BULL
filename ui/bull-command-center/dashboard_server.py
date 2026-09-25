@@ -692,4 +692,20 @@ if __name__ == "__main__":
     if args.open_browser and not codespaces and host in {"127.0.0.1", "::1", "localhost"}:
         threading.Thread(target=webbrowser.open, args=(local_url,), daemon=True).start()
 
-    ThreadingHTTPServer((host, args.port), Handler).serve_forever()
+    try:
+        httpd = ThreadingHTTPServer((host, args.port), Handler)
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 98:
+            print(
+                f"BULL command center could not bind {host}:{args.port}: "
+                "that port is already in use.",
+                file=sys.stderr,
+            )
+            print(
+                "If BULL is already running, reuse the existing forwarded URL. "
+                "Otherwise stop the process using the port or choose another --port.",
+                file=sys.stderr,
+            )
+            raise SystemExit(98)
+        raise
+    httpd.serve_forever()
