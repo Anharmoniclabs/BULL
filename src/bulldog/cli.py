@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from urllib.request import urlopen
 
 from .models import Capability
 from .profiles import DEVELOPMENT_WARNING
@@ -136,6 +137,15 @@ def _run_assurance_status(args: argparse.Namespace) -> int:
     return 1 if args.require_complete and not complete else 0
 
 
+def _existing_command_center(port: int) -> bool:
+    try:
+        with urlopen(f"http://127.0.0.1:{int(port)}/api/system", timeout=1.0) as response:
+            payload = json.loads(response.read(64 * 1024))
+        return isinstance(payload, dict) and payload.get("product") == "BULL"
+    except Exception:
+        return False
+
+
 def _run_up(args: argparse.Namespace) -> int:
     workspace = Path(args.workspace).expanduser().resolve()
     server = workspace / "ui" / "bull-command-center" / "dashboard_server.py"
@@ -172,6 +182,26 @@ def _run_up(args: argparse.Namespace) -> int:
         result = subprocess.run(setup_command, cwd=workspace, env=dict(os.environ), check=False)
         if result.returncode != 0:
             print("BULL host bootstrap is partial; the command center will still start and show unavailable controls honestly.", file=sys.stderr)
+
+    if _existing_command_center(args.port):
+        codespace_name = os.environ.get("CODESPACE_NAME", "").strip()
+        domain = os.environ.get(
+            "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
+            "app.github.dev",
+        ).strip()
+        url = (
+            f"https://{codespace_name}-{args.port}.{domain}/"
+            if codespace_name
+            else f"http://127.0.0.1:{args.port}/"
+        )
+        print("=" * 78)
+        print("BULL COMMAND CENTER")
+        print("=" * 78)
+        print(f"already running on port {args.port}")
+        print("open:", url)
+        print("No second server was started.")
+        print("=" * 78)
+        return 0
 
     command = [
         sys.executable,
