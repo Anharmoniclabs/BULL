@@ -668,7 +668,7 @@ def _codespaces_url(port: int) -> str | None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="BULL Command Center")
     ap.add_argument("--host", default=None)
-    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--port", type=int, default=11510)
     ap.add_argument("--open-browser", action="store_true")
     args = ap.parse_args()
 
