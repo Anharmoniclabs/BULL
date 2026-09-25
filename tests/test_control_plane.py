@@ -74,6 +74,8 @@ class ControlPlaneTests(unittest.TestCase):
         self.assertIn("Malware Scan", html)
         self.assertIn("Dynamic Attestation", html)
         self.assertIn("/api/v1/snapshot", js)
+        self.assertIn("microvm-start", html)
+        self.assertIn("microvm-stop", html)
         self.assertNotIn("1,842", html + js)
         self.assertNotIn("127 Protected Sessions", html + js)
         self.assertNotIn("All systems operational", html + js)

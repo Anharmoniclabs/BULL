@@ -236,7 +236,7 @@
       </section>
 
       <section class="view" data-view-panel="microvm">
-        <div class="page-heading"><div><span class="eyebrow">MICROVM</span><h1>KVM boundary readiness</h1><p>This page probes readiness and running state. It does not silently launch a privileged VM merely because a browser was opened.</p></div><button class="primary-button" data-action="microvm-probe">Probe Readiness</button></div>
+        <div class="page-heading"><div><span class="eyebrow">MICROVM</span><h1>KVM boundary readiness</h1><p>The console can start and stop only the MicroVM launcher process it owns. Launch still uses the trusted BULL MicroVM configuration and validation path.</p></div><div class="page-actions"><button class="primary-button" data-action="microvm-probe">Probe Readiness</button><button class="primary-button" data-action="microvm-start">Start Managed VM</button><button class="text-button" data-action="microvm-stop">Stop Managed VM</button></div></div>
         <div id="microvm-grid" class="control-grid"></div>
         <section class="panel section-panel note-panel"><h2>Execution boundary</h2><p>The existing <code>bulldog.microvm</code> launcher remains authoritative. The console reports KVM/QEMU/config readiness and whether a matching QEMU MicroVM process is observed.</p></section>
       </section>
