@@ -9,9 +9,23 @@ function toast(msg,type=""){const n=$("toast");n.textContent=msg;n.className="to
 function statusPill(status){return '<span class="status-pill '+tone(status)+'">'+esc(status)+'</span>'}
 function decisionChip(v){v=String(v||"EVENT").toUpperCase();return '<span class="decision-chip '+v.toLowerCase()+'">'+esc(v)+'</span>'}
 function typeChip(e){return e?.metadata?.simulation==="true"?'<span class="type-chip">DEMO</span>':'<span class="type-chip">LIVE / RUNTIME</span>'}
-function openView(name){if(presentationMode&&name!=="overview"){presentationMode=false;document.body.classList.remove("presentation-mode");$("presentation-toggle").textContent="Presentation mode"}$$(".view").forEach(n=>n.classList.toggle("active",n.id==="view-"+name));$$("#nav button").forEach(n=>n.classList.toggle("active",n.dataset.view===name));$("page-title").textContent=titles[name]||name;window.scrollTo(0,0);({overview:loadOverview,firewall:loadFirewall,activity:loadActivity,policy:loadPolicy,workspace:loadWorkspace,runtime:loadRuntime,audit:loadAudit,controls:loadControls,system:loadSystem}[name]||(()=>{}))()}
+function openView(name){
+  const target=$("view-"+name)||$("view-overview");
+  $$(".view").forEach(n=>{
+    const show=n===target;
+    n.classList.toggle("active",show);
+    n.classList.toggle("route-visible",show);
+    n.hidden=!show;
+  });
+  $$("#nav button").forEach(n=>n.classList.toggle("active",n.dataset.view===name));
+  $("page-title").textContent=titles[name]||titles.overview;
+  if(location.hash!=="#"+name)history.replaceState(null,"","#"+name);
+  window.scrollTo(0,0);
+  const loader={overview:loadOverview,firewall:loadFirewall,activity:loadActivity,policy:loadPolicy,workspace:loadWorkspace,runtime:loadRuntime,audit:loadAudit,controls:loadControls,system:loadSystem}[name]||loadOverview;
+  Promise.resolve(loader()).catch(e=>toast(e.message||String(e),"error"));
+}
 $$("[data-view]").forEach(b=>b.onclick=()=>openView(b.dataset.view));$$("[data-open]").forEach(b=>b.onclick=()=>openView(b.dataset.open));
-$("presentation-toggle").onclick=()=>{presentationMode=!presentationMode;document.body.classList.toggle("presentation-mode",presentationMode);$("presentation-toggle").textContent=presentationMode?"Exit presentation":"Presentation mode";if(presentationMode){$$(".view").forEach(n=>n.classList.toggle("active",n.id==="view-overview"));$("page-title").textContent="Overview";window.scrollTo(0,0)}};
+$("presentation-toggle").onclick=()=>{presentationMode=!presentationMode;document.body.classList.toggle("presentation-mode",presentationMode);$("presentation-toggle").textContent=presentationMode?"Exit presentation":"Presentation mode";window.scrollTo(0,0)};
 setInterval(()=>{$("clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})},1000);
 function updateZoomNotice(){
   const warning=$("zoom-warning");
@@ -171,5 +185,6 @@ function renderDeps(d){$("dependency-grid").innerHTML=(d.items||[]).map(x=>'<div
 async function loadSystem(){try{const [s,d,b]=await Promise.all([api("/api/system"),api("/api/host/dependencies"),api("/api/brand")]);renderDeps(d);$("runtime-config").innerHTML=renderReadable(s.runtime||{});$("brand-revision").textContent=b.revision||"";$("brand-meta").innerHTML="Approved source: <b>"+esc(b.source?.file||"")+"</b> · "+esc(b.source?.note||"");$("brand-assets").innerHTML=Object.keys(b.files||{}).map(name=>'<div class="brand-asset '+(name.includes("primary.svg")?"light":"")+'"><img src="/brand/'+encodeURIComponent(name)+'" alt="'+esc(name)+'"><span>'+esc(name)+'</span></div>').join("")}catch(e){toast(e.message,"error")}}
 $("system-install").onclick=async()=>{try{const j=await post("/api/host/install");selectedJob=j.id;toast("Host dependency repair started","success");openView("runtime");refreshJobs()}catch(e){toast(e.message,"error")}};
 
-loadOverview();
+const initialView=(location.hash||"#overview").slice(1);
+openView(titles[initialView]?initialView:"overview");
 setInterval(()=>{if($("view-overview").classList.contains("active")&&!presentationMode)loadOverview()},5000);
