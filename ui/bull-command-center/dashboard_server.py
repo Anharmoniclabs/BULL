@@ -11,7 +11,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
-import argparse, ipaddress, json, os, re, shutil, socket, subprocess, sys, threading, time, uuid
+import argparse, ipaddress, json, os, re, shutil, socket, subprocess, sys, threading, time, uuid, webbrowser
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = Path(__file__).resolve().parent
@@ -42,6 +42,14 @@ try:
     STATE_ROOT.chmod(0o700)
 except OSError:
     pass
+
+AUDIT_ROOT = STATE_ROOT / "audit"
+SNAPSHOT_ROOT = STATE_ROOT / "snapshots"
+AUDIT_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+SNAPSHOT_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+os.environ.setdefault("BULL_COMMAND_CENTER_STATE", str(STATE_ROOT))
+os.environ.setdefault("BULL_AUDIT_LEDGER", str(AUDIT_ROOT / "ledger.jsonl"))
+os.environ.setdefault("BULL_SNAPSHOT_ROOT", str(SNAPSHOT_ROOT))
 
 SIGNALS = {
     "agent": re.compile(r"\b(agentic|autonomous\s+agent|ai[- ]agent|tool[- ]using\s+agent|function[_ -]?call|mcp\s+server|langgraph|autogen|crewai|agent\s+executor)\b", re.I),
@@ -590,9 +598,44 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as exc:
             return self.send_json({"error": f"{type(exc).__name__}: {exc}"}, 400)
 
+def _codespaces_url(port: int) -> str | None:
+    if os.environ.get("CODESPACES", "").lower() != "true":
+        return None
+    name = os.environ.get("CODESPACE_NAME", "").strip()
+    if not name:
+        return None
+    domain = os.environ.get(
+        "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
+        "app.github.dev",
+    ).strip()
+    return f"https://{name}-{port}.{domain}/"
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="BULL Command Center")
+    ap.add_argument("--host", default=None)
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--open-browser", action="store_true")
     args = ap.parse_args()
-    print(f"BULL Command Center: http://127.0.0.1:{args.port}")
-    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+
+    codespaces = os.environ.get("CODESPACES", "").lower() == "true"
+    host = args.host or ("0.0.0.0" if codespaces else "127.0.0.1")
+    local_url = f"http://127.0.0.1:{args.port}/"
+    operator_url = _codespaces_url(args.port) or local_url
+
+    print("=" * 78)
+    print("BULL COMMAND CENTER")
+    print("=" * 78)
+    print("bind:", f"{host}:{args.port}")
+    print("open:", operator_url)
+    print("state:", STATE_ROOT)
+    print("audit:", os.environ.get("BULL_AUDIT_LEDGER"))
+    print("snapshot scratch:", os.environ.get("BULL_SNAPSHOT_ROOT"))
+    if host not in {"127.0.0.1", "::1", "localhost"}:
+        print("network note: keep the forwarded/listening port private and authenticated")
+    print("=" * 78)
+
+    if args.open_browser and not codespaces and host in {"127.0.0.1", "::1", "localhost"}:
+        threading.Thread(target=webbrowser.open, args=(local_url,), daemon=True).start()
+
+    ThreadingHTTPServer((host, args.port), Handler).serve_forever()
