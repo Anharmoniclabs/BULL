@@ -80,21 +80,32 @@ with your own private authority, signed ClamAV databases, delegated cgroups and
 collector. Hardware approval is a separate step. For the bounded local-model
 workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
 
-## Command Center prototype
+## Command Center
 
-The current interface prototype is under `ui/bull-command-center/`. It exposes
+The BULL Command Center is under `ui/bull-command-center/`. It exposes
 BULL's repository/workspace state, deterministic policy evaluation, trace model,
 assurance controls, audit verification, AgentSentinel, bounded malware scanning,
-adversary/swarm registry, passive agent-discovery evidence and the approved logo
-pack for local interface testing.
+runtime/MicroVM readiness, adversary/swarm evidence and the approved BULL brand
+system.
 
 ```sh
-bash scripts/launch-command-center.sh
+python -m pip install -e .
+bull up --workspace "$PWD"
 ```
 
-Open the forwarded port (default `8000`) in Codespaces. The interface does not
-replace the enforcement boundary and does not expose a generic shell or policy
-bypass endpoint.
+The default port is `11510`. In Codespaces, open the private forwarded port.
+On supported Linux hosts, `bull up` now attempts to install/repair the fixed
+native host tool set automatically unless `--skip-host-setup` is supplied.
+That includes ClamAV + freshclam, QEMU x86-64, ext4 tools, OpenSSL and OpenSSH.
+The bootstrap uses the host's native package manager (APT, pacman or DNF) and
+never accepts package names from the browser.
+
+ClamAV itself is a native system dependency and its signed malware databases are
+updated by `freshclam`; BULL does not vendor platform-specific scanner binaries
+or stale signature databases into the Git repository.
+
+The interface does not replace the enforcement boundary and does not expose a
+generic shell or policy-bypass endpoint.
 
 ## Publication and citation
 
