@@ -1,266 +1,247 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BULL Command Center</title>
-<meta name="theme-color" content="#07090c">
-<link rel="icon" href="/brand/bull-favicon.svg">
-<link rel="stylesheet" href="styles.css?v=20260925-2">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111315">
+  <title>BULL Command Center</title>
+  <link rel="icon" href="/brand/bull-favicon.svg">
+  <link rel="stylesheet" href="styles.css?v=20260925-3">
 </head>
 <body>
-<div class="shell">
+<div class="app-shell">
   <aside class="sidebar">
-    <div class="brand">
-      <img src="/brand/bull-mark.svg" alt="BULL">
+    <div class="brand-lockup">
+      <img src="/brand/bull-mark.svg" alt="">
       <div><strong>BULL</strong><span>COMMAND CENTER</span></div>
     </div>
-    <div class="rail-label">OPERATIONS</div>
+
     <nav id="nav">
-      <button class="active" data-view="main"><i>⌂</i><span>Overview</span></button>
-      <button data-view="repo"><i>▤</i><span>Repository</span></button>
-      <button data-view="workspace"><i>□</i><span>Workspace</span></button>
-      <button data-view="visualization"><i>◉</i><span>Execution Path</span></button>
-      <button data-view="runtime"><i>⬢</i><span>Runtime / VM</span></button>
+      <button class="active" data-view="overview"><i>⌂</i><span>Overview</span></button>
+      <button data-view="activity"><i>◎</i><span>Activity</span></button>
+      <button data-view="policy"><i>◆</i><span>Policy</span></button>
+      <button data-view="workspace"><i>▣</i><span>Files & Scans</span></button>
+      <button data-view="runtime"><i>⬢</i><span>Runtime</span></button>
+      <button data-view="audit"><i>☷</i><span>Audit</span></button>
       <button data-view="controls"><i>◇</i><span>Controls</span></button>
-      <button data-view="logs"><i>☷</i><span>Audit</span></button>
-      <button data-view="agents"><i>◎</i><span>Agents</span></button>
-      <button data-view="settings"><i>⚙</i><span>System</span></button>
+      <button data-view="system"><i>⚙</i><span>System</span></button>
     </nav>
-    <div class="rail-foot">
-      <div class="boundary-dot" id="boundary-dot"></div>
-      <div><strong id="boundary-state">INITIALIZING</strong><small id="boundary-env">Detecting host</small></div>
+
+    <div class="sidebar-state">
+      <span id="sidebar-dot"></span>
+      <div><strong id="sidebar-state">Loading</strong><small id="sidebar-host">Detecting host…</small></div>
     </div>
   </aside>
 
   <main>
     <header class="topbar">
-      <div class="top-title">
-        <span>BULL / COMMAND CENTER</span>
-        <strong id="view-title">Overview</strong>
-      </div>
-      <label class="search">
-        <span>⌕</span>
-        <input id="global-search" type="search" placeholder="Search the active view">
-        <kbd>/</kbd>
-      </label>
-      <div class="top-status">
-        <span class="env-pill" id="env-pill">ENV</span>
-        <span id="clock"></span>
-        <span class="protection-pill" id="protection">INITIALIZING</span>
-      </div>
+      <div class="crumb"><small>BULL / COMMAND CENTER</small><strong id="page-title">Protection Overview</strong></div>
+      <label class="top-search"><span>⌕</span><input id="global-search" placeholder="Search this page"><kbd>/</kbd></label>
+      <div class="top-actions"><span id="env-badge">HOST</span><span id="clock"></span><span id="top-protection">LOADING</span></div>
     </header>
 
-    <section class="view active" id="view-main">
-      <div class="hero panel">
-        <img class="hero-mark" src="/brand/bull-mark.svg" alt="">
-        <div class="hero-copy">
-          <div class="eyebrow">EXECUTION FIREWALL FOR AI AGENTS</div>
-          <h1>One boundary. Every action accounted for.</h1>
-          <p>BULL watches authority, provenance, execution, isolation, malware admission and audit evidence from one operator surface.</p>
-          <div class="hero-meta">
-            <span id="repo-pill">repository loading…</span>
-            <span id="hero-mode">runtime loading…</span>
-          </div>
-        </div>
-        <div class="hero-actions">
-          <button class="btn primary" data-open="runtime">OPEN RUNTIME</button>
-          <button class="btn" data-open="controls">VIEW CONTROLS</button>
-        </div>
+    <section class="view active" id="view-overview">
+      <div class="page-heading">
+        <div><span class="eyebrow">OVERVIEW</span><h1>Protection Overview</h1><p>What BULL is protecting, what needs attention, and what happened recently.</p></div>
+        <button class="button" id="overview-refresh">Refresh</button>
       </div>
 
-      <div id="dependency-banner" class="dependency-banner hidden">
-        <div class="dep-icon">!</div>
-        <div>
-          <strong>Host setup is incomplete</strong>
-          <p id="dependency-text">BULL detected missing host tools.</p>
+      <article class="protection-summary">
+        <div class="summary-mark"><img src="/brand/bull-mark.svg" alt=""></div>
+        <div class="summary-copy">
+          <small>OVERALL STATE</small>
+          <h2 id="overall-state">Checking protections…</h2>
+          <p id="overall-detail">BULL is reading the live host and runtime state.</p>
         </div>
-        <button id="host-install" class="btn primary">INSTALL / REPAIR HOST TOOLS</button>
-      </div>
+        <div class="summary-score"><strong id="layer-score">0/0</strong><span>layers ready</span></div>
+      </article>
 
-      <div class="health-grid">
-        <article class="health-card" id="card-engine"><span class="health-icon">B</span><div><small>ENGINE</small><strong id="hc-engine-status">—</strong><p id="hc-engine-detail">Loading</p></div></article>
-        <article class="health-card" id="card-policy"><span class="health-icon">◆</span><div><small>POLICY</small><strong id="hc-policy-status">—</strong><p id="hc-policy-detail">Loading</p></div></article>
-        <article class="health-card" id="card-isolation"><span class="health-icon">⬢</span><div><small>ISOLATION</small><strong id="hc-isolation-status">—</strong><p id="hc-isolation-detail">Loading</p></div></article>
-        <article class="health-card" id="card-audit"><span class="health-icon">▤</span><div><small>AUDIT</small><strong id="hc-audit-status">—</strong><p id="hc-audit-detail">Loading</p></div></article>
-        <article class="health-card" id="card-malware"><span class="health-icon">✣</span><div><small>MALWARE</small><strong id="hc-malware-status">—</strong><p id="hc-malware-detail">Loading</p></div></article>
-        <article class="health-card" id="card-sentinel"><span class="health-icon">◎</span><div><small>SENTINEL</small><strong id="hc-sentinel-status">—</strong><p id="hc-sentinel-detail">Loading</p></div></article>
+      <div id="action-required" class="attention-list"></div>
+
+      <div class="metric-grid">
+        <article><small>AUDIT RECORDS</small><b id="metric-records">0</b><span>tamper-evident records</span></article>
+        <article><small>DENIED</small><b id="metric-denied">0</b><span>recent blocked actions</span></article>
+        <article><small>REVIEW</small><b id="metric-review">0</b><span>recent escalations</span></article>
+        <article><small>OBSERVED AGENTS</small><b id="metric-agents">0</b><span>evidence records</span></article>
       </div>
 
       <div class="overview-grid">
-        <article class="panel boundary-panel">
-          <div class="panel-head"><div><span class="eyebrow">ENFORCEMENT PATH</span><h2>From proposal to evidence</h2></div><button class="link-btn" data-open="visualization">INSPECT →</button></div>
-          <div class="execution-flow">
-            <div class="flow-node"><i>01</i><strong>Observe</strong><span>proposal + provenance</span></div>
-            <b>→</b>
-            <div class="flow-node"><i>02</i><strong>Authorize</strong><span>capability + binding</span></div>
-            <b>→</b>
-            <div class="flow-node"><i>03</i><strong>Admit</strong><span>snapshot + malware</span></div>
-            <b>→</b>
-            <div class="flow-node"><i>04</i><strong>Contain</strong><span>sandbox / MicroVM</span></div>
-            <b>→</b>
-            <div class="flow-node accent"><i>05</i><strong>Record</strong><span>tamper-evident audit</span></div>
-          </div>
-          <div id="main-controls" class="control-strip"></div>
+        <article class="panel layers-panel">
+          <div class="panel-head"><div><small>PROTECTION LAYERS</small><h2>What is active right now</h2></div></div>
+          <div id="layer-grid" class="layer-grid"></div>
         </article>
 
-        <article class="panel posture-panel">
-          <div class="panel-head"><div><span class="eyebrow">LIVE POSTURE</span><h2>Deployment controls</h2></div><button class="link-btn" data-open="controls">ALL CONTROLS →</button></div>
-          <div id="posture-list" class="posture-list"></div>
-        </article>
-
-        <article class="panel audit-live">
-          <div class="panel-head"><div><span class="eyebrow">AUDIT</span><h2>Recent decisions</h2></div><button class="link-btn" data-open="logs">OPEN LEDGER →</button></div>
-          <div class="table-wrap">
-            <table><thead><tr><th>TIME</th><th>DECISION</th><th>ACTOR</th><th>ACTION</th></tr></thead><tbody id="main-log"></tbody></table>
+        <article class="panel decision-panel">
+          <div class="panel-head"><div><small>RECENT POLICY ACTIVITY</small><h2>Decision mix</h2></div></div>
+          <div class="decision-visual">
+            <div id="decision-donut" class="donut"><div><b id="decision-total">0</b><span>decisions</span></div></div>
+            <div id="decision-legend" class="decision-legend"></div>
           </div>
         </article>
 
-        <article class="panel intelligence">
-          <div class="panel-head"><div><span class="eyebrow">AGENT INTELLIGENCE</span><h2>Observed activity</h2></div><button class="link-btn" data-open="agents">OPEN AGENTS →</button></div>
-          <div class="intel-stats">
-            <div><small>OBSERVED</small><b id="m-observed">0</b></div>
-            <div><small>SWARMS</small><b id="m-swarms">0</b></div>
-            <div><small>QUARANTINE</small><b id="m-quarantine">0</b></div>
-            <div><small>AUDIT RECORDS</small><b id="m-audit">0</b></div>
-          </div>
-          <div id="recent-alerts" class="alerts"></div>
+        <article class="panel recent-panel">
+          <div class="panel-head"><div><small>ACTIVITY</small><h2>Recent BULL decisions</h2></div><button class="link-button" data-open="audit">Open audit →</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Decision</th><th>Actor</th><th>Action</th><th>Resource</th></tr></thead><tbody id="overview-events"></tbody></table></div>
         </article>
 
         <article class="panel repo-panel">
-          <div class="panel-head"><div><span class="eyebrow">WORKSPACE</span><h2>Current repository</h2></div><button class="link-btn" data-open="repo">BROWSE →</button></div>
-          <div id="repo-summary" class="repo-summary">Loading repository state…</div>
-          <div id="mini-files" class="mini-files"></div>
-        </article>
-
-        <article class="panel vm-panel">
-          <div class="panel-head"><div><span class="eyebrow">RUNTIME</span><h2>MicroVM readiness</h2></div><button class="link-btn" data-open="runtime">OPEN VM →</button></div>
-          <div id="main-vm" class="status-matrix"></div>
+          <div class="panel-head"><div><small>WORKSPACE</small><h2>Repository</h2></div><button class="link-button" data-open="workspace">Browse →</button></div>
+          <div id="overview-repo" class="simple-list"></div>
         </article>
       </div>
     </section>
 
-    <section class="view" id="view-repo">
-      <div class="page-head"><div><span class="eyebrow">REPOSITORY</span><h1>Source and working tree</h1><p>Read-only operator visibility into the BULL repository.</p></div><button class="btn" id="repo-refresh">REFRESH</button></div>
+    <section class="view" id="view-activity">
+      <div class="page-heading"><div><span class="eyebrow">ACTIVITY</span><h1>Agent & Intake Activity</h1><p>Evidence BULL can actually observe. Indicators are not treated as identity or maliciousness proof.</p></div><button class="button" id="activity-refresh">Refresh</button></div>
       <div class="two-col">
-        <article class="panel"><div class="panel-head"><h2>Git state</h2></div><div id="repo-json" class="human-data"></div></article>
-        <article class="panel"><div class="panel-head"><h2>Changed files</h2></div><div id="changed-files" class="list"></div></article>
+        <article class="panel">
+          <div class="panel-head"><div><small>AGENT SENTINEL</small><h2>Host behavior signal</h2></div></div>
+          <div class="sentinel-hero"><b id="sentinel-score">0.000</b><div><strong id="sentinel-verdict">LOADING</strong><span>current heuristic score</span></div></div>
+          <div id="sentinel-signals" class="readable"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><small>ARTIFACT SCAN</small><h2>Inspect text or a public URL</h2></div></div>
+          <div class="form-stack">
+            <input id="agent-url" placeholder="Optional public URL">
+            <textarea id="agent-text" rows="7" placeholder="Or paste text, HTML, logs, or captured content"></textarea>
+            <button class="button primary" id="agent-scan">Scan artifact</button>
+          </div>
+          <div id="agent-scan-summary" class="scan-summary empty">No artifact scanned yet.</div>
+        </article>
       </div>
       <article class="panel wide">
-        <div class="panel-head"><div><h2>Repository browser</h2><small id="repo-path">.</small></div></div>
-        <div class="browser"><div id="repo-browser" class="file-list"></div><pre id="file-preview">Select a text file to preview it.</pre></div>
+        <div class="panel-head"><div><small>OBSERVATIONS</small><h2>Observed agent / swarm records</h2></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Record</th><th>Label</th><th>Swarm</th><th>Model family</th><th>State</th></tr></thead><tbody id="registry-rows"></tbody></table></div>
       </article>
     </section>
 
-    <section class="view" id="view-workspace">
-      <div class="page-head"><div><span class="eyebrow">WORKSPACE</span><h1>Admission and file inspection</h1><p>Bounded repository inspection with the real BULL MalwareScanner path.</p></div></div>
+    <section class="view" id="view-policy">
+      <div class="page-heading"><div><span class="eyebrow">POLICY</span><h1>Would BULL allow this?</h1><p>Describe an action in plain language. BULL evaluates it without executing anything.</p></div></div>
       <div class="two-col">
-        <article class="panel"><div class="panel-head"><h2>Workspace tree</h2></div><div id="workspace-tree" class="file-list tall"></div></article>
         <article class="panel">
-          <div class="panel-head"><div><h2>Malware admission scan</h2><small id="malware-readiness">checking scanner</small></div></div>
-          <div class="form-stack"><input id="malware-path" placeholder="Path inside repository, e.g. README.md"><button class="btn primary" id="malware-scan">SCAN WITH BULL</button></div>
-          <div id="malware-result" class="human-data"><div class="human-empty">Choose a repository file, then run the bounded scan.</div></div>
+          <div class="panel-head"><h2>Action to evaluate</h2></div>
+          <div class="form-grid">
+            <label>Who is acting?<input id="policy-actor" value="test-agent"></label>
+            <label>What do they want to do?<select id="policy-action">
+              <option value="read">Read a project file</option>
+              <option value="write">Write a project file</option>
+              <option value="execute">Run a program</option>
+              <option value="fetch">Make a network request</option>
+              <option value="post">Send data outward</option>
+              <option value="credential.read">Read a credential</option>
+              <option value="spawn">Spawn another agent</option>
+              <option value="message">Message another agent</option>
+              <option value="security">Change a security control</option>
+            </select></label>
+            <label class="span-two">What resource?<input id="policy-resource" value=""></label>
+            <label>Where did the request come from?<select id="policy-provenance">
+              <option value="human">Human operator</option>
+              <option value="local_trusted">Trusted local source</option>
+              <option value="repository">Repository content</option>
+              <option value="internet">Internet content</option>
+              <option value="external_agent">External agent</option>
+              <option value="unknown">Unknown source</option>
+            </select></label>
+            <label>Authority<select id="policy-authority"><option value="granted">Requested capability granted</option><option value="missing">Requested capability NOT granted</option></select></label>
+            <label class="check"><input id="policy-side-effect" type="checkbox"> Has an external side effect</label>
+            <label class="check"><input id="policy-irreversible" type="checkbox"> Irreversible action</label>
+          </div>
+          <button class="button primary action-button" id="policy-evaluate">Evaluate with BULL</button>
+        </article>
+        <article class="panel result-panel">
+          <div class="panel-head"><h2>Decision</h2></div>
+          <div id="policy-result" class="decision-result empty">Choose an action and press <b>Evaluate with BULL</b>.</div>
         </article>
       </div>
     </section>
 
-    <section class="view" id="view-visualization">
-      <div class="page-head"><div><span class="eyebrow">EXECUTION PATH</span><h1>Visualize what BULL actually does</h1><p>Architecture, deterministic policy evaluation and trace validation.</p></div></div>
-      <article class="panel wide"><div class="panel-head"><h2>Execution topology</h2></div><div id="architecture-graph" class="architecture"></div></article>
+    <section class="view" id="view-workspace">
+      <div class="page-heading"><div><span class="eyebrow">FILES & SCANS</span><h1>Workspace Protection</h1><p>Browse the repository and scan a file, a folder, or the whole workspace with BULL's bounded ClamAV path.</p></div><button class="button" id="workspace-refresh">Refresh</button></div>
+
+      <article class="panel scan-panel">
+        <div class="scan-toolbar">
+          <div><small>MALWARE SCANNER</small><strong id="scanner-state">Checking…</strong><span id="scanner-detail"></span></div>
+          <label>Scan target<input id="scan-target" value="."></label>
+          <button class="button primary" id="scan-target-button">Scan target</button>
+          <button class="button" id="scan-all-button">Scan whole repository</button>
+        </div>
+        <div id="scan-result" class="scan-result empty">No scan has run yet.</div>
+      </article>
+
       <div class="two-col wide">
         <article class="panel">
-          <div class="panel-head"><h2>Policy evaluation lab</h2></div>
-          <div class="form-grid">
-            <label>Actor<input id="p-actor" value="ui-test-agent"></label>
-            <label>Operation<input id="p-operation" value="read"></label>
-            <label>Resource<input id="p-resource" value="/workspace/README.md"></label>
-            <label>Capability<select id="p-capability"></select></label>
-            <label>Provenance<select id="p-provenance"></select></label>
-            <label>Granted capabilities<select id="p-granted" multiple></select></label>
-          </div>
-          <button class="btn primary action-pad" id="policy-evaluate">EVALUATE THROUGH BULL</button>
-          <div id="policy-result" class="human-data"><div class="human-empty">Run an evaluation to see decision, risk and reasons.</div></div>
+          <div class="panel-head"><div><small>REPOSITORY</small><h2>Files and folders</h2></div><span id="browser-path">.</span></div>
+          <div id="repo-browser" class="file-browser"></div>
         </article>
         <article class="panel">
-          <div class="panel-head"><h2>Trace model builder</h2></div>
-          <div class="trace-builder">
-            <label>Policy decision<select id="trace-decision"><option>ALLOW</option><option selected>SANDBOX</option><option>ESCALATE</option><option>DENY</option></select></label>
-            <label class="toggle-line"><input id="trace-scan" type="checkbox" checked> Malware admission completed cleanly</label>
-            <label class="toggle-line"><input id="trace-execute" type="checkbox" checked> Workload reached execution</label>
-            <label class="toggle-line"><input id="trace-sandbox" type="checkbox" checked> Sandbox boundary active</label>
-            <label class="toggle-line"><input id="trace-seccomp" type="checkbox" checked> Seccomp active</label>
-          </div>
-          <button class="btn primary action-pad" id="trace-run">VALIDATE TRACE</button>
-          <div id="trace-result" class="human-data"><div class="human-empty">Build a trace and validate it through BULL.</div></div>
+          <div class="panel-head"><div><small>PREVIEW</small><h2 id="preview-title">Select a file</h2></div></div>
+          <pre id="file-preview">Choose a text file to preview it. Choose a folder to make it the scan target.</pre>
         </article>
       </div>
     </section>
 
     <section class="view" id="view-runtime">
-      <div class="page-head"><div><span class="eyebrow">RUNTIME / VM</span><h1>Isolation boundary</h1><p>Real KVM readiness, verified guest assets and deployment jobs.</p></div><button class="btn" id="vm-refresh">PROBE RUNTIME</button></div>
-      <div class="summary-cards">
-        <div><small>KVM DEVICE</small><b id="vm-kvm">…</b></div>
-        <div><small>GUEST ASSETS</small><b id="vm-assets">…</b></div>
-        <div><small>QEMU TOOLS</small><b id="vm-tools">…</b></div>
-        <div><small>ARCHITECTURE</small><b id="vm-mode">…</b></div>
-      </div>
+      <div class="page-heading"><div><span class="eyebrow">RUNTIME</span><h1>Isolation Runtime</h1><p>Whether this host can launch BULL's hardened one-shot KVM guest, explained without the low-level noise.</p></div><button class="button" id="runtime-refresh">Check again</button></div>
+      <article id="runtime-summary" class="runtime-summary"></article>
       <div class="two-col">
         <article class="panel">
-          <div class="panel-head"><h2>MicroVM readiness</h2></div>
-          <div id="vm-state" class="human-data"></div>
+          <div class="panel-head"><div><small>READINESS</small><h2>What the MicroVM needs</h2></div></div>
+          <div id="runtime-checklist" class="checklist"></div>
           <div class="runtime-actions">
-            <button class="btn" id="vm-install-assets">PRE-CACHE VERIFIED GUEST</button>
-            <button class="btn" id="vm-plan">VALIDATE LAUNCHER</button>
-            <select id="vm-case"><option value="allowed">allowed</option><option value="denied">denied</option><option value="timeout">timeout</option><option value="cancel">cancel</option><option value="missing-protection">missing-protection</option><option value="all" selected>all five cases</option></select>
-            <button class="btn primary" id="vm-run">RUN REAL KVM</button>
-            <button class="btn" id="deployment-run">RUN DEPLOYMENT CHECK</button>
+            <button class="button" id="vm-install-assets">Download verified guest assets</button>
+            <button class="button" id="vm-plan">Validate launcher config</button>
+            <button class="button primary" id="vm-run">Run MicroVM test</button>
+            <button class="button" id="deployment-run">Run full deployment check</button>
           </div>
+          <details class="advanced">
+            <summary>Advanced integration test options</summary>
+            <label>Test case<select id="vm-case"><option value="allowed">Allowed action</option><option value="denied">Denied action</option><option value="timeout">Timeout</option><option value="cancel">Cancellation</option><option value="missing-protection">Missing protection</option><option value="all" selected>All five cases</option></select></label>
+            <div id="runtime-advanced" class="readable"></div>
+          </details>
         </article>
         <article class="panel">
-          <div class="panel-head"><h2>Runtime jobs</h2><button class="link-btn" id="jobs-refresh">REFRESH</button></div>
+          <div class="panel-head"><div><small>JOBS</small><h2>Runtime work</h2></div><button class="link-button" id="jobs-refresh">Refresh</button></div>
           <div id="job-list" class="job-list"></div>
-          <div id="job-log" class="job-output"><div class="human-empty">Select a job to view evidence and logs.</div></div>
+          <div id="job-log" class="job-log empty">No job selected.</div>
         </article>
       </div>
-      <article class="panel wide"><div class="panel-head"><h2>Full execution architecture</h2></div><div class="runtime-pipeline"><span>Host</span><i>→</i><span>Dispatcher</span><i>→</i><span>Signed authority</span><i>→</i><span>Admission</span><i>→</i><span>QEMU / KVM</span><i>→</i><span>Guest BULL</span><i>→</i><span>Namespaces + Seccomp + Landlock + cgroups</span><i>→</i><span>Audit receipt</span></div></article>
+    </section>
+
+    <section class="view" id="view-audit">
+      <div class="page-heading"><div><span class="eyebrow">AUDIT</span><h1>What BULL recorded</h1><p>Hash-chain integrity and recent decisions in operator-readable form.</p></div><button class="button" id="audit-refresh">Verify & refresh</button></div>
+      <div class="metric-grid">
+        <article><small>CONFIGURED</small><b id="audit-configured">—</b><span>ledger path present</span></article>
+        <article><small>INTEGRITY</small><b id="audit-valid">—</b><span>hash chain check</span></article>
+        <article><small>RECORDS</small><b id="audit-records">0</b><span>total records</span></article>
+        <article><small>HEAD</small><b id="audit-head">—</b><span>latest checkpoint</span></article>
+      </div>
+      <article class="panel wide">
+        <div class="panel-head"><h2>Audit events</h2></div>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>Decision</th><th>Actor</th><th>Operation</th><th>Capability</th><th>Resource</th><th>Reason</th></tr></thead><tbody id="audit-rows"></tbody></table></div>
+      </article>
     </section>
 
     <section class="view" id="view-controls">
-      <div class="page-head"><div><span class="eyebrow">CONTROLS</span><h1>Assurance evidence</h1><p>Source implementation, deployment proof, release evidence and external requirements stay distinct.</p></div><button class="btn" id="assurance-refresh">REFRESH EVIDENCE</button></div>
-      <div class="summary-cards"><div><small>SOURCE</small><b id="a-source">…</b></div><div><small>DEPLOYMENT</small><b id="a-deploy">…</b></div><div><small>RELEASE</small><b id="a-release">…</b></div><div><small>PROFILE</small><b id="a-profile">…</b></div></div>
-      <article class="panel wide"><div class="panel-head"><h2>BULL assurance control registry</h2></div><div id="assurance-controls" class="control-table"></div></article>
+      <div class="page-heading"><div><span class="eyebrow">CONTROLS</span><h1>Security Controls</h1><p>Implemented code, live deployment proof, release evidence, and external obligations are shown separately.</p></div><button class="button" id="controls-refresh">Refresh</button></div>
+      <div id="control-summary" class="control-summary"></div>
+      <div id="control-groups" class="control-groups"></div>
     </section>
 
-    <section class="view" id="view-logs">
-      <div class="page-head"><div><span class="eyebrow">AUDIT</span><h1>Tamper-evident execution history</h1><p>Human-readable records backed by BULL's hash-chained ledger.</p></div><button class="btn" id="log-refresh">VERIFY + REFRESH</button></div>
-      <div class="summary-cards"><div><small>CONFIGURED</small><b id="l-config">…</b></div><div><small>INTEGRITY</small><b id="l-valid">…</b></div><div><small>RECORDS</small><b id="l-records">0</b></div><div><small>HEAD</small><b id="l-head">—</b></div></div>
-      <article class="panel wide"><div class="panel-head"><h2>Authenticated audit events</h2></div><div id="audit-events" class="audit-events"></div></article>
-    </section>
-
-    <section class="view" id="view-agents">
-      <div class="page-head"><div><span class="eyebrow">AGENTS</span><h1>Discovery, correlation and Sentinel</h1><p>Evidence-derived indicators are kept separate from attribution claims.</p></div><button class="btn" id="agent-refresh">REFRESH</button></div>
+    <section class="view" id="view-system">
+      <div class="page-heading"><div><span class="eyebrow">SYSTEM</span><h1>Host & BULL Setup</h1><p>Dependencies, runtime configuration, and the approved BULL brand pack.</p></div><button class="button primary" id="system-install">Install / repair host tools</button></div>
       <div class="two-col">
-        <article class="panel"><div class="panel-head"><h2>Agent Sentinel</h2></div><div class="sentinel-score"><b id="sentinel-score">0.000</b><span id="sentinel-verdict">LOADING</span></div><div id="sentinel-signals" class="human-data compact"></div></article>
-        <article class="panel">
-          <div class="panel-head"><div><h2>Artifact / intake signal scan</h2><small>text evidence, not identity proof</small></div></div>
-          <div class="form-stack"><input id="agent-url" placeholder="Optional public http(s) URL"><textarea id="agent-text" rows="7" placeholder="Or paste captured text / HTML / artifact content"></textarea><button class="btn primary" id="agent-scan">SCAN ARTIFACT</button></div>
-          <div id="agent-scan-result" class="human-data"><div class="human-empty">Scan an artifact to summarize observed indicators.</div></div>
-        </article>
+        <article class="panel"><div class="panel-head"><h2>Host dependencies</h2></div><div id="dependency-grid" class="dependency-grid"></div></article>
+        <article class="panel"><div class="panel-head"><h2>Runtime configuration</h2></div><div id="runtime-config" class="readable"></div></article>
       </div>
-      <article class="panel wide"><div class="panel-head"><h2>Observed adversary / swarm registry</h2></div><div id="adversary-registry" class="registry"></div></article>
-    </section>
-
-    <section class="view" id="view-settings">
-      <div class="page-head"><div><span class="eyebrow">SYSTEM</span><h1>Host, runtime and brand</h1><p>Everything BULL depends on, translated into operator-readable state.</p></div></div>
-      <div class="two-col">
-        <article class="panel"><div class="panel-head"><h2>Runtime configuration</h2></div><div id="runtime-json" class="human-data"></div></article>
-        <article class="panel"><div class="panel-head"><h2>Host dependencies</h2><button class="link-btn" id="settings-install">INSTALL / REPAIR</button></div><div id="dependency-grid" class="dependency-grid"></div></article>
-      </div>
-      <article class="panel wide"><div class="panel-head"><div><h2>Approved BULL brand system</h2><small id="brand-revision"></small></div></div><div id="brand-meta" class="brand-meta"></div><div id="brand-assets" class="brand-assets"></div></article>
+      <article class="panel wide">
+        <div class="panel-head"><div><h2>Approved BULL brand assets</h2><small id="brand-revision"></small></div></div>
+        <div id="brand-meta" class="brand-meta"></div>
+        <div id="brand-assets" class="brand-assets"></div>
+      </article>
     </section>
   </main>
 </div>
 <div id="toast" class="toast"></div>
-<script src="app.js?v=20260925-2"></script>
+<script src="app.js?v=20260925-3"></script>
 </body>
 </html>
