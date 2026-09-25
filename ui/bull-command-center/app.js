@@ -16,7 +16,10 @@ const search=$("global-search");search.addEventListener("input",()=>{const q=sea
 function layer(name,status,detail){return '<article class="layer-card"><div class="layer-top"><strong>'+esc(name)+'</strong>'+statusPill(status)+'</div><p>'+esc(detail)+'</p></article>'}
 function simpleRow(k,v){return '<div class="simple-row"><span>'+esc(k)+'</span><strong>'+esc(v??"—")+'</strong></div>'}
 function readRow(k,v){return '<div class="read-row"><small>'+esc(k)+'</small><span>'+esc(v??"Not available")+'</span></div>'}
-function attention(title,detail,good=false){return '<div class="attention-item '+(good?"pass":"")+'"><i>'+(good?"✓":"!")+'</i><div><strong>'+esc(title)+'</strong><p>'+esc(detail)+'</p></div></div>'}
+function attention(title,detail,type="warn"){
+  const icon=type==="pass"?"✓":type==="info"?"i":"!";
+  return '<div class="attention-item '+type+'"><i>'+icon+'</i><div><strong>'+esc(title)+'</strong><p>'+esc(detail)+'</p></div></div>'
+}
 
 function getControl(s,id){return (s.assurance?.controls||[]).find(c=>c.id===id)||{}}
 function controlUsable(s,id){return getControl(s,id).status==="PASS"}
@@ -31,30 +34,69 @@ async function loadOverview(){
 
     const malwareStatus=s.malware?.ready?"READY":(s.malware?.status||"UNAVAILABLE");
     const auditStatus=s.audit?.configured?(s.audit.valid?"VALID":"INVALID"):"UNSET";
-    const policyStatus=s.runtime?.policy_bundle?"SIGNED":"DEV";
-    const sandboxStatus=(controlUsable(s,"SANDBOX.SECCOMP_STRICT")&&controlUsable(s,"SANDBOX.LANDLOCK"))?"READY":"PARTIAL";
-    const vmStatus=s.vm?.kvm?.status==="PASS"?"READY":"BLOCKED";
+    const signedPolicy=!!s.runtime?.policy_bundle;
+    const policyStatus="READY";
+    const sandboxReady=controlUsable(s,"SANDBOX.SECCOMP_STRICT")&&controlUsable(s,"SANDBOX.LANDLOCK");
+    const sandboxStatus=sandboxReady?"READY":"NOT VERIFIED";
+    const kvmReady=s.vm?.kvm?.status==="PASS";
+    const vmStatus=kvmReady?"READY":(s.environment?.codespaces?"HOST LIMITED":"UNAVAILABLE");
     const sentinelStatus=String(s.sentinel?.verdict||"UNKNOWN").toUpperCase();
-    const layers=[
-      ["Policy",policyStatus,policyStatus==="SIGNED"?"Signed capability ceiling is loaded.":"Using development policy; production policy is not loaded."],
-      ["Malware admission",malwareStatus,s.malware?.ready?"ClamAV and signed malware signatures are ready.":(s.malware?.error||"Scanner is not ready.")],
-      ["Sandbox",sandboxStatus,sandboxStatus==="READY"?"Live sandbox controls have passed.":"Some deployment isolation controls are not live-proven in this session."],
-      ["MicroVM",vmStatus,vmStatus==="READY"?"Hardware KVM is available on this host.":"The hardened KVM layer cannot launch on this host."],
-      ["Audit",auditStatus,auditStatus==="VALID"?"The audit hash chain verifies.":(s.audit?.error||"Audit ledger needs attention.")],
+
+    const coreLayers=[
+      ["Policy engine",policyStatus,signedPolicy?"Policy engine is active with a signed production policy.":"Policy engine is active in local mode."],
+      ["Malware scanning",malwareStatus,s.malware?.ready?"ClamAV and signed malware signatures are ready.":(s.malware?.error||"Scanner is not ready.")],
+      ["Audit ledger",auditStatus,auditStatus==="VALID"?"The tamper-evident audit chain verifies.":(s.audit?.error||"Audit ledger needs attention.")],
       ["Agent Sentinel",sentinelStatus,"Current host heuristic verdict: "+sentinelStatus+"."]
     ];
-    const ready=layers.filter(x=>tone(x[1])==="pass").length;$("layer-score").textContent=ready+"/"+layers.length;$("layer-grid").innerHTML=layers.map(x=>layer(...x)).join("");
-    const prod=s.assurance?.deployment_complete===true;$("overall-state").textContent=prod?"Production controls pass":"BULL is running with partial deployment protections";$("overall-detail").textContent=prod?"All required deployment controls in the current assurance profile pass.":"Core BULL services are available, but one or more production-only controls are not active on this host.";$("top-protection").textContent=prod?"PROTECTED":"PARTIAL";$("top-protection").className=prod?"pass":"warn";$("sidebar-state").textContent=prod?"PROTECTED":"PARTIAL";$("sidebar-dot").className=prod?"pass":"";
+    const advancedLayers=[
+      ["Host sandbox",sandboxStatus,sandboxReady?"Live seccomp and Landlock checks passed.":"BULL has not live-proven every production sandbox control in this session."],
+      ["Hardware MicroVM",vmStatus,kvmReady?"Hardware KVM is available on this host.":(s.environment?.codespaces?"Codespaces does not provide BULL usable KVM access. This is an environment limit, not a failure of the rest of BULL.":"This host does not currently provide usable KVM access.")]
+    ];
+    const layers=[...coreLayers,...advancedLayers];
+    const coreReady=coreLayers.filter(x=>tone(x[1])==="pass").length;
+    $("layer-score").textContent=coreReady+"/4";
+    $("layer-grid").innerHTML=layers.map(x=>layer(...x)).join("");
+
+    const prod=s.assurance?.deployment_complete===true;
+    const localReady=s.malware?.ready&&s.audit?.valid===true&&["CLEAN","LOW","NORMAL"].includes(sentinelStatus);
+    if(prod){
+      $("overall-state").textContent="Production enforcement is ready";
+      $("overall-detail").textContent="All required deployment controls in the current BULL assurance profile pass.";
+      $("top-protection").textContent="PRODUCTION READY"; $("top-protection").className="pass";
+      $("sidebar-state").textContent="PRODUCTION READY"; $("sidebar-dot").className="pass";
+    }else if(localReady){
+      $("overall-state").textContent="BULL is ready for local protection";
+      $("overall-detail").textContent="Policy evaluation, malware scanning, audit integrity and Sentinel are working. Production-only features are shown separately below.";
+      $("top-protection").textContent="LOCAL READY"; $("top-protection").className="pass";
+      $("sidebar-state").textContent="LOCAL READY"; $("sidebar-dot").className="pass";
+    }else{
+      $("overall-state").textContent="BULL needs attention";
+      $("overall-detail").textContent="One or more core local protection checks are not ready. Review the items below.";
+      $("top-protection").textContent="ATTENTION"; $("top-protection").className="warn";
+      $("sidebar-state").textContent="ATTENTION"; $("sidebar-dot").className="";
+    }
 
     const issues=[];
-    if(!s.runtime?.policy_bundle)issues.push(attention("Development policy mode","A signed production capability policy is not loaded. Policy evaluation still works, but this is not the production boundary."));
-    if(!s.malware?.ready)issues.push(attention("Malware scanner needs setup",s.malware?.error||"ClamAV is not ready."));
-    if(s.vm?.kvm?.status!=="PASS")issues.push(attention("Hardware MicroVM unavailable here",kvmReason(s.vm)+" The rest of BULL can still operate; use a KVM-capable Linux host for the MicroVM layer."));
-    if(!s.vm?.assets_verified)issues.push(attention("Guest assets not cached","Verified BULL guest assets are not present yet. Download them from the Runtime page if you plan to run KVM."));
-    if(s.audit?.valid===true)issues.push(attention("Audit ledger verified","The local tamper-evident audit chain is valid.",true));
+    if(localReady)issues.push(attention("Core local protection is ready","Policy evaluation, malware scanning, audit verification and Sentinel are available in this session.","pass"));
+    if(!signedPolicy)issues.push(attention("Production policy is not loaded","You only need a signed deployment policy when you are testing or running the production enforcement boundary. Local policy testing still works.","info"));
+    if(!s.malware?.ready)issues.push(attention("Malware scanner needs setup",s.malware?.error||"ClamAV is not ready.","warn"));
+    if(!kvmReady){
+      issues.push(attention(
+        s.environment?.codespaces?"MicroVM is not available in Codespaces":"MicroVM is not available on this host",
+        s.environment?.codespaces
+          ?"GitHub Codespaces does not expose usable /dev/kvm access here. Ignore this for normal UI, policy, malware, audit and Sentinel work; use a KVM-capable Linux host when you specifically want the MicroVM."
+          :"The rest of BULL can still operate. Use a KVM-capable Linux host when you specifically want the hardened MicroVM layer.",
+        "info"
+      ));
+    }
+    if(kvmReady&&!s.vm?.assets_verified)issues.push(attention("MicroVM guest assets are not cached","Download the verified guest assets from Runtime before running KVM.","info"));
     $("action-required").innerHTML=issues.join("");
 
-    const colors={ALLOW:"#4db97a",SANDBOX:"#e5aa3a",ESCALATE:"#a46de2",DENY:"#e05b5f"};let start=0,parts=[];for(const k of ["ALLOW","SANDBOX","ESCALATE","DENY"]){const pct=total?counts[k]/total*100:25;parts.push(colors[k]+" "+start+"% "+(start+pct)+"%");start+=pct}$("decision-donut").style.background=total?"conic-gradient("+parts.join(",")+")":"#2a2d31";$("decision-total").textContent=total;$("decision-legend").innerHTML=["ALLOW","SANDBOX","ESCALATE","DENY"].map(k=>'<div class="legend-row"><i style="background:'+colors[k]+'"></i><span>'+k+'</span><b>'+counts[k]+'</b></div>').join("");
+    const colors={ALLOW:"#4db97a",SANDBOX:"#e5aa3a",ESCALATE:"#a46de2",DENY:"#e05b5f"};let start=0,parts=[];for(const k of ["ALLOW","SANDBOX","ESCALATE","DENY"]){const pct=total?counts[k]/total*100:25;parts.push(colors[k]+" "+start+"% "+(start+pct)+"%");start+=pct}$("decision-donut").style.background=total?"conic-gradient("+parts.join(",")+")":"#2a2d31";
+    $("decision-total").textContent=total;
+    $("decision-legend").innerHTML=total
+      ? ["ALLOW","SANDBOX","ESCALATE","DENY"].map(k=>'<div class="legend-row"><i style="background:'+colors[k]+'"></i><span>'+k+'</span><b>'+counts[k]+'</b></div>').join("")
+      : '<div class="empty-decision"><b>No decisions yet</b><span>Use the Policy page to test an action. Nothing has been executed.</span></div>';
     $("overview-events").innerHTML=events.length?events.slice(-12).reverse().map(e=>'<tr><td>'+esc(e.timestamp?new Date(e.timestamp).toLocaleTimeString():"—")+'</td><td>'+decisionChip(e.decision||e.record_type)+'</td><td>'+esc(e.actor||"runtime")+'</td><td>'+esc(e.operation||"—")+'</td><td>'+esc(e.resource||"—")+'</td></tr>').join(""):'<tr><td colspan="5">No audit decisions recorded yet.</td></tr>';
     $("overview-repo").innerHTML=simpleRow("Branch",s.repo?.branch)+simpleRow("Commit",s.repo?.commit)+simpleRow("Working tree",s.repo?.dirty?"Changed":"Clean")+simpleRow("Remote",s.repo?.remote);
   }catch(e){toast(e.message,"error")}
