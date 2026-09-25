@@ -53,7 +53,11 @@ os.environ.setdefault("BULL_AUDIT_LEDGER", str(AUDIT_ROOT / "ledger.jsonl"))
 os.environ.setdefault("BULL_SNAPSHOT_ROOT", str(SNAPSHOT_ROOT))
 
 SIGNALS = {
-    "agent": re.compile(r"\b(agentic|autonomous\s+agent|ai[- ]agent|tool[- ]using\s+agent|function[_ -]?call|mcp\s+server|langgraph|autogen|crewai|agent\s+executor)\b", re.I),
+    # Evidence categories may intentionally overlap. For example, "multi-agent"
+    # is both evidence of an agent-oriented artifact and of coordination/swarm
+    # behavior. The scanner reports observations; it does not attribute identity
+    # or malicious intent.
+    "agent": re.compile(r"\b(agentic|autonomous\s+agent|ai[- ]agent|multi[- ]agent|worker\s+agents?|tool[- ]using\s+agent|function[_ -]?call|mcp\s+server|langgraph|autogen|crewai|agent\s+executor)\b", re.I),
     "swarm": re.compile(r"\b(swarm|multi[- ]agent|agent\s+cluster|orchestrator|coordinator|worker\s+agents?|delegat(?:e|ion)|agent\s+mesh)\b", re.I),
     "botnet": re.compile(r"\b(botnet|command[- ]and[- ]control|\bc2\b|beacon(?:ing)?|bot\s+herder|zombie\s+hosts?)\b", re.I),
     "endpoint": re.compile(r"\b(?:https?://|wss?://|/api/|/v1/|webhook|callback|endpoint)\S*", re.I),
@@ -915,7 +919,7 @@ def agent_scan(payload: dict) -> dict:
         "source": source, "bytes": len(text.encode()), "counts": counts, "signals": hits[:500],
         "record": record.to_dict() if record else None,
         "registry": REGISTRY.tabulate(),
-        "note": "Heuristic discovery evidence only; signals are not attribution or proof of maliciousness.",
+        "note": "Heuristic discovery evidence only; categories may overlap, and signals are not attribution or proof of maliciousness.",
     }
 
 def adversary_state() -> dict:
