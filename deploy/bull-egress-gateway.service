@@ -1,0 +1,43 @@
+[Unit]
+Description=BULL transparent egress gateway
+Documentation=https://github.com/Anharmoniclabs/BULL
+After=network.target
+# The nftables ruleset redirects all sandbox traffic into this gateway.
+# If the gateway is down, the redirect ports are closed => egress fails
+# closed. Starting this unit AFTER the ruleset is applied is therefore
+# safe in either order.
+Requires=bull-egress-redirect.service
+After=bull-egress-redirect.service
+
+[Service]
+Type=simple
+User=bullgw
+Group=bullgw
+ExecStart=/usr/bin/python3 -m bulldog.run_egress_gateway \
+    --policy /etc/bull/egress_policy.json \
+    --vault /var/lib/bull/upstream_secrets.vault
+Restart=always
+RestartSec=2
+
+# --- hardening: the gateway is a network-facing trust anchor ---
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+ReadWritePaths=/var/lib/bull
+
+[Install]
+WantedBy=multi-user.target
