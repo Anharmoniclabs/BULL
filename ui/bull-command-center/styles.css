@@ -88,7 +88,7 @@ pre{background:#f7f9fa;color:#44515a}
 
 /* Presentation view */
 .presentation-mode .sidebar{display:none}.presentation-mode main{margin-left:0}.presentation-mode .top-search,.presentation-mode #clock,.presentation-mode #env-badge{display:none}.presentation-mode .topbar{grid-template-columns:1fr auto}
-.presentation-mode .view{display:none!important}.presentation-mode #view-overview{display:block!important;padding:30px 42px}.presentation-mode .firewall-hero-copy h1{font-size:34px}
+.presentation-mode .view.route-visible{display:block!important}.presentation-mode .view.route-visible{padding:30px 42px}.presentation-mode .firewall-hero-copy h1{font-size:34px}
 @media(max-width:1400px){.firewall-pipeline{grid-template-columns:repeat(3,1fr)}.stage:nth-child(3)::after{display:none}.scenario-cards{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1050px){.firewall-hero{grid-template-columns:64px 1fr}.firewall-hero-state{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);padding:14px 0 0}.story-layout,.firewall-demo-layout{grid-template-columns:1fr}.scenario-list{border-right:0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(2,1fr)}.scenario-list.vertical{display:block}.scenario-cards{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:780px){.firewall-pipeline{grid-template-columns:1fr}.stage:not(:last-child)::after{display:none}.scenario-list{grid-template-columns:1fr}.scenario-cards,.scenario-proof{grid-template-columns:1fr}.firewall-hero{display:block}.firewall-hero-mark{margin-bottom:12px}.firewall-hero-state{margin-top:14px}}
@@ -159,3 +159,9 @@ pre{font-size:11px;line-height:1.55}
   .page-heading h1{font-size:30px}
   .firewall-hero-copy h1{font-size:31px}
 }
+
+/* Deterministic route visibility: avoids blank canvases when presentation state changes. */
+.view[hidden]{display:none!important}
+.view.route-visible{display:block!important}
+.view:not(.route-visible){display:none!important}
+.presentation-mode .view.route-visible{display:block!important}
