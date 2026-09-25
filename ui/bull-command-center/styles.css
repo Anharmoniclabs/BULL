@@ -335,3 +335,8 @@ pre{margin:0;padding:13px;min-height:400px;max-height:520px;overflow:auto;backgr
   .runtime-actions,.scan-toolbar{grid-template-columns:1fr!important}
   .read-row{grid-template-columns:1fr}
 }
+
+/* Final component coverage */
+.firewall-story{margin-bottom:14px}
+.policy-layout{align-items:start}
+.status-badge.neutral{color:#65717c;background:#fff;border-color:var(--line-strong)}
