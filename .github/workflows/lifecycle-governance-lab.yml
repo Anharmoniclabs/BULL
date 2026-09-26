@@ -1,0 +1,40 @@
+name: BULL lifecycle governance lab
+
+on:
+  pull_request:
+    branches: [main, ui/bull-command-center-v1]
+    paths:
+      - 'experiments/lifecycle_governance/**'
+      - 'tools/run_lifecycle_lab.py'
+      - 'tools/check_lifecycle_browser.py'
+      - 'tests/test_lifecycle_*.py'
+      - '.github/workflows/lifecycle-governance-lab.yml'
+  push:
+    branches: ['feat/lifecycle-governance-lab-*']
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install isolated test dependency
+        run: python -m pip install 'pytest==9.0.2'
+      - name: Lifecycle gate and HTTP boundary tests
+        run: python -m pytest -q tests/test_lifecycle_governance.py tests/test_lifecycle_lab.py
+      - name: Actual disposable lifecycle walkthrough
+        run: python tools/run_lifecycle_lab.py --output "$RUNNER_TEMP/bull-lifecycle-evidence"
+      # Never upload the run directory: it contains a private fixture key/database.
+      # Browser rendering is an optional independent check, not claimed by this job.
