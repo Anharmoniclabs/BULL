@@ -12,7 +12,10 @@ from threading import Thread
 
 
 def command(*args):
-    return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT, timeout=10)
+    try:
+        return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT, timeout=10)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"{args[0]} {args[1:]} exited {exc.returncode}: {exc.output[-500:]}") from exc
 
 
 def request(host, port, payload):
@@ -59,12 +62,16 @@ def main():
     if os.getpid() == 1 or not os.path.exists("/proc/1/cmdline"):
         raise RuntimeError("guest initialization incomplete")
     command("/usr/sbin/ip", "link", "set", "lo", "up")
-    command("/usr/sbin/ip", "link", "set", "eth0", "up")
-    command("/usr/sbin/ip", "addr", "add", "10.0.2.15/24", "dev", "eth0")
-    command("/usr/sbin/ip", "-6", "addr", "add", "2001:db8:42::1/64", "dev", "eth0")
-    if " dev eth0 " not in command("/usr/sbin/ip", "route", "get", "10.0.2.2"):
+    devices = sorted(set(os.listdir("/sys/class/net")) - {"lo"})
+    if len(devices) != 1:
+        raise RuntimeError("expected one guest NIC, saw " + repr(devices))
+    nic = devices[0]
+    command("/usr/sbin/ip", "link", "set", nic, "up")
+    command("/usr/sbin/ip", "addr", "add", "10.0.2.15/24", "dev", nic)
+    command("/usr/sbin/ip", "-6", "addr", "add", "2001:db8:42::1/64", "dev", nic)
+    if f" dev {nic} " not in command("/usr/sbin/ip", "route", "get", "10.0.2.2"):
         raise RuntimeError("IPv4 target not routed through guest NIC")
-    if " dev eth0 " not in command("/usr/sbin/ip", "-6", "route", "get", "2001:db8:42::2"):
+    if f" dev {nic} " not in command("/usr/sbin/ip", "-6", "route", "get", "2001:db8:42::2"):
         raise RuntimeError("IPv6 target not routed through guest NIC")
 
     class Origin(BaseHTTPRequestHandler):
@@ -126,7 +133,7 @@ def main():
         origin.shutdown()
         origin.server_close()
     print("BULL_GATEWAY_KVM_RESULT=" + json.dumps({
-        "status": "PASS" if checks and all(checks.values()) else "FAIL", "checks": checks,
+        "status": "PASS" if checks and all(checks.values()) else "FAIL", "checks": checks, "guest_nic": nic,
         "scope": "disposable Debian KVM lab guest, restricted QEMU user networking; direct init startup, no systemd or production image"
     }, sort_keys=True), flush=True)
 

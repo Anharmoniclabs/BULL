@@ -74,9 +74,14 @@ def build(directory, *, resume=False):
 
     kernel = boot_asset("vmlinuz-*", "vmlinuz")
     initrd = boot_asset("initrd.img-*", "initrd.img")
-    run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/groupadd", "--gid", "23456", "bullgw"])
-    run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/useradd", "--system", "--uid", "23456",
-         "--gid", "23456", "--no-create-home", "--shell", "/usr/sbin/nologin", "bullgw"])
+    if resume:
+        existing_uid = run(["sudo", "-n", "chroot", str(rootfs), "/usr/bin/id", "-u", "bullgw"]).strip()
+        if existing_uid != "23456":
+            raise RuntimeError("resumed guest has unexpected bullgw UID")
+    else:
+        run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/groupadd", "--gid", "23456", "bullgw"])
+        run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/useradd", "--system", "--uid", "23456",
+             "--gid", "23456", "--no-create-home", "--shell", "/usr/sbin/nologin", "bullgw"])
     run(["sudo", "-n", "install", "-d", "-m", "0755", str(rootfs / "opt/bull/src"),
          str(rootfs / "etc/bull")])
     run(["sudo", "-n", "cp", "-a", str(ROOT / "src/bulldog"), str(rootfs / "opt/bull/src/")])
@@ -95,6 +100,10 @@ def build(directory, *, resume=False):
     used = int(run(["sudo", "-n", "du", "-sb", str(rootfs)]).split()[0])
     size = max(3 * 1024**3, used * 2 + 512 * 1024**2)
     image = directory / "gateway-rootfs.ext4"
+    if resume and image.exists():
+        if image.is_symlink() or image.stat().st_uid != os.getuid():
+            raise RuntimeError("refusing to replace unowned or linked lab image")
+        image.unlink()
     with image.open("xb") as stream:
         stream.truncate(size)
     run(["sudo", "-n", "mkfs.ext4", "-q", "-F", "-d", str(rootfs), str(image)], log=log)
