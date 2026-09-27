@@ -19,12 +19,19 @@ def command(*args):
 
 
 def request(host, port, payload):
-    with socket.create_connection((host, port), timeout=5) as sock:
+    try:
+        sock = socket.create_connection((host, port), timeout=5)
+    except OSError as exc:
+        raise OSError(f"connect {host}:{port}: {exc}") from exc
+    with sock:
         sock.settimeout(5)
         sock.sendall(payload)
         result = bytearray()
         while True:
-            part = sock.recv(4096)
+            try:
+                part = sock.recv(4096)
+            except OSError as exc:
+                raise OSError(f"receive {host}:{port} after {len(result)} bytes: {exc}") from exc
             if not part:
                 return bytes(result)
             result.extend(part)
@@ -98,6 +105,13 @@ def main():
                 "ip", "daddr", "10.0.2.2", "tcp", "dport", "81", "counter")
         command("/usr/sbin/nft", "add", "rule", "inet", "bull_egress", "filter_output",
                 "ip6", "daddr", "2001:db8:42::2", "tcp", "dport", "81", "counter")
+        # Counter-only lab rules. They do not alter the deployed rule verdicts.
+        command("/usr/sbin/nft", "insert", "rule", "inet", "bull_egress", "redirect_output",
+                "ip", "daddr", "10.0.2.2", "tcp", "dport", "80", "counter")
+        command("/usr/sbin/nft", "insert", "rule", "inet", "bull_egress", "filter_output",
+                "oifname", "lo", "tcp", "dport", "9443", "counter")
+        command("/usr/sbin/nft", "insert", "rule", "inet", "bull_egress", "filter_output",
+                "tcp", "dport", "9443", "counter")
         command("/usr/bin/setpriv", "--reuid=23456", "--regid=23456", "--clear-groups",
                 "/usr/bin/env", "PYTHONPATH=/opt/bull/src", "/usr/bin/python3", "-c",
                 "import bulldog.run_egress_gateway")
@@ -143,7 +157,15 @@ def main():
         denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["restart_still_denies"] = b"403 Forbidden" in denied
     except Exception as exc:
-        raise RuntimeError(f"{phase}: {type(exc).__name__}: {exc}; completed_checks={checks}") from exc
+        counters = {}
+        if phase == "allowed HTTP redirect":
+            for chain in ("redirect_output", "filter_output"):
+                try:
+                    rules = command("/usr/sbin/nft", "list", "chain", "inet", "bull_egress", chain)
+                    counters[chain] = re.findall(r"(?:ip daddr 10\.0\.2\.2 tcp dport 80|oifname \"?lo\"? tcp dport 9443|tcp dport 9443) counter packets (\d+)", rules)
+                except Exception:
+                    counters[chain] = "unavailable"
+        raise RuntimeError(f"{phase}: {type(exc).__name__}: {exc}; completed_checks={checks}; counters={counters}") from exc
     finally:
         if process is not None and process.poll() is None:
             process.terminate()
