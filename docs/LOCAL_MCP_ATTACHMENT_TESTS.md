@@ -25,6 +25,28 @@ The commands and registry shape have been checked against the repository; the
 interactive clients have not been run in the editing environment. Native client
 tools remain outside BULL. Keep client permission prompts enabled.
 
+Cloning this repository downloads the source. Steps 1–3 below install the
+runtime, create the accounts and start the authority; complete them before
+registering either MCP connection. `claude mcp add` writes configuration even
+when its target executable does not exist.
+
+If an earlier attempt reports `bull-authority: no such user`, an empty
+`--server-uid`, or `ENOENT` for `bull-mcp`, stop the client and complete setup.
+If you added `bull_claude` from your normal home directory, remove that local
+entry from the same account and directory before using the test account:
+
+```bash
+(
+set -euo pipefail
+cd "$HOME"
+claude mcp remove bull_claude --scope local
+)
+```
+
+This removes the named local registration. Do not delete your Claude config or
+change other connectors. An entry created in another project must be removed
+from that project's directory instead.
+
 ## 1. Prepare the local Linux host
 
 Use your normal human administrator terminal. You need Bash, Git, Python 3.11+
@@ -33,6 +55,16 @@ ClamAV with usable official signature databases. These are the existing
 [host prerequisites](REPRODUCIBLE_DEPLOYMENT.md), not KVM requirements. Install
 missing packages using your distribution's package manager. A Codespaces pass
 does not establish that this local machine has the required protections.
+
+From this repository checkout, run the basic host preflight as your normal
+non-root user:
+
+```bash
+python3 -B tools/run_local_agent_gateway.py --preflight
+```
+
+`READY_FOR_LOCAL_CHECKS` only confirms the basic host checks. It does not install
+the runtime, create accounts or establish that the full attachment test passes.
 
 The following first-time setup creates three locked-password accounts, installs
 the tested BULL revision, and creates two private socket directories. It refuses
@@ -208,21 +240,46 @@ Do not put this authority launch command in either client's MCP settings.
 ## 4. Attach Codex
 
 Run this in the **bull-codex terminal** from step 2, after its authority is
-listening. The read-only connection check must report `"ok": true` before
-registration. The CLI writes its own MCP configuration under this test account.
+listening. Run the whole block: it refuses the wrong account, missing runtime
+or unavailable authority before writing client configuration. The read-only
+connection check must succeed with `"ok": true` before registration.
 
 ```bash
+(
+set -euo pipefail
+if [ "$(id -un)" != bull-codex ]; then
+  echo 'STOP: enter the bull-codex account from step 2 first.'
+  exit 1
+fi
+BULL_AUTHORITY_UID=$(id -u bull-authority) || {
+  echo 'STOP: bull-authority is missing; complete host setup first.'
+  exit 1
+}
+if [ "$BULL_AUTHORITY_UID" -eq 0 ] || [ "$BULL_AUTHORITY_UID" -eq "$(id -u)" ]; then
+  echo 'STOP: authority and client must have distinct non-root UIDs.'
+  exit 1
+fi
+for executable in /opt/bull-attachment-8ae922c/venv/bin/bull \
+  /opt/bull-attachment-8ae922c/venv/bin/bull-mcp; do
+  if [ ! -x "$executable" ]; then
+    printf 'STOP: runtime executable is unavailable: %s; complete step 1.\n' "$executable"
+    exit 1
+  fi
+done
+if [ ! -S /run/bull-codex-test/agent.sock ]; then
+  echo 'STOP: start the Codex authority in step 3 and wait for LISTENING.'
+  exit 1
+fi
+command -v codex >/dev/null
 mkdir -p "$HOME/attachment-test"
 cd "$HOME/attachment-test"
 /opt/bull-attachment-8ae922c/venv/bin/bull gateway check \
-  --socket /run/bull-codex-test/agent.sock --server-uid "$(id -u bull-authority)"
-```
-
-```bash
+  --socket /run/bull-codex-test/agent.sock --server-uid "$BULL_AUTHORITY_UID"
 codex mcp add bull_codex -- /opt/bull-attachment-8ae922c/venv/bin/bull-mcp \
-  --socket /run/bull-codex-test/agent.sock --server-uid "$(id -u bull-authority)"
+  --socket /run/bull-codex-test/agent.sock --server-uid "$BULL_AUTHORITY_UID"
 codex mcp list
 codex
+)
 ```
 
 In Codex, use `/mcp` to inspect the connection. Ask:
@@ -240,24 +297,46 @@ execution evidence.
 ## 5. Attach Claude Code
 
 Start its separate authority using step 3 with `BULL_TEST_CLIENT=claude`. In the
-**bull-claude terminal**, check the connection and register it for this empty
-project only:
+**bull-claude terminal**, run this whole block. It checks the account, runtime
+and authenticated authority connection before registering this empty project:
 
 ```bash
+(
+set -euo pipefail
+if [ "$(id -un)" != bull-claude ]; then
+  echo 'STOP: enter the bull-claude account from step 2 first.'
+  exit 1
+fi
+BULL_AUTHORITY_UID=$(id -u bull-authority) || {
+  echo 'STOP: bull-authority is missing; complete host setup first.'
+  exit 1
+}
+if [ "$BULL_AUTHORITY_UID" -eq 0 ] || [ "$BULL_AUTHORITY_UID" -eq "$(id -u)" ]; then
+  echo 'STOP: authority and client must have distinct non-root UIDs.'
+  exit 1
+fi
+for executable in /opt/bull-attachment-8ae922c/venv/bin/bull \
+  /opt/bull-attachment-8ae922c/venv/bin/bull-mcp; do
+  if [ ! -x "$executable" ]; then
+    printf 'STOP: runtime executable is unavailable: %s; complete step 1.\n' "$executable"
+    exit 1
+  fi
+done
+if [ ! -S /run/bull-claude-test/agent.sock ]; then
+  echo 'STOP: start the Claude authority in step 3 and wait for LISTENING.'
+  exit 1
+fi
+command -v claude >/dev/null
 mkdir -p "$HOME/attachment-test"
 cd "$HOME/attachment-test"
 /opt/bull-attachment-8ae922c/venv/bin/bull gateway check \
-  --socket /run/bull-claude-test/agent.sock --server-uid "$(id -u bull-authority)"
-```
-
-After that reports `"ok": true`:
-
-```bash
+  --socket /run/bull-claude-test/agent.sock --server-uid "$BULL_AUTHORITY_UID"
 claude mcp add --transport stdio --scope local bull_claude -- \
   /opt/bull-attachment-8ae922c/venv/bin/bull-mcp \
-  --socket /run/bull-claude-test/agent.sock --server-uid "$(id -u bull-authority)"
+  --socket /run/bull-claude-test/agent.sock --server-uid "$BULL_AUTHORITY_UID"
 claude mcp list
 claude
+)
 ```
 
 Use `/mcp` to inspect the connection. Give Claude the same request as Codex,
