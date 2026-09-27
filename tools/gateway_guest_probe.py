@@ -59,6 +59,7 @@ def ready(process):
 
 
 def main():
+    phase = "initialize"
     if os.getpid() == 1 or not os.path.exists("/proc/1/cmdline"):
         raise RuntimeError("guest initialization incomplete")
     command("/usr/sbin/ip", "link", "set", "lo", "up")
@@ -90,6 +91,7 @@ def main():
     checks = {}
     process = None
     try:
+        phase = "install nftables rules"
         command("/usr/sbin/nft", "-c", "-f", "/etc/bull/egress_redirect.nft")
         command("/usr/sbin/nft", "-f", "/etc/bull/egress_redirect.nft")
         command("/usr/sbin/nft", "add", "rule", "inet", "bull_egress", "filter_output",
@@ -99,14 +101,18 @@ def main():
         command("/usr/bin/setpriv", "--reuid=23456", "--regid=23456", "--clear-groups",
                 "/usr/bin/env", "PYTHONPATH=/opt/bull/src", "/usr/bin/python3", "-c",
                 "import bulldog.run_egress_gateway")
+        phase = "start gateway"
         process = gateway()
         ready(process)
         checks["gateway_uid"] = int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
             int(open(f"/proc/{process.pid}/status").read().split("Uid:", 1)[1].split()[0]) == 23456
+        phase = "allowed HTTP redirect"
         allowed = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: allowed.test\r\nConnection: close\r\n\r\n")
         checks["allowed_http"] = b"200 OK" in allowed and b"BULL-GUEST-ORIGIN" in allowed
+        phase = "denied HTTP redirect"
         denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["denied_http"] = b"403 Forbidden" in denied
+        phase = "alternate IPv4 and IPv6 drops"
         checks["ipv4_alt_closed"] = closed("10.0.2.2", 81, b"GET / HTTP/1.0\r\n\r\n")
         checks["ipv6_alt_closed"] = closed("2001:db8:42::2", 81, b"GET / HTTP/1.0\r\n\r\n")
         checks["ipv6_web_closed"] = closed("2001:db8:42::2", 80, b"GET / HTTP/1.0\r\n\r\n")
@@ -116,19 +122,24 @@ def main():
         checks["filter_drop_counters"] = ("policy drop;" in chain and count4 is not None
                                           and count6 is not None and int(count4.group(1)) > 0
                                           and int(count6.group(1)) > 0)
+        phase = "denied DNS redirect"
         query = bytes.fromhex("123401000001000000000000") + b"\x06denied\x04test\x00\x00\x01\x00\x01"
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
             udp.settimeout(2)
             udp.sendto(query, ("10.0.2.2", 53))
             answer, _ = udp.recvfrom(512)
         checks["denied_dns"] = answer[:2] == query[:2] and answer[3] & 15 == 5
+        phase = "gateway-down closure"
         process.terminate()
         process.wait(timeout=5)
         checks["gateway_down_closed"] = closed("10.0.2.2", 80, b"GET / HTTP/1.0\r\n\r\n")
+        phase = "restart gateway and deny"
         process = gateway()
         ready(process)
         denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["restart_still_denies"] = b"403 Forbidden" in denied
+    except Exception as exc:
+        raise RuntimeError(f"{phase}: {type(exc).__name__}: {exc}; completed_checks={checks}") from exc
     finally:
         if process is not None and process.poll() is None:
             process.terminate()
