@@ -12,6 +12,11 @@ table inet bull_egress {
     chain filter_output {
         type filter hook output priority 0; policy drop;
         meta skuid "bullgw" accept
+        # OUTPUT REDIRECT can retain the original egress interface at this
+        # hook. Admit only packets that NAT actually translated to our local
+        # gateway ports; ordinary outbound traffic still hits policy drop.
+        ct status dnat tcp dport 9443 accept
+        ct status dnat udp dport 1953 accept
         tcp dport 53 drop
         udp dport 443 drop
         oifname "lo" accept
