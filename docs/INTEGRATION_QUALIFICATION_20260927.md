@@ -102,6 +102,22 @@ specific guest workload had no network path; it does not test a deployed
 `bullgw` service or authorize enabling a guest network adapter. A networked
 guest requires a distinct image, boot recipe and in-guest gateway qualification.
 
+### Disposable networked gateway KVM lab
+
+From a clean Codespace worktree with KVM access, run
+`python3 tools/run_codespace_gateway_kvm.py --install-deps`. This uses
+Debian's signed package repository to build a private throwaway guest under
+`/tmp/bull-gateway-kvm-*` (at least 5 GiB free space required). It starts the
+actual `bulldog.run_egress_gateway` as an unprivileged `bullgw` UID, loads the
+repository nftables rules inside that guest, and probes allowed/denied HTTP,
+denied DNS, IPv4/IPv6 alternate ports, IPv6 web closure, gateway-down closure
+and denial after gateway restart. QEMU user networking is restricted; no host
+nftables rules are installed. The operator should review the private setup
+report and share only the printed summary. A PASS qualifies this **disposable
+Debian KVM lab image and direct init startup**, not the published offline BULL
+image or the production systemd unit. The gateway remains unverified in the
+main console until that exact deployment path has its own evidence reader.
+
 For the broader production qualification gate, run:
 
 ```bash
