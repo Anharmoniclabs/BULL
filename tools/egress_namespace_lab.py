@@ -85,11 +85,17 @@ def inside() -> int:
         subprocess.run(["ip", "addr", "add", "198.18.0.1/30", "dev", "veth0"], check=True)
         subprocess.run(["ip", "link", "set", "veth0", "up"], check=True)
         subprocess.run(["ip", "link", "set", "veth1", "up"], check=True)
+        subprocess.run(["ip", "-6", "addr", "add", "2001:db8:42::1/64", "dev", "veth0"], check=True)
         route = subprocess.check_output(["ip", "route", "get", "198.18.0.2"], text=True)
         if " dev veth0 " not in route:
             raise RuntimeError("alternate-port target did not route off loopback")
+        route6 = subprocess.check_output(["ip", "-6", "route", "get", "2001:db8:42::2"], text=True)
+        if " dev veth0 " not in route6:
+            raise RuntimeError("IPv6 alternate-port target did not route off loopback")
         subprocess.run(["nft", "add", "rule", "inet", "bull_egress", "filter_output",
                         "ip", "daddr", "198.18.0.2", "tcp", "dport", "81", "counter"], check=True)
+        subprocess.run(["nft", "add", "rule", "inet", "bull_egress", "filter_output",
+                        "ip6", "daddr", "2001:db8:42::2", "tcp", "dport", "81", "counter"], check=True)
         runner = """import asyncio
 from bulldog.egress_gateway import EgressGateway,EgressPolicy,GatewayConfig
 async def main():
@@ -133,6 +139,24 @@ asyncio.run(main())"""
             counted = re.search(r"ip daddr 198\.18\.0\.2 tcp dport 81 counter packets (\d+)", chain)
             checks["alternate_tcp_dropped"] = (not alternate_connected and "policy drop;" in chain
                                                 and counted is not None and int(counted.group(1)) > 0)
+            try:
+                request("2001:db8:42::2", 81, b"GET / HTTP/1.0\r\n\r\n")
+                ipv6_connected = True
+            except OSError:
+                ipv6_connected = False
+            chain = subprocess.check_output(["nft", "list", "chain", "inet", "bull_egress", "filter_output"], text=True)
+            counted6 = re.search(r"ip6 daddr 2001:db8:42::2 tcp dport 81 counter packets (\d+)", chain)
+            checks["ipv6_alternate_dropped"] = (not ipv6_connected and "policy drop;" in chain
+                                                and counted6 is not None and int(counted6.group(1)) > 0)
+            # IPv6 port 80 is redirected by the inet rules, but this gateway
+            # listens on IPv4 loopback only. Until dual-stack authorization is
+            # implemented, IPv6 web traffic must stay closed.
+            try:
+                request("::1", 80, b"GET / HTTP/1.0\r\nHost: allowed.test\r\n\r\n")
+                ipv6_web_connected = True
+            except OSError:
+                ipv6_web_connected = False
+            checks["ipv6_web_closed"] = not ipv6_web_connected
             query = bytes.fromhex("123401000001000000000000") + b"\x04evil\x04test\x00\x00\x01\x00\x01"
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
                 udp.settimeout(2)
@@ -146,6 +170,22 @@ asyncio.run(main())"""
                 checks["gateway_down_closed"] = False
             except OSError:
                 checks["gateway_down_closed"] = True
+            gateway = subprocess.Popen([sys.executable, "-c", runner], cwd=stage,
+                                       env=dict(os.environ, PYTHONPATH=str(stage)),
+                                       preexec_fn=drop_privileges, stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.PIPE, start_new_session=True)
+            for _ in range(40):
+                if gateway.poll() is not None:
+                    raise RuntimeError("gateway exited during restart")
+                try:
+                    with socket.create_connection(("127.0.0.1", 9443), timeout=.1):
+                        break
+                except OSError:
+                    time.sleep(.1)
+            else:
+                raise RuntimeError("gateway did not restart")
+            again = request("127.0.0.1", 80, b"GET /ok HTTP/1.1\r\nHost: evil.test\r\nConnection: close\r\n\r\n")
+            checks["restart_still_denies"] = b"403 Forbidden" in again
         finally:
             if gateway.poll() is None:
                 gateway.terminate()
@@ -153,7 +193,7 @@ asyncio.run(main())"""
             origin.shutdown()
             origin.server_close()
         result = {"status": "PASS" if all(checks.values()) else "FAIL", "checks": checks,
-                  "scope": "disposable IPv4 namespace; UID substituted for bullgw; no deployed guest/service, IPv6 or restart proof"}
+                  "scope": "disposable dual-stack namespace; UID substituted for bullgw; no deployed guest/systemd service proof"}
         print(json.dumps(result), flush=True)
         return 0 if result["status"] == "PASS" else 1
 
