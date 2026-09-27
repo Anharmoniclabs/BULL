@@ -344,3 +344,174 @@ def test_failed_account_creation_never_deletes_an_existing_account(
     assert runner.root_worker(run) == 1
     assert calls == ["useradd"]
     assert json.loads((run / "report.json").read_text())["status"] == "BLOCKED"
+
+
+@pytest.fixture
+def private_creation_mask():
+    """Use the CLI's private creation mask without leaking it to other tests."""
+    previous = os.umask(0o077)
+    try:
+        yield
+    finally:
+        os.umask(previous)
+
+
+@pytest.mark.parametrize("audit_mode", ["local", "external"])
+@pytest.mark.parametrize("outcome", ["pass", "gate_failure", "wrong_profile"])
+def test_worker_keeps_audit_profile_through_provisioning_and_cleanup(
+    tmp_path, monkeypatch, private_creation_mask, audit_mode, outcome
+):
+    """Exercise orchestration and real audit validation with simulated OS children.
+
+    No account is created and no privileged process runs. This is a regression
+    test for runner control flow, not live MCP, host isolation or remote evidence.
+    """
+    from tools import deployment_setup, host_setup
+    from bulldog.local_audit import LocalAuditLedger
+
+    run = tmp_path / "bull-mcp-live-worker-fixture"
+    run.mkdir()
+    (run / "project").mkdir()
+    state = deployment_setup.initialize(
+        run / "private/deployment", run / "project", audit_mode=audit_mode
+    )
+    result = {"call_id": "b" * 32, "result_sha256": "c" * 64}
+    if audit_mode == "local":
+        ledger = LocalAuditLedger(
+            state / "audit/ledger.jsonl",
+            anchor_path=state / "audit/local-checkpoint.json",
+            anchor_key=(state / "secrets/local-audit.key").read_bytes(),
+        )
+    else:
+        ledger = AuditLedger(state / "audit/ledger.jsonl", remote_anchor_url="")
+    ledger.append_event("gateway_attempt", {"call_id": result["call_id"]})
+    ledger.append_event(
+        "gateway_result",
+        {
+            "call_id": result["call_id"],
+            "result_digest": result["result_sha256"],
+            "executed": True,
+        },
+    )
+    if audit_mode == "external":
+        checked = ledger.verify()
+        session = json.loads((state / "deployment.json").read_text())["audit_session"]
+        runner.write_json(
+            ledger.remote_checkpoint_path,
+            authenticate(
+                {
+                    "version": 1,
+                    "session": session,
+                    "sequence": checked.records,
+                    "head_hash": checked.head_hash,
+                    "accepted": True,
+                },
+                session_key((state / "secrets/collector.key").read_bytes(), session),
+                purpose="acknowledgement",
+            ),
+        )
+    runner.write_json(
+        run / "config.json",
+        {
+            "operator_uid": 1000,
+            "source": str(runner.ROOT),
+            "source_commit": "fixture-only",
+            "audit_mode": audit_mode,
+        },
+    )
+    operator = SimpleNamespace(
+        pw_uid=1000, pw_gid=1000, pw_name="fixture-operator", pw_dir="/nonexistent"
+    )
+    agent = SimpleNamespace(
+        pw_uid=2000, pw_gid=2000, pw_name="fixture-agent", pw_dir="/nonexistent"
+    )
+    real_lstat = Path.lstat
+
+    def metadata(path):
+        if path == run:
+            return SimpleNamespace(st_uid=operator.pw_uid, st_mode=0o40700)
+        return real_lstat(path)
+
+    monkeypatch.setattr(Path, "lstat", metadata)
+    monkeypatch.setattr(runner.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(runner.os, "chown", lambda *a, **k: None)
+    monkeypatch.setattr(runner.os, "getgrouplist", lambda *a: [operator.pw_gid])
+    monkeypatch.setattr(runner, "private_path", lambda path, uid: path)
+    monkeypatch.setattr(runner.pwd, "getpwuid", lambda uid: operator)
+    monkeypatch.setattr(runner.pwd, "getpwnam", lambda name: agent)
+    monkeypatch.setattr(runner.grp, "getgrnam", lambda name: SimpleNamespace())
+    monkeypatch.setattr(runner.signal, "signal", lambda *a: None)
+    monkeypatch.setattr(runner.signal, "alarm", lambda *a: None)
+    monkeypatch.setattr(host_setup, "provision_cgroup", lambda user: tmp_path)
+    commands, children, stopped = [], [], []
+    monkeypatch.setattr(
+        runner, "account_command", lambda command, *a: commands.append(command)
+    )
+    monkeypatch.setattr(
+        runner,
+        "stop_child",
+        lambda child: stopped.append(child) if child is not None else None,
+    )
+    monkeypatch.setattr(runner, "endpoint_ready", lambda *a: outcome != "gate_failure")
+
+    def child_process(command, **kwargs):
+        assert not any(name.startswith("BULL_") for name in kwargs["env"])
+        role = command[command.index("--_role") + 1]
+        if role == "agent":
+            cfg = json.loads((run / "agent-config.json").read_text())
+            assert cfg["audit_mode"] == audit_mode
+            reported = audit_mode
+            if outcome == "wrong_profile":
+                reported = "external" if audit_mode == "local" else "local"
+            runner.write_json(
+                run / "agent/result.json",
+                {
+                    **result,
+                    "status": runner.pass_status(reported),
+                    "audit_mode": reported,
+                    "checks": {"simulated_mcp_exchange": True},
+                },
+            )
+        elif outcome == "gate_failure":
+            filename = (
+                "local-gates.json" if audit_mode == "local" else "production-gates.json"
+            )
+            runner.write_json(
+                run / "private" / filename, {"failures": ["fixture host gate failed"]}
+            )
+        child = SimpleNamespace(
+            role=role,
+            poll=lambda: 1 if outcome == "gate_failure" else None,
+            wait=lambda timeout: 0,
+        )
+        children.append(child)
+        return child
+
+    monkeypatch.setattr(runner.subprocess, "Popen", child_process)
+    rc = runner.root_worker(run)
+    report = json.loads((run / "report.json").read_text())
+    assert report["audit_mode"] == audit_mode
+    assert report["checks"]["temporary_agent_removed"] is True
+    assert commands == ["useradd", "userdel", "groupdel"]
+    assert all(child in stopped for child in children)
+    # The real transport grants group traversal after binding the socket. This
+    # simulated authority leaves the directory's initial private mode intact.
+    assert (run / "endpoint").stat().st_mode & 0o777 == 0o700
+    assert (run / "agent").stat().st_mode & 0o777 == 0o700
+    if outcome == "gate_failure":
+        assert rc == 1 and report["status"] == "BLOCKED"
+        assert report["gate_failures"] == ["fixture host gate failed"]
+        assert [child.role for child in children] == ["authority"]
+    elif outcome == "wrong_profile":
+        assert rc == 1 and report["status"] == "BLOCKED"
+        assert "live client refused" in report["reason"]
+        assert "audit" not in report
+    else:
+        assert rc == 0, report
+        assert report["status"] == runner.pass_status(audit_mode)
+        assert report["checks"][audit_mode + "_authority_started"] is True
+        assert report["checks"][audit_mode + "_checkpoint_reached_head"] is True
+        assert report["audit"]["records"] == 2
+        if audit_mode == "local":
+            assert report["audit"]["external_receipt"] is False
+            assert "external_checkpoint_reached_head" not in report["checks"]

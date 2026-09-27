@@ -491,8 +491,8 @@ def root_worker(run):
     operator = pwd.getpwuid(info.st_uid)
     config_path = private_path(run / "config.json", operator.pw_uid)
     cfg = json.loads(config_path.read_text())
-    mode = cfg.get("audit_mode", "external")
-    expected_status = pass_status(mode)
+    audit_mode = cfg.get("audit_mode", "external")
+    expected_status = pass_status(audit_mode)
     if cfg["operator_uid"] != operator.pw_uid or Path(cfg["source"]) != ROOT:
         raise ValueError("live-test source or operator mismatch")
     report = {
@@ -500,7 +500,7 @@ def root_worker(run):
         "scope": "live host MCP connected-tool qualification",
         "source_commit": cfg["source_commit"],
         "enterprise_qualified": False,
-        "audit_mode": mode,
+        "audit_mode": audit_mode,
         "checks": {},
     }
     authority = agent_process = None
@@ -538,16 +538,16 @@ def root_worker(run):
         write_json(config_path, cfg)
         os.chown(config_path, operator.pw_uid, operator.pw_gid)
         agent_cfg = {k: cfg[k] for k in ("agent_uid", "operator_uid")}
-        agent_cfg["audit_mode"] = mode
+        agent_cfg["audit_mode"] = audit_mode
         agent_cfg["argv"] = [str(Path("/usr/bin/true").resolve(strict=True))]
         write_json(run / "agent-config.json", agent_cfg)
         (run / "agent-config.json").chmod(0o644)
-        for name, uid, gid, mode in (
+        for name, uid, gid, directory_mode in (
             ("endpoint", operator.pw_uid, agent.pw_gid, 0o710),
             ("agent", agent.pw_uid, agent.pw_gid, 0o700),
         ):
             path = run / name
-            path.mkdir(mode=mode)
+            path.mkdir(mode=directory_mode)
             os.chown(path, uid, gid)
         python = str(run / "venv/bin/python")
         script = str(ROOT / "tools/run_codespace_agent_gateway.py")
@@ -581,7 +581,7 @@ def root_worker(run):
             if authority.poll() is not None or time.monotonic() >= deadline:
                 gate_file = run / (
                     "private/local-gates.json"
-                    if mode == "local"
+                    if audit_mode == "local"
                     else "private/production-gates.json"
                 )
                 if gate_file.exists():
@@ -592,7 +592,7 @@ def root_worker(run):
                     "authority did not become ready; inspect private authority.log and the profile gate report"
                 )
             time.sleep(0.2)
-        report["checks"][mode + "_authority_started"] = True
+        report["checks"][audit_mode + "_authority_started"] = True
         report["checks"]["distinct_nonroot_uids"] = (
             agent.pw_uid != operator.pw_uid and agent.pw_uid > 0
         )
@@ -622,7 +622,7 @@ def root_worker(run):
         if (
             rc != 0
             or report.get("agent_result", {}).get("status") != expected_status
-            or report.get("agent_result", {}).get("audit_mode") != mode
+            or report.get("agent_result", {}).get("audit_mode") != audit_mode
         ):
             raise RuntimeError(
                 "live client refused or failed; inspect private agent.log and agent result"
@@ -632,10 +632,10 @@ def root_worker(run):
         stop_child(authority)
         authority = None
         report["audit"] = verify_retained_audit(
-            run, report["agent_result"], audit_mode=mode
+            run, report["agent_result"], audit_mode=audit_mode
         )
         report["checks"]["retained_audit_matches_mcp_result"] = True
-        report["checks"][mode + "_checkpoint_reached_head"] = True
+        report["checks"][audit_mode + "_checkpoint_reached_head"] = True
         if not all(report["checks"].values()):
             raise ValueError("one or more live evidence checks failed")
         report["status"] = expected_status

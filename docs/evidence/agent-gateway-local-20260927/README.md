@@ -59,3 +59,33 @@ UID IPC and malware scanning must pass there before that result can be recorded.
 No live Codex/Claude session, KVM result, external audit receipt, multi-day soak,
 hardware approval or independent review is claimed by this change. Native agent
 tools remain outside the connected gateway. Host administrators remain trusted.
+
+## Runner startup correction
+
+An operator run at `91718b73a372692b263a7db169cce3dc53885814` reached local
+authority startup, then reported `BLOCKED` with an integer/string `TypeError`.
+The directory-creation loop had overwritten the audit profile with a permission
+number. The runner now keeps `audit_mode` and `directory_mode` separate.
+
+Six regression cases exercise the worker through success, failed authority
+startup and a mismatched client profile, for both local and external audit.
+They validate real retained audit records and check cleanup of simulated
+processes and accounts. Privileged operations and MCP children are simulated;
+these tests cannot establish live isolation or an external collector receipt.
+
+The focused regression command was:
+
+```sh
+python -m pytest -q -ra --tb=short \
+  tests/test_live_gateway_qualification.py tests/test_local_gateway.py \
+  tests/test_agent_gateway.py tests/test_gateway_broker_boundary.py \
+  tests/test_gateway_transport.py tests/test_mcp_gateway_sdk.py \
+  tests/test_mcp_stdio.py tests/test_production_router.py \
+  tests/test_full_argv_and_production_wiring.py tests/test_deployment_setup.py \
+  --junitxml=/tmp/bull-gateway-runner-regression.xml
+```
+
+Result: 202 passed, 2 skipped. Both skips require Unix IPC, which this editing
+environment prohibits. The JUnit SHA-256 was
+`a1312ecf5999fda8a83cd633ed8187f16a1b83a277f98f4d64a6496a80bc4117`.
+The corrected runner still needs a live operator-host result.
