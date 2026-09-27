@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run a source-bound long-duration qualification probe and checkpoint evidence."""
+
 from __future__ import annotations
 
 import argparse
@@ -16,8 +17,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def source():
-    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip())
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
+    dirty = bool(
+        subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=ROOT, text=True
+        ).strip()
+    )
     return commit, dirty
 
 
@@ -27,8 +34,11 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=1000)
     parser.add_argument("--timeout", type=float, default=300)
     parser.add_argument("--max-hours", type=float, default=24)
-    parser.add_argument("command", nargs=argparse.REMAINDER,
-                        help="trusted probe command after --; agent input must never construct this")
+    parser.add_argument(
+        "command",
+        nargs=argparse.REMAINDER,
+        help="trusted probe command after --; agent input must never construct this",
+    )
     args = parser.parse_args()
     if args.command[:1] == ["--"]:
         args.command = args.command[1:]
@@ -46,9 +56,11 @@ def main() -> int:
     started = time.time()
     records = output / "iterations.jsonl"
     interrupted = False
+
     def stop(_sig, _frame):
         nonlocal interrupted
         interrupted = True
+
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     passed = failed = 0
@@ -59,38 +71,71 @@ def main() -> int:
                 break
             before = time.monotonic()
             try:
-                result = subprocess.run(args.command, cwd=ROOT, stdin=subprocess.DEVNULL,
-                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                        timeout=args.timeout, check=False)
+                result = subprocess.run(
+                    args.command,
+                    cwd=ROOT,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=args.timeout,
+                    check=False,
+                )
                 ok = result.returncode == 0
-                record = {"iteration": index, "status": "PASS" if ok else "FAIL",
-                          "returncode": result.returncode,
-                          "stdout_sha256": hashlib.sha256(result.stdout).hexdigest(),
-                          "stderr_sha256": hashlib.sha256(result.stderr).hexdigest(),
-                          "elapsed_seconds": round(time.monotonic() - before, 6)}
+                record = {
+                    "iteration": index,
+                    "status": "PASS" if ok else "FAIL",
+                    "returncode": result.returncode,
+                    "stdout_sha256": hashlib.sha256(result.stdout).hexdigest(),
+                    "stderr_sha256": hashlib.sha256(result.stderr).hexdigest(),
+                    "elapsed_seconds": round(time.monotonic() - before, 6),
+                }
             except subprocess.TimeoutExpired as exc:
                 ok = False
-                record = {"iteration": index, "status": "FAIL", "reason": "timeout",
-                          "stdout_sha256": hashlib.sha256(exc.stdout or b"").hexdigest(),
-                          "stderr_sha256": hashlib.sha256(exc.stderr or b"").hexdigest(),
-                          "elapsed_seconds": round(time.monotonic() - before, 6)}
-            passed += int(ok); failed += int(not ok)
-            stream.write(json.dumps(record, sort_keys=True) + "\n"); stream.flush(); os.fsync(stream.fileno())
+                record = {
+                    "iteration": index,
+                    "status": "FAIL",
+                    "reason": "timeout",
+                    "stdout_sha256": hashlib.sha256(exc.stdout or b"").hexdigest(),
+                    "stderr_sha256": hashlib.sha256(exc.stderr or b"").hexdigest(),
+                    "elapsed_seconds": round(time.monotonic() - before, 6),
+                }
+            passed += int(ok)
+            failed += int(not ok)
+            stream.write(json.dumps(record, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
     completed = passed + failed
     upper = None if failed or completed == 0 else 1 - math.pow(0.05, 1 / completed)
     final_commit, final_dirty = source()
-    status = "PASS" if completed == args.iterations and failed == 0 and final_commit == commit and not final_dirty else "INCOMPLETE_OR_FAIL"
-    report = {"format": "bull-assurance-campaign-v1", "status": status,
-              "source_commit": commit, "source_unchanged": final_commit == commit and not final_dirty,
-              "command_sha256": hashlib.sha256(json.dumps(args.command).encode()).hexdigest(),
-              "requested_iterations": args.iterations, "completed_iterations": completed,
-              "passed": passed, "failed": failed, "elapsed_seconds": round(time.time() - started, 3),
-              "zero_failure_upper_95": upper,
-              "statistical_scope": ("One-sided exact binomial bound, only if trials are representative and "
-                                      "independent; it is not a universal escape probability."),
-              "interrupted": interrupted}
+    status = (
+        "PASS"
+        if completed == args.iterations
+        and failed == 0
+        and final_commit == commit
+        and not final_dirty
+        else "INCOMPLETE_OR_FAIL"
+    )
+    report = {
+        "format": "bull-assurance-campaign-v1",
+        "status": status,
+        "source_commit": commit,
+        "source_unchanged": final_commit == commit and not final_dirty,
+        "command_sha256": hashlib.sha256(json.dumps(args.command).encode()).hexdigest(),
+        "requested_iterations": args.iterations,
+        "completed_iterations": completed,
+        "passed": passed,
+        "failed": failed,
+        "elapsed_seconds": round(time.time() - started, 3),
+        "zero_failure_upper_95": upper,
+        "statistical_scope": (
+            "One-sided exact binomial bound, only if trials are representative and "
+            "independent; it is not a universal escape probability."
+        ),
+        "interrupted": interrupted,
+    }
     path = output / "report.json"
-    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n"); path.chmod(0o600)
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    path.chmod(0o600)
     print(json.dumps(report))
     return 0 if status == "PASS" else 1
 
