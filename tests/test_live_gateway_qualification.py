@@ -464,6 +464,7 @@ def test_worker_keeps_audit_profile_through_provisioning_and_cleanup(
 
     def child_process(command, **kwargs):
         assert not any(name.startswith("BULL_") for name in kwargs["env"])
+        assert command[1:3] == ["-I", "-B"]
         role = command[command.index("--_role") + 1]
         if role == "agent":
             cfg = json.loads((run / "agent-config.json").read_text())

@@ -2,12 +2,57 @@
 
 import os
 from pathlib import Path
+import shutil
 import stat
 import subprocess
 
 import pytest
 
 from tools import run_codespace_agent_gateway as runner
+
+
+@pytest.mark.parametrize("isolated", [False, True])
+def test_fresh_helper_imports_do_not_write_to_verified_source(tmp_path, isolated):
+    """Run real cold imports, including -I which ignores PYTHON* environment.
+
+    No provisioning or account changes occur in this subprocess.
+    """
+    source = tmp_path / "source"
+    (source / "tools").mkdir(parents=True)
+    for name in ("run_codespace_agent_gateway.py", "host_setup.py"):
+        shutil.copyfile(runner.ROOT / "tools" / name, source / "tools" / name)
+    script = source / "tools/run_codespace_agent_gateway.py"
+    before = {
+        path.relative_to(source): path.read_bytes() for path in source.rglob("*.py")
+    }
+    command = [
+        "/usr/bin/python3",
+        *(["-I"] if isolated else []),
+        "-c",
+        """
+import runpy, sys
+runpy.run_path(sys.argv[1])
+from tools import host_setup
+assert callable(host_setup.provision_cgroup)
+assert sys.dont_write_bytecode
+""",
+        str(script),
+    ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env={"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    assert result.returncode == 0, result.stderr
+    after = {
+        path.relative_to(source): path.read_bytes()
+        for path in source.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+    assert not list(source.rglob("__pycache__"))
 
 
 @pytest.fixture
@@ -83,6 +128,28 @@ def test_permission_regression_is_rejected_without_repair(installation, target):
     with pytest.raises(ValueError, match="public runtime permissions"):
         runner.verify_public_runtime(installation, os.geteuid())
     assert stat.S_IMODE(path.stat().st_mode) == mode
+
+
+def test_foreign_owned_cache_is_still_rejected(installation, monkeypatch):
+    """Simulate a different owner without changing real file ownership."""
+    cache = installation / "source/tools/__pycache__/unexpected.pyc"
+    cache.parent.mkdir(parents=True)
+    cache.write_bytes(b"untrusted cache fixture")
+    runner.prepare_public_runtime(installation)
+    lstat = Path.lstat
+
+    def metadata(path):
+        info = lstat(path)
+        if path == cache:
+            values = list(info)
+            values[4] = 0 if os.geteuid() != 0 else 1
+            return os.stat_result(values)
+        return info
+
+    monkeypatch.setattr(Path, "lstat", metadata)
+    with pytest.raises(ValueError, match="foreign owner"):
+        runner.verify_public_runtime(installation, os.geteuid())
+    assert cache.read_bytes() == b"untrusted cache fixture"
 
 
 @pytest.mark.parametrize("kind", ["file_link", "directory_link", "hardlink", "fifo"])

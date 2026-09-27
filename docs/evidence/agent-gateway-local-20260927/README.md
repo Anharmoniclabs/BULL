@@ -116,3 +116,25 @@ entries cannot expose private files. They run under the editing process UID;
 they do not establish separate-account MCP operation. Both skips still require
 Unix IPC, which this editing environment prohibits. A new Codespace result is
 required for live qualification.
+
+## Isolated helper cache correction
+
+The operator run at `199f5f8fc0c2620b2bb93b63958a460b11f16951` stopped during
+the ownership check on `source/tools/__pycache__`, before creating an agent
+account. A fresh-interpreter regression reproduced the cause: `-I` ignores
+`PYTHONDONTWRITEBYTECODE`, so importing `tools.host_setup` could create a
+root-owned cache in the verified source.
+
+Root, authority and agent helper launches now include `-B`, and the runner
+explicitly disables cache writes before project imports. The root helper also
+checks the public runtime before importing provisioning code. Ownership
+requirements are unchanged; a regression confirms foreign-owned caches remain
+blocked.
+
+Fresh-interpreter tests exercise actual module imports with and without `-I`
+and verify that source files stay unchanged and no cache directory appears.
+They perform no account provisioning. The same focused suite passed 219 tests
+and skipped 2 Unix IPC tests unavailable in this environment. JUnit output
+`/tmp/bull-gateway-bytecode-regression.xml` had SHA-256
+`0b7fc861a063145e5332f2ac9933b6d0cfecdb820ec1ec5c8f636f4221e9b76f`.
+This correction still needs a fresh live Codespace qualification result.

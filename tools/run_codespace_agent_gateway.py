@@ -29,6 +29,10 @@ import sys
 import tempfile
 import time
 
+# Isolated Python (-I) ignores PYTHONDONTWRITEBYTECODE. Helpers must not create
+# root-owned caches in the operator's verified source, including on direct runs.
+sys.dont_write_bytecode = True
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
@@ -591,10 +595,10 @@ def root_worker(run):
     signal.signal(signal.SIGALRM, interrupted)
     signal.alarm(370)
     try:
-        from tools.host_setup import provision_cgroup
-
         verify_public_runtime(run, operator.pw_uid)
         report["checks"]["public_runtime_permissions"] = True
+        from tools.host_setup import provision_cgroup
+
         parent = provision_cgroup(operator)
         account = "bull-gw-" + secrets.token_hex(4)
         account_command(
@@ -639,6 +643,7 @@ def root_worker(run):
             [
                 "/usr/bin/python3",
                 "-I",
+                "-B",
                 script,
                 "--_role",
                 "authority",
@@ -684,7 +689,7 @@ def root_worker(run):
             GIT_CONFIG_VALUE_0=str(ROOT),
         )
         agent_process = subprocess.Popen(
-            [python, "-I", script, "--_role", "agent", "--_run", str(run)],
+            [python, "-I", "-B", script, "--_role", "agent", "--_run", str(run)],
             stdout=agent_log,
             stderr=subprocess.STDOUT,
             env=agent_env,
@@ -943,6 +948,7 @@ def main(*, default_local=False):
                 "-n",
                 "/usr/bin/python3",
                 "-I",
+                "-B",
                 str(code / "tools/run_codespace_agent_gateway.py"),
                 "--_role",
                 "root",
