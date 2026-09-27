@@ -49,6 +49,15 @@ def inside() -> int:
     if '"bullgw"' in rules or "meta skuid " + str(nobody.pw_uid) not in rules:
         raise RuntimeError("unexpected nft UID rule")
     with tempfile.TemporaryDirectory(prefix="bull-egress-netns-") as scratch:
+        # A clean git worktree created by mktemp is owner-only. The gateway
+        # intentionally runs as an unprivileged UID, so stage read-only public
+        # modules in this namespace's temporary directory for its import.
+        stage = Path(scratch) / "src"
+        shutil.copytree(ROOT / "src/bulldog", stage / "bulldog",
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        Path(scratch).chmod(0o755)
+        for path in (stage, *stage.rglob("*")):
+            path.chmod(0o755 if path.is_dir() else 0o644)
         file = Path(scratch) / "rules.nft"
         file.write_text(rules)
         subprocess.run(["nft", "-c", "-f", str(file)], check=True)
@@ -82,15 +91,16 @@ asyncio.run(main())"""
             os.setgid(nobody.pw_gid)
             os.setuid(nobody.pw_uid)
 
-        gateway = subprocess.Popen([sys.executable, "-c", runner], cwd=ROOT,
-                                   env=dict(os.environ, PYTHONPATH=str(ROOT / "src")),
+        gateway = subprocess.Popen([sys.executable, "-c", runner], cwd=stage,
+                                   env=dict(os.environ, PYTHONPATH=str(stage)),
                                    preexec_fn=drop_privileges, stdout=subprocess.DEVNULL,
                                    stderr=subprocess.PIPE, start_new_session=True)
         checks = {}
         try:
             for _ in range(40):
                 if gateway.poll() is not None:
-                    raise RuntimeError("gateway exited before readiness")
+                    reason = gateway.stderr.read(1500).decode("utf-8", "replace") if gateway.stderr else ""
+                    raise RuntimeError("gateway exited before readiness: " + reason[-1200:])
                 try:
                     with socket.create_connection(("127.0.0.1", 9443), timeout=.1):
                         break
