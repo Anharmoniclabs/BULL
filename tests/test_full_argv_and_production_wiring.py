@@ -40,7 +40,9 @@ def test_namespace_backend_defaults_to_read_only(monkeypatch, tmp_path):
     from bulldog.namespace_sandbox import NamespaceSandbox
     import inspect
 
-    assert inspect.signature(NamespaceSandbox.run).parameters["writable"].default is False
+    assert (
+        inspect.signature(NamespaceSandbox.run).parameters["writable"].default is False
+    )
 
 
 def test_namespace_backend_rejects_root_writable_workspace(monkeypatch, tmp_path):
@@ -124,7 +126,9 @@ def test_legacy_production_boolean_is_never_a_production_boundary():
         trace=object(),
         engine=SimpleNamespace(
             evaluate=lambda action: None,
-            policy=SimpleNamespace(global_capability_ceiling=frozenset({Capability.PROCESS_EXEC})),
+            policy=SimpleNamespace(
+                global_capability_ceiling=frozenset({Capability.PROCESS_EXEC})
+            ),
             ledger=SimpleNamespace(
                 remote_anchor_url="https://audit.example/",
                 remote_anchor_key=b"key",
@@ -159,33 +163,54 @@ def test_empty_grant_returns_denial_without_sandbox_effect(tmp_path, production)
     from bulldog.profiles import ProductionRuntime
 
     sandbox = RecordingSandbox()
-    runtime = object.__new__(ProductionRuntime) if production else object.__new__(BulldogRuntime)
-    BulldogRuntime.__init__(runtime, sandbox=sandbox, malware_scanner=CleanScanner(),
-                            require_full_argv_binding=production)
+    runtime = (
+        object.__new__(ProductionRuntime)
+        if production
+        else object.__new__(BulldogRuntime)
+    )
+    BulldogRuntime.__init__(
+        runtime,
+        sandbox=sandbox,
+        malware_scanner=CleanScanner(),
+        require_full_argv_binding=production,
+    )
     if production:
         runtime._permit_key = b"test-only-dispatch-permit-key-0000"
         runtime.verify_trusted_state = lambda: None
-    dispatcher = object.__new__(ProductionDispatcher if production else CapabilityDispatcher)
+    dispatcher = object.__new__(
+        ProductionDispatcher if production else CapabilityDispatcher
+    )
     dispatcher.runtime = runtime
     dispatcher.production_mode = production
     dispatcher.domain_registry = None
     dispatcher.freeze_on_violation = True
     request = DispatchRequest(
-        proposal={"capability": "process.exec", "operation": "execute", "resource": "/usr/bin/true"},
+        proposal={
+            "capability": "process.exec",
+            "operation": "execute",
+            "resource": "/usr/bin/true",
+        },
         trusted=TrustedExecutionContext("fixture", (Provenance.HUMAN,), "fixture"),
-        granted_capabilities=frozenset(), authorized_command=("/usr/bin/true",))
+        granted_capabilities=frozenset(),
+        authorized_command=("/usr/bin/true",),
+    )
     result = dispatcher.execute(request, ["/usr/bin/true"], project_root=tmp_path)
     assert result.evaluation.decision == Decision.DENY
     assert result.executed is False
     assert sandbox.command is None
 
 
-@pytest.mark.parametrize("actual,authorized", [
-    (("/usr/bin/true",), None),
-    (("/usr/bin/true", "extra"), ("/usr/bin/true",)),
-    (("/usr/bin/false",), ("/usr/bin/true",)),
-])
-def test_production_binding_rejects_unauthorized_vector_before_runtime(tmp_path, actual, authorized):
+@pytest.mark.parametrize(
+    "actual,authorized",
+    [
+        (("/usr/bin/true",), None),
+        (("/usr/bin/true", "extra"), ("/usr/bin/true",)),
+        (("/usr/bin/false",), ("/usr/bin/true",)),
+    ],
+)
+def test_production_binding_rejects_unauthorized_vector_before_runtime(
+    tmp_path, actual, authorized
+):
     from bulldog.canonicalizer import TrustedExecutionContext
     from bulldog.dispatcher import DispatchRequest
 
@@ -193,12 +218,19 @@ def test_production_binding_rejects_unauthorized_vector_before_runtime(tmp_path,
     dispatcher = object.__new__(ProductionDispatcher)
     dispatcher.production_mode = True
     dispatcher.domain_registry = None
-    dispatcher.runtime = SimpleNamespace(verify_trusted_state=lambda: None,
-                                        execute=lambda *a, **kw: calls.append(kw))
+    dispatcher.runtime = SimpleNamespace(
+        verify_trusted_state=lambda: None, execute=lambda *a, **kw: calls.append(kw)
+    )
     request = DispatchRequest(
-        proposal={"capability": "process.exec", "operation": "execute", "resource": "/usr/bin/true"},
+        proposal={
+            "capability": "process.exec",
+            "operation": "execute",
+            "resource": "/usr/bin/true",
+        },
         trusted=TrustedExecutionContext("fixture", (Provenance.HUMAN,), "fixture"),
-        granted_capabilities=frozenset({Capability.PROCESS_EXEC}), authorized_command=authorized)
+        granted_capabilities=frozenset({Capability.PROCESS_EXEC}),
+        authorized_command=authorized,
+    )
     with pytest.raises(DispatchDenied):
         dispatcher.execute(request, actual, project_root=tmp_path)
     assert calls == []

@@ -8,6 +8,7 @@ Transparent sockets lack a verified actor identity, so this runner does not
 attach shared upstream secrets. Credentialed effects need a separate
 identity-bound host broker.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,8 +56,10 @@ def load_policy(path: str) -> EgressPolicy:
         sys.exit(f"fail-closed: policy file {path} unparseable: {exc}")
     hosts = cfg.get("hosts") if type(cfg) is dict else None
     if not isinstance(hosts, dict) or not hosts:
-        sys.exit("fail-closed: policy has empty/missing hosts allowlist "
-                 "(deny-all is the intended default; edit the policy file)")
+        sys.exit(
+            "fail-closed: policy has empty/missing hosts allowlist "
+            "(deny-all is the intended default; edit the policy file)"
+        )
     return EgressPolicy(hosts)
 
 
@@ -67,7 +70,11 @@ def main(argv=None) -> int:
     ap.add_argument("--transparent-port", type=int, default=9443)
     ap.add_argument("--dns-port", type=int, default=1953)
     ap.add_argument("--dns-upstream", default="127.0.0.53")
-    ap.add_argument("--check-policy", action="store_true", help="Validate configured policy and exit")
+    ap.add_argument(
+        "--check-policy",
+        action="store_true",
+        help="Validate configured policy and exit",
+    )
     args = ap.parse_args(argv)
 
     policy = load_policy(args.policy)
@@ -82,16 +89,21 @@ def main(argv=None) -> int:
         dns_upstream = parse_dns_upstream(args.dns_upstream)
     except ValueError as exc:
         ap.error(str(exc))
-    cfg = GatewayConfig(listen_host=args.listen,
-                        transparent_port=args.transparent_port,
-                        dns_port=args.dns_port,
-                        dns_upstream=dns_upstream)
+    cfg = GatewayConfig(
+        listen_host=args.listen,
+        transparent_port=args.transparent_port,
+        dns_port=args.dns_port,
+        dns_upstream=dns_upstream,
+    )
     gw = EgressGateway(policy, cfg)
 
     async def serve():
         await gw.start()
-        print(f"bull egress gateway: transparent={args.listen}:{args.transparent_port} "
-              f"dns={args.dns_port} hosts={sorted(policy._rules)}", flush=True)
+        print(
+            f"bull egress gateway: transparent={args.listen}:{args.transparent_port} "
+            f"dns={args.dns_port} hosts={sorted(policy._rules)}",
+            flush=True,
+        )
         await asyncio.Event().wait()  # run until stopped
 
     try:

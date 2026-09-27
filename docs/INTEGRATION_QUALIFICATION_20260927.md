@@ -1,5 +1,12 @@
 # BULL integration candidate and live KVM status — 2026-09-27 UTC
 
+> **Historical integration notes.** The sections below record successive stages
+> of the September 27 work. Statements such as “blocked” or “not yet tested”
+> describe the stage in which they were written. For the later `e6df4de`
+> combined candidate and its remaining checks, read
+> [Human-first production assurance](HUMAN_FIRST_PRODUCTION_ASSURANCE.md).
+> Earlier results remain attached to their original source revisions.
+
 Candidate based on hardening PR #81 (`f6a0cb935a3c89173a2d074cc00e53f8f5bc90e1`)
 plus selected source from command-console PR #76, egress PR #79 and lifecycle
 PR #80. The alternate UI PR #73 remains separate: one packaged `bull console`

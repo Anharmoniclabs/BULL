@@ -4,14 +4,14 @@ on:
   pull_request:
     branches: [main, hardening/research-assurance-20260927]
     paths:
-      - 'experiments/lifecycle_governance/**'
-      - 'src/bulldog/lifecycle_*.py'
-      - 'tools/run_lifecycle_lab.py'
-      - 'tools/check_lifecycle_browser.py'
-      - 'tests/test_lifecycle_*.py'
-      - '.github/workflows/lifecycle-governance-lab.yml'
+      - "experiments/lifecycle_governance/**"
+      - "src/bulldog/lifecycle_*.py"
+      - "tools/run_lifecycle_lab.py"
+      - "tools/check_lifecycle_browser.py"
+      - "tests/test_lifecycle_*.py"
+      - ".github/workflows/lifecycle-governance-lab.yml"
   push:
-    branches: ['feat/lifecycle-governance-lab-*']
+    branches: ["feat/lifecycle-governance-lab-*"]
 
 permissions:
   contents: read
@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.13']
+        python-version: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

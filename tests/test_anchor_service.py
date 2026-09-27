@@ -8,8 +8,21 @@ import threading
 
 import pytest
 
-from bulldog.anchor_service import AnchorError, AnchorStore, authenticate, canonical, checkpoint, decode, make_server, session_key
-from bulldog.audit_transport import AnchorIdentity, HTTPSAnchorTransport, HostAnchorRelay
+from bulldog.anchor_service import (
+    AnchorError,
+    AnchorStore,
+    authenticate,
+    canonical,
+    checkpoint,
+    decode,
+    make_server,
+    session_key,
+)
+from bulldog.audit_transport import (
+    AnchorIdentity,
+    HTTPSAnchorTransport,
+    HostAnchorRelay,
+)
 from bulldog.audit import AuditLedger, AuditIntegrityError
 
 
@@ -68,13 +81,16 @@ def test_budget_exhaustion_fails_closed(tmp_path):
 
 def test_lost_ack_keeps_evidence_and_retry_does_not_duplicate(tmp_path):
     store, _, session, key = setup_store(tmp_path)
+
     class Upstream:
         identity = AnchorIdentity(session, key)
         attempts = 0
+
         def submit(self, sequence, data):
             self.attempts += 1
             if self.attempts == 1:
                 raise TimeoutError("remote acknowledgement lost")
+
     upstream = Upstream()
     relay = HostAnchorRelay(store, upstream, session)
     message = checkpoint(session, 1, record(), key)
@@ -103,14 +119,17 @@ def test_ack_cannot_cross_session_sequence_or_direction(tmp_path):
 
 def test_ledger_blocks_after_missing_ack_and_explicit_recovery(tmp_path):
     store, _, session, key = setup_store(tmp_path)
+
     class Transport:
         identity = AnchorIdentity(session, key)
         fail = False
+
         def submit(self, sequence, data):
             ack = store.accept(checkpoint(session, sequence, data, key))
             if self.fail:
                 raise TimeoutError("acknowledgement lost after durable acceptance")
             return ack
+
     transport = Transport()
     ledger = AuditLedger(tmp_path / "ledger.jsonl", transport=transport)
     ledger.append_event("open", {"session": session})
@@ -128,7 +147,11 @@ def test_ledger_blocks_after_missing_ack_and_explicit_recovery(tmp_path):
 
 
 def test_legacy_url_ledger_cannot_satisfy_production(tmp_path):
-    ledger = AuditLedger(tmp_path / "ledger", remote_anchor_url="https://example.invalid/anchor", remote_anchor_key="test")
+    ledger = AuditLedger(
+        tmp_path / "ledger",
+        remote_anchor_url="https://example.invalid/anchor",
+        remote_anchor_key="test",
+    )
     assert ledger.production_anchor_ready is False
 
 
@@ -152,21 +175,47 @@ def test_oversize_transport_record_rejected_before_local_append(tmp_path):
     assert ledger.verify().valid
 
 
-@pytest.mark.skipif(not shutil.which("openssl"), reason="openssl required for local TLS fixture")
+@pytest.mark.skipif(
+    not shutil.which("openssl"), reason="openssl required for local TLS fixture"
+)
 def test_real_local_tls_acceptance_and_unavailable_service(tmp_path):
     store, _, session, key = setup_store(tmp_path)
     cert, tls_key = tmp_path / "cert.pem", tmp_path / "key.pem"
-    subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
-                    "-subj", "/CN=localhost", "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
-                    "-keyout", str(tls_key), "-out", str(cert)], check=True, capture_output=True, timeout=15)
+    subprocess.run(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-days",
+            "1",
+            "-subj",
+            "/CN=localhost",
+            "-addext",
+            "subjectAltName=DNS:localhost,IP:127.0.0.1",
+            "-keyout",
+            str(tls_key),
+            "-out",
+            str(cert),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=15,
+    )
     server = make_server(store, ("127.0.0.1", 0))
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain(cert, tls_key)
     server.socket = context.wrap_socket(server.socket, server_side=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    transport = HTTPSAnchorTransport(f"https://localhost:{server.server_port}/v1/checkpoints",
-                                    AnchorIdentity(session, key), test_ca=cert, timeout=1)
+    transport = HTTPSAnchorTransport(
+        f"https://localhost:{server.server_port}/v1/checkpoints",
+        AnchorIdentity(session, key),
+        test_ca=cert,
+        timeout=1,
+    )
     try:
         assert transport.production_ready is False
         ack = transport.submit(1, record())

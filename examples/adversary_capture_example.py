@@ -59,8 +59,10 @@ def main():
     for label, respond, findings in swarm:
         record = cap.capture(label=label, respond=respond, findings=findings)
         print(f"\n{label}")
-        print(f"  model family : {record.fingerprint.family} "
-              f"(confidence {record.fingerprint.confidence:.2f})")
+        print(
+            f"  model family : {record.fingerprint.family} "
+            f"(confidence {record.fingerprint.confidence:.2f})"
+        )
         print(f"  initial task : {record.initial_task or '(not disclosed)'}")
         print(f"  swarm        : {record.swarm_id}")
         print(f"  findings     : {record.findings}")
@@ -68,16 +70,22 @@ def main():
 
     print("\n=== TABULATION ===")
     report = cap.report()
-    print(json.dumps(
-        {k: report[k] for k in
-         ("total_attackers", "by_model_family", "swarms", "quarantined")},
-        indent=2,
-    ))
+    print(
+        json.dumps(
+            {
+                k: report[k]
+                for k in ("total_attackers", "by_model_family", "swarms", "quarantined")
+            },
+            indent=2,
+        )
+    )
 
     print("\n=== QUARANTINE CELLS ===")
     for cell in report["cells"]:
-        print(f"{cell['cell_id']}  profile={cell['profile']:<7} "
-              f"locked={cell['locked']}  findings={cell['findings']}")
+        print(
+            f"{cell['cell_id']}  profile={cell['profile']:<7} "
+            f"locked={cell['locked']}  findings={cell['findings']}"
+        )
 
 
 if __name__ == "__main__":

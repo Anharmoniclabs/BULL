@@ -1,4 +1,5 @@
 """End-to-end tests for bulldog.egress_gateway (real sockets, real TLS)."""
+
 import asyncio
 import datetime
 import json
@@ -13,8 +14,12 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
-from bulldog.egress_gateway import (EgressGateway, EgressPolicy, GatewayConfig,
-                                    extract_sni)
+from bulldog.egress_gateway import (
+    EgressGateway,
+    EgressPolicy,
+    GatewayConfig,
+    extract_sni,
+)
 
 HTTP_HOST = "api.example.com"
 TLS_HOST = "secure.example.org"
@@ -48,29 +53,40 @@ class TestEndToEnd:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.events = []
-        self.policy = EgressPolicy({
-            HTTP_HOST: {"methods": ["GET"], "paths": ["/v1/"]},
-            TLS_HOST: {},
-            # HOST_BAD deliberately absent -> must be denied
-        })
+        self.policy = EgressPolicy(
+            {
+                HTTP_HOST: {"methods": ["GET"], "paths": ["/v1/"]},
+                TLS_HOST: {},
+                # HOST_BAD deliberately absent -> must be denied
+            }
+        )
         key = rsa.generate_private_key(65537, 2048)
-        cert = (x509.CertificateBuilder()
-                .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, TLS_HOST)]))
-                .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, TLS_HOST)]))
-                .public_key(key.public_key())
-                .serial_number(x509.random_serial_number())
-                .not_valid_before(datetime.datetime(2026, 9, 1))
-                .not_valid_after(datetime.datetime(2027, 9, 1))
-                .add_extension(x509.SubjectAlternativeName(
-                    [x509.DNSName(TLS_HOST)]), critical=False)
-                .sign(key, hashes.SHA256()))
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(
+                x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, TLS_HOST)])
+            )
+            .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, TLS_HOST)]))
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime(2026, 9, 1))
+            .not_valid_after(datetime.datetime(2027, 9, 1))
+            .add_extension(
+                x509.SubjectAlternativeName([x509.DNSName(TLS_HOST)]), critical=False
+            )
+            .sign(key, hashes.SHA256())
+        )
         d = tempfile.mkdtemp()
         self.crt = os.path.join(d, "c.crt")
         pem = os.path.join(d, "k.pem")
         open(self.crt, "wb").write(cert.public_bytes(serialization.Encoding.PEM))
-        open(pem, "wb").write(key.private_bytes(
-            serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption()))
+        open(pem, "wb").write(
+            key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption(),
+            )
+        )
         self.tls_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.tls_ctx.load_cert_chain(self.crt, pem)
         asyncio.run(self._run())
@@ -78,19 +94,30 @@ class TestEndToEnd:
 
     async def _run(self):
         loop = asyncio.get_running_loop()
+
         async def http_origin(reader, writer):
             try:
                 head = await asyncio.wait_for(reader.read(4096), 5)
                 lines = head.split(b"\r\n")
-                body = json.dumps({
-                    "request_line": lines[0].decode("latin-1"),
-                    "auth_value": next((l.decode("latin-1").split(":", 1)[1].strip()
-                                        for l in lines
-                                        if l.lower().startswith(b"authorization:")),
-                                       None)}).encode()
-                writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
-                             + f"Content-Length: {len(body)}\r\n".encode()
-                             + b"Connection: close\r\n\r\n" + body)
+                body = json.dumps(
+                    {
+                        "request_line": lines[0].decode("latin-1"),
+                        "auth_value": next(
+                            (
+                                l.decode("latin-1").split(":", 1)[1].strip()
+                                for l in lines
+                                if l.lower().startswith(b"authorization:")
+                            ),
+                            None,
+                        ),
+                    }
+                ).encode()
+                writer.write(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                    + f"Content-Length: {len(body)}\r\n".encode()
+                    + b"Connection: close\r\n\r\n"
+                    + body
+                )
                 await writer.drain()
             except Exception:
                 pass
@@ -125,35 +152,43 @@ class TestEndToEnd:
                 return ("127.0.0.1", tls_port)
             return ("127.0.0.1", origin_port)
 
-        gw = EgressGateway(self.policy, GatewayConfig(resolver=resolver),
-                            audit=self.events.append,
-                            header_injector=lambda req: {
-                                "Authorization": "Bearer sk-live-REAL-SECRET"})
+        gw = EgressGateway(
+            self.policy,
+            GatewayConfig(resolver=resolver),
+            audit=self.events.append,
+            header_injector=lambda req: {"Authorization": "Bearer sk-live-REAL-SECRET"},
+        )
         gw_srv = await asyncio.start_server(gw._handle_stream, "127.0.0.1", 0)
         gw_port = gw_srv.sockets[0].getsockname()[1]
         self.gw = gw
 
         # HTTP allowed + credential isolation
         r, w = await asyncio.open_connection("127.0.0.1", gw_port)
-        w.write(f"GET /v1/data HTTP/1.1\r\nHost: {HTTP_HOST}\r\n"
-                "Authorization: Bearer AGENT-SENT-THIS\r\n"
-                "Connection: close\r\n\r\n".encode())
+        w.write(
+            f"GET /v1/data HTTP/1.1\r\nHost: {HTTP_HOST}\r\n"
+            "Authorization: Bearer AGENT-SENT-THIS\r\n"
+            "Connection: close\r\n\r\n".encode()
+        )
         await w.drain()
         self.http_resp = await r.read(65536)
         w.close()
 
         # HTTP denied (method)
         r, w = await asyncio.open_connection("127.0.0.1", gw_port)
-        w.write(f"POST /v1/data HTTP/1.1\r\nHost: {HTTP_HOST}\r\n"
-                "Content-Length: 0\r\nConnection: close\r\n\r\n".encode())
+        w.write(
+            f"POST /v1/data HTTP/1.1\r\nHost: {HTTP_HOST}\r\n"
+            "Content-Length: 0\r\nConnection: close\r\n\r\n".encode()
+        )
         await w.drain()
         self.method_denied_resp = await r.read(65536)
         w.close()
 
         # HTTP denied (host)
         r, w = await asyncio.open_connection("127.0.0.1", gw_port)
-        w.write(f"GET /x HTTP/1.1\r\nHost: {HOST_BAD}\r\n"
-                "Connection: close\r\n\r\n".encode())
+        w.write(
+            f"GET /x HTTP/1.1\r\nHost: {HOST_BAD}\r\n"
+            "Connection: close\r\n\r\n".encode()
+        )
         await w.drain()
         self.host_denied_resp = await r.read(65536)
         w.close()
@@ -170,6 +205,7 @@ class TestEndToEnd:
             data = tls.recv(4096)
             tls.close()
             return data.startswith(b"TLS-OK:")
+
         self.tls_allowed = await loop.run_in_executor(None, tls_good)
 
         # TLS denied (SNI) -> connection killed during handshake
@@ -190,6 +226,7 @@ class TestEndToEnd:
                     s.close()
                 except Exception:
                     pass
+
         self.tls_blocked = await loop.run_in_executor(None, tls_bad)
 
         # unknown shape -> fail-closed
@@ -199,7 +236,8 @@ class TestEndToEnd:
         await asyncio.sleep(0.2)
         self.unknown_denied = any(
             e.get("kind") == "unknown_shape" and e["event"] == "deny"
-            for e in self.events)
+            for e in self.events
+        )
         w.close()
 
         origin_srv.close()
@@ -243,18 +281,33 @@ class TestEndToEnd:
 
 def test_tls_cannot_bypass_method_or_path_policy():
     policy = EgressPolicy({"api.example.com": {"methods": ["GET"], "paths": ["/v1/"]}})
-    assert policy.decide(__import__("bulldog.egress_gateway", fromlist=["EgressRequest"]).EgressRequest(
-        "tls_sni", "api.example.com"))[0] is False
-    assert policy.decide(__import__("bulldog.egress_gateway", fromlist=["EgressRequest"]).EgressRequest(
-        "http_request", "api.example.com", "GET", "/v1/item"))[0] is True
+    assert (
+        policy.decide(
+            __import__(
+                "bulldog.egress_gateway", fromlist=["EgressRequest"]
+            ).EgressRequest("tls_sni", "api.example.com")
+        )[0]
+        is False
+    )
+    assert (
+        policy.decide(
+            __import__(
+                "bulldog.egress_gateway", fromlist=["EgressRequest"]
+            ).EgressRequest("http_request", "api.example.com", "GET", "/v1/item")
+        )[0]
+        is True
+    )
 
 
-@pytest.mark.parametrize("policy", [
-    {"api.example.com": {"methods": "GET"}},
-    {"api.example.com": {"paths": ["bad"]}},
-    {"api.example.com": {"unexpected": "allow"}},
-    {"api.example.com\\r\\nHost: evil": {}},
-])
+@pytest.mark.parametrize(
+    "policy",
+    [
+        {"api.example.com": {"methods": "GET"}},
+        {"api.example.com": {"paths": ["bad"]}},
+        {"api.example.com": {"unexpected": "allow"}},
+        {"api.example.com\\r\\nHost: evil": {}},
+    ],
+)
 def test_malformed_egress_policy_fails_closed(policy):
     with pytest.raises(ValueError):
         EgressPolicy(policy)
@@ -264,13 +317,17 @@ def test_fragmented_http_authorization_is_complete_before_forwarding():
     async def exercise():
         captured = []
         gateway = EgressGateway(EgressPolicy({"api.example.com": {}}))
+
         async def inspect(first, reader, writer, peer):
             captured.append(first)
             writer.close()
+
         gateway._handle_http = inspect
         server = await asyncio.start_server(gateway._handle_stream, "127.0.0.1", 0)
         try:
-            reader, writer = await asyncio.open_connection("127.0.0.1", server.sockets[0].getsockname()[1])
+            reader, writer = await asyncio.open_connection(
+                "127.0.0.1", server.sockets[0].getsockname()[1]
+            )
             writer.write(b"GET / HTTP/1.1\r\nHost: api.example.com\r\n")
             await writer.drain()
             await asyncio.sleep(0.02)
@@ -285,11 +342,28 @@ def test_fragmented_http_authorization_is_complete_before_forwarding():
         finally:
             server.close()
             await server.wait_closed()
+
     asyncio.run(exercise())
 
 
 def test_ambiguous_http_headers_and_absolute_target_denied():
     from bulldog.egress_gateway import parse_http_head
-    assert parse_http_head(b"GET / HTTP/1.1\r\nHost: api.example.com\r\nHost: evil.example\r\n\r\n") is None
-    assert parse_http_head(b"GET https://evil.example/ HTTP/1.1\r\nHost: api.example.com\r\n\r\n") is None
-    assert parse_http_head(b"GET / HTTP/1.1\r\nHost: api.example.com\r\n folded: value\r\n\r\n") is None
+
+    assert (
+        parse_http_head(
+            b"GET / HTTP/1.1\r\nHost: api.example.com\r\nHost: evil.example\r\n\r\n"
+        )
+        is None
+    )
+    assert (
+        parse_http_head(
+            b"GET https://evil.example/ HTTP/1.1\r\nHost: api.example.com\r\n\r\n"
+        )
+        is None
+    )
+    assert (
+        parse_http_head(
+            b"GET / HTTP/1.1\r\nHost: api.example.com\r\n folded: value\r\n\r\n"
+        )
+        is None
+    )

@@ -1,7 +1,9 @@
 """Tests for bulldog.token_broker (real crypto paths, fail-closed)."""
+
 import time
 import pytest
 from bulldog.token_broker import TokenBroker, BrokerError
+
 
 @pytest.fixture
 def broker():
@@ -9,16 +11,20 @@ def broker():
     b.store_upstream_secret("api.example.com", b"sk-live-UPSTREAM-SECRET")
     return b
 
+
 class TestVault:
     def test_roundtrip(self, broker):
         tok, _ = broker.mint("agent-1", "NETWORK_EGRESS", "api.example.com")
-        assert broker.exchange(tok, "NETWORK_EGRESS",
-                               "api.example.com") == b"sk-live-UPSTREAM-SECRET"
+        assert (
+            broker.exchange(tok, "NETWORK_EGRESS", "api.example.com")
+            == b"sk-live-UPSTREAM-SECRET"
+        )
 
     def test_unknown_secret(self, broker):
         tok, _ = broker.mint("agent-1", "NETWORK_EGRESS", "api.example.com")
         with pytest.raises(BrokerError):
             broker.exchange(tok, "NETWORK_EGRESS", "nope.example.com")
+
 
 class TestAttackPaths:
     def test_capability_mismatch_blocked(self, broker):
@@ -54,6 +60,7 @@ class TestAttackPaths:
         with pytest.raises(BrokerError):
             broker.verify(tok)
 
+
 class TestRotation:
     def test_rotate_moves_minting_epoch(self, broker):
         _, m_old = broker.mint("a", "NETWORK_EGRESS", "api.example.com")
@@ -66,7 +73,7 @@ class TestRotation:
         broker.verify(tok)  # valid now
         broker.rotate()
         broker.verify(tok)  # still valid in grace window
-        time.sleep(0.6)     # grace = 0.5s
+        time.sleep(0.6)  # grace = 0.5s
         with pytest.raises(BrokerError):
             broker.verify(tok)
 

@@ -1,3 +1,5 @@
+"""Authorize outbound broker requests over a local socket."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,7 +10,9 @@ import json
 import os
 import socket
 from .socket_hardening import (
-    HardeningError, accept_authenticated, bind_private_unix_socket,
+    HardeningError,
+    accept_authenticated,
+    bind_private_unix_socket,
 )
 import ssl
 import struct
@@ -72,9 +76,13 @@ class EgressBroker:
         allowed_peer_uids: set[int] | frozenset[int] | None = None,
         require_peer_credentials: bool = False,
     ):
-        self.trace = trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
+        self.trace = (
+            trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
+        )
         self.socket_path = Path(socket_path)
-        self.allowed_hosts = frozenset(host.lower().rstrip(".") for host in allowed_hosts)
+        self.allowed_hosts = frozenset(
+            host.lower().rstrip(".") for host in allowed_hosts
+        )
         if self.allowed_hosts:
             self.trace.emit("GrantBroker")
         self.allowed_methods = frozenset(method.upper() for method in allowed_methods)
@@ -84,7 +92,8 @@ class EgressBroker:
         self.audit = audit
         self.require_peer_credentials = bool(require_peer_credentials)
         self.allowed_peer_uids = frozenset(
-            int(uid) for uid in (
+            int(uid)
+            for uid in (
                 allowed_peer_uids
                 if allowed_peer_uids is not None
                 else ({os.getuid()} if self.require_peer_credentials else set())
@@ -103,9 +112,7 @@ class EgressBroker:
             self.socket_path.unlink()
         except FileNotFoundError:
             pass
-        server = bind_private_unix_socket(
-            self.socket_path, backlog=16, timeout=0.25
-        )
+        server = bind_private_unix_socket(self.socket_path, backlog=16, timeout=0.25)
         self._server = server
         self._stop.clear()
         self._thread = threading.Thread(

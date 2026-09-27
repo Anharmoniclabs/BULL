@@ -108,3 +108,15 @@ probe; the console never upgrades case status from process presence or fixtures.
 The console exposes no lifecycle mint/approve endpoint, credential vault or
 arbitrary network-policy change. A real candidate qualification must use the
 five-case deployment check and its source/image-bound evidence separately.
+
+## Reading a qualification status
+
+`--qualification-dir`, `--offline-egress-dir`, `--gateway-lab-dir` and
+`--gateway-systemd-dir` select different private report types. Select the directory
+for the fixture you actually ran. Do not combine their meanings into one general
+security score.
+
+`qualification.py` checks report consistency and source identity. A passing report
+from an older commit is `STALE` for the current checkout. `UNVERIFIED` means the
+required deployment evidence has not been supplied. The console does not inspect
+a guest merely by displaying its report.

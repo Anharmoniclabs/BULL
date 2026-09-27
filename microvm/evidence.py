@@ -1,4 +1,5 @@
 """Host-side audit evidence helpers for deployment tests, not guest authority."""
+
 from __future__ import annotations
 
 import json
@@ -17,12 +18,21 @@ def anchor_master(key_file: Path | None = None) -> bytes:
         fd = os.open(key_file, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
         with os.fdopen(fd, "rb") as stream:
             info = os.fstat(stream.fileno())
-            if (not stat.S_ISREG(info.st_mode) or info.st_uid not in {0, os.getuid()}
-                    or info.st_mode & 0o077 or info.st_nlink != 1 or info.st_size > 4096):
-                raise AnchorError("anchor key file must be private, owner-controlled, and bounded")
+            if (
+                not stat.S_ISREG(info.st_mode)
+                or info.st_uid not in {0, os.getuid()}
+                or info.st_mode & 0o077
+                or info.st_nlink != 1
+                or info.st_size > 4096
+            ):
+                raise AnchorError(
+                    "anchor key file must be private, owner-controlled, and bounded"
+                )
             key = stream.read(4097)
     if not 32 <= len(key) <= 4096:
-        raise AnchorError("provide the collector's exact master key, between 32 and 4096 bytes")
+        raise AnchorError(
+            "provide the collector's exact master key, between 32 and 4096 bytes"
+        )
     return key
 
 
@@ -46,9 +56,15 @@ class ReceiptTransport:
         return ack
 
     def completion(self, session: str, audit: dict) -> dict:
-        if (session != self.identity.session or audit.get("valid") is not True
-                or type(audit.get("records")) is not int or audit["records"] < 1
-                or self.last_receipt is None):
+        if (
+            session != self.identity.session
+            or audit.get("valid") is not True
+            or type(audit.get("records")) is not int
+            or audit["records"] < 1
+            or self.last_receipt is None
+        ):
             raise AnchorError("missing or mismatched completion audit evidence")
-        self.identity.check_ack(self.last_receipt, audit["records"], audit.get("head_hash"))
+        self.identity.check_ack(
+            self.last_receipt, audit["records"], audit.get("head_hash")
+        )
         return dict(self.last_receipt)

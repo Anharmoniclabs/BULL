@@ -1,6 +1,7 @@
 #!/usr/sbin/nft -f
-# Dedicated guest only. NAT redirects web and DNS; a separate filter drops
-# everything else. The gateway UID is the explicit upstream trust boundary.
+# Dedicated guest only. NAT redirects TCP web and UDP DNS traffic.
+# The filter permits gateway-owned output, translated gateway traffic and
+# loopback (except the explicit drops below); other output is dropped.
 table inet bull_egress {
     chain redirect_output {
         type nat hook output priority -100; policy accept;

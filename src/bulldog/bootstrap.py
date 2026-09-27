@@ -1,3 +1,5 @@
+"""Prepare private operator state and launch the local console."""
+
 from __future__ import annotations
 
 """Portable setup for the BULL command center.
@@ -45,13 +47,19 @@ def _private_dir(path: Path) -> Path:
 
 def _state_dir(workspace: Path) -> Path:
     configured = os.environ.get("BULL_STATE_HOME", "").strip()
-    base = Path(configured).expanduser() if configured else Path.home() / ".local" / "state" / "bull"
+    base = (
+        Path(configured).expanduser()
+        if configured
+        else Path.home() / ".local" / "state" / "bull"
+    )
     digest = hashlib.sha256(str(workspace).encode()).hexdigest()[:12]
     return _private_dir((base / f"{workspace.name or 'workspace'}-{digest}").resolve())
 
 
 def _is_codespaces() -> bool:
-    return os.environ.get("CODESPACES", "").lower() == "true" or bool(os.environ.get("CODESPACE_NAME"))
+    return os.environ.get("CODESPACES", "").lower() == "true" or bool(
+        os.environ.get("CODESPACE_NAME")
+    )
 
 
 def _pick_port(host: str, preferred: int) -> int:
@@ -125,7 +133,10 @@ def prepare_launch_environment(
         url=_url(port, codespaces),
         codespaces=codespaces,
         clamav_available=shutil.which("clamscan") is not None,
-        qemu_available=shutil.which(os.environ.get("BULL_MICROVM_QEMU", "qemu-system-x86_64")) is not None,
+        qemu_available=shutil.which(
+            os.environ.get("BULL_MICROVM_QEMU", "qemu-system-x86_64")
+        )
+        is not None,
         kvm_available=kvm.exists() and os.access(kvm, os.R_OK | os.W_OK),
         unshare_available=shutil.which("unshare") is not None,
     )

@@ -1,77 +1,102 @@
 # Human-first production assurance
 
-## Authority rule
+BULL's purpose is to keep authority with the operator. A model, retrieved page,
+tool response or workload may propose an action. It must not create its own
+permission, enroll an approval credential or declare its own deployment safe.
+This document separates the implemented controls from the evidence still needed.
 
-An agent, model, retrieved document, tool response or workload process is an
-untrusted proposer. It cannot create permission, register a production adapter,
-enroll an approval credential, change policy, choose an evidence directory or
-declare its own result successful. Those actions remain host/operator owned.
+## What the production router covers
 
-The only currently routable agent-facing production effects are declared by
-`ProductionEffectRouter`: exact process execution, a network request and secret
-use. The latter two retain the existing signed human-approval gate and now use
-`DurableEffectJournal`. Unsupported message, publish, persistence, replication,
-access-control and security-control effects fail closed until a typed production
-adapter is implemented. Development callables do not become production adapters.
+`ProductionEffectRouter` accepts three operation names: `process.execute`,
+`network.request` and `secret.read`. It checks parameter shapes and calls
+`ProductionDispatcher`. Unsupported operations are denied at that entry point.
+This does not establish that every existing adapter or arbitrary callable uses it.
 
-## Contamination controls
+Process execution uses signed policy and dispatch authority. Consequential broker
+effects use the approval gate and `DurableEffectJournal`. There is an explicit
+exception for policy-authorized routine GET/HEAD requests in
+`ProductionDispatcher._perform_broker_effect`; these do not consume a fresh
+approval or journal entry. Read that branch before claiming all requests require
+a human signature.
 
-* External text and derived memory retain untrusted provenance.
-* Exact executable, arguments, target and parameters are bound before use.
-* Network access is mediated by explicit policy and guest nftables.
-* Secrets are released by a peer-authenticated broker for one named use.
-* Consequential operations require a short-lived credential signature.
-* A durable effect key is consumed before the external call. Uncertain calls are
-  reconciled by a trusted observer and are never automatically repeated.
-* Agent workloads run under a separate `bullagent` UID in the networked KVM
-  candidate. The gateway remains a distinct unprivileged `bullgw` UID.
-* Raw namespace workspaces are read-only by default. Writable binds are
-  `nosuid,nodev`, and a root service cannot request a writable host workspace.
+The journal consumes a key before dispatch. An uncertain external result requires
+trusted reconciliation and is not automatically retried. Exactly-once delivery
+also requires a contract with the external service; local bookkeeping alone
+cannot establish it.
 
-## Claims that remain bounded
+## Combined guest candidate: observed result
 
-A malicious host administrator, compromised kernel/hypervisor, hardware flaw or
-unknown VM escape can defeat software controls below that trust layer. BULL must
-report those assumptions instead of converting them into a PASS. Prompt
-injection resistance means injected text lacks authority at covered effect
-boundaries; it cannot mean that every future string or model behavior was tested.
+The operator supplied a Codespaces transcript for clean source
+`e6df4de481900262bb322e5c26d65967df8bf9bb`. The direct-init lab reported 12 passing
+checks. Its systemd candidate reported the same checks plus active service units,
+for 13 passing checks. The transcript is operator-reported evidence; the private
+reports and images have not been independently inspected for this documentation.
 
-## Required production candidate
+| Area | Named checks in the final candidate |
+|---|---|
+| Separate identities | `agent_workload_uid`, `gateway_uid` |
+| Allowed traffic | `direct_gateway_http`, `allowed_http` |
+| Denied traffic | `denied_http`, `denied_dns` |
+| Alternative routes | `ipv4_alt_closed`, `ipv6_alt_closed`, `ipv6_web_closed` |
+| Firewall observation | `filter_drop_counters` |
+| Stop and restart | `gateway_down_closed`, `restart_still_denies` |
+| Service startup | `service_units_active` |
 
-Preserve the pinned `-net none` image. Build a separately versioned candidate
-containing the agent workload UID, `ProductionEffectRouter`, actual
-`ProductionDispatcher` deployment state, `bullgw`, nftables and the actual
-systemd unit. Run allowed and denied commands plus HTTP, DNS, raw-IP, alternate
-IPv4/IPv6, gateway-stop/restart and audit-outage cases from the `bullagent`
-process. Bind reports to the clean source commit and image hashes. A candidate
-failure cannot be relabeled as an environmental skip.
+The fixture is a disposable Debian KVM guest with `bullagent`, `bullgw`, nftables
+and systemd. QEMU uses restricted user networking. The workload makes controlled
+network probes; it does not demonstrate the complete production dispatcher path.
+Passing these checks is not a measured probability of resisting arbitrary attacks.
 
-## Long-duration and statistical evidence
+From a clean KVM-enabled Codespace operator shell, in the repository root:
 
-`tools/run_assurance_campaign.py` repeatedly executes a trusted qualification
-command, fsyncs one hash-only record per iteration and binds the final report to
-an unchanged source revision. With zero failures it reports a one-sided 95%
-binomial upper bound. That number is meaningful only for representative,
-independent trials of the named fixture. It is never a universal escape rate.
-
-## Independent review package
-
-Give reviewers source commit and image hashes, this threat model, production
-effect coverage, setup scripts, failures, sanitized reports and exact rerun
-commands. Keep disposable credentials and private guest images out of the public
-bundle. Reviewers must select additional attacks; executing only the author's
-suite is reproduction, not an independent adversarial review.
-
-## One-command combined KVM candidate
-
-From a clean KVM-enabled Codespace operator shell:
-
-```bash
+```sh
 python3 tools/run_codespace_combined_candidate_kvm.py --install-deps
 ```
 
-This produces a fresh direct-init gateway lab and a cloned final systemd
-candidate. Its PASS covers distinct `bullagent` and `bullgw` UIDs, nftables,
-gateway behavior and actual service units in that disposable Debian image. It
-still reports the dispatcher workload route and pinned image release as separate
-gates.
+The runner creates a direct-init lab and clones it into a systemd candidate. Keep
+the printed evidence directories private. The separately pinned offline image
+continues to use `-net none`; this test does not turn it into a networked release.
+A new source revision needs its own run to claim current deployment evidence.
+
+## Next end-to-end check
+
+Build and pin a separately versioned networked image containing the agent
+workload, router, actual production dispatcher state, gateway, network rules and
+service units. Exercise allowed and denied commands, network and secret effects,
+approval failures and audit outages through the actual workload path. Bind its
+reports to the source revision and image hashes. This remains separate from the
+13-check candidate result above.
+
+## Other implemented controls to inspect
+
+- Exact command and request binding in the production dispatch path.
+- Broker-controlled secret release for a named use.
+- Separate workload and gateway users in the guest candidate.
+- Read-only raw namespace workspaces by default; writable binds use
+  `nosuid,nodev`, and root cannot request a writable host workspace.
+
+These are implementation claims. Consult [the code map](CODE_READING_GUIDE.md)
+and [security model](PRODUCTION_SECURITY.md) for their boundaries. Do not infer
+universal mediation of browser actions, messages, stored memory or other adapters.
+
+## Long-duration testing and outside review
+
+`tools/run_assurance_campaign.py` repeats a trusted qualification command and
+writes a durable hash-only record per iteration. It binds the final report to an
+unchanged source revision. Its zero-failure statistical bound assumes independent,
+representative trials of the named fixture. It is not a universal escape rate,
+and a runner's existence is not evidence that a multi-day campaign has completed.
+
+An outside reviewer should receive the source revision, image hashes, threat
+model, adapter coverage, failures, sanitized reports and exact commands. Reviewers
+must choose additional attacks; reproducing the author's suite is not equivalent
+to an independent adversarial review.
+
+## Trust limits
+
+A malicious administrator, compromised kernel or hypervisor, hardware flaw or
+unknown VM escape can defeat controls below that trust boundary. Prompt injection
+controls restrict the authority of untrusted text at covered effect boundaries;
+they cannot prove safety against every future model behavior. End-to-end signed
+hardware approval and formal equivalence between the design models and Python
+still require their own evidence.

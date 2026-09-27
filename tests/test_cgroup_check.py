@@ -1,4 +1,5 @@
 """Validation logic under real optimized interpreters; no isolation claims from mocks."""
+
 import os
 from pathlib import Path
 import subprocess
@@ -10,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Each interpreter receives known-good fixture evidence except for one selected
 # failure. Exercise check_limits itself, including both return codes and counters.
-FIXTURE = r'''
+FIXTURE = r"""
 import json, shutil, subprocess, sys, tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -75,24 +76,38 @@ with tempfile.TemporaryDirectory() as directory:
             if len(result) != 6 or any(v["status"] != "PASS" for v in result.values()):
                 raise SystemExit("incomplete fixture control result")
             print("CONTROL_PASS")
-'''
+"""
 
 
 @pytest.mark.parametrize("mode", ["normal", "-O", "-OO", "PYTHONOPTIMIZE"])
-@pytest.mark.parametrize("failure,expected", [
-    ("cpu-code", "CPU quota"), ("cpu-counter", "CPU quota"),
-    ("memory-code", "memory limit evidence"), ("memory-counter", "memory limit evidence"),
-    ("pids-code", "pids limit"), ("pids-counter", "pids limit"),
-    ("scope-cleanup", "resource probe scope"), ("descendant-cleanup", "descendant scope"),
-    ("none", ""),
-])
+@pytest.mark.parametrize(
+    "failure,expected",
+    [
+        ("cpu-code", "CPU quota"),
+        ("cpu-counter", "CPU quota"),
+        ("memory-code", "memory limit evidence"),
+        ("memory-counter", "memory limit evidence"),
+        ("pids-code", "pids limit"),
+        ("pids-counter", "pids limit"),
+        ("scope-cleanup", "resource probe scope"),
+        ("descendant-cleanup", "descendant scope"),
+        ("none", ""),
+    ],
+)
 def test_enforcement_failures_survive_optimization(mode, failure, expected):
     env = {k: v for k, v in os.environ.items() if not k.startswith("BULL_")}
     env.pop("PYTHONOPTIMIZE", None)
     flags = [] if mode in {"normal", "PYTHONOPTIMIZE"} else [mode]
     if mode == "PYTHONOPTIMIZE":
         env["PYTHONOPTIMIZE"] = "2"
-    result = subprocess.run([sys.executable, *flags, "-c", FIXTURE, str(ROOT), failure, expected],
-                            env=env, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(
+        [sys.executable, *flags, "-c", FIXTURE, str(ROOT), failure, expected],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert ("CONTROL_PASS" if failure == "none" else "EXPECTED_FAILURE:") in result.stdout
+    assert (
+        "CONTROL_PASS" if failure == "none" else "EXPECTED_FAILURE:"
+    ) in result.stdout

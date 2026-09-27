@@ -1,3 +1,5 @@
+"""Launch a bounded Linux namespace workload and verify its startup attestation."""
+
 from __future__ import annotations
 
 from contextlib import nullcontext
@@ -61,7 +63,9 @@ class SandboxOutputLimitExceeded(RuntimeError):
 # Maximum retained and permitted output per stream. This is intentionally
 # separate from the child cgroup budget: pipes are buffered by the host.
 DEFAULT_MAX_OUTPUT_BYTES = 1 << 20  # 1 MiB per stdout/stderr stream
-_OUTPUT_LIMIT_MARKER = b"\n[BULL: output limit exceeded; sandbox process group terminated]\n"
+_OUTPUT_LIMIT_MARKER = (
+    b"\n[BULL: output limit exceeded; sandbox process group terminated]\n"
+)
 
 
 def _terminate_process_group(proc: subprocess.Popen[bytes]) -> None:
@@ -123,7 +127,9 @@ def _run_bounded(
                 raise subprocess.TimeoutExpired(argv, timeout)
 
             events = selector.select(
-                None if deadline is None else max(0.0, deadline - __import__("time").monotonic())
+                None
+                if deadline is None
+                else max(0.0, deadline - __import__("time").monotonic())
             )
             for key, _ in events:
                 chunk = os.read(key.fileobj.fileno(), 65536)
@@ -156,7 +162,10 @@ def _run_bounded(
     if exceeded:
         # Place the marker on stderr even when stdout triggered the cap, so a
         # caller that logs only error output still sees why execution stopped.
-        stderr = (stderr[:max_output_bytes - len(_OUTPUT_LIMIT_MARKER)] + _OUTPUT_LIMIT_MARKER)
+        stderr = (
+            stderr[: max_output_bytes - len(_OUTPUT_LIMIT_MARKER)]
+            + _OUTPUT_LIMIT_MARKER
+        )
     return (
         returncode,
         stdout.decode("utf-8", errors="replace"),
@@ -169,13 +178,15 @@ def _detect_sandbox_python() -> str:
     candidates = []
     if override:
         candidates.append(str(override))
-    candidates.extend([
-        "/usr/bin/python3.13",
-        "/usr/bin/python3.12",
-        "/usr/bin/python3.11",
-        "/usr/bin/python3.10",
-        "/usr/bin/python3",
-    ])
+    candidates.extend(
+        [
+            "/usr/bin/python3.13",
+            "/usr/bin/python3.12",
+            "/usr/bin/python3.11",
+            "/usr/bin/python3.10",
+            "/usr/bin/python3",
+        ]
+    )
     for candidate in candidates:
         path = Path(candidate)
         if path.is_absolute() and path.is_file() and os.access(path, os.X_OK):
@@ -217,11 +228,15 @@ class NamespaceSandbox:
 
         self.launcher = Path(__file__).with_name("_namespace_launcher.sh")
         if not self.launcher.exists():
-            raise SandboxUnavailable("missing namespace launcher: " + str(self.launcher))
+            raise SandboxUnavailable(
+                "missing namespace launcher: " + str(self.launcher)
+            )
 
         self.sandbox_python = sandbox_python or _detect_sandbox_python()
         self.runtime_root = Path(
-            runtime_root if runtime_root is not None else Path(__file__).resolve().parent
+            runtime_root
+            if runtime_root is not None
+            else Path(__file__).resolve().parent
         ).resolve(strict=True)
         for required_file in ("seccomp_policy.py", "landlock_policy.py"):
             if not (self.runtime_root / required_file).is_file():
@@ -246,14 +261,18 @@ class NamespaceSandbox:
                 raise ValueError("expected exactly one attestation record")
             data = json.loads(lines[0])
         except Exception as exc:
-            raise SandboxAttestationError("invalid sandbox attestation: " + str(exc)) from exc
+            raise SandboxAttestationError(
+                "invalid sandbox attestation: " + str(exc)
+            ) from exc
 
         if data.get("format") != "bull-sandbox-attestation-v2":
             raise SandboxAttestationError("unknown sandbox attestation format")
         if not secrets.compare_digest(str(data.get("nonce", "")), expected_nonce):
             raise SandboxAttestationError("sandbox attestation nonce mismatch")
         if int(data.get("pid", -1)) != 1:
-            raise SandboxAttestationError("PID namespace attestation failed: bootstrap is not PID 1")
+            raise SandboxAttestationError(
+                "PID namespace attestation failed: bootstrap is not PID 1"
+            )
         if data.get("no_new_privs") is not True:
             raise SandboxAttestationError("no_new_privs attestation failed")
         if data.get("seccomp") is not True:
@@ -330,8 +349,15 @@ class NamespaceSandbox:
             for key, value in env.items():
                 key = str(key)
                 if not key.startswith("BULL_"):
-                    raise ValueError(f"sandbox environment key is not host-approved: {key}")
-                if key in {"BULL_ATTEST_FD", "BULL_ATTEST_NONCE", "BULL_SECCOMP_PROFILE", "BULL_GO_FD"}:
+                    raise ValueError(
+                        f"sandbox environment key is not host-approved: {key}"
+                    )
+                if key in {
+                    "BULL_ATTEST_FD",
+                    "BULL_ATTEST_NONCE",
+                    "BULL_SECCOMP_PROFILE",
+                    "BULL_GO_FD",
+                }:
                     raise ValueError(f"sandbox environment key is reserved: {key}")
                 outer_env[key] = str(value)
 
@@ -406,6 +432,7 @@ class NamespaceSandbox:
             with context as active_scope:
                 preexec_fn = None
                 if resource_budget is not None:
+
                     def _apply_limits() -> None:
                         if active_scope is not None:
                             active_scope.attach_current()
@@ -417,6 +444,7 @@ class NamespaceSandbox:
                             resource_budget,
                             enforce_uid_process_limit=active_scope is None,
                         )
+
                     preexec_fn = _apply_limits
 
                 started_ns = time.monotonic_ns()

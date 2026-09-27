@@ -1,3 +1,5 @@
+"""Authorize named secret retrieval through a local broker protocol."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,7 +10,9 @@ import os
 import secrets
 import socket
 from .socket_hardening import (
-    HardeningError, accept_authenticated, bind_private_unix_socket,
+    HardeningError,
+    accept_authenticated,
+    bind_private_unix_socket,
 )
 import struct
 import threading
@@ -46,20 +50,21 @@ class SecretBroker:
         self.socket_path = Path(socket_path)
         self.audit = audit
         self.trace = (
-            trace_verifier
-            if trace_verifier is not None
-            else RuntimeTraceVerifier()
+            trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
         )
         self.require_peer_credentials = bool(require_peer_credentials)
         self.allowed_peer_uids = frozenset(
-            int(uid) for uid in (
+            int(uid)
+            for uid in (
                 allowed_peer_uids
                 if allowed_peer_uids is not None
                 else ({os.getuid()} if self.require_peer_credentials else set())
             )
         )
         if self.require_peer_credentials and not self.allowed_peer_uids:
-            raise SecretBrokerError("peer credential enforcement requires a UID allowlist")
+            raise SecretBrokerError(
+                "peer credential enforcement requires a UID allowlist"
+            )
         self.peer_auth_enforced = self.require_peer_credentials
 
         self._secrets: dict[str, str] = {}
@@ -108,13 +113,15 @@ class SecretBroker:
             self._grant_uses[token] = 0
 
         self.trace.emit("GrantSecret")
-        self._emit({
-            "event": "grant_issued",
-            "allowed_names": sorted(names),
-            "expires_at": grant.expires_at,
-            "sandbox_id": grant.sandbox_id,
-            "max_uses": grant.max_uses,
-        })
+        self._emit(
+            {
+                "event": "grant_issued",
+                "allowed_names": sorted(names),
+                "expires_at": grant.expires_at,
+                "sandbox_id": grant.sandbox_id,
+                "max_uses": grant.max_uses,
+            }
+        )
         return grant
 
     def revoke(self, token: str) -> None:
@@ -130,9 +137,7 @@ class SecretBroker:
         except FileNotFoundError:
             pass
 
-        server = bind_private_unix_socket(
-            self.socket_path, backlog=16, timeout=0.25
-        )
+        server = bind_private_unix_socket(self.socket_path, backlog=16, timeout=0.25)
         self._server = server
         self._stop.clear()
         self._thread = threading.Thread(
@@ -195,9 +200,7 @@ class SecretBroker:
             token = str(request.get("token", ""))
             name = str(request.get("name", ""))
             sandbox_id_raw = request.get("sandbox_id")
-            sandbox_id = (
-                str(sandbox_id_raw) if sandbox_id_raw is not None else None
-            )
+            sandbox_id = str(sandbox_id_raw) if sandbox_id_raw is not None else None
             value = self._authorize_and_get(token, name, sandbox_id=sandbox_id)
             response = {"ok": True, "name": name, "value": value}
             event = {
@@ -211,11 +214,13 @@ class SecretBroker:
             self._emit(event)
         except Exception as exc:
             response = {"ok": False, "error": str(exc)}
-            self._emit({
-                "event": "secret_access",
-                "allowed": False,
-                "error": str(exc),
-            })
+            self._emit(
+                {
+                    "event": "secret_access",
+                    "allowed": False,
+                    "error": str(exc),
+                }
+            )
         conn.sendall((json.dumps(response) + "\n").encode("utf-8"))
 
     def _authorize_and_get(
@@ -294,9 +299,7 @@ def request_secret(
         client.sendall((json.dumps(request) + "\n").encode("utf-8"))
         response = json.loads(SecretBroker._read_line(client))
         if not response.get("ok"):
-            raise SecretBrokerError(
-                response.get("error", "secret request failed")
-            )
+            raise SecretBrokerError(response.get("error", "secret request failed"))
         return str(response["value"])
     finally:
         client.close()

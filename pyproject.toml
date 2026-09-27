@@ -42,3 +42,8 @@ bulldog = ["_namespace_launcher.sh", "data/*.json", "console_static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+# Format maintained Python only. Published papers and evidence keep their bytes.
+[tool.black]
+target-version = ["py311"]
+extend-exclude = 'docs/(evidence|papers)/'

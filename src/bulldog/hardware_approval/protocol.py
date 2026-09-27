@@ -3,6 +3,7 @@
 Wire digests include domain separators. The request digest commits to the
 session, nonce, complete action binding, and expiry. No arbitrary JSON is signed.
 """
+
 from dataclasses import dataclass
 from enum import IntEnum
 import hashlib
@@ -41,14 +42,32 @@ class Request:
     expires: int
 
     def encode(self) -> bytes:
-        if (type(self.created) is not int or type(self.expires) is not int
-                or not 0 <= self.created < self.expires < 2**64
-                or self.expires - self.created > 30):
+        if (
+            type(self.created) is not int
+            or type(self.expires) is not int
+            or not 0 <= self.created < self.expires < 2**64
+            or self.expires - self.created > 30
+        ):
             raise ApprovalError("invalid hardware request lifetime")
-        return REQUEST.pack(PROTOCOL, 1, *(fixed(getattr(self, name)) for name in (
-            "request_id", "session_digest", "action_digest", "operation_digest",
-            "resource_digest", "parameter_digest", "policy_digest", "nonce")),
-            self.created, self.expires)
+        return REQUEST.pack(
+            PROTOCOL,
+            1,
+            *(
+                fixed(getattr(self, name))
+                for name in (
+                    "request_id",
+                    "session_digest",
+                    "action_digest",
+                    "operation_digest",
+                    "resource_digest",
+                    "parameter_digest",
+                    "policy_digest",
+                    "nonce",
+                )
+            ),
+            self.created,
+            self.expires,
+        )
 
     @property
     def digest(self) -> bytes:
@@ -81,8 +100,21 @@ class Assertion:
             raise ApprovalError("invalid hardware decision")
         if type(self.counter) is not int or not 0 < self.counter < 2**32:
             raise ApprovalError("invalid hardware counter")
-        return ASSERTION.pack(PROTOCOL, self.decision, *(fixed(getattr(self, name)) for name in (
-            "device_id", "request_id", "request_digest", "session_digest", "nonce")), self.counter)
+        return ASSERTION.pack(
+            PROTOCOL,
+            self.decision,
+            *(
+                fixed(getattr(self, name))
+                for name in (
+                    "device_id",
+                    "request_id",
+                    "request_digest",
+                    "session_digest",
+                    "nonce",
+                )
+            ),
+            self.counter,
+        )
 
     def encode(self) -> bytes:
         return self.signed_bytes() + fixed(self.signature, 64)
@@ -90,11 +122,11 @@ class Assertion:
     @classmethod
     def decode(cls, packet: bytes):
         fixed(packet, ASSERTION.size + 64)
-        magic, decision, *fields = ASSERTION.unpack(packet[:ASSERTION.size])
+        magic, decision, *fields = ASSERTION.unpack(packet[: ASSERTION.size])
         if magic != PROTOCOL:
             raise ApprovalError("unsupported hardware assertion")
         try:
-            value = cls(Decision(decision), *fields, packet[ASSERTION.size:])
+            value = cls(Decision(decision), *fields, packet[ASSERTION.size :])
         except ValueError as exc:
             raise ApprovalError("invalid hardware decision") from exc
         value.encode()

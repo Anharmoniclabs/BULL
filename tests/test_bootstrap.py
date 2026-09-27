@@ -15,7 +15,10 @@ class BootstrapTests(unittest.TestCase):
             root = Path(directory)
             with patch.dict(
                 os.environ,
-                {"BULL_STATE_HOME": str(root / "state"), "PATH": os.environ.get("PATH", "")},
+                {
+                    "BULL_STATE_HOME": str(root / "state"),
+                    "PATH": os.environ.get("PATH", ""),
+                },
                 clear=True,
             ):
                 env = prepare_launch_environment(root, preferred_port=18110)
@@ -24,7 +27,9 @@ class BootstrapTests(unittest.TestCase):
                 self.assertTrue(env.state_dir.is_dir())
                 self.assertTrue(env.snapshot_root.is_dir())
                 self.assertEqual(os.environ["BULL_AUDIT_LEDGER"], str(env.audit_ledger))
-                self.assertEqual(os.environ["BULL_SNAPSHOT_ROOT"], str(env.snapshot_root))
+                self.assertEqual(
+                    os.environ["BULL_SNAPSHOT_ROOT"], str(env.snapshot_root)
+                )
                 self.assertTrue((env.state_dir / "runtime.env").is_file())
 
     def test_codespaces_launch_uses_forwarded_url_and_external_bind(self):
@@ -43,7 +48,9 @@ class BootstrapTests(unittest.TestCase):
             ):
                 env = prepare_launch_environment(root, preferred_port=18130)
                 self.assertEqual(env.host, "0.0.0.0")
-                self.assertEqual(env.url, f"https://bull-lab-{env.port}.app.github.dev/")
+                self.assertEqual(
+                    env.url, f"https://bull-lab-{env.port}.app.github.dev/"
+                )
                 self.assertFalse(env.browser_open_supported)
 
 
