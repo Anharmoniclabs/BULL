@@ -1,0 +1,14 @@
+{
+  "cutoff_utc": "2026-09-27",
+  "source_cutoff": "acd37ad591bf3d65de9cfd1b2d041c86b5a46bf0",
+  "provenance": "Operator-supplied terminal transcripts; private case reports were not independently available to the paper author. Counts are fixture checks, not independent attack attempts.",
+  "series": [
+    {"label": "One-shot guest", "passed": 5, "total": 5, "commit": "9f2fa45", "fixture": "pinned offline Buildroot guest", "scope": "allowed, denied, timeout, cancel, missing protection"},
+    {"label": "Namespace routing", "passed": 8, "total": 8, "commit": "9071cdf", "fixture": "disposable dual-stack namespace", "scope": "redirect, drop, DNS, gateway-down, restart"},
+    {"label": "Gateway VM", "passed": 11, "total": 11, "commit": "009291d", "fixture": "disposable Debian KVM guest, direct init", "scope": "networked bullgw and nftables"},
+    {"label": "Systemd VM", "passed": 12, "total": 12, "commit": "acd37ad", "fixture": "disposable Debian KVM systemd candidate", "scope": "networked bullgw, nftables, actual service unit"}
+  ],
+  "offline_guest": {"status": "PASS", "commit": "9f2fa45", "qemu_network": "-net none", "checks": ["IPv4 denied", "IPv6 denied"]},
+  "console": {"commit": "009291d", "gateway_lab": "PASS", "egress": "UNVERIFIED", "scope": "live local HTTP snapshot; operator transcript"},
+  "unverified": ["pinned production guest with network-capable gateway", "production systemd deployment", "hardware-bound signed approval", "independent third-party attack review", "persistent sessions and exactly-once external effects"]
+}
