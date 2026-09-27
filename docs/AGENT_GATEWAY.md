@@ -208,6 +208,10 @@ group-accessible directory.
 
 ## Point a client at the connector
 
+For separate first attachment tests on a local Linux computer, follow the
+[Codex and Claude Code walkthrough](LOCAL_MCP_ATTACHMENT_TESTS.md). It provides
+the account setup, two authority sessions, registration commands and audit checks.
+
 Install BULL's MCP extra in the agent environment. Use an absolute installed
 `bull-mcp` path. Do **not** put `serve_agent_gateway.py`, deployment keys or a
 `BULL_*` authority environment in a client configuration. The connector refuses
