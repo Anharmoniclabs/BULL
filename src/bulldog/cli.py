@@ -359,5 +359,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-    console_parser.add_argument("--gateway-systemd-dir", type=Path,
-                                help="private source-bound KVM systemd candidate evidence")
