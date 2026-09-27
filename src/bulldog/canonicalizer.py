@@ -1,3 +1,5 @@
+"""Normalize requested resources before policy evaluation and command binding."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,7 +8,6 @@ import unicodedata
 from urllib.parse import unquote, urlsplit
 
 from .models import ActionRequest, Capability, Provenance
-
 
 SENSITIVE_MARKERS = (
     "/.ssh/",
@@ -144,9 +145,7 @@ def derive_capability(operation: str, resource: str) -> Capability:
     if op in {"connect", "fetch", "get", "head"}:
         parsed = urlsplit(canonical_resource)
         if parsed.scheme and parsed.scheme not in {"http", "https"}:
-            raise ActionCanonicalizationError(
-                "unsupported network resource scheme"
-            )
+            raise ActionCanonicalizationError("unsupported network resource scheme")
         return Capability.NETWORK_OUTBOUND
 
     if op in {"write", "create", "modify"}:

@@ -1,3 +1,5 @@
+"""Serve the operator console and its bounded local control API."""
+
 from __future__ import annotations
 
 """Local operator console for BULL.
@@ -37,10 +39,19 @@ import webbrowser
 
 from .assurance import evaluate_assurance
 from .audit import AuditLedger
-from .malware_scanner import MalwareScanner, MalwareScannerError, MalwareScannerUnavailable
+from .malware_scanner import (
+    MalwareScanner,
+    MalwareScannerError,
+    MalwareScannerUnavailable,
+)
 from .models import ActionRequest, Capability, Decision, Provenance
 from .policy import DeterministicPolicy
-from .qualification import summarize_kvm, summarize_offline_egress, summarize_gateway_lab, summarize_gateway_systemd
+from .qualification import (
+    summarize_kvm,
+    summarize_offline_egress,
+    summarize_gateway_lab,
+    summarize_gateway_systemd,
+)
 
 
 @dataclass(frozen=True)
@@ -226,12 +237,19 @@ class ProcObserver:
             family, kind, confidence = classification
             child_count = self._children(pid)
             socket_count = self._socket_count(pid)
-            score = min(0.99, confidence + min(child_count, 4) * 0.015 + min(socket_count, 6) * 0.01)
+            score = min(
+                0.99,
+                confidence + min(child_count, 4) * 0.015 + min(socket_count, 6) * 0.01,
+            )
             behavior: list[str] = []
             if child_count:
-                behavior.append(f"{child_count} child process{'es' if child_count != 1 else ''}")
+                behavior.append(
+                    f"{child_count} child process{'es' if child_count != 1 else ''}"
+                )
             if socket_count:
-                behavior.append(f"{socket_count} open socket{'s' if socket_count != 1 else ''}")
+                behavior.append(
+                    f"{socket_count} open socket{'s' if socket_count != 1 else ''}"
+                )
             if not behavior:
                 behavior.append("process marker observed")
             state = "Runtime" if kind in {"microvm", "security-runtime"} else "Observe"
@@ -297,14 +315,20 @@ class ControlPlane:
     ) -> None:
         self.workspace = Path(workspace or os.getcwd()).resolve()
         self.state_dir = Path(
-            state_dir or os.environ.get("BULL_STATE_DIR") or (self.workspace / ".bull-console")
+            state_dir
+            or os.environ.get("BULL_STATE_DIR")
+            or (self.workspace / ".bull-console")
         ).resolve()
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.launch_url = launch_url
         self.qualification_dir = Path(qualification_dir) if qualification_dir else None
-        self.offline_egress_dir = Path(offline_egress_dir) if offline_egress_dir else None
+        self.offline_egress_dir = (
+            Path(offline_egress_dir) if offline_egress_dir else None
+        )
         self.gateway_lab_dir = Path(gateway_lab_dir) if gateway_lab_dir else None
-        self.gateway_systemd_dir = Path(gateway_systemd_dir) if gateway_systemd_dir else None
+        self.gateway_systemd_dir = (
+            Path(gateway_systemd_dir) if gateway_systemd_dir else None
+        )
         self._managed_microvm: subprocess.Popen | None = None
         self._managed_microvm_started_at: str | None = None
         self._managed_microvm_log = self.state_dir / "microvm.log"
@@ -415,7 +439,11 @@ class ControlPlane:
             try:
                 self.refresh()
             except Exception as exc:
-                self._event("observer", f"Live refresh failed: {type(exc).__name__}: {exc}", level="error")
+                self._event(
+                    "observer",
+                    f"Live refresh failed: {type(exc).__name__}: {exc}",
+                    level="error",
+                )
 
     def refresh(self) -> None:
         entities = self.proc.discover()
@@ -466,9 +494,11 @@ class ControlPlane:
                 }
             self._event(
                 "attestation",
-                "Runtime assurance probe completed."
-                if report.deployment_complete
-                else "Runtime assurance probe completed with blocked or failed controls.",
+                (
+                    "Runtime assurance probe completed."
+                    if report.deployment_complete
+                    else "Runtime assurance probe completed with blocked or failed controls."
+                ),
                 level="info" if report.deployment_complete else "warning",
             )
         except Exception as exc:
@@ -480,7 +510,11 @@ class ControlPlane:
                         "error": f"{type(exc).__name__}: {exc}",
                     }
                 )
-            self._event("attestation", f"Assurance probe failed: {type(exc).__name__}: {exc}", level="error")
+            self._event(
+                "attestation",
+                f"Assurance probe failed: {type(exc).__name__}: {exc}",
+                level="error",
+            )
 
     def start_malware_scan(self) -> bool:
         with self._lock:
@@ -499,7 +533,9 @@ class ControlPlane:
                     "updated_at": _utcnow(),
                 }
             )
-        Thread(target=self._malware_worker, name="bull-malware-scan", daemon=True).start()
+        Thread(
+            target=self._malware_worker, name="bull-malware-scan", daemon=True
+        ).start()
         return True
 
     def _malware_worker(self) -> None:
@@ -508,8 +544,14 @@ class ControlPlane:
             scanner = MalwareScanner()
             result = scanner.scan_project(
                 self.workspace,
-                timeout_seconds=float(os.environ.get("BULL_CONSOLE_SCAN_TIMEOUT", "180")),
-                max_total_bytes=int(os.environ.get("BULL_CONSOLE_SCAN_MAX_BYTES", str(256 * 1024 * 1024))),
+                timeout_seconds=float(
+                    os.environ.get("BULL_CONSOLE_SCAN_TIMEOUT", "180")
+                ),
+                max_total_bytes=int(
+                    os.environ.get(
+                        "BULL_CONSOLE_SCAN_MAX_BYTES", str(256 * 1024 * 1024)
+                    )
+                ),
                 max_files=int(os.environ.get("BULL_CONSOLE_SCAN_MAX_FILES", "10000")),
             )
             detections = [
@@ -538,7 +580,12 @@ class ControlPlane:
                 f"Malware scan completed: {result.files_scanned} files, {len(result.detections)} detections.",
                 level="info" if result.clean else "error",
             )
-        except (MalwareScannerUnavailable, MalwareScannerError, OSError, ValueError) as exc:
+        except (
+            MalwareScannerUnavailable,
+            MalwareScannerError,
+            OSError,
+            ValueError,
+        ) as exc:
             with self._lock:
                 self._malware.update(
                     {
@@ -549,7 +596,11 @@ class ControlPlane:
                         "updated_at": _utcnow(),
                     }
                 )
-            self._event("malware", f"Malware scan failed: {type(exc).__name__}: {exc}", level="error")
+            self._event(
+                "malware",
+                f"Malware scan failed: {type(exc).__name__}: {exc}",
+                level="error",
+            )
 
     def _audit_snapshot(self) -> dict[str, Any]:
         raw = os.environ.get("BULL_AUDIT_LEDGER", "").strip()
@@ -562,7 +613,9 @@ class ControlPlane:
                 "head_hash": None,
                 "error": "BULL_AUDIT_LEDGER is not configured",
                 "recent": [],
-                "decisions": {name: 0 for name in ("ALLOW", "SANDBOX", "ESCALATE", "DENY")},
+                "decisions": {
+                    name: 0 for name in ("ALLOW", "SANDBOX", "ESCALATE", "DENY")
+                },
                 "remote_anchor_configured": bool(
                     os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL")
                     or os.environ.get("BULL_AUDIT_TRANSPORT")
@@ -611,7 +664,10 @@ class ControlPlane:
             "head_hash": head_hash,
             "error": error,
             "recent": list(reversed(recent[-30:])),
-            "decisions": {name: decisions.get(name, 0) for name in ("ALLOW", "SANDBOX", "ESCALATE", "DENY")},
+            "decisions": {
+                name: decisions.get(name, 0)
+                for name in ("ALLOW", "SANDBOX", "ESCALATE", "DENY")
+            },
             "remote_anchor_configured": bool(
                 os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL")
                 or os.environ.get("BULL_AUDIT_TRANSPORT")
@@ -636,11 +692,15 @@ class ControlPlane:
                 detail = f"Signed capability ceiling loaded from {Path(path).name}."
             except Exception as exc:
                 detail = f"Signed policy configured but unavailable: {type(exc).__name__}: {exc}"
-        return DeterministicPolicy(project_root=root, global_capability_ceiling=ceiling), {
+        return DeterministicPolicy(
+            project_root=root, global_capability_ceiling=ceiling
+        ), {
             "signed": signed,
             "project_root": root,
             "detail": detail,
-            "ceiling": sorted(cap.value for cap in ceiling) if ceiling is not None else None,
+            "ceiling": (
+                sorted(cap.value for cap in ceiling) if ceiling is not None else None
+            ),
         }
 
     def _capabilities(self) -> dict[str, Any]:
@@ -668,12 +728,38 @@ class ControlPlane:
         return {
             "policy": meta,
             "items": [
-                {"id": "filesystem", "title": "Filesystem", **state(Capability.FS_READ_PROJECT, Capability.FS_WRITE_PROJECT)},
-                {"id": "network", "title": "Network", **state(Capability.NETWORK_OUTBOUND, Capability.NETWORK_POST)},
-                {"id": "process", "title": "Process Exec", **state(Capability.PROCESS_EXEC)},
-                {"id": "secrets", "title": "Secrets", **state(Capability.CREDENTIAL_READ)},
-                {"id": "persistence", "title": "Persistence", **state(Capability.FS_WRITE_HOME, Capability.SECURITY_CONTROL_WRITE)},
-                {"id": "spawn", "title": "Agent Spawn", **state(Capability.AGENT_SPAWN, Capability.AGENT_MESSAGE)},
+                {
+                    "id": "filesystem",
+                    "title": "Filesystem",
+                    **state(Capability.FS_READ_PROJECT, Capability.FS_WRITE_PROJECT),
+                },
+                {
+                    "id": "network",
+                    "title": "Network",
+                    **state(Capability.NETWORK_OUTBOUND, Capability.NETWORK_POST),
+                },
+                {
+                    "id": "process",
+                    "title": "Process Exec",
+                    **state(Capability.PROCESS_EXEC),
+                },
+                {
+                    "id": "secrets",
+                    "title": "Secrets",
+                    **state(Capability.CREDENTIAL_READ),
+                },
+                {
+                    "id": "persistence",
+                    "title": "Persistence",
+                    **state(
+                        Capability.FS_WRITE_HOME, Capability.SECURITY_CONTROL_WRITE
+                    ),
+                },
+                {
+                    "id": "spawn",
+                    "title": "Agent Spawn",
+                    **state(Capability.AGENT_SPAWN, Capability.AGENT_MESSAGE),
+                },
             ],
         }
 
@@ -688,7 +774,9 @@ class ControlPlane:
         rootfs_raw = os.environ.get("BULL_MICROVM_ROOTFS", "")
         managed = self._managed_microvm
         managed_running = managed is not None and managed.poll() is None
-        managed_exit = None if managed is None or managed_running else managed.returncode
+        managed_exit = (
+            None if managed is None or managed_running else managed.returncode
+        )
         ready = bool(
             kvm.exists()
             and os.access(kvm, os.R_OK | os.W_OK)
@@ -718,11 +806,19 @@ class ControlPlane:
 
     def start_managed_microvm(self) -> dict[str, Any]:
         with self._lock:
-            if self._managed_microvm is not None and self._managed_microvm.poll() is None:
-                return {"started": False, "message": "Managed MicroVM is already running."}
+            if (
+                self._managed_microvm is not None
+                and self._managed_microvm.poll() is None
+            ):
+                return {
+                    "started": False,
+                    "message": "Managed MicroVM is already running.",
+                }
         config_raw = os.environ.get("BULL_MICROVM_CONFIG_FILE", "").strip()
         if not config_raw:
-            raise ValueError("BULL_MICROVM_CONFIG_FILE is required for console-managed launch")
+            raise ValueError(
+                "BULL_MICROVM_CONFIG_FILE is required for console-managed launch"
+            )
         config = Path(config_raw).resolve(strict=True)
         if not config.is_file():
             raise ValueError("configured MicroVM deployment file is not a regular file")
@@ -745,13 +841,20 @@ class ControlPlane:
             self._managed_microvm = proc
             self._managed_microvm_started_at = _utcnow()
         self._event("microvm", f"Managed MicroVM launcher started as PID {proc.pid}.")
-        return {"started": True, "message": "Managed MicroVM launch requested.", "pid": proc.pid}
+        return {
+            "started": True,
+            "message": "Managed MicroVM launch requested.",
+            "pid": proc.pid,
+        }
 
     def stop_managed_microvm(self) -> dict[str, Any]:
         with self._lock:
             proc = self._managed_microvm
         if proc is None or proc.poll() is not None:
-            return {"stopped": False, "message": "No console-managed MicroVM is running."}
+            return {
+                "stopped": False,
+                "message": "No console-managed MicroVM is running.",
+            }
         proc.terminate()
         try:
             proc.wait(timeout=8)
@@ -787,7 +890,9 @@ class ControlPlane:
                 evidence.append(f"shared observed family {members[0].family}")
             if any(member.socket_count for member in members):
                 evidence.append("network-capable processes present")
-            confidence = min(0.95, sum(member.confidence for member in members) / len(members))
+            confidence = min(
+                0.95, sum(member.confidence for member in members) / len(members)
+            )
             clusters.append(
                 {
                     "cluster_id": f"cluster-{len(clusters)+1}",
@@ -827,7 +932,9 @@ class ControlPlane:
 
     def evaluate_policy(self, payload: dict[str, Any]) -> dict[str, Any]:
         policy, policy_meta = self._policy()
-        capability = Capability(str(payload.get("capability", Capability.PROCESS_EXEC.value)))
+        capability = Capability(
+            str(payload.get("capability", Capability.PROCESS_EXEC.value))
+        )
         provenance_raw = payload.get("provenance") or [Provenance.UNKNOWN.value]
         if isinstance(provenance_raw, str):
             provenance_raw = [provenance_raw]
@@ -840,7 +947,9 @@ class ControlPlane:
             operation=str(payload.get("operation") or "process.exec")[:160],
             resource=str(payload.get("resource") or "/workspace/tool")[:2048],
             capability=capability,
-            granted_capabilities=frozenset(Capability(str(value)) for value in granted_raw),
+            granted_capabilities=frozenset(
+                Capability(str(value)) for value in granted_raw
+            ),
             provenance=tuple(Provenance(str(value)) for value in provenance_raw),
             irreversible=bool(payload.get("irreversible", False)),
             external_side_effect=bool(payload.get("external_side_effect", False)),
@@ -871,24 +980,51 @@ class ControlPlane:
         denied = int(audit["decisions"].get("DENY", 0))
         escalated = int(audit["decisions"].get("ESCALATE", 0))
         detections = len(malware.get("detections") or [])
-        running_protections = sum(1 for item in isolation["items"] if item["status"] == "PASS")
+        running_protections = sum(
+            1 for item in isolation["items"] if item["status"] == "PASS"
+        )
         total_protections = len(isolation["items"])
-        if self.qualification_dir or self.offline_egress_dir or self.gateway_lab_dir or self.gateway_systemd_dir:
+        if (
+            self.qualification_dir
+            or self.offline_egress_dir
+            or self.gateway_lab_dir
+            or self.gateway_systemd_dir
+        ):
             try:
                 repo = Path(__file__).resolve().parents[2]
                 revision = subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"], cwd=repo, text=True, stderr=subprocess.DEVNULL,
-                    timeout=2).strip()
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=repo,
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2,
+                ).strip()
             except (OSError, subprocess.SubprocessError):
                 revision = None
-            kvm_qualification = (summarize_kvm(self.qualification_dir, current_commit=revision)
-                                 if self.qualification_dir else None)
-            offline_qualification = (summarize_offline_egress(self.offline_egress_dir, current_commit=revision)
-                                     if self.offline_egress_dir else None)
-            gateway_qualification = (summarize_gateway_lab(self.gateway_lab_dir, current_commit=revision)
-                                     if self.gateway_lab_dir else None)
-            systemd_qualification = (summarize_gateway_systemd(self.gateway_systemd_dir, current_commit=revision)
-                                     if self.gateway_systemd_dir else None)
+            kvm_qualification = (
+                summarize_kvm(self.qualification_dir, current_commit=revision)
+                if self.qualification_dir
+                else None
+            )
+            offline_qualification = (
+                summarize_offline_egress(
+                    self.offline_egress_dir, current_commit=revision
+                )
+                if self.offline_egress_dir
+                else None
+            )
+            gateway_qualification = (
+                summarize_gateway_lab(self.gateway_lab_dir, current_commit=revision)
+                if self.gateway_lab_dir
+                else None
+            )
+            systemd_qualification = (
+                summarize_gateway_systemd(
+                    self.gateway_systemd_dir, current_commit=revision
+                )
+                if self.gateway_systemd_dir
+                else None
+            )
         else:
             kvm_qualification = None
             offline_qualification = None
@@ -897,19 +1033,31 @@ class ControlPlane:
         if kvm_qualification is None:
             kvm_qualification = {
                 "status": "BLOCKED" if not microvm.get("kvm_available") else "NOT_RUN",
-                "detail": "KVM unavailable on this host" if not microvm.get("kvm_available")
-                          else "Usable KVM detected; current five-case evidence not loaded",
+                "detail": (
+                    "KVM unavailable on this host"
+                    if not microvm.get("kvm_available")
+                    else "Usable KVM detected; current five-case evidence not loaded"
+                ),
                 "evidence": "Live host device probe; no case results inferred",
             }
         if offline_qualification is None:
-            offline_qualification = {"status": "NOT_RUN", "detail": "No current guest-offline KVM evidence selected.",
-                                     "evidence": "Gateway deployment remains a separate qualification"}
+            offline_qualification = {
+                "status": "NOT_RUN",
+                "detail": "No current guest-offline KVM evidence selected.",
+                "evidence": "Gateway deployment remains a separate qualification",
+            }
         if gateway_qualification is None:
-            gateway_qualification = {"status": "NOT_RUN", "detail": "No networked KVM gateway lab report selected.",
-                                     "evidence": "Production image and systemd service remain unverified"}
+            gateway_qualification = {
+                "status": "NOT_RUN",
+                "detail": "No networked KVM gateway lab report selected.",
+                "evidence": "Production image and systemd service remain unverified",
+            }
         if systemd_qualification is None:
-            systemd_qualification = {"status": "NOT_RUN", "detail": "No networked KVM systemd candidate selected.",
-                                     "evidence": "Pinned production image remains a separate qualification"}
+            systemd_qualification = {
+                "status": "NOT_RUN",
+                "detail": "No networked KVM systemd candidate selected.",
+                "evidence": "Pinned production image remains a separate qualification",
+            }
 
         return {
             "meta": {
@@ -1009,7 +1157,9 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _json(self, payload: dict[str, Any], status: int = 200) -> None:
-        body = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+        body = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode(
+            "utf-8"
+        )
         self._send_bytes(body, "application/json; charset=utf-8", status)
 
     @staticmethod
@@ -1067,7 +1217,11 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 self._json(
                     {
                         "ok": started or status == "running",
-                        "message": "Malware scan started." if started else f"Malware scanner state: {status}.",
+                        "message": (
+                            "Malware scan started."
+                            if started
+                            else f"Malware scanner state: {status}."
+                        ),
                     }
                 )
                 return
@@ -1075,8 +1229,13 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                 started = control.start_attestation(dynamic=True)
                 self._json(
                     {
-                        "ok": started or control.snapshot()["attestation"]["status"] == "running",
-                        "message": "Dynamic assurance probe started." if started else "Assurance probe already running.",
+                        "ok": started
+                        or control.snapshot()["attestation"]["status"] == "running",
+                        "message": (
+                            "Dynamic assurance probe started."
+                            if started
+                            else "Assurance probe already running."
+                        ),
                     }
                 )
                 return
@@ -1090,7 +1249,9 @@ class ConsoleHandler(BaseHTTPRequestHandler):
                         "message": (
                             "Audit ledger verified."
                             if configured and valid
-                            else (audit.get("error") or "Audit ledger is not configured.")
+                            else (
+                                audit.get("error") or "Audit ledger is not configured."
+                            )
                         ),
                     }
                 )
@@ -1122,7 +1283,10 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         except Exception as exc:
-            self._json({"error": f"{type(exc).__name__}: {exc}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self._json(
+                {"error": f"{type(exc).__name__}: {exc}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
             return
         self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
 
@@ -1173,10 +1337,20 @@ def serve_console(
     if open_browser and bind_host in {"127.0.0.1", "::1", "localhost"}:
         Thread(target=webbrowser.open, args=(operator_url,), daemon=True).start()
     if host not in {"127.0.0.1", "::1", "localhost"}:
-        print("warning: console is not bound to loopback; rely on a private trusted port tunnel.")
+        print(
+            "warning: console is not bound to loopback; rely on a private trusted port tunnel."
+        )
     print("live discovery: active")
-    print("malware scanner: initialized; bounded startup scan requested" if auto_scan else "malware scanner: initialized; auto scan disabled")
-    print("runtime assurance: dynamic background probe requested" if dynamic_attestation else "runtime assurance: background dynamic probe disabled")
+    print(
+        "malware scanner: initialized; bounded startup scan requested"
+        if auto_scan
+        else "malware scanner: initialized; auto scan disabled"
+    )
+    print(
+        "runtime assurance: dynamic background probe requested"
+        if dynamic_attestation
+        else "runtime assurance: background dynamic probe disabled"
+    )
     print("=" * 78)
     try:
         server.serve_forever(poll_interval=0.25)

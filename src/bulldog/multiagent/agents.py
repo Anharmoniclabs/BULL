@@ -1,19 +1,8 @@
-"""Built-in agents for the BULL multi-agent system.
+"""Coordinator, policy, executor and output-checking roles for development runs.
 
-Pipeline: Coordinator -> Policy -> Executor -> Auditor + Verifier.
-Nothing executes unless the policy agent allows it, and no result is
-accepted until the auditor and the independent verifier sign off -
-the multi-agent expression of BULL's core mission.
-
-The scanner is hardened against red-team obfuscation: text is NFKC
-normalized, zero-width and bidi control characters are replaced with
-spaces, common Cyrillic lookalikes are mapped to ASCII, whitespace runs
-are collapsed, and base64-looking tokens are decoded and rescanned, so
-homoglyphs, zero-width splits, spacing tricks and encoded payloads do
-not slip past the markers. The executor additionally requires a
-one-time approval token minted by the policy agent, so a forged
-policy_verdict string in a bus envelope can no longer reach execution.
-"""
+The executor requires the policy agent's one-use token. Registered callables
+run in the host process. Marker scanning normalizes several text encodings,
+but cannot establish that all prompt injections have been detected."""
 
 from __future__ import annotations
 
@@ -58,7 +47,9 @@ INJECTION_MARKERS: Sequence[str] = (
     r"bypass\s+(the\s+)?(sandbox|policy|controls)",
 )
 
-_INJECTION_RES = tuple(re.compile(pattern, re.IGNORECASE) for pattern in INJECTION_MARKERS)
+_INJECTION_RES = tuple(
+    re.compile(pattern, re.IGNORECASE) for pattern in INJECTION_MARKERS
+)
 
 # Zero-width and bidi control characters are replaced with spaces so
 # splitting a marker with them ("ignore<ZWSP>all") cannot glue words
@@ -244,7 +235,9 @@ class CoordinatorAgent(BaseAgent):
 class PolicyRule:
     """Allow/deny rule matched against action names (first match wins)."""
 
-    def __init__(self, pattern: str, verdict: Verdict, code: str, description: str = "") -> None:
+    def __init__(
+        self, pattern: str, verdict: Verdict, code: str, description: str = ""
+    ) -> None:
         self.pattern = re.compile(pattern)
         self.verdict = verdict
         self.code = code
@@ -256,7 +249,9 @@ class PolicyRule:
 
 DEFAULT_POLICY_RULES = (
     PolicyRule("echo|sum", Verdict.ALLOW, "policy.allowlist"),
-    PolicyRule(".*", Verdict.DENY, "policy.default-deny", "Action not on the allowlist"),
+    PolicyRule(
+        ".*", Verdict.DENY, "policy.default-deny", "Action not on the allowlist"
+    ),
 )
 
 
@@ -275,7 +270,9 @@ class PolicyAgent(BaseAgent):
         rules: Optional[Sequence[PolicyRule]] = None,
     ) -> None:
         super().__init__(identity, bus)
-        self.rules: Sequence[PolicyRule] = tuple(rules) if rules else DEFAULT_POLICY_RULES
+        self.rules: Sequence[PolicyRule] = (
+            tuple(rules) if rules else DEFAULT_POLICY_RULES
+        )
         self._tokens: Dict[str, str] = {}
 
     def decide(self, action: str) -> Verdict:
@@ -360,7 +357,12 @@ class ExecutorAgent(BaseAgent):
                 success=False,
                 verdict=Verdict.DENY,
                 findings=[
-                    Finding(self.agent_id, Severity.MEDIUM, "executor.unknown-action", action)
+                    Finding(
+                        self.agent_id,
+                        Severity.MEDIUM,
+                        "executor.unknown-action",
+                        action,
+                    )
                 ],
             )
         output = func(**args) if args else func()

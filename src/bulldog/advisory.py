@@ -1,3 +1,5 @@
+"""Advisory recommendations derived from a policy result; no execution authority."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

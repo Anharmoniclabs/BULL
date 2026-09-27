@@ -1,3 +1,5 @@
+"""Load signed policy bundles and validate their capability ceilings."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -44,10 +46,7 @@ def sign_policy_bundle(
     if not key:
         raise PolicyBundleError("policy signing key cannot be empty")
 
-    capabilities = sorted(
-        Capability(value).value
-        for value in allowed_capabilities
-    )
+    capabilities = sorted(Capability(value).value for value in allowed_capabilities)
     payload = {
         "format": "bull-policy-v1",
         "project_root": str(project_root),
@@ -60,6 +59,7 @@ def sign_policy_bundle(
     }
     if human_approval is not None:
         from .approval import validate_config
+
         payload["human_approval"] = validate_config(human_approval)
     payload["signature"]["value"] = hmac.new(
         key,
@@ -98,8 +98,7 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
     try:
         capabilities = frozenset(
-            Capability(value)
-            for value in payload.get("allowed_capabilities", ())
+            Capability(value) for value in payload.get("allowed_capabilities", ())
         )
     except Exception as exc:
         raise PolicyBundleError("policy bundle contains invalid capability") from exc
@@ -108,6 +107,7 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
     if "human_approval" in payload:
         from .approval import validate_config
+
         validate_config(payload["human_approval"])
 
     return PolicyBundle(
@@ -120,7 +120,9 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
 def load_policy_bundle(path: str | Path, key: bytes | str) -> PolicyBundle:
     try:
-        payload = json.loads(Path(path).resolve(strict=True).read_text(encoding="utf-8"))
+        payload = json.loads(
+            Path(path).resolve(strict=True).read_text(encoding="utf-8")
+        )
     except Exception as exc:
         raise PolicyBundleError(f"unable to read policy bundle: {exc}") from exc
     return verify_policy_bundle(payload, key)

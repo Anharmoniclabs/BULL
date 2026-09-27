@@ -38,7 +38,11 @@ from .honeytoken import HoneyTokenAgent, HoneyTokenLeak
 
 def _findings_as_dicts(findings: List[Finding]) -> List[Dict[str, Any]]:
     return [
-        {"severity": finding.severity.value, "code": finding.code, "summary": finding.summary}
+        {
+            "severity": finding.severity.value,
+            "code": finding.code,
+            "summary": finding.summary,
+        }
         for finding in findings
     ]
 
@@ -122,7 +126,9 @@ class MultiAgentSystem:
             approver=self.policy,
         )
         self.auditor = AuditorAgent(AgentIdentity.new("auditor", [CAP_AUDIT]), self.bus)
-        self.verifier = VerifierAgent(AgentIdentity.new("verifier", [CAP_VERIFY]), self.bus)
+        self.verifier = VerifierAgent(
+            AgentIdentity.new("verifier", [CAP_VERIFY]), self.bus
+        )
         self.bus.set_boundary_guard(self.honeytoken.boundary_guard)
 
     def register_action(self, name: str, func: Callable[..., Any]) -> None:
@@ -178,7 +184,10 @@ class MultiAgentSystem:
                 step_report = self._run_step(envelope, step_spec)
                 report.steps.append(step_report)
                 report.findings.extend(step_report.findings)
-                if step_report.policy_verdict is not Verdict.ALLOW or not step_report.executed:
+                if (
+                    step_report.policy_verdict is not Verdict.ALLOW
+                    or not step_report.executed
+                ):
                     report.verdict = Verdict.DENY
 
             report.duration_s = round(time.perf_counter() - started, 6)
@@ -186,7 +195,8 @@ class MultiAgentSystem:
         except HoneyTokenLeak as exc:
             report.verdict = Verdict.DENY
             if not any(
-                finding.code == exc.finding.code and finding.detail == exc.finding.detail
+                finding.code == exc.finding.code
+                and finding.detail == exc.finding.detail
                 for finding in report.findings
             ):
                 report.findings.append(exc.finding)

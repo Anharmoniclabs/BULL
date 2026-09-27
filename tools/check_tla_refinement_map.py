@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fail when the TLA/Python transition traceability map drifts."""
+
 import json
 from pathlib import Path
 import re
@@ -18,14 +19,33 @@ def main() -> int:
     python = (ROOT / manifest["implementation"]).read_text()
     mapped = set(manifest["mapping"])
     if mapped != set(TRANSITIONS):
-        raise ValueError(f"Python transition coverage drift: mapped={sorted(mapped)} runtime={sorted(TRANSITIONS)}")
-    missing_tla = [name for name in mapped if not re.search(rf"(?m)^{re.escape(name)}(?:\([^)]*\))?\s*==", tla)]
-    missing_python = [name for name in mapped if f'if name == "{name}"' not in python
-                      and f'elif name == "{name}"' not in python]
+        raise ValueError(
+            f"Python transition coverage drift: mapped={sorted(mapped)} runtime={sorted(TRANSITIONS)}"
+        )
+    missing_tla = [
+        name
+        for name in mapped
+        if not re.search(rf"(?m)^{re.escape(name)}(?:\([^)]*\))?\s*==", tla)
+    ]
+    missing_python = [
+        name
+        for name in mapped
+        if f'if name == "{name}"' not in python
+        and f'elif name == "{name}"' not in python
+    ]
     if missing_tla or missing_python:
-        raise ValueError(f"refinement traceability drift: tla={missing_tla} python={missing_python}")
-    print(json.dumps({"status": "PASS", "mapped_transitions": len(mapped),
-                      "claim": manifest["claim"]}))
+        raise ValueError(
+            f"refinement traceability drift: tla={missing_tla} python={missing_python}"
+        )
+    print(
+        json.dumps(
+            {
+                "status": "PASS",
+                "mapped_transitions": len(mapped),
+                "claim": manifest["claim"],
+            }
+        )
+    )
     return 0
 
 

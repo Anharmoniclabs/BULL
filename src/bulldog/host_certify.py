@@ -1,3 +1,7 @@
+"""Probe host prerequisites and collect live sandbox attestation.
+
+Missing protections remain failures; a static feature listing is not a live test."""
+
 from __future__ import annotations
 
 import ctypes.util
@@ -16,6 +20,7 @@ def certify_host(
 
     try:
         from .seccomp_policy import _load_libseccomp
+
         _load_libseccomp()
         seccomp_loadable = True
     except (OSError, RuntimeError):
@@ -64,13 +69,8 @@ def certify_host(
                     )
 
                 att = probe.attestation
-                strict_landlock_ok = (
-                    seccomp_profile != "strict"
-                    or (
-                        att is not None
-                        and att.landlock
-                        and att.landlock_abi >= 1
-                    )
+                strict_landlock_ok = seccomp_profile != "strict" or (
+                    att is not None and att.landlock and att.landlock_abi >= 1
                 )
                 result["dynamic_certified"] = bool(
                     probe.returncode == 0
@@ -108,9 +108,6 @@ def certify_host(
 
     result["certified"] = bool(
         result["static_certified"]
-        and (
-            not dynamic
-            or result["dynamic_certified"] is True
-        )
+        and (not dynamic or result["dynamic_certified"] is True)
     )
     return result

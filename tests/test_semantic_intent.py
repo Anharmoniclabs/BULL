@@ -1,10 +1,13 @@
 """Tests for bulldog.semantic_intent (deterministic, fail-closed)."""
+
 import pytest
 from bulldog.semantic_intent import SemanticIntentGate, CAPABILITIES
+
 
 @pytest.fixture
 def gate():
     return SemanticIntentGate(min_confidence=0.35)
+
 
 class TestCorrectClassification:
     CASES = [
@@ -24,6 +27,7 @@ class TestCorrectClassification:
     def test_classifies(self, gate, text, expected):
         assert gate.evaluate(text).suggested_capability == expected
 
+
 class TestFailClosed:
     def test_unknown_intent_returns_no_suggestion(self, gate):
         v = gate.evaluate("tell me a joke about cats")
@@ -36,12 +40,17 @@ class TestFailClosed:
 
     def test_destructive_verb_blocks_read_hint(self, gate):
         # "delete the file..." must not be hinted as a read capability
-        for text in ["delete the file in the project",
-                     "remove the readme file",
-                     "wipe the log file"]:
+        for text in [
+            "delete the file in the project",
+            "remove the readme file",
+            "wipe the log file",
+        ]:
             v = gate.evaluate(text)
-            assert v.suggested_capability not in ("FS_READ_PROJECT", "FS_READ_HOME",
-                                                  "CREDENTIAL_READ"), text
+            assert v.suggested_capability not in (
+                "FS_READ_PROJECT",
+                "FS_READ_HOME",
+                "CREDENTIAL_READ",
+            ), text
 
     def test_credential_requests_map_to_credential_class(self, gate):
         # ssh key reads must map to the more dangerous class, never a
@@ -49,11 +58,14 @@ class TestFailClosed:
         v = gate.evaluate("read my ~/.ssh/id_rsa")
         assert v.suggested_capability in ("CREDENTIAL_READ", "FS_READ_HOME")
 
+
 class TestDeterminism:
     def test_identical_input_identical_output(self, gate):
         a = gate.evaluate("run the test suite and check the results")
-        assert all(gate.evaluate("run the test suite and check the results") == a
-                   for _ in range(20))
+        assert all(
+            gate.evaluate("run the test suite and check the results") == a
+            for _ in range(20)
+        )
 
     def test_validation(self):
         with pytest.raises(ValueError):

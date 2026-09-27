@@ -34,8 +34,10 @@ def test_registry_is_unique_and_profile_references_are_valid():
         "external",
     ):
         assert all(control_id in by_id for control_id in registry["profile"][section])
-    assert all(by_id[control_id]["phase"] == "external"
-               for control_id in registry["profile"]["external"])
+    assert all(
+        by_id[control_id]["phase"] == "external"
+        for control_id in registry["profile"]["external"]
+    )
 
 
 def test_missing_deployment_evidence_never_becomes_pass(monkeypatch):
@@ -152,43 +154,83 @@ def test_cli_parser_exposes_assurance_status():
     assert callable(args.handler)
 
 
-@pytest.mark.parametrize('section,value', [
-    ('deployment_required', []),
-    ('source_required', ['EXT.ISO27001_ISMS']),
-    ('deployment_required', ['INTEGRITY.SIGNED_POLICY'] * 2),
-    ('release_required', [{}]),
-])
-def test_registry_rejects_empty_mistyped_or_wrong_phase_requirements(monkeypatch, section, value):
+@pytest.mark.parametrize(
+    "section,value",
+    [
+        ("deployment_required", []),
+        ("source_required", ["EXT.ISO27001_ISMS"]),
+        ("deployment_required", ["INTEGRITY.SIGNED_POLICY"] * 2),
+        ("release_required", [{}]),
+    ],
+)
+def test_registry_rejects_empty_mistyped_or_wrong_phase_requirements(
+    monkeypatch, section, value
+):
     import json
+
     registry = load_control_registry()
-    registry['profile'][section] = value
-    monkeypatch.setattr(assurance, '_registry_bytes', lambda: json.dumps(registry).encode())
+    registry["profile"][section] = value
+    monkeypatch.setattr(
+        assurance, "_registry_bytes", lambda: json.dumps(registry).encode()
+    )
     with pytest.raises(assurance.AssuranceError):
         load_control_registry()
 
 
-@pytest.mark.parametrize('attestation', [
-    {'seccomp': True, 'seccomp_profile': 'strict', 'landlock': True, 'landlock_abi': 6},
-    {'seccomp': 'false', 'seccomp_profile': 'strict', 'landlock': True, 'landlock_abi': 'bad', 'pid': True},
-])
-def test_failed_or_malformed_dynamic_attestation_does_not_pass(monkeypatch, attestation):
-    monkeypatch.setattr(assurance, 'evaluate_production_environment', lambda **kwargs: {
-        'checks': [{'control_id': 'SANDBOX.SECCOMP_PROFILE', 'status': PASS}],
-        'host': {'dynamic_certified': False, 'attestation': attestation},
-    })
+@pytest.mark.parametrize(
+    "attestation",
+    [
+        {
+            "seccomp": True,
+            "seccomp_profile": "strict",
+            "landlock": True,
+            "landlock_abi": 6,
+        },
+        {
+            "seccomp": "false",
+            "seccomp_profile": "strict",
+            "landlock": True,
+            "landlock_abi": "bad",
+            "pid": True,
+        },
+    ],
+)
+def test_failed_or_malformed_dynamic_attestation_does_not_pass(
+    monkeypatch, attestation
+):
+    monkeypatch.setattr(
+        assurance,
+        "evaluate_production_environment",
+        lambda **kwargs: {
+            "checks": [{"control_id": "SANDBOX.SECCOMP_PROFILE", "status": PASS}],
+            "host": {"dynamic_certified": False, "attestation": attestation},
+        },
+    )
     report = evaluate_assurance(dynamic=True)
     controls = {item.control_id: item for item in report.controls}
-    assert controls['SANDBOX.SECCOMP_STRICT'].status == 'FAIL'
-    assert controls['SANDBOX.LANDLOCK'].status == 'FAIL'
+    assert controls["SANDBOX.SECCOMP_STRICT"].status == "FAIL"
+    assert controls["SANDBOX.LANDLOCK"].status == "FAIL"
     assert report.deployment_complete is False
 
 
 def test_malformed_landlock_and_boolean_pid_fail_even_with_certified_flag(monkeypatch):
-    monkeypatch.setattr(assurance, 'evaluate_production_environment', lambda **kwargs: {
-        'checks': [], 'host': {'dynamic_certified': True, 'attestation': {
-            'landlock': True, 'landlock_abi': 'bad', 'pid': True,
-        }},
-    })
-    controls = {item.control_id: item for item in evaluate_assurance(dynamic=True).controls}
-    assert controls['SANDBOX.LANDLOCK'].status == 'FAIL'
-    assert controls['SANDBOX.PID_NAMESPACE'].status == 'FAIL'
+    monkeypatch.setattr(
+        assurance,
+        "evaluate_production_environment",
+        lambda **kwargs: {
+            "checks": [],
+            "host": {
+                "dynamic_certified": True,
+                "attestation": {
+                    "landlock": True,
+                    "landlock_abi": "bad",
+                    "pid": True,
+                },
+            },
+        },
+    )
+    controls = {
+        item.control_id: item for item in evaluate_assurance(dynamic=True).controls
+    }
+    assert controls["SANDBOX.LANDLOCK"].status == "FAIL"
+    assert controls["SANDBOX.PID_NAMESPACE"].status == "FAIL"

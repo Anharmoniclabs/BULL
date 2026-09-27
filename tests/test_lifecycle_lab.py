@@ -8,7 +8,9 @@ from urllib.request import urlopen, Request
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("lifecycle_lab_test", ROOT / "tools/run_lifecycle_lab.py")
+spec = importlib.util.spec_from_file_location(
+    "lifecycle_lab_test", ROOT / "tools/run_lifecycle_lab.py"
+)
 lab = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lab)
 
@@ -24,7 +26,8 @@ def test_real_fixture_and_read_only_report(tmp_path):
     assert "Pending — no working revocation adapter" in html
     assert "False" not in html
     server = ThreadingHTTPServer(("127.0.0.1", 0), lab.make_handler(html.encode()))
-    worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start()
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
     base = f"http://127.0.0.1:{server.server_port}"
     try:
         with urlopen(base, timeout=2) as response:
@@ -38,15 +41,31 @@ def test_real_fixture_and_read_only_report(tmp_path):
             urlopen(Request(base, data=b"{}", method="POST"), timeout=2)
         assert exc.value.code == 405
     finally:
-        server.shutdown(); server.server_close(); worker.join(2)
+        server.shutdown()
+        server.server_close()
+        worker.join(2)
 
 
 def test_evidence_fields_cannot_inject_html():
-    evidence = {"steps": [{"number": 1, "plane": "<script>alert(1)</script>", "actual": "DENY",
-                "passed": True, "title": '<img src=x onerror=alert(1)>', "reason": "blocked",
-                "evidence": {"payload": "</script><script>alert(1)</script>"}, "note": ""}],
-                "snapshot": {"events": [], "audit": {"records": 0}}, "generated_at": "now", "core_sha256": "abc", "limitations": []}
+    evidence = {
+        "steps": [
+            {
+                "number": 1,
+                "plane": "<script>alert(1)</script>",
+                "actual": "DENY",
+                "passed": True,
+                "title": "<img src=x onerror=alert(1)>",
+                "reason": "blocked",
+                "evidence": {"payload": "</script><script>alert(1)</script>"},
+                "note": "",
+            }
+        ],
+        "snapshot": {"events": [], "audit": {"records": 0}},
+        "generated_at": "now",
+        "core_sha256": "abc",
+        "limitations": [],
+    }
     page = lab.render_report(evidence)
-    assert '<script>alert(1)</script>' not in page
-    assert '<img src=x onerror=alert(1)>' not in page
-    assert '&lt;script&gt;' in page
+    assert "<script>alert(1)</script>" not in page
+    assert "<img src=x onerror=alert(1)>" not in page
+    assert "&lt;script&gt;" in page

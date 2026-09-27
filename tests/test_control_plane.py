@@ -45,7 +45,9 @@ class ControlPlaneTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="bull-console-") as directory:
             proc = Path(directory) / "proc"
             proc.mkdir()
-            with patch.dict(os.environ, {"PATH": os.environ.get("PATH", "")}, clear=True):
+            with patch.dict(
+                os.environ, {"PATH": os.environ.get("PATH", "")}, clear=True
+            ):
                 control = ControlPlane(
                     workspace=directory,
                     auto_scan=False,
@@ -68,7 +70,9 @@ class ControlPlaneTests(unittest.TestCase):
 
     def test_console_assets_are_operator_views_not_fake_demo_counters(self):
         root = Path(__file__).resolve().parents[1]
-        html = (root / "src/bulldog/console_static/index.html").read_text(encoding="utf-8")
+        html = (root / "src/bulldog/console_static/index.html").read_text(
+            encoding="utf-8"
+        )
         js = (root / "src/bulldog/console_static/app.js").read_text(encoding="utf-8")
         self.assertIn("From Discovery to Enforcement", html)
         self.assertIn("Malware Scan", html)

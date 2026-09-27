@@ -1,3 +1,5 @@
+"""Parse operator commands and call the corresponding BULL entry points."""
+
 from __future__ import annotations
 
 import argparse
@@ -77,7 +79,11 @@ def _run_policy(args: argparse.Namespace) -> int:
             allowed_capabilities=capabilities,
             key=key,
             key_id=args.key_id,
-            human_approval=(json.loads(args.approval_config.read_text()) if args.approval_config else None),
+            human_approval=(
+                json.loads(args.approval_config.read_text())
+                if args.approval_config
+                else None
+            ),
         )
     except Exception as exc:
         print(f"unable to create policy bundle: {exc}", file=sys.stderr)
@@ -90,7 +96,6 @@ def _run_policy(args: argparse.Namespace) -> int:
     )
     print(args.output)
     return 0
-
 
 
 def _run_assurance_status(args: argparse.Namespace) -> int:
@@ -158,7 +163,9 @@ def _run_setup(args: argparse.Namespace) -> int:
     from .bootstrap import prepare_launch_environment, summary_lines
 
     try:
-        launch = prepare_launch_environment(args.workspace, preferred_port=args.port, host=args.host)
+        launch = prepare_launch_environment(
+            args.workspace, preferred_port=args.port, host=args.host
+        )
     except Exception as exc:
         print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
         return 2
@@ -173,7 +180,9 @@ def _run_up(args: argparse.Namespace) -> int:
     from .control_plane import serve_console
 
     try:
-        launch = prepare_launch_environment(args.workspace, preferred_port=args.port, host=args.host)
+        launch = prepare_launch_environment(
+            args.workspace, preferred_port=args.port, host=args.host
+        )
     except Exception as exc:
         print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
         return 2
@@ -232,14 +241,26 @@ def build_parser() -> argparse.ArgumentParser:
     console_parser.add_argument("--workspace", type=Path, default=Path.cwd())
     console_parser.add_argument("--refresh-seconds", type=float, default=2.0)
     console_parser.add_argument("--open-browser", action="store_true")
-    console_parser.add_argument("--qualification-dir", type=Path,
-                                help="Read private five-case KVM reports and show only their source-bound summary")
-    console_parser.add_argument("--offline-egress-dir", type=Path,
-                                help="Read private offline guest KVM evidence; gateway status stays separate")
-    console_parser.add_argument("--gateway-lab-dir", type=Path,
-                                help="Read private networked KVM lab report; production egress stays unverified")
-    console_parser.add_argument("--gateway-systemd-dir", type=Path,
-                                help="Read private source-bound KVM systemd candidate evidence")
+    console_parser.add_argument(
+        "--qualification-dir",
+        type=Path,
+        help="Read private five-case KVM reports and show only their source-bound summary",
+    )
+    console_parser.add_argument(
+        "--offline-egress-dir",
+        type=Path,
+        help="Read private offline guest KVM evidence; gateway status stays separate",
+    )
+    console_parser.add_argument(
+        "--gateway-lab-dir",
+        type=Path,
+        help="Read private networked KVM lab report; production egress stays unverified",
+    )
+    console_parser.add_argument(
+        "--gateway-systemd-dir",
+        type=Path,
+        help="Read private source-bound KVM systemd candidate evidence",
+    )
     console_parser.add_argument(
         "--no-auto-scan",
         action="store_true",
@@ -326,7 +347,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Generate a signed production capability policy bundle.",
     )
     policy_parser.add_argument("--output", type=Path, required=True)
-    policy_parser.add_argument("--approval-config", type=Path, help="Host-owned JSON approval configuration to include in signed policy.")
+    policy_parser.add_argument(
+        "--approval-config",
+        type=Path,
+        help="Host-owned JSON approval configuration to include in signed policy.",
+    )
     policy_parser.add_argument("--project-root", default="/workspace")
     policy_parser.add_argument(
         "--capability",
@@ -342,6 +367,7 @@ def build_parser() -> argparse.ArgumentParser:
     policy_parser.set_defaults(handler=_run_policy)
     from .approval_cli import add_parser as add_approval_parser
     from .hardware_approval.cli import add_parser as add_hardware_parser
+
     add_hardware_parser(subparsers)
     add_approval_parser(subparsers)
     return parser

@@ -1,3 +1,5 @@
+"""Linux isolation helpers for mounts, privileges and syscall restrictions."""
+
 from __future__ import annotations
 
 import ctypes
@@ -6,7 +8,6 @@ import os
 import platform
 from pathlib import Path
 from typing import Iterable
-
 
 # =============================================================================
 # LINUX CONSTANTS
@@ -104,10 +105,7 @@ def _require_supported_architecture() -> None:
 def _raise_errno(operation: str) -> None:
     value = ctypes.get_errno()
 
-    raise LandlockError(
-        f"{operation} failed: "
-        f"[errno {value}] {os.strerror(value)}"
-    )
+    raise LandlockError(f"{operation} failed: " f"[errno {value}] {os.strerror(value)}")
 
 
 def landlock_abi() -> int:
@@ -123,9 +121,7 @@ def landlock_abi() -> int:
         _SYS_LANDLOCK_CREATE_RULESET,
         ctypes.c_void_p(0),
         ctypes.c_size_t(0),
-        ctypes.c_uint32(
-            LANDLOCK_CREATE_RULESET_VERSION
-        ),
+        ctypes.c_uint32(LANDLOCK_CREATE_RULESET_VERSION),
     )
 
     if result < 0:
@@ -135,13 +131,9 @@ def landlock_abi() -> int:
             errno.ENOSYS,
             errno.EOPNOTSUPP,
         }:
-            raise LandlockUnavailable(
-                "Landlock is unavailable or disabled"
-            )
+            raise LandlockUnavailable("Landlock is unavailable or disabled")
 
-        _raise_errno(
-            "landlock ABI query"
-        )
+        _raise_errno("landlock ABI query")
 
     return int(result)
 
@@ -154,15 +146,10 @@ def supported_fs_rights(
     """
 
     if abi < 1:
-        raise LandlockUnavailable(
-            f"invalid Landlock ABI {abi}"
-        )
+        raise LandlockUnavailable(f"invalid Landlock ABI {abi}")
 
     # ABI 1 rights: bits 0 through 12.
-    rights = (
-        (LANDLOCK_ACCESS_FS_MAKE_SYM << 1)
-        - 1
-    )
+    rights = (LANDLOCK_ACCESS_FS_MAKE_SYM << 1) - 1
 
     if abi >= 2:
         rights |= LANDLOCK_ACCESS_FS_REFER
@@ -219,9 +206,7 @@ def _set_no_new_privs() -> None:
     )
 
     if result != 0:
-        _raise_errno(
-            "PR_SET_NO_NEW_PRIVS"
-        )
+        _raise_errno("PR_SET_NO_NEW_PRIVS")
 
 
 def _create_ruleset(
@@ -242,9 +227,7 @@ def _create_ruleset(
     )
 
     if fd < 0:
-        _raise_errno(
-            "landlock_create_ruleset"
-        )
+        _raise_errno("landlock_create_ruleset")
 
     return int(fd)
 
@@ -273,17 +256,13 @@ def _add_path_rule(
         result = _libc.syscall(
             _SYS_LANDLOCK_ADD_RULE,
             ctypes.c_int(ruleset_fd),
-            ctypes.c_int(
-                LANDLOCK_RULE_PATH_BENEATH
-            ),
+            ctypes.c_int(LANDLOCK_RULE_PATH_BENEATH),
             ctypes.byref(attr),
             ctypes.c_uint32(0),
         )
 
         if result < 0:
-            _raise_errno(
-                f"landlock_add_rule({path})"
-            )
+            _raise_errno(f"landlock_add_rule({path})")
 
     finally:
         os.close(parent_fd)
@@ -302,19 +281,13 @@ def _restrict_self(
     )
 
     if result < 0:
-        _raise_errno(
-            "landlock_restrict_self"
-        )
+        _raise_errno("landlock_restrict_self")
 
 
 def apply_landlock(
     *,
-    read_only: Iterable[
-        str | Path
-    ] = (),
-    read_write: Iterable[
-        str | Path
-    ] = (),
+    read_only: Iterable[str | Path] = (),
+    read_write: Iterable[str | Path] = (),
 ) -> int:
     """
     Apply an irreversible Landlock filesystem domain
@@ -328,13 +301,9 @@ def apply_landlock(
 
     abi = landlock_abi()
 
-    handled = supported_fs_rights(
-        abi
-    )
+    handled = supported_fs_rights(abi)
 
-    ruleset_fd = _create_ruleset(
-        handled
-    )
+    ruleset_fd = _create_ruleset(handled)
 
     try:
         for raw_path in read_only:
@@ -344,9 +313,7 @@ def apply_landlock(
                 READ_ACCESS,
             )
 
-        rw_access = writable_access(
-            abi
-        )
+        rw_access = writable_access(abi)
 
         for raw_path in read_write:
             _add_path_rule(
@@ -359,9 +326,7 @@ def apply_landlock(
         # process may restrict itself.
         _set_no_new_privs()
 
-        _restrict_self(
-            ruleset_fd
-        )
+        _restrict_self(ruleset_fd)
 
     finally:
         os.close(ruleset_fd)

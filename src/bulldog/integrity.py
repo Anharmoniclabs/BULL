@@ -1,3 +1,5 @@
+"""Sign and verify the trusted runtime file manifest."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -80,11 +82,7 @@ def sha256_file(path: Path) -> str:
 
 
 def _canonical_manifest_bytes(manifest: dict) -> bytes:
-    payload = {
-        key: value
-        for key, value in manifest.items()
-        if key != "signature"
-    }
+    payload = {key: value for key, value in manifest.items() if key != "signature"}
     return json.dumps(
         payload,
         sort_keys=True,

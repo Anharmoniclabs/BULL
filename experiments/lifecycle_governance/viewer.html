@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <head
+    ><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>BULL · Lifecycle evidence</title>
 <style>
 :root { --ink:#202830;--slate:#8c98a4;--paper:#fafbf9;--mist:#d4dde2;--muted:#52616c;--line:#d9e0e4;--good:#256c4b;--bad:#973e40; }
@@ -12,16 +13,107 @@
 </style>
 </head>
 <body>
-<aside class="rail"><div class="logo">{{LOGO}}<small>LIFECYCLE<br>RESEARCH LAB</small></div>
-<nav aria-label="Evidence sections"><a href="#overview">Overview</a><a href="#walkthrough">Recorded walkthrough</a><a href="#audit">Audit evidence</a><a href="#limits">Scope & limitations</a></nav>
-<footer><strong>Experimental build</strong>No production controls are relaxed. This viewer cannot issue grants or execute actions.</footer></aside>
-<main class="main"><header class="top"><span>BULL / LIFECYCLE GOVERNANCE</span><span class="pill">RECORDED FIXTURE EVIDENCE</span></header>
-<section class="hero" id="overview"><div><p class="eyebrow">AUTHORITY · EXECUTION · OBSERVATION · SOVEREIGNTY</p><h1>Revocation must outlive<br>the agent that received it.</h1><p class="lead">A legitimate read succeeds. A replay fails. Untrusted input stays untrusted in memory. Then the host freezes an entire lineage, stops its worker, and rejects the old grant after a restart.</p></div><aside class="hero-score"><small>MEASURED IN THIS RUN</small><b>{{PASSED}} / {{TOTAL}}</b><small>fixture expectations met</small><p class="score-note">This is not a production protection score.</p></aside></section>
-<div class="scope"><strong>What actually ran:</strong> local synthetic file reads/writes, a host-owned worker process, grant validation, provenance checks, durable revocation and audit verification. <strong>No model, real secrets, outbound network, or KVM was used.</strong></div>
-<section class="planes" aria-label="Four planes"><article class="plane-card"><small>01 / AUTHORITY</small><h3>Exact permission</h3><p>The host binds one grant to the action, parameters, expiry and current lineage.</p></article><article class="plane-card"><small>02 / EXECUTION</small><h3>Typed effects</h3><p>Only registered fixture adapters run. Missing adapters deny by default.</p></article><article class="plane-card"><small>03 / OBSERVATION</small><h3>Traceable influence</h3><p>Memory retains source trust. Admitted and refused requests leave audit evidence.</p></article><article class="plane-card"><small>04 / SOVEREIGNTY</small><h3>Host-owned stop</h3><p>The host revokes first. Cleanup and termination report their actual outcomes.</p></article></section>
-<section id="walkthrough"><div class="section-head"><div><p class="eyebrow">THE BEHAVIOR, NOT A STATUS MOCKUP</p><h2>Follow the recorded run.</h2><p>Each card shows a measured outcome and the evidence behind it.</p></div><button class="no-print" id="replay" type="button">Replay recorded walkthrough</button></div><div id="progress" class="progress" role="status" aria-live="polite">Replay changes only the display. It does not rerun any action.</div><div class="steps">{{STEPS}}</div></section>
-<section id="audit"><div class="section-head"><div><p class="eyebrow">OBSERVATION PLANE</p><h2>{{AUDIT_COUNT}} local audit events.</h2><p>The generator verified the HMAC chain before writing this report.</p></div></div><details class="evidence-card"><summary>Inspect the recorded event sequence</summary><div class="table-wrap"><table><thead><tr><th>Sequence</th><th>Meaning</th><th>Receipt prefix</th></tr></thead><tbody>{{EVENTS}}</tbody></table></div></details><p class="hash">Generated: {{GENERATED}}<br>Core source SHA-256: <code>{{CORE_HASH}}</code><br>This HTML report is a presentation of verified-at-generation data, not a remotely attested receipt.</p></section>
-<section id="limits"><div class="section-head"><div><p class="eyebrow">SCOPE, WITHOUT THE SALES CLAIMS</p><h2>What this build does not prove.</h2></div></div><div class="limits"><ul>{{LIMITATIONS}}</ul></div></section></main>
+<aside class="rail"
+      ><div class="logo"
+        >{{LOGO}}<small>LIFECYCLE<br />RESEARCH LAB</small></div
+      >
+<nav aria-label="Evidence sections"
+        ><a href="#overview">Overview</a><a href="#walkthrough">Recorded walkthrough</a
+        ><a href="#audit">Audit evidence</a><a href="#limits">Scope & limitations</a></nav
+      >
+<footer
+        ><strong>Experimental build</strong>No production controls are relaxed. This viewer cannot issue grants or execute actions.</footer
+      ></aside
+    >
+<main class="main"
+      ><header class="top"
+        ><span>BULL / LIFECYCLE GOVERNANCE</span
+        ><span class="pill">RECORDED FIXTURE EVIDENCE</span></header
+      >
+<section class="hero" id="overview"
+        ><div
+          ><p class="eyebrow">AUTHORITY · EXECUTION · OBSERVATION · SOVEREIGNTY</p
+          ><h1>Revocation must outlive<br />the agent that received it.</h1
+          ><p class="lead"
+            >A legitimate read succeeds. A replay fails. Untrusted input stays untrusted in memory. Then the host freezes an entire lineage, stops its worker, and rejects the old grant after a restart.</p
+          ></div
+        ><aside class="hero-score"
+          ><small>MEASURED IN THIS RUN</small><b>{{PASSED}} / {{TOTAL}}</b
+          ><small>fixture expectations met</small
+          ><p class="score-note">This is not a production protection score.</p></aside
+        ></section
+      >
+<div class="scope"
+        ><strong>What actually ran:</strong> local synthetic file reads/writes, a host-owned worker process, grant validation, provenance checks, durable revocation and audit verification. <strong>No model, real secrets, outbound network, or KVM was used.</strong></div
+      >
+<section class="planes" aria-label="Four planes"
+        ><article class="plane-card"
+          ><small>01 / AUTHORITY</small><h3>Exact permission</h3
+          ><p
+            >The host binds one grant to the action, parameters, expiry and current lineage.</p
+          ></article
+        ><article class="plane-card"
+          ><small>02 / EXECUTION</small><h3>Typed effects</h3
+          ><p>Only registered fixture adapters run. Missing adapters deny by default.</p></article
+        ><article class="plane-card"
+          ><small>03 / OBSERVATION</small><h3>Traceable influence</h3
+          ><p
+            >Memory retains source trust. Admitted and refused requests leave audit evidence.</p
+          ></article
+        ><article class="plane-card"
+          ><small>04 / SOVEREIGNTY</small><h3>Host-owned stop</h3
+          ><p
+            >The host revokes first. Cleanup and termination report their actual outcomes.</p
+          ></article
+        ></section
+      >
+<section id="walkthrough"
+        ><div class="section-head"
+          ><div
+            ><p class="eyebrow">THE BEHAVIOR, NOT A STATUS MOCKUP</p
+            ><h2>Follow the recorded run.</h2
+            ><p>Each card shows a measured outcome and the evidence behind it.</p></div
+          ><button class="no-print" id="replay" type="button"
+            >Replay recorded walkthrough</button
+          ></div
+        ><div id="progress" class="progress" role="status" aria-live="polite"
+          >Replay changes only the display. It does not rerun any action.</div
+        ><div class="steps">{{STEPS}}</div></section
+      >
+<section id="audit"
+        ><div class="section-head"
+          ><div
+            ><p class="eyebrow">OBSERVATION PLANE</p><h2>{{AUDIT_COUNT}} local audit events.</h2
+            ><p>The generator verified the HMAC chain before writing this report.</p></div
+          ></div
+        ><details class="evidence-card"
+          ><summary>Inspect the recorded event sequence</summary
+          ><div class="table-wrap"
+            ><table
+              ><thead
+                ><tr><th>Sequence</th><th>Meaning</th><th>Receipt prefix</th></tr></thead
+              ><tbody>{{EVENTS}}</tbody></table
+            ></div
+          ></details
+        ><p class="hash"
+          >Generated: {{GENERATED}}<br />Core source SHA-256: <code>{{CORE_HASH}}</code><br />This HTML report is a presentation of verified-at-generation data, not a remotely attested receipt.</p
+        ></section
+      >
+<section id="limits"
+        ><div class="section-head"
+          ><div
+            ><p class="eyebrow">SCOPE, WITHOUT THE SALES CLAIMS</p
+            ><h2>What this build does not prove.</h2></div
+          ></div
+        ><div class="limits"
+          ><ul
+            >{{LIMITATIONS}}</ul
+          ></div
+        ></section
+      ></main
+    >
 <script>
 (() => {const cards=[...document.querySelectorAll('[data-step]')];const button=document.getElementById('replay');const status=document.getElementById('progress');let index=-1;button.addEventListener('click',()=>{cards.forEach(card=>card.classList.remove('focus'));index=(index+1)%cards.length;const card=cards[index];card.classList.add('focus');card.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});status.textContent=`Recorded step ${index+1} of ${cards.length}. No action is being executed.`;button.textContent=index===cards.length-1?'Restart recorded walkthrough':'Next recorded step';});})();
-</script></body></html>
+</script></body
+  ></html
+>

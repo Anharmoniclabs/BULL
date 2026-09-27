@@ -1,3 +1,5 @@
+"""Build and install syscall filters for the supported sandbox profiles."""
+
 from __future__ import annotations
 
 import ctypes
@@ -280,9 +282,7 @@ def _load_libseccomp():
         except OSError as exc:
             errors.append(f"{candidate}: {exc}")
 
-    raise SeccompUnavailable(
-        "unable to load libseccomp; " + " | ".join(errors)
-    )
+    raise SeccompUnavailable("unable to load libseccomp; " + " | ".join(errors))
 
 
 _lib = _load_libseccomp()
@@ -337,7 +337,9 @@ def _add_cmp_rule(
     label: str,
 ) -> None:
     if not comparisons:
-        raise SeccompError("comparison rule must contain at least one argument constraint")
+        raise SeccompError(
+            "comparison rule must contain at least one argument constraint"
+        )
     array_type = _ScmpArgCmp * len(comparisons)
     array = array_type(*comparisons)
     _check(
@@ -371,9 +373,7 @@ def install_bull_seccomp(
         raise SeccompError(f"unknown seccomp profile: {profile}")
 
     default_action = (
-        SCMP_ACT_ALLOW
-        if profile == "compat"
-        else SCMP_ACT_ERRNO(errno_value)
+        SCMP_ACT_ALLOW if profile == "compat" else SCMP_ACT_ERRNO(errno_value)
     )
     ctx = _lib.seccomp_init(default_action)
     if not ctx:
@@ -408,9 +408,7 @@ def install_bull_seccomp(
                     ctx,
                     action=SCMP_ACT_ALLOW,
                     syscall_number=socket_nr,
-                    comparisons=(
-                        _ScmpArgCmp(0, SCMP_CMP_EQ, _AF_UNIX, 0),
-                    ),
+                    comparisons=(_ScmpArgCmp(0, SCMP_CMP_EQ, _AF_UNIX, 0),),
                     label="socket:AF_UNIX",
                 )
                 installed.append("socket(AF_UNIX)")
@@ -442,9 +440,7 @@ def install_bull_seccomp(
                             ),
                             label=f"socket:{domain_name}:{type_name}",
                         )
-                        installed.append(
-                            f"socket({domain_name},{type_name})"
-                        )
+                        installed.append(f"socket({domain_name},{type_name})")
 
         _check(_lib.seccomp_load(ctx), "seccomp_load")
     finally:

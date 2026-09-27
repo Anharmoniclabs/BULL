@@ -1,3 +1,5 @@
+"""Reject production startup when required deployment protections are absent."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -328,7 +330,9 @@ def evaluate_production_environment(
     if requirements.require_backend_certification:
         host = certify_host(
             dynamic=requirements.require_dynamic_backend_attestation,
-            seccomp_profile="strict" if requirements.require_strict_seccomp else "compat",
+            seccomp_profile=(
+                "strict" if requirements.require_strict_seccomp else "compat"
+            ),
         )
         if not host.get("certified", False):
             detail = host.get("dynamic_error") or "host backend certification failed"

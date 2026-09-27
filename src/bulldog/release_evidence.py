@@ -1,3 +1,5 @@
+"""Validate release inventories, digests and provenance verification evidence."""
+
 from __future__ import annotations
 
 import argparse
@@ -20,9 +22,14 @@ class ReleaseEvidenceError(RuntimeError):
 
 
 def _filename(name: str) -> str:
-    if (not isinstance(name, str) or not name or name in {".", ".."}
-            or "/" in name or "\\" in name
-            or any(ord(char) < 32 or ord(char) == 127 for char in name)):
+    if (
+        not isinstance(name, str)
+        or not name
+        or name in {".", ".."}
+        or "/" in name
+        or "\\" in name
+        or any(ord(char) < 32 or ord(char) == 127 for char in name)
+    ):
         raise ReleaseEvidenceError("invalid checksum filename")
     return name
 
@@ -150,10 +157,12 @@ def inspect_cyclonedx(path: str | Path) -> dict:
 def inspect_sigstore_bundle(path: str | Path) -> dict:
     value = _json_object(path)
     media_type = str(value.get("mediaType", ""))
-    if media_type not in {"application/vnd.dev.sigstore.bundle.v0.3+json",
-                           "application/vnd.dev.sigstore.bundle+json;version=0.3",
-                           "application/vnd.dev.sigstore.bundle+json;version=0.2",
-                           "application/vnd.dev.sigstore.bundle+json;version=0.1"}:
+    if media_type not in {
+        "application/vnd.dev.sigstore.bundle.v0.3+json",
+        "application/vnd.dev.sigstore.bundle+json;version=0.3",
+        "application/vnd.dev.sigstore.bundle+json;version=0.2",
+        "application/vnd.dev.sigstore.bundle+json;version=0.1",
+    }:
         raise ReleaseEvidenceError("attestation is not a Sigstore bundle")
     if not isinstance(value.get("verificationMaterial"), dict):
         raise ReleaseEvidenceError("Sigstore bundle lacks verification material")
@@ -162,8 +171,11 @@ def inspect_sigstore_bundle(path: str | Path) -> dict:
         raise ReleaseEvidenceError("Sigstore bundle lacks DSSE payload")
     _statement_from_bundle(path)
     signatures = envelope.get("signatures")
-    if (not isinstance(signatures, list) or not signatures
-            or any(not isinstance(item, dict) or not item.get("sig") for item in signatures)):
+    if (
+        not isinstance(signatures, list)
+        or not signatures
+        or any(not isinstance(item, dict) or not item.get("sig") for item in signatures)
+    ):
         raise ReleaseEvidenceError("Sigstore bundle lacks signatures")
     return {
         "valid": True,
@@ -183,7 +195,10 @@ def _statement_from_bundle(path: str | Path) -> dict:
         statement = json.loads(base64.b64decode(envelope["payload"], validate=True))
     except (KeyError, TypeError, ValueError) as exc:
         raise ReleaseEvidenceError("invalid DSSE statement") from exc
-    if not isinstance(statement, dict) or statement.get("_type") != "https://in-toto.io/Statement/v1":
+    if (
+        not isinstance(statement, dict)
+        or statement.get("_type") != "https://in-toto.io/Statement/v1"
+    ):
         raise ReleaseEvidenceError("invalid in-toto statement")
     return statement
 
@@ -205,7 +220,11 @@ def _subjects(statement: dict) -> dict[str, str]:
             raise ReleaseEvidenceError("invalid attestation subject")
         name = _filename(item.get("name"))
         digest = item["digest"].get("sha256")
-        if name in result or not isinstance(digest, str) or not _HEX64.fullmatch(digest):
+        if (
+            name in result
+            or not isinstance(digest, str)
+            or not _HEX64.fullmatch(digest)
+        ):
             raise ReleaseEvidenceError("invalid or duplicate attestation subject")
         result[name] = digest
     return result
@@ -214,9 +233,18 @@ def _subjects(statement: dict) -> dict[str, str]:
 def _verify_attestations(root: Path, expected_source: str) -> dict:
     # Trust policy comes from the operator/code, never the downloaded record.
     if not re.fullmatch(r"[0-9a-f]{40}", expected_source):
-        raise ReleaseEvidenceError("expected source must be a full lowercase commit SHA")
+        raise ReleaseEvidenceError(
+            "expected source must be a full lowercase commit SHA"
+        )
     subjects = verify_checksums(root, "SUBJECT_SHA256SUMS", complete=False)
-    required = {"bzImage", "rootfs.ext4", "qboot.rom", "bull-guest.cdx.json", "assets.json", "build.json"}
+    required = {
+        "bzImage",
+        "rootfs.ext4",
+        "qboot.rom",
+        "bull-guest.cdx.json",
+        "assets.json",
+        "build.json",
+    }
     if not required.issubset(subjects):
         raise ReleaseEvidenceError("release subjects omit required guest assets")
     provenance = _statement_from_bundle(root / "provenance.sigstore.json")
@@ -232,35 +260,67 @@ def _verify_attestations(root: Path, expected_source: str) -> dict:
     if sbom.get("predicate") != _json_object(root / "bull-guest.cdx.json"):
         raise ReleaseEvidenceError("attested SBOM does not match supplied SBOM")
     for bundle, names, predicate in (
-        ("provenance.sigstore.json", sorted(subjects), "https://slsa.dev/provenance/v1"),
+        (
+            "provenance.sigstore.json",
+            sorted(subjects),
+            "https://slsa.dev/provenance/v1",
+        ),
         ("guest-sbom.sigstore.json", ["rootfs.ext4"], "https://cyclonedx.org/bom"),
     ):
         for name in names:
             try:
-                result = subprocess.run([
-                    "gh", "attestation", "verify", str(root / name),
-                    "--bundle", str(root / bundle),
-                    "--repo", "Anharmoniclabs/BULL",
-                    "--signer-workflow", "Anharmoniclabs/BULL/.github/workflows/guest-release.yml",
-                    "--source-digest", expected_source,
-                    "--predicate-type", predicate, "--deny-self-hosted-runners",
-                    "--format", "json",
-                ], capture_output=True, text=True, timeout=120, check=False)
+                result = subprocess.run(
+                    [
+                        "gh",
+                        "attestation",
+                        "verify",
+                        str(root / name),
+                        "--bundle",
+                        str(root / bundle),
+                        "--repo",
+                        "Anharmoniclabs/BULL",
+                        "--signer-workflow",
+                        "Anharmoniclabs/BULL/.github/workflows/guest-release.yml",
+                        "--source-digest",
+                        expected_source,
+                        "--predicate-type",
+                        predicate,
+                        "--deny-self-hosted-runners",
+                        "--format",
+                        "json",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                )
             except (OSError, subprocess.TimeoutExpired) as exc:
-                raise ReleaseEvidenceError("attestation verifier unavailable or timed out") from exc
+                raise ReleaseEvidenceError(
+                    "attestation verifier unavailable or timed out"
+                ) from exc
             if result.returncode != 0:
-                raise ReleaseEvidenceError(f"cryptographic attestation verification failed: {name}")
+                raise ReleaseEvidenceError(
+                    f"cryptographic attestation verification failed: {name}"
+                )
             try:
                 verified = json.loads(result.stdout)
             except ValueError as exc:
-                raise ReleaseEvidenceError("invalid attestation verifier output") from exc
+                raise ReleaseEvidenceError(
+                    "invalid attestation verifier output"
+                ) from exc
             if not isinstance(verified, list) or not verified:
                 raise ReleaseEvidenceError("empty attestation verifier result")
-    return {"valid": True, "status": "PASS", "source_commit": expected_source,
-            "detail": "fresh GitHub CLI verification of supplied bundles and all release subjects"}
+    return {
+        "valid": True,
+        "status": "PASS",
+        "source_commit": expected_source,
+        "detail": "fresh GitHub CLI verification of supplied bundles and all release subjects",
+    }
 
 
-def inspect_release_evidence(directory: str | Path, *, expected_source: str | None = None) -> dict:
+def inspect_release_evidence(
+    directory: str | Path, *, expected_source: str | None = None
+) -> dict:
     root = Path(directory).resolve(strict=True)
     if not root.is_dir():
         raise ReleaseEvidenceError("release evidence directory is unavailable")
@@ -279,8 +339,11 @@ def inspect_release_evidence(directory: str | Path, *, expected_source: str | No
     except Exception:
         verification = {}
         verification_valid = False
-    cryptographic = {"valid": False, "status": "BLOCKED",
-                     "detail": "fresh verification not requested; supply a trusted expected source commit"}
+    cryptographic = {
+        "valid": False,
+        "status": "BLOCKED",
+        "detail": "fresh verification not requested; supply a trusted expected source commit",
+    }
     if expected_source is not None:
         cryptographic = _verify_attestations(root, expected_source)
         # Detect changes while an external verifier was running. Trusted private
@@ -326,7 +389,9 @@ def main(argv: list[str] | None = None) -> int:
     inspect = subparsers.add_parser("inspect")
     inspect.add_argument("--directory", type=Path, required=True)
     inspect.add_argument("--json", type=Path)
-    inspect.add_argument("--expected-source", help="Trusted source commit; runs fresh gh verification")
+    inspect.add_argument(
+        "--expected-source", help="Trusted source commit; runs fresh gh verification"
+    )
 
     predicate = subparsers.add_parser("predicate-type")
     predicate.add_argument("--bundle", type=Path, required=True)
@@ -349,7 +414,9 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
         if args.command == "inspect":
-            report = inspect_release_evidence(args.directory, expected_source=args.expected_source)
+            report = inspect_release_evidence(
+                args.directory, expected_source=args.expected_source
+            )
             encoded = json.dumps(report, indent=2, sort_keys=True) + "\n"
             if args.json is not None:
                 args.json.write_text(encoded, encoding="utf-8")

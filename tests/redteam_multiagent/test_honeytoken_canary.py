@@ -58,7 +58,10 @@ class HoneyTokenBoundaryTests(unittest.TestCase):
             trace_id=trace_id,
             recipient=recipient.agent_id,
             message_type="task",
-            payload={"trusted_context": guard.trusted_context(trace_id), "task": {"x": 1}},
+            payload={
+                "trusted_context": guard.trusted_context(trace_id),
+                "task": {"x": 1},
+            },
         )
         self.assertEqual(bus.deliver(initial), "ok")
 

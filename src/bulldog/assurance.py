@@ -1,3 +1,8 @@
+"""Evaluate the control registry against source and deployment evidence.
+
+Report implementation, observed results and external requirements separately.
+A project-authored report is not an independent certification."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -79,9 +84,7 @@ class AssuranceReport:
 
 def _registry_bytes() -> bytes:
     return (
-        resources.files("bulldog")
-        .joinpath("data/assurance_controls.json")
-        .read_bytes()
+        resources.files("bulldog").joinpath("data/assurance_controls.json").read_bytes()
     )
 
 
@@ -89,8 +92,13 @@ def load_control_registry() -> dict[str, Any]:
     try:
         raw = json.loads(_registry_bytes())
     except Exception as exc:
-        raise AssuranceError(f"unable to load assurance control registry: {exc}") from exc
-    if not isinstance(raw, dict) or raw.get("schema") != "bull-assurance-control-registry-v1":
+        raise AssuranceError(
+            f"unable to load assurance control registry: {exc}"
+        ) from exc
+    if (
+        not isinstance(raw, dict)
+        or raw.get("schema") != "bull-assurance-control-registry-v1"
+    ):
         raise AssuranceError("unsupported assurance registry schema")
     profile = raw.get("profile")
     controls = raw.get("controls")
@@ -115,13 +123,20 @@ def load_control_registry() -> dict[str, Any]:
         "external",
     ):
         values = profile.get(section)
-        expected_phase = {"source_required": "source", "deployment_required": "deployment",
-                          "conditional": "deployment", "release_required": "release",
-                          "external": "external"}[section]
-        if (not isinstance(values, list) or not values
-                or any(not isinstance(value, str) or value not in by_id for value in values)
-                or len(set(values)) != len(values)
-                or any(by_id[value]["phase"] != expected_phase for value in values)):
+        expected_phase = {
+            "source_required": "source",
+            "deployment_required": "deployment",
+            "conditional": "deployment",
+            "release_required": "release",
+            "external": "external",
+        }[section]
+        if (
+            not isinstance(values, list)
+            or not values
+            or any(not isinstance(value, str) or value not in by_id for value in values)
+            or len(set(values)) != len(values)
+            or any(by_id[value]["phase"] != expected_phase for value in values)
+        ):
             raise AssuranceError(f"invalid profile section: {section}")
     if set(profile["deployment_required"]) & set(profile["external"]):
         raise AssuranceError("external controls cannot be deployment requirements")
@@ -143,10 +158,16 @@ def registry_digest(registry: dict[str, Any] | None = None) -> str:
 def _gate_status(check: dict[str, Any] | None) -> tuple[str, str, dict[str, Any]]:
     if check is None:
         return FAIL, "production gate did not emit expected control evidence", {}
-    return str(check["status"]), str(check.get("detail", "")), dict(check.get("evidence") or {})
+    return (
+        str(check["status"]),
+        str(check.get("detail", "")),
+        dict(check.get("evidence") or {}),
+    )
 
 
-def _release_results(release_dir: Path | None, expected_source: str | None = None) -> dict[str, tuple[str, str, dict[str, Any]]]:
+def _release_results(
+    release_dir: Path | None, expected_source: str | None = None
+) -> dict[str, tuple[str, str, dict[str, Any]]]:
     ids = (
         "SUPPLY.CYCLONEDX_GUEST_SBOM",
         "SUPPLY.SLSA_PROVENANCE",
@@ -238,9 +259,11 @@ def evaluate_assurance(
             seccomp_config[2],
         )
     else:
-        ok = (host.get("dynamic_certified") is True
-              and attestation.get("seccomp") is True
-              and attestation.get("seccomp_profile") == "strict")
+        ok = (
+            host.get("dynamic_certified") is True
+            and attestation.get("seccomp") is True
+            and attestation.get("seccomp_profile") == "strict"
+        )
         deployment["SANDBOX.SECCOMP_STRICT"] = (
             PASS if ok else FAIL,
             "" if ok else "dynamic attestation did not prove strict seccomp",
@@ -248,8 +271,11 @@ def evaluate_assurance(
         )
 
     dynamic_fields = {
-        "SANDBOX.LANDLOCK": lambda a: (a.get("landlock") is True
-            and type(a.get("landlock_abi")) is int and a["landlock_abi"] >= 1),
+        "SANDBOX.LANDLOCK": lambda a: (
+            a.get("landlock") is True
+            and type(a.get("landlock_abi")) is int
+            and a["landlock_abi"] >= 1
+        ),
         "SANDBOX.NO_NEW_PRIVS": lambda a: a.get("no_new_privs") is True,
         "SANDBOX.NETWORK_ISOLATION": lambda a: a.get("network_isolated") is True,
         "SANDBOX.PID_NAMESPACE": lambda a: type(a.get("pid")) is int and a["pid"] == 1,
@@ -266,7 +292,10 @@ def evaluate_assurance(
             deployment[control_id] = (
                 PASS if ok else FAIL,
                 "" if ok else "live backend attestation did not satisfy this control",
-                {"attestation": attestation, "dynamic_error": host.get("dynamic_error")},
+                {
+                    "attestation": attestation,
+                    "dynamic_error": host.get("dynamic_error"),
+                },
             )
 
     policy_check = gate_checks.get("INTEGRITY.SIGNED_POLICY")
