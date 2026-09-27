@@ -228,12 +228,14 @@ codex
 In Codex, use `/mcp` to inspect the connection. Ask:
 
 > Call `installation_check` from `bull_codex` exactly once with `{}`. Show the
-> actual structured tool result, including call_id, status, executed, argv and
-> returncode. If it fails, stop; do not retry or substitute a native shell call.
+> actual structured tool result, including call_id, status, executed,
+> authorized_argv and returncode. If it fails, stop; do not retry or substitute
+> a native shell call.
 
 Inspect the actual tool event. Success requires `status: COMPLETED`,
-`executed: true`, the canonical `/usr/bin/true` argv from the registry, and
-`returncode: 0`. A model saying "it worked" is not execution evidence.
+`executed: true`, `authorized_argv` matching the canonical `/usr/bin/true` command
+from the registry, and `returncode: 0`. A model saying "it worked" is not
+execution evidence.
 
 ## 5. Attach Claude Code
 
