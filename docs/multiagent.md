@@ -5,43 +5,24 @@ Python process; this package does not automatically route them through
 ProductionDispatcher or a sandbox. Its policy/canary tests are not production
 adapter validation. See [supported execution paths](ADAPTER_VALIDATION.md).
 
-The `bulldog.multiagent` package extends BULL's mission — **Blocking
-Unauthorized Logic Loopholes** — to the orchestration layer. Instead of a
-single agent with full tool access, work is decomposed across specialized
-agents, and every step must pass independent gates before and after
-execution.
+The package coordinates registered callables through policy and output checks.
+It can help structure a development experiment, but it does not create an OS
+security boundary around those callables.
 
 ## Architecture
 
-```
-             host-owned per-run canary
-                       |
-                       v
-                 +--------------+
-   task -------> | Coordinator  |  normalizes the task into a plan,
-                 +------+-------+  blocks injected tasks up front
-                        |
-                        v
-                 +--------------+
-                 |    Policy    |  allowlist-first, default-deny verdict
-                 +------+-------+  per step
-                        |
-                  ALLOW |  DENY -> recorded, never executed
-                        v
-                 +--------------+
-                 |   Executor   |  runs registered callables only
-                 +------+-------+  (no eval/exec), requires ALLOW token
-                        |
-                        v
-              +---------------------+
-              | Auditor + Verifier  |  independent scans of every output;
-              +----------+----------+  unverified results are discarded
-                         |
-                         v
-                    RunReport
+This diagram describes the development orchestration path, not production
+containment. Canary and marker checks inspect supplied text; they do not prove
+an agent's identity or detect every injection.
 
-   HoneyTokenAgent + MessageBus boundary guard inspect every envelope/result.
-   A canary outside its one trusted-context field hard-stops the trace.
+```mermaid
+flowchart TD
+    input["Task and host-owned context"] --> coordinator["Coordinator: proposed plan"]
+    coordinator --> policy["Policy check"]
+    policy -->|"Denied"| report["Run report"]
+    policy -->|"Allowed token"| executor["Registered host callable"]
+    executor --> checks["Auditor and verifier checks"]
+    checks --> report
 ```
 
 All messages travel on a capability-checked `MessageBus` that records a

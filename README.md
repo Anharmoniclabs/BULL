@@ -55,6 +55,11 @@ See [the candidate's exact scope](docs/HUMAN_FIRST_PRODUCTION_ASSURANCE.md) and
 [the integration history](docs/INTEGRATION_QUALIFICATION_20260927.md). A source edit
 does not inherit a fresh live-test result from an earlier commit.
 
+The [historical MicroVM report](docs/MICROVM_INTEGRATION_REPORT.md) records:
+Five cases passed; external host/guest receipts passed for `ab53f56` as linked
+above. The earlier governed-agent run used the host namespace sandbox, not the MicroVM.
+Persistent VM recovery remains unverified.
+
 ## What still needs evidence
 
 The combined candidate has not established the complete production dispatcher

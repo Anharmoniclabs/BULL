@@ -32,6 +32,11 @@ own revisions; they are not a single cumulative certification of the current cod
 - [Publication record](PUBLICATION.md): paper identity and artifacts.
 - [BULL II source](papers/bull-ii/README.md): paper build and companion material.
 
+## Whole-repository readability pass
+
+[Per-file review record](REPOSITORY_READABILITY.md) lists every tracked file,
+what was changed or preserved, and the verification scope.
+
 ## Change the project
 
 - [Contributing](../CONTRIBUTING.md): setup, tests and review expectations.

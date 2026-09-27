@@ -70,3 +70,9 @@ Separate formatting and documentation from behavior changes. Preserve public
 interfaces, defaults, error behavior, audit ordering and transaction boundaries
 unless the PR explicitly changes and tests them. Start with
 [the code reading guide](docs/CODE_READING_GUIDE.md).
+
+The repository-wide pass is recorded in [the per-file inventory](docs/REPOSITORY_READABILITY.md).
+For Python layout, use Black with the target and artifact exclusions in
+`pyproject.toml`. Do not format publication snapshots or regenerate evidence to
+make it match new source. Browser templates can have whitespace-sensitive text
+and build markers; run the site and console tests after editing them.
