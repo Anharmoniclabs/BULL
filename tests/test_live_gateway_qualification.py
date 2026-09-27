@@ -109,6 +109,140 @@ def test_symlink_collector_key_is_rejected(tmp_path):
         runner.private_path(link, os.getuid())
 
 
+@pytest.fixture
+def collector_env(monkeypatch):
+    monkeypatch.setenv(
+        "BULL_REMOTE_AUDIT_ANCHOR_URL",
+        "https://collector.example.invalid/v1/checkpoints",
+    )
+    raw = b"private-test-fixture-never-an-actual-key\n"
+    monkeypatch.setenv("BULL_REMOTE_AUDIT_ANCHOR_KEY", raw.decode())
+    monkeypatch.delenv("BULL_DEPLOYMENT_ANCHOR_KEY_FILE", raising=False)
+    monkeypatch.delenv("BULL_ANCHOR_MASTER_KEY", raising=False)
+    return raw
+
+
+def test_environment_requires_explicit_selection(tmp_path, collector_env):
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    with pytest.raises(ValueError, match="select one"):
+        runner.select_collector(options(), user)
+
+
+def test_environment_preflight_has_no_secret_values_or_file_writes(
+    tmp_path, collector_env, monkeypatch, capsys
+):
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    monkeypatch.setattr(runner.pwd, "getpwuid", lambda uid: user)
+    monkeypatch.setattr(runner, "host_checks", lambda: {"fixture_host": True})
+    monkeypatch.setattr(
+        runner.sys, "argv", ["runner", "--preflight", "--collector-from-env"]
+    )
+    assert runner.main() == 0
+    output = capsys.readouterr().out
+    report = json.loads(output)
+    assert report["checks"]["external_collector_configured"] is True
+    assert report["status"] == "READY_FOR_PRODUCTION_CHECKS"
+    assert collector_env.decode().strip() not in output
+    assert "collector.example.invalid" not in output
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_injected_key_keeps_exact_bytes_and_private_permissions(
+    tmp_path, collector_env
+):
+    tmp_path.chmod(0o700)
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    destination = tmp_path / "collector.key"
+    _, key = runner.select_collector(
+        options(collector_from_env=True), user, secret_destination=destination
+    )
+    assert key == destination
+    assert key.read_bytes() == collector_env
+    assert key.stat().st_mode & 0o777 == 0o600
+    with pytest.raises(FileExistsError):
+        runner.select_environment_collector(user, destination)
+    assert key.read_bytes() == collector_env
+
+
+def test_environment_file_and_value_must_agree(tmp_path, collector_env, monkeypatch):
+    key = tmp_path / "key"
+    key.write_bytes(collector_env)
+    key.chmod(0o600)
+    monkeypatch.setenv("BULL_DEPLOYMENT_ANCHOR_KEY_FILE", str(key))
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    assert runner.select_environment_collector(user)[1] == key
+    key.write_bytes(b"different-private-test-fixture-value")
+    with pytest.raises(ValueError, match="disagree"):
+        runner.select_environment_collector(user)
+
+
+def test_worker_named_secret_is_an_explicit_alias(tmp_path, collector_env, monkeypatch):
+    tmp_path.chmod(0o700)
+    monkeypatch.delenv("BULL_REMOTE_AUDIT_ANCHOR_KEY")
+    monkeypatch.setenv("BULL_ANCHOR_MASTER_KEY", collector_env.decode())
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    destination = tmp_path / "collector.key"
+    runner.select_collector(
+        options(collector_from_env=True), user, secret_destination=destination
+    )
+    assert destination.read_bytes() == collector_env
+
+
+def test_conflicting_environment_aliases_block(tmp_path, collector_env, monkeypatch):
+    monkeypatch.setenv(
+        "BULL_ANCHOR_MASTER_KEY", "different-test-fixture-master-key-value"
+    )
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    with pytest.raises(ValueError, match="environment keys disagree"):
+        runner.select_environment_collector(user, tmp_path / "collector.key")
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "missing", ["BULL_REMOTE_AUDIT_ANCHOR_URL", "BULL_REMOTE_AUDIT_ANCHOR_KEY"]
+)
+def test_partial_environment_blocks_without_creating_a_key(
+    tmp_path, collector_env, monkeypatch, missing
+):
+    monkeypatch.delenv(missing)
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    with pytest.raises(ValueError, match="requires BULL_REMOTE"):
+        runner.select_environment_collector(user, tmp_path / "collector.key")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_environment_cannot_override_explicit_inputs(tmp_path, collector_env):
+    args = options(collector_from_env=True)
+    args.deployment = tmp_path
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    with pytest.raises(ValueError, match="choose --collector-from-env"):
+        runner.select_collector(args, user)
+
+
+def test_environment_rejects_local_url(tmp_path, collector_env, monkeypatch):
+    monkeypatch.setenv("BULL_REMOTE_AUDIT_ANCHOR_URL", "https://127.0.0.1/checkpoints")
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    with pytest.raises(ValueError, match="non-local"):
+        runner.select_environment_collector(user, tmp_path / "collector.key")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_configuration_reports_paths_but_never_key_contents(tmp_path, collector_env):
+    state = deployment(tmp_path, "deployment-01")
+    legacy = tmp_path / ".local/share/bull-production/secrets"
+    legacy.mkdir(parents=True)
+    key = legacy / "cloudflare-anchor.key"
+    key.write_bytes(collector_env)
+    key.chmod(0o600)
+    user = SimpleNamespace(pw_dir=str(tmp_path), pw_uid=os.getuid())
+    report = runner.collector_configuration(user)
+    assert report["deployment_paths"] == [str(state)]
+    assert str(key) in report["private_key_paths"]
+    assert report["environment_present"]["BULL_REMOTE_AUDIT_ANCHOR_KEY"] is True
+    assert collector_env.decode().strip() not in json.dumps(report)
+    assert "fixture-key-with-exact-newline" not in json.dumps(report)
+
+
 def audit_fixture(run):
     # Real chain and MAC code, synthetic local receipt. Never production evidence.
     state = run / "private/deployment"

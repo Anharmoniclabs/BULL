@@ -69,3 +69,26 @@ in 2.33 seconds, including the original gateway subset and 16 new evidence and
 cleanup checks. The skips remain the two live Unix socket tests. The system
 Python also imported the authority without the optional MCP dependencies. These
 checks do not validate sudo provisioning or live cross-account execution here.
+
+## Collector configuration handoff
+
+The operator's transcript from published commit
+`5efa61eac9d8d5233c972a55c6be9a564ceb3f44` reports all four initial host checks
+passing: a non-root operator, Unix sockets, Linux namespaces and cgroup v2.
+The live run then stopped at collector selection. A separate existence check
+found that the previously recorded collector key path was absent from that
+Codespace. No production tool execution or authenticated receipt is claimed.
+
+The runner now supports explicit `--collector-from-env` selection of the
+documented Codespaces inputs, including the Worker name `BULL_ANCHOR_MASTER_KEY`
+as a key alias. Configuration reports contain presence flags and bounded BULL
+state paths, not key values. The runner preserves exact key bytes, refuses
+conflicting inputs, and never creates or rotates a remote collector credential.
+
+Focused regression: **96 passed, 2 skipped** in 2.44 seconds. Eleven additional
+checks cover explicit selection, read-only preflight, secret redaction, exact
+byte preservation, private file creation without overwrite, conflicting inputs,
+missing inputs, the Worker-name alias, local URL rejection and path discovery.
+The skipped Unix socket cases have the same authoring-host restriction as above.
+The collector configuration fixtures are synthetic; live qualification remains
+pending the operator's matching collector credential and a successful real run.

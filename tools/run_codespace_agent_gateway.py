@@ -13,6 +13,7 @@ import argparse
 import ctypes
 import grp
 import hashlib
+import hmac
 import json
 import os
 from pathlib import Path
@@ -67,10 +68,107 @@ def private_path(path, uid, *, directory=False):
     return path
 
 
-def select_collector(args, user):
+def collector_locations(user):
+    """Inspect only BULL's state directories; never read or print key contents."""
+    deployments, keys = set(), set()
+    for name in ("bull", "bull-production"):
+        base = Path(user.pw_dir) / ".local/share" / name
+        for pattern in ("deployment.json", "*/deployment.json", "*/*/deployment.json"):
+            for path in sorted(base.glob(pattern))[:64]:
+                try:
+                    private_path(path.parent, user.pw_uid, directory=True)
+                    private_path(path, user.pw_uid)
+                    config = json.loads(path.read_text())
+                    if (
+                        isinstance(config, dict)
+                        and config.get("format") == "bull-deployment-config-v1"
+                        and config.get("collector_url")
+                    ):
+                        deployments.add(path.parent)
+                except (OSError, ValueError):
+                    continue
+        for filename in ("collector.key", "cloudflare-anchor.key"):
+            for prefix in ("", "*/", "*/*/"):
+                for path in sorted(base.glob(prefix + "secrets/" + filename))[:64]:
+                    try:
+                        keys.add(private_path(path, user.pw_uid))
+                    except (OSError, ValueError):
+                        continue
+    return sorted(deployments), sorted(keys)
+
+
+def collector_configuration(user):
+    deployments, keys = collector_locations(user)
+    return {
+        "environment_present": {
+            name: bool(os.environ.get(name))
+            for name in (
+                "BULL_REMOTE_AUDIT_ANCHOR_URL",
+                "BULL_REMOTE_AUDIT_ANCHOR_KEY",
+                "BULL_ANCHOR_MASTER_KEY",
+                "BULL_DEPLOYMENT_ANCHOR_KEY_FILE",
+            )
+        },
+        "deployment_paths": [str(path) for path in deployments],
+        "private_key_paths": [str(path) for path in keys],
+        "scope": "configuration locations only; no collector authentication performed",
+    }
+
+
+def select_environment_collector(user, secret_destination=None):
+    """Read explicitly selected Codespaces secrets without logging their values."""
+    from tools.deployment_setup import (
+        collector_url,
+        private_read,
+        secret_text,
+        write_new,
+    )
+
+    url = os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_URL")
+    value = os.environ.get("BULL_REMOTE_AUDIT_ANCHOR_KEY")
+    worker_value = os.environ.get("BULL_ANCHOR_MASTER_KEY")
+    filename = os.environ.get("BULL_DEPLOYMENT_ANCHOR_KEY_FILE")
+    if not url or not (value or worker_value or filename):
+        raise ValueError(
+            "--collector-from-env requires BULL_REMOTE_AUDIT_ANCHOR_URL and either "
+            "BULL_REMOTE_AUDIT_ANCHOR_KEY, BULL_ANCHOR_MASTER_KEY, or "
+            "BULL_DEPLOYMENT_ANCHOR_KEY_FILE; "
+            "restore the existing collector configuration as Codespaces secrets"
+        )
+    url = collector_url(url)
+    if (
+        value
+        and worker_value
+        and not hmac.compare_digest(value.encode("utf-8"), worker_value.encode("utf-8"))
+    ):
+        raise ValueError("collector environment keys disagree")
+    value = value or worker_value
+    raw = value.encode("utf-8") if value else None
+    if raw is not None:
+        secret_text(raw)
+    if filename:
+        key = private_path(filename, user.pw_uid)
+        file_raw = private_read(key, maximum=4096)
+        secret_text(file_raw)
+        if raw is not None and not hmac.compare_digest(raw, file_raw):
+            raise ValueError("collector environment key and key file disagree")
+        return url, key
+    if secret_destination is None:
+        # Preflight is read-only. A real run stages the exact bytes privately.
+        return url, None
+    private_path(secret_destination.parent, user.pw_uid, directory=True)
+    write_new(secret_destination, raw)
+    return url, private_path(secret_destination, user.pw_uid)
+
+
+def select_collector(args, user, *, secret_destination=None):
     """Select only explicit inputs or one existing BULL deployment, never keys in logs."""
     from tools.deployment_setup import collector_url, private_read, secret_text
 
+    if getattr(args, "collector_from_env", False):
+        if args.deployment or args.collector_url or args.collector_key_file:
+            raise ValueError("choose --collector-from-env or explicit collector inputs")
+        return select_environment_collector(user, secret_destination)
     if bool(args.collector_url) != bool(args.collector_key_file):
         raise ValueError("provide both --collector-url and --collector-key-file")
     if args.deployment and args.collector_url:
@@ -83,30 +181,20 @@ def select_collector(args, user):
 
     candidates = [args.deployment] if args.deployment else []
     if not candidates:
-        # Bounded discovery in BULL's own conventional state directories only.
-        base = Path(user.pw_dir) / ".local/share/bull"
-        for pattern in ("*/deployment.json", "*/*/deployment.json"):
-            for path in sorted(base.glob(pattern))[:64]:
-                try:
-                    private_path(path.parent, user.pw_uid, directory=True)
-                    private_path(path, user.pw_uid)
-                    config = json.loads(path.read_text())
-                    if config.get(
-                        "format"
-                    ) == "bull-deployment-config-v1" and config.get("collector_url"):
-                        candidates.append(path.parent)
-                except (OSError, ValueError):
-                    continue
-        candidates = sorted(set(candidates))
+        candidates, _ = collector_locations(user)
     if len(candidates) != 1:
         raise ValueError(
             "select one existing production collector with --deployment /PRIVATE/BULL/STATE; "
-            "or provide --collector-url and --collector-key-file (never paste the key)"
+            "use --collector-from-env for existing Codespaces secrets, or provide "
+            "--collector-url and --collector-key-file (never paste the key)"
         )
     state = private_path(candidates[0], user.pw_uid, directory=True)
     config_file = private_path(state / "deployment.json", user.pw_uid)
     config = json.loads(config_file.read_text())
-    if config.get("format") != "bull-deployment-config-v1":
+    if (
+        not isinstance(config, dict)
+        or config.get("format") != "bull-deployment-config-v1"
+    ):
         raise ValueError("not a BULL deployment configuration")
     url = collector_url(config.get("collector_url"))
     if not url:
@@ -505,6 +593,11 @@ def main():
     parser.add_argument("--deployment", type=Path)
     parser.add_argument("--collector-url")
     parser.add_argument("--collector-key-file", type=Path)
+    parser.add_argument(
+        "--collector-from-env",
+        action="store_true",
+        help="explicitly use existing BULL_REMOTE_AUDIT_ANCHOR_* Codespaces secrets",
+    )
     parser.add_argument("--install-deps", action="store_true")
     parser.add_argument(
         "--preflight", action="store_true", help="read-only host and collector checks"
@@ -520,10 +613,17 @@ def main():
             args._role
         ](args._run)
     checks = host_checks()
+    user = pwd.getpwuid(os.geteuid())
+    configuration = collector_configuration(user)
     if args.preflight:
-        report = {"status": "BLOCKED", "checks": checks, "certified": False}
+        report = {
+            "status": "BLOCKED",
+            "checks": checks,
+            "collector_configuration": configuration,
+            "certified": False,
+        }
         try:
-            select_collector(args, pwd.getpwuid(os.geteuid()))
+            select_collector(args, user)
             report["checks"]["external_collector_configured"] = True
         except (OSError, ValueError) as exc:
             report["checks"]["external_collector_configured"] = False
@@ -542,8 +642,14 @@ def main():
                 "host prerequisites failed: "
                 + ", ".join(k for k, v in checks.items() if not v)
             )
-        user = pwd.getpwuid(os.geteuid())
-        url, key = select_collector(args, user)
+        (run / "private").mkdir(mode=0o700)
+        url, key = select_collector(
+            args, user, secret_destination=run / "private/input-collector.key"
+        )
+        # The authority gets the key from its private deployment. Never forward
+        # the injected master secret into installers or the separate agent.
+        os.environ.pop("BULL_REMOTE_AUDIT_ANCHOR_KEY", None)
+        os.environ.pop("BULL_ANCHOR_MASTER_KEY", None)
         revision = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip()
@@ -616,7 +722,6 @@ def main():
                     str(code) + "[mcp]",
                 ]
             )
-        (run / "private").mkdir(mode=0o700)
         (run / "private/lease").mkdir(mode=0o700)
         (run / "project").mkdir(mode=0o700)
         (run / "project/check.txt").write_text(
@@ -655,6 +760,7 @@ def main():
             report["reason"] = "sudo provisioning or the live production check failed"
     except (Exception, KeyboardInterrupt) as exc:
         report["reason"] = type(exc).__name__ + ": " + str(exc)[:700]
+    report["collector_configuration"] = configuration
     write_json(run / "report.json", report)
     print(
         json.dumps(
@@ -664,6 +770,7 @@ def main():
                 "checks": report.get("checks", {}),
                 "reason": report.get("reason"),
                 "production_failures": report.get("production_failures", []),
+                "collector_configuration": configuration,
                 "enterprise_qualified": False,
             },
             indent=2,

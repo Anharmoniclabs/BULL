@@ -181,8 +181,8 @@ python3 tools/run_codespace_agent_gateway.py --install-deps
 ```
 
 The runner looks for exactly one existing BULL deployment with a configured
-external HTTPS collector under `~/.local/share/bull`. If there are none or several,
-select one explicitly:
+external HTTPS collector under `~/.local/share/bull` or the older
+`~/.local/share/bull-production`. If there are none or several, select one explicitly:
 
 ```bash
 python3 tools/run_codespace_agent_gateway.py --deployment /PRIVATE/BULL/STATE
@@ -194,6 +194,31 @@ The key must be an operator-owned private file; never paste its contents. The
 runner does not create or change a Cloudflare deployment. Local test collectors,
 test CAs, absent credentials and failed Linux protection checks stay blocked.
 `--preflight` performs read-only prerequisite and collector-selection checks.
+
+For the environment-secret workflow in the earlier Codespaces deployment guide,
+select those inputs explicitly:
+
+```bash
+python3 tools/run_codespace_agent_gateway.py --collector-from-env --install-deps
+```
+
+This requires `BULL_REMOTE_AUDIT_ANCHOR_URL` and the existing matching
+`BULL_REMOTE_AUDIT_ANCHOR_KEY` (also accepted as `BULL_ANCHOR_MASTER_KEY`),
+or a private file selected through `BULL_DEPLOYMENT_ANCHOR_KEY_FILE`.
+If multiple key inputs are supplied, their bytes must match. The runner preserves
+the exact bytes in a new mode-0600
+file inside its private directory and clears the injected key from the process
+environment before setup. It never changes the collector's key or configuration.
+`--preflight --collector-from-env` validates availability without creating files
+or contacting the collector.
+
+Reports show only whether the named environment inputs are present and candidate
+file paths in the two BULL state directories. They do not print secret values,
+search unrelated home directories, or read key bytes just to list paths. No
+candidate or available environment secret means the existing collector credential
+must be restored in this Codespace before a live production run. Disposable KVM
+test keys do not authenticate to that collector. The signed collector receipt
+is still required for a passing result; finding configuration is not authentication.
 
 The live command installs a separate Python environment, creates a fresh signed
 deployment, and invokes the checked-in sudo helper. The helper delegates the
