@@ -100,6 +100,7 @@ def _run_assurance_status(args: argparse.Namespace) -> int:
         report = evaluate_assurance(
             dynamic=args.dynamic,
             release_dir=args.release_dir,
+            expected_source=args.expected_source,
         )
     except Exception as exc:
         print(f"unable to evaluate assurance profile: {exc}", file=sys.stderr)
@@ -192,6 +193,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--require-complete",
         action="store_true",
         help="Return non-zero unless all in-scope required controls pass.",
+    )
+    assurance_status.add_argument(
+        "--expected-source",
+        help="Trusted guest source commit; freshly verify release bundles with GitHub CLI.",
     )
     assurance_status.set_defaults(handler=_run_assurance_status)
 

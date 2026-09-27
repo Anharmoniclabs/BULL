@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import hashlib
 from importlib import resources
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -91,7 +90,7 @@ def load_control_registry() -> dict[str, Any]:
         raw = json.loads(_registry_bytes())
     except Exception as exc:
         raise AssuranceError(f"unable to load assurance control registry: {exc}") from exc
-    if raw.get("schema") != "bull-assurance-control-registry-v1":
+    if not isinstance(raw, dict) or raw.get("schema") != "bull-assurance-control-registry-v1":
         raise AssuranceError("unsupported assurance registry schema")
     profile = raw.get("profile")
     controls = raw.get("controls")
@@ -105,7 +104,7 @@ def load_control_registry() -> dict[str, Any]:
         phase = item.get("phase")
         if not isinstance(control_id, str) or not control_id or control_id in by_id:
             raise AssuranceError("duplicate or invalid assurance control id")
-        if phase not in _ALLOWED_PHASES:
+        if not isinstance(phase, str) or phase not in _ALLOWED_PHASES:
             raise AssuranceError(f"invalid assurance phase for {control_id}")
         by_id[control_id] = item
     for section in (
@@ -116,7 +115,13 @@ def load_control_registry() -> dict[str, Any]:
         "external",
     ):
         values = profile.get(section)
-        if not isinstance(values, list) or any(value not in by_id for value in values):
+        expected_phase = {"source_required": "source", "deployment_required": "deployment",
+                          "conditional": "deployment", "release_required": "release",
+                          "external": "external"}[section]
+        if (not isinstance(values, list) or not values
+                or any(not isinstance(value, str) or value not in by_id for value in values)
+                or len(set(values)) != len(values)
+                or any(by_id[value]["phase"] != expected_phase for value in values)):
             raise AssuranceError(f"invalid profile section: {section}")
     if set(profile["deployment_required"]) & set(profile["external"]):
         raise AssuranceError("external controls cannot be deployment requirements")
@@ -141,7 +146,7 @@ def _gate_status(check: dict[str, Any] | None) -> tuple[str, str, dict[str, Any]
     return str(check["status"]), str(check.get("detail", "")), dict(check.get("evidence") or {})
 
 
-def _release_results(release_dir: Path | None) -> dict[str, tuple[str, str, dict[str, Any]]]:
+def _release_results(release_dir: Path | None, expected_source: str | None = None) -> dict[str, tuple[str, str, dict[str, Any]]]:
     ids = (
         "SUPPLY.CYCLONEDX_GUEST_SBOM",
         "SUPPLY.SLSA_PROVENANCE",
@@ -160,7 +165,7 @@ def _release_results(release_dir: Path | None) -> dict[str, tuple[str, str, dict
     from .release_evidence import inspect_release_evidence
 
     try:
-        report = inspect_release_evidence(release_dir)
+        report = inspect_release_evidence(release_dir, expected_source=expected_source)
     except Exception as exc:
         return {
             control_id: (FAIL, f"release evidence inspection failed: {exc}", {})
@@ -170,13 +175,13 @@ def _release_results(release_dir: Path | None) -> dict[str, tuple[str, str, dict
         "SUPPLY.CYCLONEDX_GUEST_SBOM": "sbom",
         "SUPPLY.SLSA_PROVENANCE": "provenance_bundle",
         "SUPPLY.SIGSTORE_ATTESTATION": "sigstore_bundle",
-        "SUPPLY.ATTESTATION_VERIFIED": "verification_record",
+        "SUPPLY.ATTESTATION_VERIFIED": "cryptographic_verification",
     }
     results: dict[str, tuple[str, str, dict[str, Any]]] = {}
     for control_id, key in mapping.items():
         value = report[key]
         results[control_id] = (
-            PASS if value["valid"] else FAIL,
+            PASS if value["valid"] else value.get("status", FAIL),
             str(value.get("detail", "")),
             dict(value),
         )
@@ -188,7 +193,10 @@ def evaluate_assurance(
     dynamic: bool = False,
     package_root: str | Path | None = None,
     release_dir: str | Path | None = None,
+    expected_source: str | None = None,
 ) -> AssuranceReport:
+    if expected_source is not None and release_dir is None:
+        raise AssuranceError("expected source requires a release directory")
     registry = load_control_registry()
     profile = registry["profile"]
     by_id = {item["id"]: item for item in registry["controls"]}
@@ -230,7 +238,9 @@ def evaluate_assurance(
             seccomp_config[2],
         )
     else:
-        ok = bool(attestation.get("seccomp")) and attestation.get("seccomp_profile") == "strict"
+        ok = (host.get("dynamic_certified") is True
+              and attestation.get("seccomp") is True
+              and attestation.get("seccomp_profile") == "strict")
         deployment["SANDBOX.SECCOMP_STRICT"] = (
             PASS if ok else FAIL,
             "" if ok else "dynamic attestation did not prove strict seccomp",
@@ -238,10 +248,11 @@ def evaluate_assurance(
         )
 
     dynamic_fields = {
-        "SANDBOX.LANDLOCK": lambda a: bool(a.get("landlock")) and int(a.get("landlock_abi", 0)) >= 1,
+        "SANDBOX.LANDLOCK": lambda a: (a.get("landlock") is True
+            and type(a.get("landlock_abi")) is int and a["landlock_abi"] >= 1),
         "SANDBOX.NO_NEW_PRIVS": lambda a: a.get("no_new_privs") is True,
         "SANDBOX.NETWORK_ISOLATION": lambda a: a.get("network_isolated") is True,
-        "SANDBOX.PID_NAMESPACE": lambda a: a.get("pid") == 1,
+        "SANDBOX.PID_NAMESPACE": lambda a: type(a.get("pid")) is int and a["pid"] == 1,
     }
     for control_id, predicate in dynamic_fields.items():
         if not dynamic:
@@ -251,7 +262,7 @@ def evaluate_assurance(
                 {},
             )
         else:
-            ok = bool(host.get("dynamic_certified")) and predicate(attestation)
+            ok = host.get("dynamic_certified") is True and predicate(attestation)
             deployment[control_id] = (
                 PASS if ok else FAIL,
                 "" if ok else "live backend attestation did not satisfy this control",
@@ -281,7 +292,7 @@ def evaluate_assurance(
         )
 
     release_path = Path(release_dir).resolve() if release_dir is not None else None
-    release = _release_results(release_path)
+    release = _release_results(release_path, expected_source)
 
     results: list[ControlResult] = []
     for control in registry["controls"]:

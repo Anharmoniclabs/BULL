@@ -37,3 +37,13 @@ def test_guest_release_final_inventory_is_verified_before_release():
     )
     release_index = workflow.index("- name: Create the draft versioned GitHub release")
     assert create_index < verify_index < release_index
+
+
+def test_release_verifies_supplied_bundles_and_pins_source_and_signer():
+    workflow = Path('.github/workflows/guest-release.yml').read_text()
+    assert '--bundle "$release/provenance.sigstore.json"' in workflow
+    assert '--bundle "$release/guest-sbom.sigstore.json"' in workflow
+    assert workflow.count('--source-digest "$GITHUB_SHA"') == 2
+    assert workflow.count('--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/guest-release.yml"') == 2
+    assert '--expected-source "$GITHUB_SHA"' in workflow
+    assert 'predicate="https://cyclonedx.org/bom"' in workflow
