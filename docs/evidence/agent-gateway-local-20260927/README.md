@@ -89,3 +89,30 @@ Result: 202 passed, 2 skipped. Both skips require Unix IPC, which this editing
 environment prohibits. The JUnit SHA-256 was
 `a1312ecf5999fda8a83cd633ed8187f16a1b83a277f98f4d64a6496a80bc4117`.
 The corrected runner still needs a live operator-host result.
+
+## Public runtime permission correction
+
+The next operator report, at `09308d16e73ce3b8ebd346ebcfb9aefebc01feb7`,
+confirmed local authority startup and distinct non-root identities. Launching
+the agent then failed with `PermissionError`. The supplied `namei` output showed
+mode `0756` on both `venv` and `venv/bin`: the separate agent could not traverse
+those directories. This was a blocked run, not a live gateway pass.
+
+The runner now keeps the installation parent private throughout installation.
+It inventories only the fresh source and virtual environment, sets directories
+and executables to `0755` and other files to `0644`, then verifies permissions
+before granting traversal of the parent. Private evidence stays untouched.
+Foreign owners, special files, hardlinks, and symlinks leaving either public tree
+are rejected. The privileged helper verifies permissions again before creating
+an account or starting the authority.
+
+With `tests/test_gateway_runtime_permissions.py` added to the focused command
+above, and JUnit output `/tmp/bull-gateway-permissions-regression.xml`, the result
+was 216 passed, 2 skipped. The JUnit SHA-256 was
+`fcda6aa51a87862e376f962bdd6b3c8b2082e5157840d5a0c22ab43e932de269`.
+The tests include a real fresh Python virtual environment and executable fixture
+launcher after recreating the reported permissions, plus checks that unsafe
+entries cannot expose private files. They run under the editing process UID;
+they do not establish separate-account MCP operation. Both skips still require
+Unix IPC, which this editing environment prohibits. A new Codespace result is
+required for live qualification.

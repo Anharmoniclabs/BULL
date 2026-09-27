@@ -304,8 +304,9 @@ def test_exited_child_is_not_signalled_by_a_reusable_pid(monkeypatch):
     assert not sent
 
 
-def test_failed_account_creation_never_deletes_an_existing_account(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize("failure_stage", ["permissions", "account"])
+def test_failed_setup_never_deletes_an_existing_account(
+    tmp_path, monkeypatch, failure_stage
 ):
     from tools import host_setup
 
@@ -336,13 +337,19 @@ def test_failed_account_creation_never_deletes_an_existing_account(
     monkeypatch.setattr(host_setup, "provision_cgroup", lambda user: tmp_path)
     calls = []
 
+    def verify_runtime(*args):
+        if failure_stage == "permissions":
+            raise ValueError("public runtime permissions 0756, expected 0755")
+
+    monkeypatch.setattr(runner, "verify_public_runtime", verify_runtime)
+
     def failed(command, *args):
         calls.append(command)
         raise OSError("account exists; fixture only")
 
     monkeypatch.setattr(runner, "account_command", failed)
     assert runner.root_worker(run) == 1
-    assert calls == ["useradd"]
+    assert calls == ([] if failure_stage == "permissions" else ["useradd"])
     assert json.loads((run / "report.json").read_text())["status"] == "BLOCKED"
 
 
@@ -437,6 +444,7 @@ def test_worker_keeps_audit_profile_through_provisioning_and_cleanup(
     monkeypatch.setattr(runner.os, "chown", lambda *a, **k: None)
     monkeypatch.setattr(runner.os, "getgrouplist", lambda *a: [operator.pw_gid])
     monkeypatch.setattr(runner, "private_path", lambda path, uid: path)
+    monkeypatch.setattr(runner, "verify_public_runtime", lambda *args: None)
     monkeypatch.setattr(runner.pwd, "getpwuid", lambda uid: operator)
     monkeypatch.setattr(runner.pwd, "getpwnam", lambda name: agent)
     monkeypatch.setattr(runner.grp, "getgrnam", lambda name: SimpleNamespace())

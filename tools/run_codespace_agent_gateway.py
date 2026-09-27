@@ -69,6 +69,82 @@ def private_path(path, uid, *, directory=False):
     return path
 
 
+def public_runtime_entries(run, operator_uid):
+    """Inventory only the newly installed source and libraries, never evidence."""
+    entries = []
+    for name in ("source", "venv"):
+        root = run / name
+        if root.is_symlink() or not root.is_dir():
+            raise ValueError("public runtime must be a real directory: " + str(root))
+        for path in (root, *root.rglob("*")):
+            info = path.lstat()
+            if info.st_uid != operator_uid:
+                raise ValueError("public runtime has a foreign owner: " + str(path))
+            if stat.S_ISLNK(info.st_mode):
+                # venv's lib64 -> lib is expected. Never chmod a link target or
+                # allow links into private evidence or another installation.
+                if not path.resolve(strict=True).is_relative_to(root):
+                    raise ValueError(
+                        "public runtime link leaves its tree: " + str(path)
+                    )
+                continue
+            if stat.S_ISDIR(info.st_mode):
+                mode = 0o755
+            elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
+                mode = 0o755 if info.st_mode & stat.S_IXUSR else 0o644
+            else:
+                raise ValueError("unexpected public runtime entry: " + str(path))
+            entries.append((path, mode))
+    return entries
+
+
+def verify_public_runtime(run, operator_uid, *, parent_mode=0o711):
+    """Refuse inaccessible or agent-writable code before account provisioning."""
+    info = run.lstat()
+    if (
+        run.resolve(strict=True) != run
+        or not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != operator_uid
+        or stat.S_IMODE(info.st_mode) != parent_mode
+    ):
+        raise ValueError(
+            f"runtime parent must be operator-owned and mode {parent_mode:04o}"
+        )
+    private_path(run / "private", operator_uid, directory=True)
+    for path, mode in public_runtime_entries(run, operator_uid):
+        actual = stat.S_IMODE(path.lstat().st_mode)
+        if actual != mode:
+            raise ValueError(
+                f"public runtime permissions {actual:04o}, expected {mode:04o}: {path}"
+            )
+    for name in ("python", "bull-mcp"):
+        path = run / "venv/bin" / name
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode) or stat.S_IMODE(info.st_mode) != 0o755:
+            raise ValueError(
+                "runtime entry point must be a mode 0755 file: " + str(path)
+            )
+
+
+def prepare_public_runtime(run):
+    """Set public code permissions while its parent is still private."""
+    operator_uid = os.geteuid()
+    private_path(run, operator_uid, directory=True)
+    private_path(run / "private", operator_uid, directory=True)
+    # Validate every entry before changing any permissions. Keep the parent
+    # private until both public trees have been prepared and checked.
+    entries = public_runtime_entries(run, operator_uid)
+    for path, mode in entries:
+        os.chmod(path, mode, follow_symlinks=False)
+    verify_public_runtime(run, operator_uid, parent_mode=0o700)
+    run.chmod(0o711)
+    try:
+        verify_public_runtime(run, operator_uid)
+    except BaseException:
+        run.chmod(0o700)
+        raise
+
+
 def collector_locations(user):
     """Inspect only BULL's state directories; never read or print key contents."""
     deployments, keys = set(), set()
@@ -517,6 +593,8 @@ def root_worker(run):
     try:
         from tools.host_setup import provision_cgroup
 
+        verify_public_runtime(run, operator.pw_uid)
+        report["checks"]["public_runtime_permissions"] = True
         parent = provision_cgroup(operator)
         account = "bull-gw-" + secrets.token_hex(4)
         account_command(
@@ -798,8 +876,7 @@ def main(*, default_local=False):
             raise ValueError(
                 "ClamAV is required; rerun with --install-deps and supply current official databases"
             )
-        # Source and installed libraries are readable; authority evidence stays private.
-        run.chmod(0o711)
+        # Keep the installation private until public code permissions are verified.
         with (run / "setup.log").open("xb") as log:
 
             def setup(command):
@@ -839,6 +916,7 @@ def main(*, default_local=False):
                     str(code) + "[mcp]",
                 ]
             )
+        prepare_public_runtime(run)
         (run / "private/lease").mkdir(mode=0o700)
         (run / "project").mkdir(mode=0o700)
         (run / "project/check.txt").write_text(
