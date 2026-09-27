@@ -1,7 +1,46 @@
 # Local MCP audit profile: validation record
 
-Date: 2026-09-27. This records source and protocol checks, not a live protected
-agent deployment. The local profile needs no external service credentials.
+Date: 2026-09-27. This records source tests and an operator-reported live local
+MCP qualification. The local profile needs no external collector credentials.
+
+## Operator-reported live result
+
+The operator supplied Codespaces console output for commit
+`8ae922ce24a0aa2ab653697c57eaf965268279ff`, running:
+
+```sh
+python3 tools/run_local_agent_gateway.py
+```
+
+It reported **`LOCAL TOOL PASS`**, all **16 checks true**, no gate failures and
+`enterprise_qualified: false`. The earlier startup failures below were followed
+by this successful run. The [transcribed summary](operator-live-summary.json)
+preserves the reported checks without private paths or credentials. It is not
+the original private report, a signed attestation or an independent replication;
+the private evidence has not been inspected for this record.
+
+| Checks | What the successful result covers |
+|---|---|
+| Runtime and identity (5) | Public runtime permissions passed; agent and authority had distinct non-root UIDs; the local authority started; its runtime source matched; its audit profile was local. |
+| MCP connection (2) | The real SDK connection initialized and listed the authorized tool. |
+| Agent permissions (1) | The checked permissions prevented the agent from reading authority keys or modifying the staged authority source and environment. |
+| Command substitution (1) | A request supplying `/bin/sh` as replacement argv was rejected without an admission. This probe used the authenticated authority socket directly. |
+| Execution (3) | The fixed, hash-bound `/usr/bin/true` tool executed with the expected argv and exit zero; exactly one admission was recorded. |
+| Local audit (2) | The authenticated checkpoint reached the ledger head, and the retained audit matched the MCP result. |
+| Coverage disclosure (1) | The authority explicitly reported that it did not contain the whole agent. |
+| Cleanup (1) | The temporary agent account was removed. |
+
+These are 16 checks within one bounded installation test, not 16 independent
+attacks. One admission does not prove exactly-once external effects after
+crashes or network uncertainty. This run used the local dispatcher and local
+audit; it required no external collector key and established no external receipt.
+It did not run a Codex or Claude session, contain their native tools, or qualify
+an enterprise deployment. The temporary service stopped after the test.
+
+The result belongs to the tested commit above. Recording it in a later
+documentation commit does not make it a live test of that later revision.
+
+## Original source-validation snapshot
 
 The staged tree tested before this record was added was
 `651e077b12a73e21bc0505b0550708ceea1216d8`.
@@ -46,7 +85,7 @@ The local preflight ran here and reported: non-root operator false, Unix sockets
 false, Linux namespaces false, cgroup-v2 true, local audit selected true, external
 collector required false. It correctly remained `BLOCKED`.
 
-## Live evidence still required
+## Live qualification procedure
 
 On a supported Linux operator host, from a clean reviewed checkout:
 
@@ -54,11 +93,14 @@ On a supported Linux operator host, from a clean reviewed checkout:
 python3 tools/run_local_agent_gateway.py --install-deps
 ```
 
-Expected successful label: `LOCAL TOOL PASS`. Real namespace enforcement, distinct
-UID IPC and malware scanning must pass there before that result can be recorded.
+Expected successful label: `LOCAL TOOL PASS`. The runner requires real namespace
+enforcement, distinct-UID IPC and malware scanning on that host. The operator
+reported the successful result above. The editing environment's blocked preflight
+and historical test failures remain a separate record.
 No live Codex/Claude session, KVM result, external audit receipt, multi-day soak,
-hardware approval or independent review is claimed by this change. Native agent
-tools remain outside the connected gateway. Host administrators remain trusted.
+hardware approval or independent review is claimed by this local check. Native
+agent tools remain outside the connected gateway. Host administrators remain
+trusted.
 
 ## Runner startup correction
 
@@ -88,7 +130,7 @@ python -m pytest -q -ra --tb=short \
 Result: 202 passed, 2 skipped. Both skips require Unix IPC, which this editing
 environment prohibits. The JUnit SHA-256 was
 `a1312ecf5999fda8a83cd633ed8187f16a1b83a277f98f4d64a6496a80bc4117`.
-The corrected runner still needs a live operator-host result.
+At this stage, a live operator-host result was still required.
 
 ## Public runtime permission correction
 
@@ -114,8 +156,8 @@ The tests include a real fresh Python virtual environment and executable fixture
 launcher after recreating the reported permissions, plus checks that unsafe
 entries cannot expose private files. They run under the editing process UID;
 they do not establish separate-account MCP operation. Both skips still require
-Unix IPC, which this editing environment prohibits. A new Codespace result is
-required for live qualification.
+Unix IPC, which this editing environment prohibits. At this stage, a new
+Codespace result was still required for live qualification.
 
 ## Isolated helper cache correction
 
@@ -137,4 +179,5 @@ They perform no account provisioning. The same focused suite passed 219 tests
 and skipped 2 Unix IPC tests unavailable in this environment. JUnit output
 `/tmp/bull-gateway-bytecode-regression.xml` had SHA-256
 `0b7fc861a063145e5332f2ac9933b6d0cfecdb820ec1ec5c8f636f4221e9b76f`.
-This correction still needs a fresh live Codespace qualification result.
+The later Codespace run at `8ae922c` reported `LOCAL TOOL PASS`, as recorded at
+the top of this page.

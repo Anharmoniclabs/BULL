@@ -71,6 +71,11 @@ actual MCP exchange and verifies the local authenticated audit against the
 observed command/result. It removes its temporary service and account afterward.
 Keep the printed evidence directory; share only `report.json`.
 
+An operator-reported Codespaces run at `8ae922c` completed this check with
+`LOCAL TOOL PASS` and all 16 checks true. See the
+[transcribed result and exact scope](evidence/agent-gateway-local-20260927/README.md).
+This result covers the bounded local check; it is not a persistent installation.
+
 Sudo is needed for the temporary account and delegated cgroup. Linux namespaces,
 strict seccomp, dynamic sandbox checks, workspace limits and real malware scanning
 remain required. `--install-deps` installs OS packages; ClamAV needs usable official

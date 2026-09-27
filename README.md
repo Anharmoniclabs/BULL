@@ -56,12 +56,13 @@ External audit receipts are an optional, separately configured deployment profil
 
 ## What has been observed
 
-Results belong to the source and environment that produced them. This branch's
-newest candidate evidence is an operator-supplied Codespaces transcript; its
-private images and reports are not included here.
+Results belong to the source and environment that produced them. The local MCP
+and combined KVM candidate results below are operator-supplied Codespaces
+transcripts; their private images and reports are not included here.
 
 | Source | Observation | Boundary |
 |---|---|---|
+| `8ae922c` | Local MCP qualification reported `LOCAL TOOL PASS`, with all 16 checks true | One fixed command, separate agent account and authenticated local audit; [transcribed evidence and limits](docs/evidence/agent-gateway-local-20260927/README.md) |
 | `e6df4de` | Combined candidate reported 13 passing checks with separate agent and gateway users, nftables and systemd | Disposable Debian KVM candidate; dispatcher workload path and pinned image release remain separate checks |
 | `ab53f56` | Retained record: 501 tests + 21 subtests and five real-KVM cases | Historical deployment snapshot; [record](site/data/validation/ab53f56.json) |
 | Earlier governed-agent run | 40 actions in 11m 47s and two worker-exit recoveries | Host namespace sandbox; [separate evidence](docs/evidence/governed-agent-20260922/README.md) |
