@@ -3,10 +3,32 @@ name: Deploy BULL Lab to Pages
 on:
   pull_request:
     branches: [main]
-    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+    paths:
+      [
+        "site/**",
+        "tools/**",
+        "src/bulldog/**",
+        "tests/**",
+        "formal/**",
+        "docs/**",
+        "README.md",
+        "pyproject.toml",
+        ".github/workflows/pages.yml",
+      ]
   push:
     branches: [main]
-    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+    paths:
+      [
+        "site/**",
+        "tools/**",
+        "src/bulldog/**",
+        "tests/**",
+        "formal/**",
+        "docs/**",
+        "README.md",
+        "pyproject.toml",
+        ".github/workflows/pages.yml",
+      ]
   workflow_dispatch:
 
 permissions:
@@ -80,6 +102,8 @@ jobs:
           done
       - name: Build static engineering publication
         run: python tools/build_site.py --output _site --commit "${{ github.sha }}"
+      - name: Verify paper source and published artifact identities
+        run: python docs/papers/bull-ii/build.py --verify-publication site/assets/papers
       - name: Generate commit-specific build evidence
         env:
           BULL_COMMIT: ${{ github.sha }}
@@ -117,7 +141,6 @@ jobs:
               "hardware_approval_certified": False,
               "universal_security_certified": False,
               "source_hashes": hashes,
-              "explainer": json.loads(Path("site/assets/explainer/manifest.json").read_text()),
           }
           Path("_site/data/verification.json").write_text(json.dumps(evidence, indent=2) + "\n")
           print(json.dumps(evidence, indent=2))

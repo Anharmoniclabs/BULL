@@ -1,3 +1,5 @@
+"""Evaluate capabilities and provenance to produce a policy decision."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -11,7 +13,6 @@ from .models import (
     Evaluation,
     has_external_provenance,
 )
-
 
 SENSITIVE_PATH_MARKERS = (
     "/.ssh/",
@@ -169,18 +170,13 @@ class DeterministicPolicy:
             risk += 0.70
 
         persistence_target = any(
-            marker in decoded_lower
-            for marker in PERSISTENCE_PATHS
+            marker in decoded_lower for marker in PERSISTENCE_PATHS
         )
 
-        if (
-            persistence_target
-            and action.capability
-            in {
-                Capability.FS_WRITE_HOME,
-                Capability.SECURITY_CONTROL_WRITE,
-            }
-        ):
+        if persistence_target and action.capability in {
+            Capability.FS_WRITE_HOME,
+            Capability.SECURITY_CONTROL_WRITE,
+        }:
             reasons.append(
                 "write targets a resource capable of persisting beyond session"
             )
@@ -189,9 +185,7 @@ class DeterministicPolicy:
         external = has_external_provenance(action.provenance)
 
         if external:
-            reasons.append(
-                "action is downstream of untrusted external content"
-            )
+            reasons.append("action is downstream of untrusted external content")
             risk += 0.25
 
         if (
@@ -204,18 +198,14 @@ class DeterministicPolicy:
                     1.0,
                     tuple(
                         reasons
-                        + [
-                            "externally influenced credential access is forbidden"
-                        ]
+                        + ["externally influenced credential access is forbidden"]
                     ),
                     hard_block=True,
                 )
             return Evaluation(
                 Decision.ALLOW,
                 max(risk, 0.20),
-                (
-                    "credential access is mediated by the scoped secret broker",
-                ),
+                ("credential access is mediated by the scoped secret broker",),
                 hard_block=False,
             )
 
@@ -224,15 +214,11 @@ class DeterministicPolicy:
             risk += 0.55
 
         if external and action.capability == Capability.PROCESS_EXEC:
-            reasons.append(
-                "externally influenced process execution requires review"
-            )
+            reasons.append("externally influenced process execution requires review")
             risk = max(risk, 0.90)
 
         if external and action.capability == Capability.AGENT_SPAWN:
-            reasons.append(
-                "externally influenced agent creation requires review"
-            )
+            reasons.append("externally influenced agent creation requires review")
             risk = max(risk, 0.90)
 
         if external and action.capability == Capability.CREDENTIAL_READ:
@@ -240,18 +226,13 @@ class DeterministicPolicy:
                 Decision.DENY,
                 1.0,
                 tuple(
-                    reasons
-                    + [
-                        "externally influenced credential access is forbidden"
-                    ]
+                    reasons + ["externally influenced credential access is forbidden"]
                 ),
                 hard_block=True,
             )
 
         if external and action.capability == Capability.NETWORK_POST:
-            reasons.append(
-                "externally influenced outbound data transfer"
-            )
+            reasons.append("externally influenced outbound data transfer")
             risk = max(risk, 0.90)
 
         if action.capability in {

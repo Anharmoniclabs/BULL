@@ -42,6 +42,14 @@ jobs:
           sudo apt-get install -y openssh-client
       - name: Compile trusted runtime
         run: python -m compileall -q src/bulldog
+      - name: Hardware button state machines (simulation only)
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -I firmware/src firmware/src/state_machine.c firmware/tests/state_machine_test.c -o "$RUNNER_TEMP/bull-buttons"
+          "$RUNNER_TEMP/bull-buttons"
+          cc -std=c11 -Wall -Wextra -Werror -I firmware/src firmware/src/boot_clicks.c firmware/tests/boot_clicks_test.c -o "$RUNNER_TEMP/bull-boot-clicks"
+          "$RUNNER_TEMP/bull-boot-clicks"
+      - name: Standalone adversarial source and API probes
+        run: python tools/adversarial_check.py
       - name: Local-host red-team boundary
         run: python -m pytest -q tests/redteam_local_host
       - name: Full regression suite

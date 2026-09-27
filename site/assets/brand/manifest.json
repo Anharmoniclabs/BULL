@@ -1,0 +1,53 @@
+{
+  "revision": "approved-bulldog-B-20260919",
+  "source": {
+    "file": "bull-approved-sheet.png",
+    "sha256": "79a75d93e09f2b0a460c7ae3feb854c601803adc922bf9a54346955bfd7d803a",
+    "width": 1448,
+    "height": 1086,
+    "note": "Exact owner-approved PNG, unchanged. SVGs are two-tone vector adaptations of its artwork; they are not original vector masters."
+  },
+  "generator": {
+    "script": "tools/build_brand_assets.py",
+    "Pillow": "11.3.0",
+    "vtracer": "0.6.12"
+  },
+  "files": {
+    "bull-approved-sheet.png": {
+      "sha256": "79a75d93e09f2b0a460c7ae3feb854c601803adc922bf9a54346955bfd7d803a",
+      "bytes": 1210848
+    },
+    "bull-favicon.svg": {
+      "sha256": "55cca5e62162d978c8610f036f1bad0dd290e2209db8c0857139797d2dc87538",
+      "bytes": 12539
+    },
+    "bull-mark.png": {
+      "sha256": "5925b6ad5a5332bd50f6fbe4784f06904768ee4b1dd2caabac1107060a968f2f",
+      "bytes": 86761
+    },
+    "bull-mark.svg": {
+      "sha256": "be41e454a941737df240bbbeb9da25ad755b296037d6d8739b510321b0d84571",
+      "bytes": 12532
+    },
+    "bull-one-color.svg": {
+      "sha256": "819a984bfb35d5894d839bcfb8f96c1e159ef15d31222e29396e669fe04d335f",
+      "bytes": 14861
+    },
+    "bull-primary-dark.svg": {
+      "sha256": "771639b6aa1e1eea3cde30ad84495498dd1dc756764955852ea3309f2b8237a4",
+      "bytes": 24465
+    },
+    "bull-primary.png": {
+      "sha256": "90b53eb8dd9ee8c28a340e2bda2e970e95b4fc29a5debc101f39c5ba9b51753f",
+      "bytes": 147373
+    },
+    "bull-primary.svg": {
+      "sha256": "3a654b97a46175d940004834c727e995ffcc85ca3b960a7e99145ef483bc9530",
+      "bytes": 24448
+    },
+    "bull-stacked.svg": {
+      "sha256": "ccd94cb4c17d4cd208141bae2c2ac60b4a1500048ca71f14c2263dc64a148fcc",
+      "bytes": 22590
+    }
+  }
+}

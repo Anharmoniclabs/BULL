@@ -1,3 +1,5 @@
+"""Run snapshot admission work in a separate constrained process."""
+
 from __future__ import annotations
 
 import argparse

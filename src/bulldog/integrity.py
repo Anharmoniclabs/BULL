@@ -1,3 +1,5 @@
+"""Sign and verify the trusted runtime file manifest."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,6 +18,10 @@ CRITICAL_FILES = (
     "approval.py",
     "approval_crypto.py",
     "approval_cli.py",
+    "hardware_approval/__init__.py",
+    "hardware_approval/protocol.py",
+    "hardware_approval/provider.py",
+    "hardware_approval/verifier.py",
     "models.py",
     "pinned_egress.py",
     "socket_hardening.py",
@@ -40,6 +46,13 @@ CRITICAL_FILES = (
     "policy.py",
     "policy_bundle.py",
     "production_gate.py",
+    "assurance.py",
+    "release_evidence.py",
+    "lifecycle_governance.py",
+    "lifecycle_bridge.py",
+    "egress_gateway.py",
+    "run_egress_gateway.py",
+    "data/assurance_controls.json",
     "profiles.py",
     "resource_limits.py",
     "runtime.py",
@@ -69,11 +82,7 @@ def sha256_file(path: Path) -> str:
 
 
 def _canonical_manifest_bytes(manifest: dict) -> bytes:
-    payload = {
-        key: value
-        for key, value in manifest.items()
-        if key != "signature"
-    }
+    payload = {key: value for key, value in manifest.items() if key != "signature"}
     return json.dumps(
         payload,
         sort_keys=True,

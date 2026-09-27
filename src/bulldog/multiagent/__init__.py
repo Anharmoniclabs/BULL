@@ -1,4 +1,6 @@
-"""BULL multi-agent system: layered agents that block unauthorized logic."""
+"""Development orchestration with registered host callables and policy checks.
+
+This package is not automatically connected to production dispatch or a sandbox."""
 
 from .agents import (
     AuditorAgent,

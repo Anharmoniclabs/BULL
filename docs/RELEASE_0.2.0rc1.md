@@ -4,6 +4,12 @@ This is an experimental source candidate, not a security certification.
 
 ## Changes
 
+- Merges the governed-agent tooling, controlled recovery tests, guest source and
+  license delivery, source-distribution checks and branch inventory into `main`.
+- Adds the approved branding and diagnostic KB2040 firmware. Custom P-256
+  assertions now use the existing durable ApprovalGate and production effect
+  path; no secure element is connected and physical signing remains blocked.
+- Updates optional hardware/test cryptography support through version 50.
 - Integrates the four runtime hardening files from PR #46 without reverting the
   newer engineering website: canonicalization, socket filtering, namespace
   bootstrap and pre-execution attestation gate.

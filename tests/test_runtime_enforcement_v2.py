@@ -57,9 +57,7 @@ class CapturingSandbox:
         self.project_root = Path(project_root)
         self.resource_budget = resource_budget
         self.command = tuple(command)
-        content = (self.project_root / "payload.txt").read_text(
-            encoding="utf-8"
-        )
+        content = (self.project_root / "payload.txt").read_text(encoding="utf-8")
         return SandboxResult(returncode=0, stdout=content, stderr="")
 
 
@@ -208,11 +206,14 @@ def test_secret_grant_is_sandbox_bound_and_one_shot(tmp_path):
     )
     with pytest.raises(SecretBrokerError):
         broker._authorize_and_get(grant.token, "TOKEN", sandbox_id="sandbox-B")
-    assert broker._authorize_and_get(
-        grant.token,
-        "TOKEN",
-        sandbox_id="sandbox-A",
-    ) == "VALUE"
+    assert (
+        broker._authorize_and_get(
+            grant.token,
+            "TOKEN",
+            sandbox_id="sandbox-A",
+        )
+        == "VALUE"
+    )
     with pytest.raises(SecretBrokerError):
         broker._authorize_and_get(grant.token, "TOKEN", sandbox_id="sandbox-A")
 
@@ -231,20 +232,25 @@ def test_egress_fetch_uses_validated_pinned_ip(monkeypatch, tmp_path):
 
     class FakeResponse:
         status = 200
+
         def read(self, n):
             return b"ok"
+
         def getheaders(self):
             return []
 
     class FakeConnection:
         def __init__(self, *, hostname, ip, port, timeout):
             seen.update({"hostname": hostname, "ip": ip, "port": port})
+
         def request(self, method, path, headers):
             seen["method"] = method
             seen["path"] = path
             seen["host_header"] = headers["Host"]
+
         def getresponse(self):
             return FakeResponse()
+
         def close(self):
             pass
 

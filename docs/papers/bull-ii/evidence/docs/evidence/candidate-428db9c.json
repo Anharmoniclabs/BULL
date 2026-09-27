@@ -1,0 +1,139 @@
+{
+  "status": "PASS_WITH_PHYSICAL_APPROVAL_BLOCKED",
+  "commit": "428db9cf8740f755249b23d33ba71da0c39502b1",
+  "source_dirty": false,
+  "tracked_content_sha256": "960ad2ac7cec7ea0f30003c065120a0594c1bdf4bb0be6118199c56456d3f8b4",
+  "guest_runtime_tree_sha256": [
+    "503c2e662931dd958b30932be3b3f0ce6439c3e4dd910a6857174e07c56a0603"
+  ],
+  "guest_assets_sha256": {
+    "kernel": "66bcc80464908d0bbdb5e854eba369d1fa509f71656d9f8baa32073349315daa",
+    "rootfs": "5a99e8eb82d3acba04efaf23c94c2fad2e01a14b09e9c3b2fe6e07326ccc665b",
+    "firmware": "14a5f6679d16477c44ed947a50dae3c772dc77107715c09ab3ac3f5ef2763c98"
+  },
+  "regression": {
+    "passed": 437,
+    "subtests_passed": 6,
+    "failures": 0,
+    "skipped": 0
+  },
+  "ci": [
+    {
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35818343730",
+      "head_sha": "428db9cf8740f755249b23d33ba71da0c39502b1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "tla-model-check",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35818343722",
+      "head_sha": "428db9cf8740f755249b23d33ba71da0c39502b1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "microvm-regression (3.11)",
+          "conclusion": "success"
+        },
+        {
+          "name": "microvm-regression (3.13)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35818343713",
+      "head_sha": "428db9cf8740f755249b23d33ba71da0c39502b1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "test (3.13)",
+          "conclusion": "success"
+        },
+        {
+          "name": "test (3.11)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35818343729",
+      "head_sha": "428db9cf8740f755249b23d33ba71da0c39502b1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "public-guest-configuration",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35818343712",
+      "head_sha": "428db9cf8740f755249b23d33ba71da0c39502b1",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "verify-build",
+          "conclusion": "success"
+        },
+        {
+          "name": "deploy",
+          "conclusion": "skipped"
+        }
+      ]
+    }
+  ],
+  "deployment_gates": {
+    "approval_protocol": "PASS",
+    "cgroup_delegation": "PASS",
+    "current_candidate_kvm": "PASS",
+    "deployment_configuration": "PASS",
+    "external_collector_host": "PASS",
+    "external_collector_with_guest": "PASS",
+    "guest_assets": "PASS",
+    "hardware_approval_protocol": "BLOCKED",
+    "kvm_device": "PASS",
+    "live_local_tls": "PASS",
+    "production_configuration": "PASS",
+    "source": "PASS",
+    "strict_host": "PASS",
+    "unchanged_clean_source": "PASS"
+  },
+  "fixed_tool_adapter": {
+    "inspect": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "checksum": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "empty-grants": {
+      "status": "PASS",
+      "executed": false,
+      "decision": "DENY"
+    }
+  },
+  "fresh_guest_after_cancellation": "PASS; separate new one-shot session, not persistent guest recovery",
+  "controlled_recovery": "7 new tests: injected ENOSPC/EIO before append and before head write; storage budget; dedicated worker exit/reopen; real disposable TLS collector outage/restart and explicit reconciliation",
+  "dependencies": "User-local ClamAV 1.5.4 with signed package/libraries and verified CVD inputs; setuptools 84.0.0 and wheel 0.48.0; pip check passed",
+  "prior_attempts": [
+    "Missing setuptools and scanner on validation PATH; dependencies installed. Initial missing-protection guest scanner timed out and supplemental guest lost audit relay.",
+    "Long nested retry output path exceeded AF_UNIX socket path limit in missing-protection setup; complete rerun used short path."
+  ],
+  "limits": [
+    "Physical-key approval remains blocked.",
+    "No host OS reboot or power-loss test; active chat host was not restarted.",
+    "Fresh one-shot guest boot after cancellation is not persistent VM state recovery.",
+    "Storage failure tests inject errors; no physical disk-failure claim.",
+    "Standalone MultiAgentSystem remains development orchestration, not production adapter coverage.",
+    "No collector preview promotion, independent certification, or multi-day reliability claim."
+  ]
+}

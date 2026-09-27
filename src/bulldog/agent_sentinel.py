@@ -1,23 +1,8 @@
-"""AgentSentinel: heuristic detection of AI-agent-driven execution.
+"""Score environment, process, input-timing and I/O observations for operator review.
 
-Design doctrine
----------------
-No detection is perfect; an adaptive agent can mimic a human on any single
-signal. The sentinel therefore:
-
-- fuses multiple independent weak signals into a weighted score,
-- is advisory by default (audit/alert), with an optional deny callback,
-- never weakens isolation when detection fails — fail-closed containment
-  stays in the sandbox layers; the sentinel only *adds* scrutiny.
-
-Signals
--------
-1. Environment markers: variables published by common agent harnesses.
-2. Process ancestry: walk /proc parent chain for known harness process names.
-3. Input cadence: agents inject input in sub-millisecond bursts; humans have
-   fat-tailed inter-event gaps. Burstiness is measured, not assumed.
-4. I/O tempo: /proc rchar/wchar growth rate far above interactive baselines.
-"""
+Signals can be absent, misleading or fabricated. A score is not authenticated
+agent identity or a calibrated probability. Detection does not replace sandbox
+and permission enforcement."""
 
 from __future__ import annotations
 
@@ -27,8 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Mapping
 
-# env-var name prefix -> weight. Harnesses strip some of these; absence
-# means nothing, presence is near-conclusive.
+# Environment-name prefix weights are heuristic and can be spoofed.
 ENV_MARKERS: dict[str, float] = {
     "ANTHROPIC_": 0.55,
     "CLAUDE": 0.55,
@@ -137,9 +121,7 @@ class AgentSentinel:
         if len(self._input_events) < 8:
             return {}
         gaps = [
-            b - a
-            for a, b in zip(self._input_events, self._input_events[1:])
-            if b >= a
+            b - a for a, b in zip(self._input_events, self._input_events[1:]) if b >= a
         ]
         if not gaps:
             return {}
@@ -155,8 +137,7 @@ class AgentSentinel:
         io_path = self.proc_root / "self" / "io"
         try:
             fields = dict(
-                line.split(":", 1)
-                for line in io_path.read_text("utf-8").splitlines()
+                line.split(":", 1) for line in io_path.read_text("utf-8").splitlines()
             )
             total = int(fields["rchar"]) + int(fields["wchar"])
         except (OSError, KeyError, ValueError):
@@ -173,7 +154,12 @@ class AgentSentinel:
     # -- fusion ----------------------------------------------------------
     def evaluate(self) -> SignalReport:
         signals: dict[str, float] = {}
-        for probe in (self.env_score, self.ancestry_score, self.cadence_score, self.io_tempo_score):
+        for probe in (
+            self.env_score,
+            self.ancestry_score,
+            self.cadence_score,
+            self.io_tempo_score,
+        ):
             try:
                 signals.update(probe())
             except Exception:
@@ -188,9 +174,7 @@ class AgentSentinel:
         verdict = (
             "agent"
             if score >= self.agent_at
-            else "suspicious"
-            if score >= self.suspicious_at
-            else "clean"
+            else "suspicious" if score >= self.suspicious_at else "clean"
         )
         report = SignalReport(score=score, verdict=verdict, signals=signals)
         if self.on_verdict is not None and verdict != "clean":

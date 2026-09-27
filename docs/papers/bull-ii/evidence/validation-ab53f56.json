@@ -1,0 +1,362 @@
+{
+  "format": "bull-release-candidate-v1",
+  "version": "0.2.0rc1",
+  "commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+  "source_dirty": false,
+  "status": "SOFTWARE_RC_VALIDATED_PHYSICAL_APPROVAL_BLOCKED",
+  "certified": false,
+  "tracked_content_sha256": "ff9e009b24ddcc1bc78757430d10c5cb2d5f19cda69a4bff1bd9bb8bd232981f",
+  "guest_runtime_tree_sha256": [
+    "383d989c3895b5358bf29a6871f83019a902514e65c1c40138b95861030d74af"
+  ],
+  "guest_assets_sha256": {
+    "kernel": "66bcc80464908d0bbdb5e854eba369d1fa509f71656d9f8baa32073349315daa",
+    "rootfs": "5a99e8eb82d3acba04efaf23c94c2fad2e01a14b09e9c3b2fe6e07326ccc665b",
+    "firmware": "14a5f6679d16477c44ed947a50dae3c772dc77107715c09ab3ac3f5ef2763c98"
+  },
+  "regression": {
+    "passed": 501,
+    "subtests_passed": 21,
+    "failures": 0,
+    "skipped": 0
+  },
+  "source_gates": [
+    {
+      "gate": "diff-check",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.004
+    },
+    {
+      "gate": "compile",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.064
+    },
+    {
+      "gate": "pytest",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 13.089
+    },
+    {
+      "gate": "BullRuntime-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.265
+    },
+    {
+      "gate": "BullRuntime-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.866
+    },
+    {
+      "gate": "BullSessionAudit-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.264
+    },
+    {
+      "gate": "BullSessionAudit-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.766
+    },
+    {
+      "gate": "BullApproval-parse",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.215
+    },
+    {
+      "gate": "BullApproval-model",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.766
+    },
+    {
+      "gate": "wheel",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.916
+    },
+    {
+      "gate": "distribution",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.021
+    },
+    {
+      "gate": "site",
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.315
+    },
+    {
+      "gate": "unchanged-clean-source",
+      "status": "PASS"
+    }
+  ],
+  "ci": [
+    {
+      "conclusion": "success",
+      "databaseId": 35896719512,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896719512",
+      "workflowName": "Ubuntu FreshClam guest database integration"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35896697425,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896697425",
+      "workflowName": "BULL formal invariants"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35896697375,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896697375",
+      "workflowName": "BULL MicroVM host regression"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35896697420,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896697420",
+      "workflowName": "BULL security regression"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35896697433,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896697433",
+      "workflowName": "BULL public guest recipe configuration"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 35896697419,
+      "headSha": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "status": "completed",
+      "url": "https://github.com/Anharmoniclabs/BULL/actions/runs/35896697419",
+      "workflowName": "Deploy BULL Lab to Pages"
+    }
+  ],
+  "cloudflare_checks": [
+    {
+      "name": "Workers Builds: bull-audit",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "Workers Builds: bull",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "deployment_gates": {
+    "approval_protocol": "PASS",
+    "cgroup_delegation": "PASS",
+    "current_candidate_kvm": "PASS",
+    "deployment_configuration": "PASS",
+    "external_collector_host": "PASS",
+    "external_collector_with_guest": "PASS",
+    "guest_assets": "PASS",
+    "hardware_approval_protocol": "BLOCKED",
+    "kvm_device": "PASS",
+    "live_local_tls": "PASS",
+    "production_configuration": "PASS",
+    "source": "PASS",
+    "strict_host": "PASS",
+    "unchanged_clean_source": "PASS"
+  },
+  "kvm_cases": {
+    "allowed": "PASS",
+    "denied": "PASS",
+    "timeout": "PASS",
+    "cancel": "PASS",
+    "missing-protection": "PASS"
+  },
+  "fixed_tool_adapter": {
+    "inspect": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "checksum": {
+      "status": "PASS",
+      "executed": true,
+      "returncode": 0,
+      "sandboxed": true
+    },
+    "empty-grants": {
+      "status": "PASS",
+      "executed": false,
+      "decision": "DENY"
+    }
+  },
+  "fresh_guest_after_cancellation": "PASS",
+  "package": {
+    "commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+    "status": "PASS",
+    "wheel_built_from_sdist": true,
+    "fresh_install": true,
+    "artifacts": {
+      "bulldog_ai_firewall-0.2.0rc1-py3-none-any.whl": "4ea26a3f59688c8030dbaea0e2f63046f0769da0711d9c93dad5d142900c7fe5",
+      "bulldog_ai_firewall-0.2.0rc1.tar.gz": "7373417fe12e1781a0b04369d07ccdffe2d06e0a09cb06cf76fcbc0c3f630219"
+    }
+  },
+  "guest_source_bundle": {
+    "release": "https://github.com/Anharmoniclabs/BULL/releases/tag/guest-2026-09-22",
+    "archive": "guest-2026-09-22-source-materials.tar.gz",
+    "sha256": "690bc5fb906e289d9e9738960bcb7163876ee191a54b2c30a0aaf9d9b0e574f8",
+    "matching_recorded_inputs_and_resolved_configs": true,
+    "original_build_package_versions_checked": 67,
+    "offline_preparation_and_source_verification": "PASS; 57 source archives with external networking unavailable",
+    "full_offline_recompile": "NOT_RUN"
+  },
+  "downloaded_pentest_review": {
+    "script_sha256": "82bfb30d9efe12c48b4938ea1b980da7c40387af3088c88846e887cc5a6e3ccc",
+    "method": "read-only StaticSuite, HygieneSuite and InvariantSuite invoked after source inspection; original main constructs suite objects incorrectly",
+    "findings": [
+      "Example defaults.env contains public placeholders, not credentials.",
+      "Legacy branch protection endpoint misses active repository rulesets; required PR, status checks, signatures, no deletion and no force pushes were verified."
+    ],
+    "live_penetration_testing_claimed": false
+  },
+  "physical_key_inspection": {
+    "device": "KB2040 custom prototype; user confirms no secure element connected",
+    "firmware": "BULL-DIAG-3",
+    "approval_available": false,
+    "production_enrolled": false,
+    "pending_request": false,
+    "physical_gesture_validation": "PASS: unsigned two-click YES and three-click NO; secure signing remains blocked",
+    "inspection_source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+    "scope": "read-only HID diagnostics; no flashing, signing, provisioning or lock commands",
+    "software_only_tests": {
+      "stateless_verifier_tests": 24,
+      "durable_gate_tests": 23,
+      "diagnostic_transport_tests": 8,
+      "c_button_state_machines": "PASS in GitHub CI",
+      "firmware_build": "PASS with Pico SDK 2.2.0"
+    },
+    "host_integration": "explicit custom credentials through existing ApprovalGate; exact binding and atomic counter/request consumption; no enrolled hardware credential",
+    "physical_gesture_evidence": {
+      "checked_at": "2026-09-23T14:04:21.290260+00:00",
+      "source_commit": "437de3fd03da2e8d8ca15e7bcb9804e45317b58a",
+      "firmware": "BULL-DIAG-3",
+      "two_boot_clicks": "YES",
+      "three_boot_clicks": "NO",
+      "distinct_diagnostic_challenges": true,
+      "pending_request": false,
+      "approval_available": false,
+      "cryptographic_signature_produced": false,
+      "production_hardware_acceptance": false,
+      "scope": "Physical BOOT gestures observed through unsigned diagnostic HID; not the separate-button hold ceremony or secure-element signing acceptance.",
+      "format": "bull-hardware-gesture-evidence-v1",
+      "source_commit_scope": "Unmodified host diagnostic CLI used for the physical tests. A separate manual USB queue drain ran before the successful NO retry; see manual_transport_preparation. Firmware version is reported over unsigned HID, not attested.",
+      "secure_element_connected": false,
+      "secure_signing": "BLOCKED",
+      "test_logs_sha256": {
+        "yes-gesture.log": "672146e0f3c188f016a08b6b380c442a3654cf80b4efe4e1c1f8126fa9debee5",
+        "yes-gesture-retry-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "yes-gesture-retry-2.log": "115415fce12e508c553e0ebfba90824a7734e88a2a2297e20d85947eedb61925",
+        "no-gesture-retry-1.log": "0defcc22168b06a2c5c6ffe206ad3fd72b712f07a6c7279d05f460a5b3ec49b6",
+        "no-gesture-retry-2.log": "9e7446821489b328214b3a5cdd57ea9bf4829262a073802fa7e373c6a77164e3"
+      },
+      "retained_failures": [
+        "Initial gesture test returned CANCELLED.",
+        "A retry found the board in RP2 Boot mode; only that USB device was restarted into its installed application. No firmware was flashed.",
+        "The first NO attempt rejected a mismatched diagnostic challenge. One queued status reply was drained before the successful retry."
+      ],
+      "production_acceptance_limits": [
+        "These are unsigned BOOT-button diagnostics, not signed approval or denial.",
+        "Separate YES/NO buttons and the specified deliberate YES hold have not been physically accepted.",
+        "No secure-element key generation, enrollment, signature, monotonic counter or signed replay demonstration was performed."
+      ],
+      "tested_cli_sha256": "311de0118eb9c538fbb3cbca469be59ce28898cb98b0b5d6f9110ee2b017746b",
+      "manual_transport_preparation": {
+        "source_path": "docs/evidence/hardware-20260923/manual-drain.py",
+        "source_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f",
+        "when": "After the mismatched-challenge NO attempt and before the successful NO retry",
+        "observed_queued_replies_drained": 1,
+        "scope": "One-off read-only USB preparation; no commands, approval or signature generated"
+      },
+      "subsequent_automatic_fix": {
+        "source_path": "src/bulldog/hardware_approval/diagnostic.py",
+        "source_sha256": "ccd4ac6e608f02f217852dcea8f7bde48721c7431046989514276af02a9e4840",
+        "scope": "Implemented after the physical tests. Eight simulated transport tests and two live read-only status queries passed; the physical gesture results are not attributed to this later code."
+      }
+    },
+    "live_diagnostic": {
+      "firmware": "BULL-DIAG-3",
+      "approval_available": false,
+      "i2c_0x60_read": false,
+      "wake_response": "00000000",
+      "atecc_wake_valid": false,
+      "probe_phase": "boot",
+      "successful_four_byte_reads": 0,
+      "detected_atecc_address": null,
+      "sda_high_before_probe": true,
+      "scl_high_before_probe": true,
+      "yes_pressed": false,
+      "no_pressed": false,
+      "boot_pressed": false,
+      "diagnostic_pending": false,
+      "diagnostic_click_count": 0
+    }
+  },
+  "deployment_routing": {
+    "site": "main; successful Git-connected build",
+    "audit": "separate audit branch per operator; deployment configuration not changed",
+    "existing_collector": "authenticated host and guest receipts PASS",
+    "preview": "previously failed functional checkpoint validation; not promoted",
+    "cloudflare_log_access": "saved local API token invalid; detailed failed audit build logs unavailable"
+  },
+  "limits": [
+    "Physical signing and credential release remain blocked; secure element, signing firmware, authenticated production HID transport and the required separate-button hold ceremony are unfinished; unsigned BOOT gestures passed.",
+    "Fixed read-only inspect/checksum host adapter and fresh one-shot guest dispatcher are the qualified integrations.",
+    "Fresh guest after cancellation is not persistent VM recovery.",
+    "Controlled process, collector outage and injected storage failures do not demonstrate host power-loss or multi-day reliability.",
+    "Existing live collector was tested; failing preview is not promoted.",
+    "No independent security certification.",
+    "Historical 40-action Qwen host run is separate evidence and was not repeated on this commit."
+  ],
+  "site_validation": [
+    {
+      "url": "https://bull.luisminier79.workers.dev/",
+      "status": 200,
+      "video_removed": true,
+      "physical_gesture_evidence_published": true,
+      "secure_signing_claimed": false,
+      "preprint_link_published": true,
+      "mobile_overflow": false,
+      "javascript_errors": [],
+      "publication_evidence": "GitHub publication ab53f563bcbc. Regression suite: 501 passed, 15 warnings, 21 subtests passed in 18.59s. Live deployment results above have their own pinned source."
+    },
+    {
+      "url": "https://anharmoniclabs.github.io/BULL/",
+      "status": 200,
+      "video_removed": true,
+      "physical_gesture_evidence_published": true,
+      "secure_signing_claimed": false,
+      "preprint_link_published": true,
+      "mobile_overflow": false,
+      "javascript_errors": [],
+      "publication_evidence": "GitHub publication ab53f563bcbc. Regression suite: 501 passed, 15 warnings, 21 subtests passed in 18.59s. Live deployment results above have their own pinned source."
+    }
+  ],
+  "firmware_source_tree": "4a9bd321023ac31bc9d606d1411a3df2865700b6",
+  "firmware_build_source_commit": "603365edd0164418a06ec0ee46250a2922b284bf",
+  "firmware_build_identical_to_release_source": true,
+  "publication_redactions": [
+    "Cloudflare dashboard URLs omitted; check names and outcomes retained. No raw deployment keys, private configuration or raw ledgers included."
+  ]
+}

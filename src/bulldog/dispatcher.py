@@ -1,3 +1,8 @@
+"""Bind requests to operations before calling runtime or broker methods.
+
+CapabilityDispatcher is the development interface. Production integrations
+use ProductionDispatcher in profiles.py and supply trusted deployment state."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -74,7 +79,10 @@ class CapabilityDispatcher:
             )
 
         if self.production_mode:
-            if runtime is None or getattr(runtime, "production_boundary", False) is not True:
+            if (
+                runtime is None
+                or getattr(runtime, "production_boundary", False) is not True
+            ):
                 raise DispatchDenied(
                     "production dispatch requires an explicit ProductionRuntime boundary"
                 )
@@ -131,7 +139,9 @@ class CapabilityDispatcher:
             failures.append("runtime audit ledger is unavailable")
         else:
             if getattr(ledger, "production_anchor_ready", False) is not True:
-                failures.append("runtime authenticated production audit transport is unavailable")
+                failures.append(
+                    "runtime authenticated production audit transport is unavailable"
+                )
         if not getattr(self.runtime, "malware_scan_required", False):
             failures.append("runtime malware scanning is not required")
         scanner = getattr(self.runtime, "malware_scanner", None)
@@ -167,9 +177,7 @@ class CapabilityDispatcher:
         if self.domain_registry is None:
             return request.trusted, request.parent_capabilities
         if not request.domain_id:
-            raise DispatchDenied(
-                "domain-enabled dispatcher requires a security domain"
-            )
+            raise DispatchDenied("domain-enabled dispatcher requires a security domain")
         try:
             self.domain_registry.assert_capabilities(
                 request.domain_id,
@@ -236,8 +244,7 @@ class CapabilityDispatcher:
         if evaluation.decision != Decision.ALLOW:
             raise DispatchDenied(
                 "broker operation requires explicit ALLOW; got "
-                f"{evaluation.decision.value}: "
-                + "; ".join(evaluation.reasons)
+                f"{evaluation.decision.value}: " + "; ".join(evaluation.reasons)
             )
         return action
 
@@ -266,9 +273,7 @@ class CapabilityDispatcher:
         except ActionCanonicalizationError as exc:
             raise DispatchDenied(str(exc)) from exc
         if action.resource != canonical_expected:
-            raise DispatchDenied(
-                "broker resource does not match authorized resource"
-            )
+            raise DispatchDenied("broker resource does not match authorized resource")
         return self._evaluate_broker_action(action)
 
     def _authorize_domain_broker_action(
@@ -355,9 +360,11 @@ class CapabilityDispatcher:
                 domain = self.domain_registry.get(request.domain_id)
                 self.domain_registry.freeze_root(
                     domain.root_domain_id,
-                    "hard policy block"
-                    if result.evaluation.hard_block
-                    else "cross-agent behavioral violation",
+                    (
+                        "hard policy block"
+                        if result.evaluation.hard_block
+                        else "cross-agent behavioral violation"
+                    ),
                 )
         return result
 
@@ -378,9 +385,7 @@ class CapabilityDispatcher:
         try:
             domain = self.domain_registry.require_active(domain_id)
             if Capability.CREDENTIAL_READ not in domain.capability_ceiling:
-                raise SecurityDomainError(
-                    "domain lacks credential.read authority"
-                )
+                raise SecurityDomainError("domain lacks credential.read authority")
         except SecurityDomainError as exc:
             raise DispatchDenied(str(exc)) from exc
 
@@ -402,7 +407,9 @@ class CapabilityDispatcher:
         )
         return grant
 
-    def _perform_broker_effect(self, action, *, operation, parameters, approval, effect):
+    def _perform_broker_effect(
+        self, action, *, operation, parameters, approval, effect
+    ):
         if approval is not None:
             raise DispatchDenied("credential approval requires ProductionDispatcher")
         return effect()
@@ -454,14 +461,22 @@ class CapabilityDispatcher:
 
         try:
             from hashlib import sha256
+
             value = self._perform_broker_effect(
-                action, operation="secret.read",
-                parameters={"grant_digest": sha256(token.encode()).hexdigest(),
-                            "sandbox_id": sandbox_id, "timeout": timeout},
+                action,
+                operation="secret.read",
+                parameters={
+                    "grant_digest": sha256(token.encode()).hexdigest(),
+                    "sandbox_id": sandbox_id,
+                    "timeout": timeout,
+                },
                 approval=approval,
                 effect=lambda: request_secret(
-                    socket_path=self.secret_broker.socket_path, token=token,
-                    name=authorized_name, sandbox_id=sandbox_id, timeout=timeout,
+                    socket_path=self.secret_broker.socket_path,
+                    token=token,
+                    name=authorized_name,
+                    sandbox_id=sandbox_id,
+                    timeout=timeout,
                 ),
             )
         except Exception as exc:
@@ -528,9 +543,7 @@ class CapabilityDispatcher:
             operation = (
                 "head"
                 if method_upper == "HEAD"
-                else "fetch"
-                if method_upper == "GET"
-                else "post"
+                else "fetch" if method_upper == "GET" else "post"
             )
             action = self._authorize_domain_broker_action(
                 domain_id=domain_id,
@@ -550,9 +563,13 @@ class CapabilityDispatcher:
 
         try:
             response = self._perform_broker_effect(
-                action, operation="network.request",
-                parameters={"method": method_upper}, approval=approval,
-                effect=lambda: self.egress_broker.fetch(method=method_upper, url=authorized_url),
+                action,
+                operation="network.request",
+                parameters={"method": method_upper},
+                approval=approval,
+                effect=lambda: self.egress_broker.fetch(
+                    method=method_upper, url=authorized_url
+                ),
             )
         except Exception as exc:
             if self.domain_registry is not None and domain_id is not None:

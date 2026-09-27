@@ -1,0 +1,136 @@
+{
+  "runtime_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+  "prior_paper": {
+    "url": "https://zenodo.org/records/22922278/files/BULL_Paper_II.pdf",
+    "sha256": "f319c1cc61632209ed499e4ef2713cbfbcffeddd4ec9d5ad49668b5738f5db66",
+    "scope": "Publication 437de3f; validation 603365e; reference edition, not the rewritten PDF"
+  },
+  "inputs": {
+    "evidence/site/data/validation/603365e.json": {
+      "repository_path": "site/data/validation/603365e.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "5228bfa04b4ed94a3d15252189f1ec1005f1cf4cb087738bd7999a1ea0919017"
+    },
+    "evidence/docs/evidence/candidate-428db9c.json": {
+      "repository_path": "docs/evidence/candidate-428db9c.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "d567a7f0fe053b9321ce26a12a120b7d58557fe59f191d6e8bcca1d8cd2a6a88"
+    },
+    "evidence/docs/evidence/governed-agent-20260922/summary.json": {
+      "repository_path": "docs/evidence/governed-agent-20260922/summary.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "5c686edd74b2f2410ba8047988e2b8313d9dbed906e6b2e76c7be9221e1e194c"
+    },
+    "evidence/docs/evidence/governed-agent-20260922/source-manifest.json": {
+      "repository_path": "docs/evidence/governed-agent-20260922/source-manifest.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c"
+    },
+    "evidence/site/data/hardware/20260923-gestures.json": {
+      "repository_path": "site/data/hardware/20260923-gestures.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "57cf5da9164d4a8a5bd4e4146608ba3861499f0b8c3753063208bee96b3d8f69"
+    },
+    "evidence/docs/evidence/hardware-20260923/manual-drain.py": {
+      "repository_path": "docs/evidence/hardware-20260923/manual-drain.py",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f"
+    },
+    "evidence/site/data/benchmarks/20260920/attack-summary.csv": {
+      "repository_path": "site/data/benchmarks/20260920/attack-summary.csv",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d"
+    },
+    "evidence/site/data/benchmarks/20260920/hotpath.csv": {
+      "repository_path": "site/data/benchmarks/20260920/hotpath.csv",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f"
+    },
+    "evidence/site/data/benchmarks/20260920/benchmark.json": {
+      "repository_path": "site/data/benchmarks/20260920/benchmark.json",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48"
+    },
+    "evidence/docs/BENCHMARK_20260920.md": {
+      "repository_path": "docs/BENCHMARK_20260920.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613"
+    },
+    "evidence/docs/MICROVM_INTEGRATION_REPORT.md": {
+      "repository_path": "docs/MICROVM_INTEGRATION_REPORT.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "47aa39bfa0f9c5eee0dd7a30b783a89cddd3d08a64b9400b4be084c8c4dc1d92"
+    },
+    "evidence/docs/ADAPTER_VALIDATION.md": {
+      "repository_path": "docs/ADAPTER_VALIDATION.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "517219eeeb8cad114bf78a774823b5b898b57c709e0444042c0f08db4da80190"
+    },
+    "evidence/docs/SESSION_EXPORT_TRUST_BOUNDARIES.md": {
+      "repository_path": "docs/SESSION_EXPORT_TRUST_BOUNDARIES.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "be9a43b46e41d361e91cf78da34396e3df102d230db4f1de667817d11fd5afce"
+    },
+    "evidence/docs/DISTRIBUTION.md": {
+      "repository_path": "docs/DISTRIBUTION.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "ee8702ce0252e2481fd329589e3c422d5f8b5ed68c39616eced1f085e9df2c95"
+    },
+    "evidence/docs/VALIDATION_20260922.md": {
+      "repository_path": "docs/VALIDATION_20260922.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "7bb09aaa2ac2924721707b23b1aa55b1563cd5fa31bf90271d50abc741bf8618"
+    },
+    "evidence/docs/VALIDATION_20260923.md": {
+      "repository_path": "docs/VALIDATION_20260923.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "18d4d539ac1a844bf67eb4da40ffbd5223c59c2d3deda09b7661a0e39d743094"
+    },
+    "evidence/docs/PRODUCTION_EXTERNAL_AUDIT_EVIDENCE_20260920.md": {
+      "repository_path": "docs/PRODUCTION_EXTERNAL_AUDIT_EVIDENCE_20260920.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "175210f907f4ee9c6edc61e3a1f383be2a8687f214cbf6ee3104b090d4f864bd"
+    },
+    "evidence/docs/HARDWARE_AUTHORITY.md": {
+      "repository_path": "docs/HARDWARE_AUTHORITY.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "d83df112ee598baacbbac4dcc0e78280f59019a8c3de0230b3b6326858977fa5"
+    },
+    "evidence/docs/HUMAN_APPROVAL.md": {
+      "repository_path": "docs/HUMAN_APPROVAL.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "8fa5b37781100a41f514c0660f4d28a0f79c0d4f7084d796035beebedaa5310c"
+    },
+    "evidence/docs/GOVERNED_AGENT_RUN.md": {
+      "repository_path": "docs/GOVERNED_AGENT_RUN.md",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "0f3cc8ec41003442cedd85e7d14a0f965991134ba43913dbb2a3b7ac3c970541"
+    },
+    "figures/data-flow.svg": {
+      "repository_path": "site/assets/architecture/data-flow.svg",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8"
+    },
+    "figures/kernel-layers.svg": {
+      "repository_path": "site/assets/architecture/kernel-layers.svg",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e"
+    },
+    "figures/microvm-io.svg": {
+      "repository_path": "site/assets/architecture/microvm-io.svg",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a"
+    },
+    "figures/audit-flow.svg": {
+      "repository_path": "site/assets/architecture/audit-flow.svg",
+      "source_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "sha256": "415b0c3a66ca64b7115fdb6843910462f6e9d2c99803294148b425c25ed3a8eb"
+    },
+    "evidence/validation-ab53f56.json": {
+      "repository_path": "site/data/validation/ab53f56.json",
+      "tested_commit": "ab53f563bcbcaf60820acb318b8212796ce502ff",
+      "origin": "Reviewed local release-candidate VALIDATION.json; public dashboard URL redaction only",
+      "sha256": "3c8f1f9111b47cf44cd1f0bb53d365980d3601ec39815b128ab8f67da2bf37ff"
+    }
+  }
+}

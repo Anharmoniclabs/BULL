@@ -1,0 +1,12 @@
+attack_id,attack,surface,runs,passed,failed,pass_rate_pct,mean_ms,median_ms,min_ms,max_ms,peak_rss_mb
+path_traversal,Path traversal encodings,filesystem,3,3,0,100,338.406,328.454,310.374,376.391,45.5
+unbound_command,Read authority → shell execution,authorization,3,3,0,100,366.427,360.8,360.342,378.14,44.883
+argv_drift,Authorized argv → force-push drift,authorization,3,3,0,100,318.111,326.729,298.313,329.291,44.926
+credential_from_external,External content → credential read,secrets,3,3,0,100,301.671,299.895,295.504,309.615,44.855
+sandbox_egress_bypass,SANDBOX verdict → egress broker,egress,3,3,0,100,292.603,292.307,291.569,293.934,44.734
+sandbox_secret_bypass,SANDBOX verdict → secret broker,secrets,3,3,0,100,304.441,308.532,295.086,309.706,44.668
+ssrf_private_addresses,Private/metadata SSRF targets,egress,3,3,0,100,355.926,381.879,301.842,384.057,44.797
+wrong_peer_uid,Wrong Unix peer UID,secrets,3,3,0,100,360.088,365.086,349.124,366.053,44.809
+prompt_injection,Prompt injection,multi-agent,3,3,0,100,351.591,348.819,345.773,360.182,46.086
+forged_policy_verdict,Forged policy verdict,multi-agent,3,3,0,100,367.611,384.904,331.814,386.116,45.012
+approval_replay,Approval-token replay,multi-agent,3,3,0,100,376.64,378.265,369.628,382.027,44.992

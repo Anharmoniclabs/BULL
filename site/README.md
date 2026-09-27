@@ -1,6 +1,6 @@
 # BULL engineering website
 
-The public site is a static architecture publication with an embedded narrated data-flow film, implementation diagrams, source links, a generated tracked-file inventory and commit-specific CI evidence.
+The public site is a static architecture publication with revision-bound validation results, implementation diagrams, source links, a generated tracked-file inventory and commit-specific CI evidence.
 
 There is no public policy evaluator, request editor, model endpoint form, browser Python runtime or testing console. Their source files have been removed from the current tree. Backend regression tests remain under `tests/`.
 
@@ -13,7 +13,7 @@ python3 -m http.server 8000 --directory _site
 
 The source template uses `data-code` references. The build resolves these to commit-specific repository links and generates the source inventory. Run `python3 -m unittest discover -s tests -p test_brand_site.py -v` for static contracts. These tests do not certify a workload or boot a VM.
 
-The film is rendered through the Higgsfield media sandbox with deterministic motion graphics and synthesized narration. It is illustrative, not a recording of a production VM. The media manifest records the inspected source revision, caption/transcript provenance and content hash. Video bytes live in the owner's Higgsfield media storage; the repository stores documentation, captions and provenance, not a large video or VM image.
+The video player and transcript page have been removed. Historical media provenance remains in Git; it is not current execution evidence. The September 23 validation record is checked in under `site/data/validation/603365e.json`.
 
 Brand assets are used as the header identity and favicon, not presented as a visitor-facing logo gallery. Local deployment assets remain excluded by the repository artifact policy.
 
@@ -38,8 +38,9 @@ Validate locally without uploading with
 
 This mirror serves checked-in templates directly, matching the existing
 deployment. The generated publication described above resolves source links and
-adds inventory/transcript pages; switching the mirror to that output is a
-separate publishing change.
+adds the inventory page; source links have main-branch fallbacks, while the generated publication pins them
+to its build commit. Inventory and publication-check links use the generated
+GitHub Pages site from either host.
 
 The audit collector is the separate `bull-audit` Worker configured under
 `deploy/cloudflare-audit/`. Keep both repository connections. Do not point the

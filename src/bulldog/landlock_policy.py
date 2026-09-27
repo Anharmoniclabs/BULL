@@ -1,3 +1,5 @@
+"""Install the Linux Landlock filesystem restrictions used by the sandbox."""
+
 from __future__ import annotations
 
 import ctypes
@@ -164,11 +166,7 @@ def install_bull_landlock(*, workspace_writable: bool = False) -> int:
     )
 
     try:
-        read_only = (
-            ACCESS_EXECUTE
-            | ACCESS_READ_FILE
-            | ACCESS_READ_DIR
-        ) & handled
+        read_only = (ACCESS_EXECUTE | ACCESS_READ_FILE | ACCESS_READ_DIR) & handled
 
         workspace_write = (
             ACCESS_EXECUTE
@@ -196,9 +194,7 @@ def install_bull_landlock(*, workspace_writable: bool = False) -> int:
         ) & handled
 
         device_access = (
-            ACCESS_READ_FILE
-            | ACCESS_WRITE_FILE
-            | ACCESS_READ_DIR
+            ACCESS_READ_FILE | ACCESS_WRITE_FILE | ACCESS_READ_DIR
         ) & handled
 
         for path in (

@@ -94,9 +94,7 @@ class _UnavailableNativeBackend:
             backend=self.backend_name,
             strict=False,
             controls=(),
-            unavailable_reasons=(
-                "native strict sandbox backend is not implemented",
-            ),
+            unavailable_reasons=("native strict sandbox backend is not implemented",),
             details={"required_controls": self.required_controls},
         )
 

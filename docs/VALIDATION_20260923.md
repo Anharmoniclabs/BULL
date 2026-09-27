@@ -1,5 +1,51 @@
 # Validation recorded 2026-09-23
 
+## Latest qualified runtime
+
+Clean commit `ab53f563bcbcaf60820acb318b8212796ce502ff` passed **501 tests and
+21 subtests**, with no failures or skips, all five real KVM cases, three bounded
+formal models, strict host/cgroup checks and authenticated existing-collector
+host/guest receipts. Both fixed host tools and empty-grant denial passed; a fresh
+guest after cancellation passed. The wheel built from the source distribution
+and installed in a fresh environment. All six recorded GitHub workflows passed.
+
+[Sanitized exact-source results, artifact hashes and CI URLs](../site/data/validation/ab53f56.json).
+[Revised Paper II with native LaTeX and evidence companion](papers/bull-ii/README.md).
+
+The later source includes one-shot channel failure/reuse hardening and eight
+diagnostic transport regressions. Physical YES/NO results below retain their
+original CLI/manual-preparation identity. Secure signing remains BLOCKED.
+The main-attached audit Worker build failure remains recorded separately from
+the passing existing-collector receipt tests. This documentation publication
+does not reattribute those live results to a later commit.
+
+## Integrated main candidate
+
+Clean commit `603365edd0164418a06ec0ee46250a2922b284bf` passed 489 tests and 21
+subtests, all six GitHub validation workflows, all five real KVM cases, strict
+host/cgroup checks and authenticated existing-collector host/guest receipts.
+Both fixed host tools passed; empty authority was denied. A fresh guest after
+cancellation passed. The source distribution built an installable wheel.
+
+[Sanitized results, source identity, image hashes and CI URLs](../site/data/validation/603365e.json).
+
+Hardware host verification and diagnostic firmware are included. Only the KB2040
+is connected; no secure element or signing key is enrolled. Physical approval
+remains blocked. The audit worker retains its separate deployment branch.
+Its main-attached build check is recorded as failed; the existing live collector
+passed the authenticated receipt checks. No preview was promoted.
+
+## Physical BOOT gesture follow-up
+
+At host source `437de3fd03da2e8d8ca15e7bcb9804e45317b58a`, the connected
+BULL-DIAG-3 prototype returned YES after two BOOT clicks and NO after three.
+The two tests used distinct challenges; the final state had no pending request.
+[Sanitized gesture results](../site/data/hardware/20260923-gestures.json) retain
+the initial cancellation, bootloader recovery and stale-reply failure. These
+unsigned diagnostics do not change the blocked secure-signing gate.
+
+## Earlier candidate
+
 Tested clean commit: `428db9cf8740f755249b23d33ba71da0c39502b1`.
 [Published operator report](https://github.com/Anharmoniclabs/BULL/pull/55#issuecomment-5794436540).
 Machine-readable, sanitized results: [candidate-428db9c.json](evidence/candidate-428db9c.json).

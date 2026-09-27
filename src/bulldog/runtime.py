@@ -1,3 +1,5 @@
+"""Execute admitted operations and record their runtime results."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -74,9 +76,7 @@ class BulldogRuntime:
         self.engine = engine if engine is not None else BulldogEngine()
         self.sandbox = sandbox if sandbox is not None else NamespaceSandbox()
         self.trace = (
-            trace_verifier
-            if trace_verifier is not None
-            else RuntimeTraceVerifier()
+            trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
         )
         self.resource_budget = (
             resource_budget if resource_budget is not None else ResourceBudget()
@@ -351,11 +351,19 @@ class BulldogRuntime:
                     "BULL_SECURITY_DOMAIN_ID": action.metadata.get("domain_id"),
                     "BULL_ROOT_DOMAIN_ID": action.metadata.get("root_domain_id"),
                     "BULL_PARENT_DOMAIN_ID": action.metadata.get("parent_domain_id"),
-                    "BULL_INITIAL_INTENT_HASH": action.metadata.get("initial_intent_hash"),
-                    "BULL_INITIAL_COMMAND_HASH": action.metadata.get("initial_command_hash"),
+                    "BULL_INITIAL_INTENT_HASH": action.metadata.get(
+                        "initial_intent_hash"
+                    ),
+                    "BULL_INITIAL_COMMAND_HASH": action.metadata.get(
+                        "initial_command_hash"
+                    ),
                     "BULL_MODEL_ID_HASH": action.metadata.get("model_id_hash"),
-                    "BULL_DOMAIN_FINGERPRINT": action.metadata.get("domain_fingerprint"),
-                    "BULL_AUTHORIZED_ARGV_HASH": action.metadata.get("authorized_argv_hash"),
+                    "BULL_DOMAIN_FINGERPRINT": action.metadata.get(
+                        "domain_fingerprint"
+                    ),
+                    "BULL_AUTHORIZED_ARGV_HASH": action.metadata.get(
+                        "authorized_argv_hash"
+                    ),
                 }.items()
                 if value is not None
             }

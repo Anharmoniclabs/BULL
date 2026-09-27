@@ -1,0 +1,107 @@
+{
+  "format": "bull-paper-evidence-coverage-v1",
+  "families": [
+    {
+      "id": "source_regression",
+      "claim_and_limit": "501 tests + 21 subtests; 0 failed/skipped",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "formal",
+      "claim_and_limit": "Three finite parse/model checks; not proof of all implementation behavior",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "kvm",
+      "claim_and_limit": "Five allowed/denied/timeout/cancel/missing-protection cases plus distinct fresh guest after cancellation",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "host_and_audit",
+      "claim_and_limit": "Strict host, cgroups, signed configuration, existing collector authenticated host/guest receipts",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "adapters",
+      "claim_and_limit": "Two fixed host tools allowed; empty grants denied; fresh one-shot guest; no arbitrary adapters",
+      "source": "ab53f56",
+      "evidence": "evidence/docs/ADAPTER_VALIDATION.md"
+    },
+    {
+      "id": "model",
+      "claim_and_limit": "40 host actions; 707.483500783 s; 2 recoveries; 1 denial; 130 records; original source manifest",
+      "source": "974eb17 + dirty manifest",
+      "evidence": "evidence/docs/evidence/governed-agent-20260922/summary.json"
+    },
+    {
+      "id": "recovery",
+      "claim_and_limit": "Seven bounded fault cases; no host reboot/power loss or multi-day reliability",
+      "source": "ab53f56",
+      "evidence": "evidence/docs/ADAPTER_VALIDATION.md"
+    },
+    {
+      "id": "benchmarks",
+      "claim_and_limit": "33/33 selected runs; separate accumulated-state loops; no broad attack success rate",
+      "source": "cd461ae",
+      "evidence": "evidence/site/data/benchmarks/20260920/benchmark.json"
+    },
+    {
+      "id": "historical_vm_timings",
+      "claim_and_limit": "One observation; overlapping stages; original source-tree identity",
+      "source": "d218e68 + patch",
+      "evidence": "evidence/docs/MICROVM_INTEGRATION_REPORT.md"
+    },
+    {
+      "id": "hardware_physical",
+      "claim_and_limit": "Two BOOT clicks YES; three NO; manual drain before NO; unsigned",
+      "source": "437de3f + helper",
+      "evidence": "evidence/site/data/hardware/20260923-gestures.json"
+    },
+    {
+      "id": "hardware_software",
+      "claim_and_limit": "24 verifier + 23 gate + 8 transport tests are subsets; no production credential",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "hardware_remaining",
+      "claim_and_limit": "Secure element, key, enrollment, signing firmware/transport, physical full matrix unfinished",
+      "source": "ab53f56",
+      "evidence": "evidence/docs/HARDWARE_AUTHORITY.md"
+    },
+    {
+      "id": "session_hardening",
+      "claim_and_limit": "One execute; failure poisons channel; fresh framing coverage; no persistent guest/export",
+      "source": "ab53f56",
+      "evidence": "evidence/docs/SESSION_EXPORT_TRUST_BOUNDARIES.md"
+    },
+    {
+      "id": "package",
+      "claim_and_limit": "Wheel from sdist; fresh isolated install; checksums",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "guest_source",
+      "claim_and_limit": "67 package versions; 57 offline archives; full offline recompile unrun",
+      "source": "guest-2026-09-22",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "pentest_review",
+      "claim_and_limit": "Read-only downloaded-script review; constructor defect and two false positives; not independent audit",
+      "source": "ab53f56 release record",
+      "evidence": "evidence/validation-ab53f56.json"
+    },
+    {
+      "id": "publication",
+      "claim_and_limit": "Six GitHub workflows pass; site success; audit build failure separate; preview not promoted",
+      "source": "ab53f56",
+      "evidence": "evidence/validation-ab53f56.json"
+    }
+  ]
+}

@@ -18,25 +18,43 @@ as separate integrations.
 
 ## 3. Evidence — 90 seconds
 
-Open [the validation record](VALIDATION_20260923.md), pinned to `428db9c`:
-437 tests + 6 subtests; seven GitHub jobs; five real KVM cases; authenticated
+For the historical one-shot path, open [the validation record](VALIDATION_20260923.md), pinned to `ab53f56`:
+501 tests + 21 subtests; six GitHub validation workflows; five real KVM cases; authenticated
 external host/guest receipts; allowed and denied fixed-tool requests.
 Explain the controlled worker, collector and storage-failure tests.
+
+Then open [revised Paper II](../site/assets/papers/bull-ii.pdf), with its
+[LaTeX and evidence companion](papers/bull-ii/README.md). It covers the hardware
+host integration from PR 57, subsequent diagnostic transport correction and
+one-shot session hardening, all integrated before the `ab53f56` qualification.
+Software-generated signatures test request binding and durable consumption;
+they are not physical signing evidence.
+Use the release candidate's `VALIDATION.json` for its exact source and guest
+versions rather than combining these revision-specific results.
 
 The older Qwen demonstration ran 40 actions in 11m 47s with two recoveries.
 It used two fixed read-only tools on the host, not the MicroVM. Do not combine
 its source revision or test counts with the newer candidate.
+
+The later [combined guest candidate](HUMAN_FIRST_PRODUCTION_ASSURANCE.md)
+reported 13 checks at `e6df4de`: separate agent/gateway users, traffic rules,
+stop/restart behavior and actual systemd units in a disposable Debian KVM guest.
+This is operator-reported evidence and does not yet cover the complete production
+dispatcher workload path in a pinned released networked image.
 
 ## 4. Demonstration — 60 seconds
 
 Use the recorded allowed, denied and timeout results from the same candidate.
 For a live rehearsal, follow [MicroVM integration](../microvm/README.md) with
 fresh disposable local infrastructure. Keep private keys and raw logs off-screen.
-The architecture film illustrates the design; it is not an execution recording.
+The paper's architecture figures illustrate the design; they are not execution recordings.
 
 ## 5. Limits and review request — 45 seconds
 
-Physical approval remains blocked. Persistent VM state recovery, host power loss,
+The connected hardware is only a KB2040, with no secure element. Physical approval
+remains blocked. Live two-/three-click BOOT diagnostics returned YES and NO;
+these were unsigned and do not demonstrate secure approval.
+Persistent VM state recovery, host power loss,
 collector disaster recovery and broad third-party adapters remain unverified.
 There is no independent security certification or endorsement by a meeting organizer.
 Ask reviewers about mediation coverage, operator trust and recovery semantics.

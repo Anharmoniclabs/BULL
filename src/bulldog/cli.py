@@ -1,3 +1,5 @@
+"""Parse operator commands and call the corresponding BULL entry points."""
+
 from __future__ import annotations
 
 import argparse
@@ -77,7 +79,11 @@ def _run_policy(args: argparse.Namespace) -> int:
             allowed_capabilities=capabilities,
             key=key,
             key_id=args.key_id,
-            human_approval=(json.loads(args.approval_config.read_text()) if args.approval_config else None),
+            human_approval=(
+                json.loads(args.approval_config.read_text())
+                if args.approval_config
+                else None
+            ),
         )
     except Exception as exc:
         print(f"unable to create policy bundle: {exc}", file=sys.stderr)
@@ -90,6 +96,110 @@ def _run_policy(args: argparse.Namespace) -> int:
     )
     print(args.output)
     return 0
+
+
+def _run_assurance_status(args: argparse.Namespace) -> int:
+    from .assurance import evaluate_assurance
+
+    try:
+        report = evaluate_assurance(
+            dynamic=args.dynamic,
+            release_dir=args.release_dir,
+            expected_source=args.expected_source,
+        )
+    except Exception as exc:
+        print(f"unable to evaluate assurance profile: {exc}", file=sys.stderr)
+        return 2
+
+    payload = report.to_dict()
+    if args.json is not None:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    print(f"{report.profile_id}  digest={report.profile_digest}")
+    for phase in ("source", "deployment", "release", "external"):
+        phase_controls = [item for item in report.controls if item.phase == phase]
+        if not phase_controls:
+            continue
+        print(f"\n{phase.upper()}")
+        for item in phase_controls:
+            suffix = f" — {item.detail}" if item.detail else ""
+            print(f"  {item.status:<11} {item.control_id}{suffix}")
+    print("\nSUMMARY")
+    print("  source_complete:", str(report.source_complete).lower())
+    print("  deployment_complete:", str(report.deployment_complete).lower())
+    if report.release_complete is not None:
+        print("  release_complete:", str(report.release_complete).lower())
+    print("  certified: false")
+
+    complete = report.source_complete and report.deployment_complete
+    if report.release_complete is not None:
+        complete = complete and report.release_complete
+    return 1 if args.require_complete and not complete else 0
+
+
+def _run_console(args: argparse.Namespace) -> int:
+    from .control_plane import serve_console
+
+    return serve_console(
+        host=args.host,
+        port=args.port,
+        workspace=args.workspace,
+        refresh_seconds=args.refresh_seconds,
+        auto_scan=not args.no_auto_scan,
+        dynamic_attestation=not args.no_dynamic_attestation,
+        open_browser=args.open_browser,
+        qualification_dir=args.qualification_dir,
+        offline_egress_dir=args.offline_egress_dir,
+        gateway_lab_dir=args.gateway_lab_dir,
+        gateway_systemd_dir=args.gateway_systemd_dir,
+    )
+
+
+def _run_setup(args: argparse.Namespace) -> int:
+    from .bootstrap import prepare_launch_environment, summary_lines
+
+    try:
+        launch = prepare_launch_environment(
+            args.workspace, preferred_port=args.port, host=args.host
+        )
+    except Exception as exc:
+        print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
+        return 2
+    print("BULL COMMAND CENTER SETUP")
+    for line in summary_lines(launch):
+        print("  " + line)
+    return 0
+
+
+def _run_up(args: argparse.Namespace) -> int:
+    from .bootstrap import prepare_launch_environment, summary_lines
+    from .control_plane import serve_console
+
+    try:
+        launch = prepare_launch_environment(
+            args.workspace, preferred_port=args.port, host=args.host
+        )
+    except Exception as exc:
+        print(f"unable to prepare BULL command center: {exc}", file=sys.stderr)
+        return 2
+    print("BULL COMMAND CENTER")
+    for line in summary_lines(launch):
+        print("  " + line)
+    return serve_console(
+        host=launch.host,
+        port=launch.port,
+        workspace=launch.workspace,
+        refresh_seconds=args.refresh_seconds,
+        auto_scan=not args.no_auto_scan,
+        dynamic_attestation=not args.no_dynamic_attestation,
+        state_dir=launch.state_dir,
+        external_url=launch.url,
+        open_browser=not args.no_open_browser,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -122,6 +232,104 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verify_parser.set_defaults(handler=_run_verify)
 
+    console_parser = subparsers.add_parser(
+        "console",
+        help="Run the local BULL command/control operator console.",
+    )
+    console_parser.add_argument("--host", default="127.0.0.1")
+    console_parser.add_argument("--port", type=int, default=11510)
+    console_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    console_parser.add_argument("--refresh-seconds", type=float, default=2.0)
+    console_parser.add_argument("--open-browser", action="store_true")
+    console_parser.add_argument(
+        "--qualification-dir",
+        type=Path,
+        help="Read private five-case KVM reports and show only their source-bound summary",
+    )
+    console_parser.add_argument(
+        "--offline-egress-dir",
+        type=Path,
+        help="Read private offline guest KVM evidence; gateway status stays separate",
+    )
+    console_parser.add_argument(
+        "--gateway-lab-dir",
+        type=Path,
+        help="Read private networked KVM lab report; production egress stays unverified",
+    )
+    console_parser.add_argument(
+        "--gateway-systemd-dir",
+        type=Path,
+        help="Read private source-bound KVM systemd candidate evidence",
+    )
+    console_parser.add_argument(
+        "--no-auto-scan",
+        action="store_true",
+        help="Initialize ClamAV but do not start the bounded workspace scan on boot.",
+    )
+    console_parser.add_argument(
+        "--no-dynamic-attestation",
+        action="store_true",
+        help="Do not start the live assurance probe on boot.",
+    )
+    console_parser.set_defaults(handler=_run_console)
+
+    setup_parser = subparsers.add_parser(
+        "setup",
+        help="Prepare portable local state and report BULL command-center readiness.",
+    )
+    setup_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    setup_parser.add_argument("--host", default=None)
+    setup_parser.add_argument("--port", type=int, default=11510)
+    setup_parser.set_defaults(handler=_run_setup)
+
+    up_parser = subparsers.add_parser(
+        "up",
+        help="Prepare and launch the complete local BULL command center.",
+    )
+    up_parser.add_argument("--workspace", type=Path, default=Path.cwd())
+    up_parser.add_argument("--host", default=None)
+    up_parser.add_argument("--port", type=int, default=11510)
+    up_parser.add_argument("--refresh-seconds", type=float, default=2.0)
+    up_parser.add_argument("--no-auto-scan", action="store_true")
+    up_parser.add_argument("--no-dynamic-attestation", action="store_true")
+    up_parser.add_argument("--no-open-browser", action="store_true")
+    up_parser.set_defaults(handler=_run_up)
+
+    assurance_parser = subparsers.add_parser(
+        "assurance",
+        help="Inspect BULL machine-readable assurance evidence.",
+    )
+    assurance_subparsers = assurance_parser.add_subparsers(dest="assurance_command")
+    assurance_status = assurance_subparsers.add_parser(
+        "status",
+        help="Report source, deployment, release, and external control status.",
+    )
+    assurance_status.add_argument(
+        "--dynamic",
+        action="store_true",
+        help="Launch the real namespace backend and require live security attestation.",
+    )
+    assurance_status.add_argument(
+        "--release-dir",
+        type=Path,
+        help="Optional release directory containing SBOM and attestation evidence.",
+    )
+    assurance_status.add_argument(
+        "--json",
+        type=Path,
+        help="Optional path for a machine-readable assurance report.",
+    )
+    assurance_status.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="Return non-zero unless all in-scope required controls pass.",
+    )
+    assurance_status.add_argument(
+        "--expected-source",
+        help="Trusted guest source commit; freshly verify release bundles with GitHub CLI.",
+    )
+    assurance_status.set_defaults(handler=_run_assurance_status)
+
     manifest_parser = subparsers.add_parser(
         "manifest",
         help="Generate a signed integrity manifest for the installed BULL TCB.",
@@ -139,7 +347,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Generate a signed production capability policy bundle.",
     )
     policy_parser.add_argument("--output", type=Path, required=True)
-    policy_parser.add_argument("--approval-config", type=Path, help="Host-owned JSON approval configuration to include in signed policy.")
+    policy_parser.add_argument(
+        "--approval-config",
+        type=Path,
+        help="Host-owned JSON approval configuration to include in signed policy.",
+    )
     policy_parser.add_argument("--project-root", default="/workspace")
     policy_parser.add_argument(
         "--capability",
@@ -154,6 +366,9 @@ def build_parser() -> argparse.ArgumentParser:
     policy_parser.add_argument("--key-id", default="deployment-policy")
     policy_parser.set_defaults(handler=_run_policy)
     from .approval_cli import add_parser as add_approval_parser
+    from .hardware_approval.cli import add_parser as add_hardware_parser
+
+    add_hardware_parser(subparsers)
     add_approval_parser(subparsers)
     return parser
 

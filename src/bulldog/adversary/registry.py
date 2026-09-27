@@ -1,4 +1,6 @@
-"""Adversary registry: tabulates attackers and clusters them into swarms."""
+"""Store observations and group similar claimed task text.
+
+A shared group label does not establish coordination or a real agent swarm."""
 
 from __future__ import annotations
 
@@ -61,7 +63,10 @@ class AdversaryRegistry:
                 continue
             if not other.initial_task:
                 continue
-            if task_similarity(record.initial_task, other.initial_task) >= self._swarm_threshold:
+            if (
+                task_similarity(record.initial_task, other.initial_task)
+                >= self._swarm_threshold
+            ):
                 if other.swarm_id:
                     record.swarm_id = other.swarm_id
                     return
