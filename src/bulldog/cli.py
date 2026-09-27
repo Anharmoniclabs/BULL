@@ -147,6 +147,7 @@ def _run_console(args: argparse.Namespace) -> int:
         auto_scan=not args.no_auto_scan,
         dynamic_attestation=not args.no_dynamic_attestation,
         open_browser=args.open_browser,
+        qualification_dir=args.qualification_dir,
     )
 
 
@@ -228,6 +229,8 @@ def build_parser() -> argparse.ArgumentParser:
     console_parser.add_argument("--workspace", type=Path, default=Path.cwd())
     console_parser.add_argument("--refresh-seconds", type=float, default=2.0)
     console_parser.add_argument("--open-browser", action="store_true")
+    console_parser.add_argument("--qualification-dir", type=Path,
+                                help="Read private five-case KVM reports and show only their source-bound summary")
     console_parser.add_argument(
         "--no-auto-scan",
         action="store_true",

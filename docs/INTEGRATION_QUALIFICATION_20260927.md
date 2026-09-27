@@ -27,6 +27,36 @@ older `guest-2026-09-22` results count as current candidate KVM proof. The
 MicroVM CI workflow tests host launch and fixtures and says explicitly that it
 does not boot a KVM guest.
 
+Operator-provided Codespaces transcript subsequently showed all five live
+one-shot cases PASS on clean commit `6a270237202e350db1435c6f171b644efe2299c0`.
+The selected release image hashes and source-tree digest are recorded in PR #82.
+The private per-case reports were checked by the runner for matching revision
+and image hashes, but have not been independently inspected here. The current
+head after adding console evidence intake and the isolated egress lab is a new
+revision and requires a new five-case run for a current-head claim.
+
+The console can consume an operator-selected private run directory:
+
+```bash
+PYTHONPATH=src python3 -m bulldog.cli console --qualification-dir /tmp/bull-kvm-EXAMPLE \
+  --host 127.0.0.1 --port 11511 --no-auto-scan --no-dynamic-attestation
+```
+
+Its integration card reports PASS only when all five private case reports and
+the summary agree with the setup report and the console's source revision;
+otherwise it reports STALE or INVALID without exposing report contents.
+
+For a disposable routing probe in a separate Linux network namespace, run
+`python3 tools/egress_namespace_lab.py --install-deps`. The script refuses the
+host network namespace and never installs host nftables rules. It substitutes
+the existing unprivileged `nobody` UID for the `bullgw` service UID in a
+temporary copy of the recipe, checks one allowed and denied HTTP redirect,
+denied DNS, alternate TCP drop and gateway-down behavior. This is a scoped
+IPv4 namespace probe; it cannot certify guest deployment, IPv6, service
+restart, real upstream egress or exact bullgw identity. If Codespaces denies
+network namespace creation, report BLOCKED and run the recipe in a disposable
+guest/host that supports it.
+
 On a trusted host with KVM and verified release assets, create the local
 `assets-local.json` manifest as in `docs/CODESPACES_VM_AND_KEY_CHECKS.md`, then
 run this candidate from a **clean checkout**:
