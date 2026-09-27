@@ -152,7 +152,7 @@ asyncio.run(main())"""
             # listens on IPv4 loopback only. Until dual-stack authorization is
             # implemented, IPv6 web traffic must stay closed.
             try:
-                request("::1", 80, b"GET / HTTP/1.0\r\nHost: allowed.test\r\n\r\n")
+                request("2001:db8:42::2", 80, b"GET / HTTP/1.0\r\nHost: allowed.test\r\n\r\n")
                 ipv6_web_connected = True
             except OSError:
                 ipv6_web_connected = False
