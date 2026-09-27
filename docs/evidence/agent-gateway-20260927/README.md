@@ -44,3 +44,28 @@ independent-review result is claimed. Enterprise gates remain `UNQUALIFIED` in
 `validation.json` contains the source and artifact hashes. The JUnit digest is
 an identifier for the locally generated full report; it is not a signature or
 independent attestation.
+
+## Operator-reported Codespaces run
+
+The operator subsequently supplied a terminal transcript from published commit
+`4ce6a475d34d6a3529c7f77de31aaaa916d3c82b`: **71 passed in 3.87 seconds**,
+with no failures or skips in the six-file gateway/router subset. This includes
+the two real Unix IPC tests that were skipped in the authoring environment.
+The transcript identifies MCP 2.2.0 and pytest 9.1.1. The private JUnit report
+was not independently retrieved or hashed here. These are source/protocol and
+local IPC results; the stdio authority and final HTTP effect remain explicit
+test fixtures. They do not constitute a connected production deployment.
+
+`tools/run_codespace_agent_gateway.py` now prepares a separate bounded live host
+test. Its evidence acceptance tests require matching argv, a zero exit code,
+one matching audit result and a valid current collector receipt. A run in the
+authoring environment remained **BLOCKED**: only UID 0 is mapped, Unix sockets
+are forbidden, and user namespace creation is denied. This is not converted to
+a live PASS. The runner requires a real operator-configured external collector
+and retains its own `report.json` for subsequent review.
+
+Runner-focused regression in the authoring environment: **85 passed, 2 skipped**
+in 2.33 seconds, including the original gateway subset and 16 new evidence and
+cleanup checks. The skips remain the two live Unix socket tests. The system
+Python also imported the authority without the optional MCP dependencies. These
+checks do not validate sudo provisioning or live cross-account execution here.

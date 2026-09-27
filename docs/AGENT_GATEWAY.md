@@ -173,6 +173,49 @@ real authority connection without executing a tool.
 
 ## Record a real connection test
 
+For a one-shot Codespaces test of the actual production path, run as the normal
+operator from a clean checkout:
+
+```bash
+python3 tools/run_codespace_agent_gateway.py --install-deps
+```
+
+The runner looks for exactly one existing BULL deployment with a configured
+external HTTPS collector under `~/.local/share/bull`. If there are none or several,
+select one explicitly:
+
+```bash
+python3 tools/run_codespace_agent_gateway.py --deployment /PRIVATE/BULL/STATE
+```
+
+An operator with an already deployed collector can instead supply
+`--collector-url https://YOUR-COLLECTOR/v1/checkpoints --collector-key-file /PRIVATE/key`.
+The key must be an operator-owned private file; never paste its contents. The
+runner does not create or change a Cloudflare deployment. Local test collectors,
+test CAs, absent credentials and failed Linux protection checks stay blocked.
+`--preflight` performs read-only prerequisite and collector-selection checks.
+
+The live command installs a separate Python environment, creates a fresh signed
+deployment, and invokes the checked-in sudo helper. The helper delegates the
+operator's BULL cgroup and creates a temporary locked `bull-gw-*` account. The
+operator is the non-root authority; the temporary account gets only the agent
+socket group and runs with `no_new_privs`. It must be unable to read authority
+keys, modify the source/environment or access the Docker control socket.
+Only `/usr/bin/true` (resolved and hash-bound) is authorized. A harmless input
+file also exercises the real malware-admission path. Existing ClamAV databases
+must be usable. No Codex/Claude session is started and no KVM image is rebuilt.
+
+The test performs a real SDK exchange, rejects a spoofed command without an
+admission, and requires the exact expected argv, execution and exit zero. It
+then checks that one admission and one matching audit result exist and verifies
+the collector acknowledgement's MAC, session, sequence and ledger head. The
+helper stops its own processes and removes its temporary account/group. Cleanup
+errors prevent a passing result. It changes no host firewall and exposes no TCP
+service. The run directory retains logs and disposable keys in private files
+and directories; share only its redacted `report.json`. Success remains
+`CONNECTED TOOL PASS`, not enterprise qualification or native-agent containment.
+
+For an authority that is already running, use the smaller client-only probe below.
 Run as the enrolled agent account, from this clean source revision:
 
 ```bash

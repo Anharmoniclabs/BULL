@@ -22,6 +22,24 @@ from bulldog.gateway_transport import request
 from bulldog.integrity import build_integrity_manifest
 
 
+def validate_execution_result(data, expected_argv=None):
+    """Judge the observed effect, not a successful protocol response."""
+    if not isinstance(data, dict) or data.get("executed") is not True:
+        raise ValueError(
+            "selected tool did not execute; inspect private authority audit"
+        )
+    if expected_argv is not None and (
+        data.get("status") != "COMPLETED"
+        or data.get("authorized_argv") != expected_argv
+        or type(data.get("returncode")) is not int
+        or data["returncode"] != 0
+        or data.get("decision") not in {"ALLOW", "SANDBOX"}
+    ):
+        raise ValueError(
+            "observed command or exit status differs from the selected check"
+        )
+
+
 async def mcp_check(args):
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
@@ -39,23 +57,21 @@ async def mcp_check(args):
                 raise ValueError("selected fixed tool was not advertised")
             result = await session.call_tool(args.tool, {})
             data = result.structured_content
-            if (
-                result.is_error
-                or not isinstance(data, dict)
-                or data.get("executed") is not True
-            ):
+            if result.is_error:
                 raise ValueError(
                     "selected tool did not execute; inspect private authority audit"
                 )
+            validate_execution_result(data, args.expected_argv)
             return {
                 "mcp_initialized": True,
                 "tool_listed": True,
                 "tool_executed": True,
+                **({"expected_argv_and_zero_exit": True} if args.expected_argv else {}),
             }, {
                 "protocol_version": initialized.protocol_version,
                 "call_id": data.get("call_id"),
                 "result_sha256": hashlib.sha256(
-                    json.dumps(data, sort_keys=True).encode()
+                    json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
                 ).hexdigest(),
             }
 
@@ -67,7 +83,22 @@ def main():
     parser.add_argument("--bridge", type=Path, required=True)
     parser.add_argument("--tool", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--expect-argv-json", help="Expected fixed process argv; also require exit zero"
+    )
     args = parser.parse_args()
+    args.expected_argv = None
+    if args.expect_argv_json is not None:
+        try:
+            args.expected_argv = json.loads(args.expect_argv_json)
+        except ValueError:
+            parser.error("--expect-argv-json requires a JSON array of strings")
+        if (
+            not isinstance(args.expected_argv, list)
+            or not args.expected_argv
+            or any(not isinstance(x, str) or not x for x in args.expected_argv)
+        ):
+            parser.error("--expect-argv-json requires a nonempty array of strings")
     os.umask(0o077)
     report = {
         "status": "BLOCKED",
@@ -140,6 +171,15 @@ def main():
         checks, evidence = asyncio.run(mcp_check(args))
         report["checks"].update(checks)
         report.update(evidence)
+        final = ipc({"method": "status"})
+        report["checks"]["exactly_one_admission"] = (
+            final.get("ok") is True
+            and final["result"]["lease"]["used_calls"]
+            == before["result"]["lease"]["used_calls"] + 1
+            and final["result"]["lease"]["uncertain_calls"] == 0
+        )
+        if not all(report["checks"].values()):
+            raise ValueError("post-execution admission accounting failed")
         report["status"] = "CONNECTED TOOL PASS"
     except Exception as exc:
         report["reason"] = type(exc).__name__ + ": " + str(exc)[:512]
