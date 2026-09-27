@@ -1,6 +1,8 @@
 import json
 
-from bulldog.qualification import CASES, GATEWAY_CHECKS, summarize_kvm, summarize_offline_egress, summarize_gateway_lab
+from bulldog.qualification import (CASES, GATEWAY_CHECKS, summarize_kvm,
+                                   summarize_offline_egress, summarize_gateway_lab,
+                                   summarize_gateway_systemd)
 
 
 def test_private_kvm_reports_are_bound_and_sanitized(tmp_path):
@@ -79,3 +81,23 @@ def test_networked_gateway_lab_is_source_bound_and_separate_from_production(tmp_
     report["guest_result"]["checks"]["denied_dns"] = False
     path.write_text(json.dumps(report))
     assert summarize_gateway_lab(tmp_path, current_commit=revision)["status"] == "INVALID"
+
+
+def test_systemd_candidate_is_source_bound_and_never_promoted_to_production(tmp_path):
+    revision, digest = "a" * 40, "b" * 64
+    report = {
+        "status": "PASS", "source_dirty": False, "source_commit": revision,
+        "scope": "disposable Debian networked KVM systemd candidate; not the pinned production image",
+        "kvm": {"status": "PASS"},
+        "guest_assets": {name: digest for name in ("kernel", "initrd", "rootfs")},
+        "guest_result": {"status": "PASS",
+                         "checks": {name: True for name in GATEWAY_CHECKS | {"service_units_active"}}},
+    }
+    (tmp_path / "setup-report.json").write_text(json.dumps(report))
+    result = summarize_gateway_systemd(tmp_path, current_commit=revision)
+    assert result["status"] == "CANDIDATE PASS"
+    assert "pinned production image remains separate" in result["evidence"]
+    assert summarize_gateway_systemd(tmp_path, current_commit="c" * 40)["status"] == "STALE"
+    report["guest_result"]["checks"]["agent_workload_uid"] = False
+    (tmp_path / "setup-report.json").write_text(json.dumps(report))
+    assert summarize_gateway_systemd(tmp_path, current_commit=revision)["status"] == "INVALID"

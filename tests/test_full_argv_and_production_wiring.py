@@ -35,6 +35,23 @@ class RecordingSandbox:
         return SandboxResult(returncode=0, stdout="ok", stderr="")
 
 
+def test_namespace_backend_defaults_to_read_only(monkeypatch, tmp_path):
+    """Raw callers must opt into host workspace mutation explicitly."""
+    from bulldog.namespace_sandbox import NamespaceSandbox
+    import inspect
+
+    assert inspect.signature(NamespaceSandbox.run).parameters["writable"].default is False
+
+
+def test_namespace_backend_rejects_root_writable_workspace(monkeypatch, tmp_path):
+    from bulldog.namespace_sandbox import NamespaceSandbox, SandboxUnavailable
+
+    sandbox = object.__new__(NamespaceSandbox)
+    monkeypatch.setattr("bulldog.namespace_sandbox.os.geteuid", lambda: 0)
+    with pytest.raises(SandboxUnavailable, match="root-owned writable"):
+        sandbox.run(["/usr/bin/true"], project_root=tmp_path, writable=True)
+
+
 def _action(argv):
     return ActionRequest(
         actor="host",

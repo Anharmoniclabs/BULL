@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from tools.deployment_check import probe_kvm, source_identity
 
 NEEDED = ("debootstrap", "mkfs.ext4", "qemu-system-x86_64", "sudo")
-EXPECTED = {"gateway_uid", "direct_gateway_http", "allowed_http", "denied_http", "ipv4_alt_closed",
+EXPECTED = {"gateway_uid", "agent_workload_uid", "direct_gateway_http", "allowed_http", "denied_http", "ipv4_alt_closed",
             "ipv6_alt_closed", "ipv6_web_closed", "filter_drop_counters",
             "denied_dns", "gateway_down_closed", "restart_still_denies"}
 
@@ -78,10 +78,15 @@ def build(directory, *, resume=False):
         existing_uid = run(["sudo", "-n", "chroot", str(rootfs), "/usr/bin/id", "-u", "bullgw"]).strip()
         if existing_uid != "23456":
             raise RuntimeError("resumed guest has unexpected bullgw UID")
+        if run(["sudo", "-n", "chroot", str(rootfs), "/usr/bin/id", "-u", "bullagent"]).strip() != "23457":
+            raise RuntimeError("resumed guest has unexpected bullagent UID")
     else:
         run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/groupadd", "--gid", "23456", "bullgw"])
         run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/useradd", "--system", "--uid", "23456",
              "--gid", "23456", "--no-create-home", "--shell", "/usr/sbin/nologin", "bullgw"])
+        run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/groupadd", "--gid", "23457", "bullagent"])
+        run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/useradd", "--system", "--uid", "23457",
+             "--gid", "23457", "--no-create-home", "--shell", "/usr/sbin/nologin", "bullagent"])
     run(["sudo", "-n", "install", "-d", "-m", "0755", str(rootfs / "opt/bull/src"),
          str(rootfs / "etc/bull")])
     run(["sudo", "-n", "cp", "-a", str(ROOT / "src/bulldog"), str(rootfs / "opt/bull/src/")])

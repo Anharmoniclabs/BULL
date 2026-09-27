@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run only inside the disposable KVM gateway lab guest."""
+import base64
 import json
 import os
 import re
@@ -41,6 +42,35 @@ def closed(host, port, payload):
     try:
         request(host, port, payload)
     except OSError:
+        return True
+    return False
+
+
+def agent_request(host, port, payload, *, timeout=5):
+    """Make the network attempt as the dedicated untrusted workload UID."""
+    program = """import base64,socket,sys
+h,p,t,b=sys.argv[1],int(sys.argv[2]),float(sys.argv[3]),base64.b64decode(sys.argv[4])
+s=socket.create_connection((h,p),timeout=t);s.settimeout(t);s.sendall(b);out=bytearray()
+while True:
+ x=s.recv(4096)
+ if not x: break
+ out.extend(x)
+s.close();sys.stdout.buffer.write(base64.b64encode(bytes(out)))
+"""
+    result = subprocess.run(
+        ["/usr/bin/setpriv", "--reuid=23457", "--regid=23457", "--clear-groups",
+         "/usr/bin/python3", "-c", program, host, str(port), str(timeout),
+         base64.b64encode(payload).decode("ascii")],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout + 2)
+    if result.returncode != 0:
+        raise OSError(result.stderr.decode("utf-8", "replace")[-500:])
+    return base64.b64decode(result.stdout, validate=True)
+
+
+def agent_closed(host, port, payload):
+    try:
+        agent_request(host, port, payload, timeout=2)
+    except (OSError, subprocess.TimeoutExpired):
         return True
     return False
 
@@ -152,6 +182,7 @@ def main():
             pid = process.pid
         checks["gateway_uid"] = pid > 1 and int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
             int(open(f"/proc/{pid}/status").read().split("Uid:", 1)[1].split()[0]) == 23456
+        checks["agent_workload_uid"] = int(command("/usr/bin/id", "-u", "bullagent").strip()) == 23457
         if systemd:
             checks["service_units_active"] = (command("/usr/bin/systemctl", "is-active", "bull-egress-gateway.service").strip() == "active"
                                                and command("/usr/bin/systemctl", "is-enabled", "bull-egress-gateway.service").strip() == "enabled"
@@ -161,15 +192,15 @@ def main():
         direct = request("127.0.0.1", 9443, allowed_payload)
         checks["direct_gateway_http"] = b"200 OK" in direct and b"BULL-GUEST-ORIGIN" in direct
         phase = "allowed HTTP redirect"
-        allowed = request("10.0.2.2", 80, allowed_payload)
+        allowed = agent_request("10.0.2.2", 80, allowed_payload)
         checks["allowed_http"] = b"200 OK" in allowed and b"BULL-GUEST-ORIGIN" in allowed
         phase = "denied HTTP redirect"
-        denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
+        denied = agent_request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["denied_http"] = b"403 Forbidden" in denied
         phase = "alternate IPv4 and IPv6 drops"
-        checks["ipv4_alt_closed"] = closed("10.0.2.2", 81, b"GET / HTTP/1.0\r\n\r\n")
-        checks["ipv6_alt_closed"] = closed("2001:db8:42::2", 81, b"GET / HTTP/1.0\r\n\r\n")
-        checks["ipv6_web_closed"] = closed("2001:db8:42::2", 80, b"GET / HTTP/1.0\r\n\r\n")
+        checks["ipv4_alt_closed"] = agent_closed("10.0.2.2", 81, b"GET / HTTP/1.0\r\n\r\n")
+        checks["ipv6_alt_closed"] = agent_closed("2001:db8:42::2", 81, b"GET / HTTP/1.0\r\n\r\n")
+        checks["ipv6_web_closed"] = agent_closed("2001:db8:42::2", 80, b"GET / HTTP/1.0\r\n\r\n")
         chain = command("/usr/sbin/nft", "list", "chain", "inet", "bull_egress", "filter_output")
         count4 = re.search(r"ip daddr 10\.0\.2\.2 tcp dport 81 counter packets (\d+)", chain)
         count6 = re.search(r"ip6 daddr 2001:db8:42::2 tcp dport 81 counter packets (\d+)", chain)
@@ -178,10 +209,15 @@ def main():
                                           and int(count6.group(1)) > 0)
         phase = "denied DNS redirect"
         query = bytes.fromhex("123401000001000000000000") + b"\x06denied\x04test\x00\x00\x01\x00\x01"
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
-            udp.settimeout(2)
-            udp.sendto(query, ("10.0.2.2", 53))
-            answer, _ = udp.recvfrom(512)
+        dns_program = """import base64,socket,sys
+q=base64.b64decode(sys.argv[1]);s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.settimeout(2)
+s.sendto(q,('10.0.2.2',53));a,_=s.recvfrom(512);sys.stdout.buffer.write(base64.b64encode(a))
+"""
+        dns = subprocess.run(
+            ["/usr/bin/setpriv", "--reuid=23457", "--regid=23457", "--clear-groups",
+             "/usr/bin/python3", "-c", dns_program, base64.b64encode(query).decode("ascii")],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=4, check=True)
+        answer = base64.b64decode(dns.stdout, validate=True)
         checks["denied_dns"] = answer[:2] == query[:2] and answer[3] & 15 == 5
         phase = "gateway-down closure"
         if systemd:
@@ -190,7 +226,7 @@ def main():
         else:
             process.terminate()
             process.wait(timeout=5)
-        checks["gateway_down_closed"] = closed("10.0.2.2", 80, b"GET / HTTP/1.0\r\n\r\n")
+        checks["gateway_down_closed"] = agent_closed("10.0.2.2", 80, b"GET / HTTP/1.0\r\n\r\n")
         phase = "restart gateway and deny"
         if systemd:
             command("/usr/bin/systemctl", "start", "bull-egress-gateway.service")
@@ -199,7 +235,7 @@ def main():
         else:
             process = gateway()
             ready(process)
-        denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
+        denied = agent_request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["restart_still_denies"] = b"403 Forbidden" in denied
     except Exception as exc:
         counters = {}

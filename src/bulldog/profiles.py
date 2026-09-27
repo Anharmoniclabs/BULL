@@ -15,6 +15,7 @@ from .approval import ApprovalError, ApprovalGate, binding_for, canonical_bytes,
 from .audit import AuditLedger
 from .audit_transport import production_transport_from_environment
 from .dispatcher import CapabilityDispatcher, DispatchDenied, DispatchRequest
+from .effect_journal import DurableEffectJournal
 from .engine import BulldogEngine
 from .integrity import verify_integrity_manifest
 from .malware_scanner import MalwareScanner
@@ -294,6 +295,7 @@ class ProductionDispatcher(CapabilityDispatcher):
                               policy_digest=gate.policy_digest,
                               session_id=self.runtime._approval_session_id)
         request_id = gate.consume(binding, approval)
+        journal = DurableEffectJournal(gate.root, audit=gate.audit)
         try:
             # Recheck authoritative policy and active domain immediately before use.
             self.runtime.verify_trusted_state()
@@ -302,10 +304,18 @@ class ProductionDispatcher(CapabilityDispatcher):
                 raise DispatchDenied("approval policy changed before effect")
             if self.domain_registry is not None:
                 self.domain_registry.require_active(action.metadata["domain_id"])
+            # Consume durable dispatch authority before crossing the external
+            # boundary. A crash after this point is reconciled, never retried.
+            journal.begin(request_id, binding)
             result = effect()
         except BaseException:
+            try:
+                journal.mark_uncertain(request_id, reason="effect raised or trusted post-approval check failed")
+            except Exception:
+                pass
             gate.finish(request_id, "uncertain")
             raise
+        journal.finish(request_id, receipt=hashlib.sha256(repr(result).encode("utf-8", "replace")).hexdigest())
         gate.finish(request_id, "completed")
         return result
 

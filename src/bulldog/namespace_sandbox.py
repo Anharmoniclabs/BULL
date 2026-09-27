@@ -298,7 +298,7 @@ class NamespaceSandbox:
         command: Sequence[str],
         *,
         project_root: str | Path,
-        writable: bool = True,
+        writable: bool = False,
         timeout: float | None = 30.0,
         env: dict[str, str] | None = None,
         resource_budget: ResourceBudget | None = None,
@@ -306,6 +306,12 @@ class NamespaceSandbox:
     ) -> SandboxResult:
         if not command:
             raise ValueError("sandbox command cannot be empty")
+        if type(writable) is not bool:
+            raise ValueError("writable must be an explicit boolean")
+        if writable and os.geteuid() == 0:
+            raise SandboxUnavailable(
+                "root-owned writable host workspaces are forbidden; use a delegated unprivileged operator"
+            )
         project_root = Path(project_root).resolve(strict=True)
         if not project_root.is_dir():
             raise ValueError("project_root must be a directory")
