@@ -85,6 +85,8 @@ def build(directory, *, resume=False):
     run(["sudo", "-n", "install", "-d", "-m", "0755", str(rootfs / "opt/bull/src"),
          str(rootfs / "etc/bull")])
     run(["sudo", "-n", "cp", "-a", str(ROOT / "src/bulldog"), str(rootfs / "opt/bull/src/")])
+    run(["sudo", "-n", "chmod", "0755", str(rootfs / "opt"), str(rootfs / "opt/bull"),
+         str(rootfs / "opt/bull/src")])
     run(["sudo", "-n", "chmod", "-R", "a+rX", str(rootfs / "opt/bull/src")])
     for src, dest, mode in (
         (ROOT / "tools/gateway_guest_probe.py", rootfs / "opt/bull/gateway_guest_probe.py", "0644"),

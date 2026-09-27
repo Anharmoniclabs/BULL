@@ -96,6 +96,9 @@ def main():
                 "ip", "daddr", "10.0.2.2", "tcp", "dport", "81", "counter")
         command("/usr/sbin/nft", "add", "rule", "inet", "bull_egress", "filter_output",
                 "ip6", "daddr", "2001:db8:42::2", "tcp", "dport", "81", "counter")
+        command("/usr/bin/setpriv", "--reuid=23456", "--regid=23456", "--clear-groups",
+                "/usr/bin/env", "PYTHONPATH=/opt/bull/src", "/usr/bin/python3", "-c",
+                "import bulldog.run_egress_gateway")
         process = gateway()
         ready(process)
         checks["gateway_uid"] = int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
