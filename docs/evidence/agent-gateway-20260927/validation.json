@@ -1,0 +1,33 @@
+{
+  "format": "bull-connected-gateway-validation-v1",
+  "date": "2026-09-27",
+  "source_commit": "d5d02a26bd71e71f04961a09e065aeab29f88662",
+  "source_tree": "218576891a5534146cb7eb47908f95dcc3166737",
+  "scope": "source and protocol checks; not a live protected agent deployment",
+  "enterprise_qualified": false,
+  "full_suite": {
+    "passed": 722,
+    "subtests_passed": 21,
+    "failed": 4,
+    "skipped": 2,
+    "failure_environment": "Unix socket creation and user namespace mapping unavailable"
+  },
+  "gateway_subset": {
+    "passed": 69,
+    "skipped": 2,
+    "skips": ["real broker socket and large response", "real authority socket peer rejection"],
+    "mcp_sdk": "2.2.0",
+    "serialized_stdio_handshake": "PASS_WITH_EXPLICIT_AUTHORITY_FIXTURE"
+  },
+  "junit_sha256": "c038a318c0b6c763a8841d5d78a62f093bfb03036564e01b7d85efc1472947c5",
+  "package": {
+    "status": "PASS",
+    "wheel_built_from_sdist": true,
+    "fresh_base_install": true,
+    "artifacts": {
+      "bulldog_ai_firewall-0.2.0rc1-py3-none-any.whl": "1ab31981b037b380c23a918ff65948a372b64e643c2204a3e8f8247ef80ddac6",
+      "bulldog_ai_firewall-0.2.0rc1.tar.gz": "2c2a621f7c8f06f65c5dc78bb82c1c2e14d2ef0af66988da388b016739ea1b30"
+    }
+  },
+  "not_run": ["live Codex session", "live Claude session", "connected authority on a qualified Linux host", "new KVM cases", "physical approval ceremony", "multi-day soak", "independent review"]
+}
