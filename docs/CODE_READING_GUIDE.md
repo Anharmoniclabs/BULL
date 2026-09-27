@@ -31,6 +31,13 @@ operation and parameter names before calling one of three dispatcher methods:
 | `network.request` | `url`, `method`, `headers`, `body` | `fetch_egress` |
 | `secret.read` | `token`, `name`, `sandbox_id` | `get_secret` |
 
+These are the router's current input fields, not evidence that every route is
+working. The network route passes `headers` and `body` to a dispatcher method
+that does not accept them. The network and secret routes also omit the explicit
+domain identity required by a domain-enabled dispatcher. The
+[enterprise agent gateway plan](ENTERPRISE_AGENT_GATEWAY_PLAN.md) records these
+contract fixes and their test requirements before adding an MCP interface.
+
 Unknown operations are denied at this entry point. This is a coverage boundary:
 other adapters must deliberately use it before they can inherit its checks.
 Process authority comes through signed policy and dispatch state. Broker effects
