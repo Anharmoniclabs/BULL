@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import re
 import socket
 import subprocess
 import sys
@@ -76,8 +77,19 @@ def inside() -> int:
 
         origin = HTTPServer(("127.0.0.1", 18081), Origin)
         threading.Thread(target=origin.serve_forever, daemon=True).start()
-        alternate = HTTPServer(("127.0.0.1", 81), Origin)
-        threading.Thread(target=alternate.serve_forever, daemon=True).start()
+        # The recipe deliberately permits other loopback services. Create an
+        # on-link, non-local destination so output uses veth0, not lo. A lab
+        # counter before the default DROP proves that this traffic reached the
+        # filter without adding an ACCEPT or changing the production verdict.
+        subprocess.run(["ip", "link", "add", "veth0", "type", "veth", "peer", "name", "veth1"], check=True)
+        subprocess.run(["ip", "addr", "add", "198.18.0.1/30", "dev", "veth0"], check=True)
+        subprocess.run(["ip", "link", "set", "veth0", "up"], check=True)
+        subprocess.run(["ip", "link", "set", "veth1", "up"], check=True)
+        route = subprocess.check_output(["ip", "route", "get", "198.18.0.2"], text=True)
+        if " dev veth0 " not in route:
+            raise RuntimeError("alternate-port target did not route off loopback")
+        subprocess.run(["nft", "add", "rule", "inet", "bull_egress", "filter_output",
+                        "ip", "daddr", "198.18.0.2", "tcp", "dport", "81", "counter"], check=True)
         runner = """import asyncio
 from bulldog.egress_gateway import EgressGateway,EgressPolicy,GatewayConfig
 async def main():
@@ -113,10 +125,14 @@ asyncio.run(main())"""
             denied = request("127.0.0.1", 80, b"GET /ok HTTP/1.1\r\nHost: evil.test\r\nConnection: close\r\n\r\n")
             checks["http_denied_redirect"] = b"403 Forbidden" in denied
             try:
-                request("127.0.0.1", 81, b"GET / HTTP/1.0\r\n\r\n")
-                checks["alternate_tcp_dropped"] = False
+                request("198.18.0.2", 81, b"GET / HTTP/1.0\r\n\r\n")
+                alternate_connected = True
             except OSError:
-                checks["alternate_tcp_dropped"] = True
+                alternate_connected = False
+            chain = subprocess.check_output(["nft", "list", "chain", "inet", "bull_egress", "filter_output"], text=True)
+            counted = re.search(r"ip daddr 198\.18\.0\.2 tcp dport 81 counter packets (\d+)", chain)
+            checks["alternate_tcp_dropped"] = (not alternate_connected and "policy drop;" in chain
+                                                and counted is not None and int(counted.group(1)) > 0)
             query = bytes.fromhex("123401000001000000000000") + b"\x04evil\x04test\x00\x00\x01\x00\x01"
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
                 udp.settimeout(2)
@@ -136,8 +152,6 @@ asyncio.run(main())"""
                 gateway.wait(timeout=5)
             origin.shutdown()
             origin.server_close()
-            alternate.shutdown()
-            alternate.server_close()
         result = {"status": "PASS" if all(checks.values()) else "FAIL", "checks": checks,
                   "scope": "disposable IPv4 namespace; UID substituted for bullgw; no deployed guest/service, IPv6 or restart proof"}
         print(json.dumps(result), flush=True)
@@ -163,7 +177,7 @@ def main() -> int:
     result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=90)
     if result.stdout:
         print(result.stdout, end="")
-    if result.returncode:
+    if result.returncode and (result.stderr or not result.stdout):
         print(json.dumps({"status": "BLOCKED_OR_FAIL", "reason": result.stderr[-1000:],
                           "scope": "no host nftables changes; isolated namespace only"}))
     return result.returncode

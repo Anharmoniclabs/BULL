@@ -51,7 +51,8 @@ For a disposable routing probe in a separate Linux network namespace, run
 host network namespace and never installs host nftables rules. It substitutes
 the existing unprivileged `nobody` UID for the `bullgw` service UID in a
 temporary copy of the recipe, checks one allowed and denied HTTP redirect,
-denied DNS, alternate TCP drop and gateway-down behavior. This is a scoped
+denied DNS, off-loopback alternate TCP drop (with a lab-only nft counter) and
+gateway-down behavior. Other loopback services are explicitly permitted. This is a scoped
 IPv4 namespace probe; it cannot certify guest deployment, IPv6, service
 restart, real upstream egress or exact bullgw identity. If Codespaces denies
 network namespace creation, report BLOCKED and run the recipe in a disposable
