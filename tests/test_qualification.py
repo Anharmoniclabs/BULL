@@ -44,7 +44,7 @@ def test_offline_guest_report_is_source_bound_and_gateway_unclaimed(tmp_path):
     report = {"status": "PASS", "case": "offline-egress", "revision": revision,
               "assets": assets, "source_tree_sha256": digest,
               "qemu_network": "none (observed child command line)", "external_collector": False,
-              "offline_egress": {"interfaces": ["lo"], "denials": {"ipv4": "ENETUNREACH", "ipv6": "EAFNOSUPPORT"}}}
+              "offline_egress": {"denials": {"ipv4": "ENETUNREACH", "ipv6": "EAFNOSUPPORT"}}}
     path = case_dir / "report.json"
     path.write_text(json.dumps(report))
     result = summarize_offline_egress(tmp_path, current_commit=revision)

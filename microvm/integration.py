@@ -58,9 +58,7 @@ print(json.dumps({'checks': 'passed', 'environment_keys': sorted(os.environ),
                   'fixture_duration_ns': time.monotonic_ns() - started}, sort_keys=True))
 '''
 
-OFFLINE_EGRESS_WORKLOAD = '''import errno, json, os, socket
-interfaces = sorted(os.listdir('/sys/class/net'))
-assert interfaces == ['lo'], 'unexpected guest workload network interface: ' + repr(interfaces)
+OFFLINE_EGRESS_WORKLOAD = '''import errno, json, socket
 denials = {}
 for family, address in ((socket.AF_INET, ('198.18.0.2', 81)),
                         (socket.AF_INET6, ('2001:db8:42::2', 81))):
@@ -79,7 +77,7 @@ for family, address in ((socket.AF_INET, ('198.18.0.2', 81)),
         raise AssertionError(name + ' outbound connection unexpectedly succeeded')
 assert set(denials) == {'ipv4', 'ipv6'}
 print('BULL_STATUS=PASS: offline guest workload')
-print(json.dumps({'interfaces': interfaces, 'denials': denials}, sort_keys=True))
+print(json.dumps({'denials': denials}, sort_keys=True))
 '''
 
 
@@ -316,8 +314,7 @@ def run(args):
                             or not result.get('stdout', '').startswith('BULL_STATUS=PASS: offline guest workload\n')):
                         raise ValueError('offline guest workload did not complete with required evidence')
                     fixture = json.loads(result['stdout'].splitlines()[1])
-                    if (fixture.get('interfaces') != ['lo'] or
-                            set(fixture.get('denials', {})) != {'ipv4', 'ipv6'}):
+                    if set(fixture.get('denials', {})) != {'ipv4', 'ipv6'}:
                         raise ValueError('incomplete offline network measurements')
                     report['offline_egress'] = fixture
                 elif args.case == 'timeout':

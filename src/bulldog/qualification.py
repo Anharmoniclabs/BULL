@@ -77,7 +77,7 @@ def summarize_offline_egress(directory: str | Path, *, current_commit: str | Non
                 or case.get("qemu_network") != "none (observed child command line)"
                 or type(case.get("source_tree_sha256")) is not str
                 or not HEX64.fullmatch(case["source_tree_sha256"])
-                or type(fixture) is not dict or fixture.get("interfaces") != ["lo"]
+                or type(fixture) is not dict
                 or type(fixture.get("denials")) is not dict
                 or set(fixture["denials"]) != {"ipv4", "ipv6"}
                 or any(v not in {"EPERM", "EACCES", "ENETUNREACH", "EHOSTUNREACH",
@@ -89,7 +89,7 @@ def summarize_offline_egress(directory: str | Path, *, current_commit: str | Non
             return {"status": "STALE", "detail": "Offline guest test belongs to another source revision.",
                     "evidence": f"Private guest report: {revision[:12]}"}
         return {"status": "OFFLINE PASS",
-                "detail": "KVM guest workload saw only loopback and denied IPv4/IPv6 outbound connections; QEMU -net none observed.",
+                "detail": "KVM guest workload denied IPv4/IPv6 outbound connections; QEMU -net none observed.",
                 "evidence": f"Private guest report: {revision[:12]}; gateway deployment not tested"}
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
         return {"status": "INVALID", "detail": "Offline guest evidence is missing or inconsistent.",

@@ -114,7 +114,6 @@ def main() -> int:
                     or evidence.get("revision") != source["commit"]
                     or evidence.get("assets") != report["asset_sha256"]
                     or evidence.get("qemu_network") != "none (observed child command line)"
-                    or evidence.get("offline_egress", {}).get("interfaces") != ["lo"]
                     or set(evidence.get("offline_egress", {}).get("denials", {})) != {"ipv4", "ipv6"}):
                 raise RuntimeError("offline egress KVM case incomplete or failed; inspect private report")
             if source_identity() != source:

@@ -92,8 +92,8 @@ python3 tools/run_codespace_kvm.py --offline-egress \
 ```
 
 This case checks the observed QEMU child command line and runs an IPv4/IPv6
-outbound probe in the actual governed guest workload. It requires only loopback
-to be visible and both connections to fail. The private case report and setup
+outbound probe in the actual governed guest workload. It requires both
+connections to fail; the sandbox does not expose `/sys/class/net`. The private case report and setup
 report remain source and image bound. To display the sanitized result, start
 `bull console --offline-egress-dir /tmp/bull-kvm-NEW` with that run's directory.
 The console displays an **offline guest boundary** card separately from the
