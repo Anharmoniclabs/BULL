@@ -50,7 +50,7 @@ def build(directory, *, resume=False):
     log = directory / "build.log"
     if resume:
         run(["sudo", "-n", "test", "-d", str(rootfs / "boot")])
-        print("Reusing signed-package guest from private blocked run...", flush=True)
+        print("Reusing signed-package guest from private lab directory...", flush=True)
     else:
         print("Building disposable signed-package Debian guest (this can take several minutes)...", flush=True)
         run(["sudo", "-n", "debootstrap", "--arch=amd64", "--variant=minbase",
@@ -164,7 +164,7 @@ def boot(directory, kernel, initrd, image):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--install-deps", action="store_true")
-    parser.add_argument("--resume", type=Path, help="private /tmp/bull-gateway-kvm-* directory from a blocked build")
+    parser.add_argument("--resume", type=Path, help="reuse an owned private /tmp/bull-gateway-kvm-* build")
     args = parser.parse_args()
     os.umask(0o077)
     if args.resume:
@@ -175,8 +175,9 @@ def main():
                 or info.st_mode & 0o077):
             parser.error("--resume requires an owned private BULL gateway lab directory directly under /tmp")
         previous = json.loads((directory / "setup-report.json").read_text())
-        if previous.get("status") != "BLOCKED" or previous.get("evidence_directory") != str(directory):
-            parser.error("--resume requires a blocked BULL gateway setup report")
+        if (previous.get("status") not in {"BLOCKED", "PASS"}
+                or previous.get("evidence_directory") != str(directory)):
+            parser.error("--resume requires a prior BULL gateway setup report in this private directory")
     else:
         directory = Path(tempfile.mkdtemp(prefix="bull-gateway-kvm-", dir="/tmp"))
     source = source_identity()
