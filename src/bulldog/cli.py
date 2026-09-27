@@ -149,6 +149,7 @@ def _run_console(args: argparse.Namespace) -> int:
         open_browser=args.open_browser,
         qualification_dir=args.qualification_dir,
         offline_egress_dir=args.offline_egress_dir,
+        gateway_lab_dir=args.gateway_lab_dir,
     )
 
 
@@ -234,6 +235,8 @@ def build_parser() -> argparse.ArgumentParser:
                                 help="Read private five-case KVM reports and show only their source-bound summary")
     console_parser.add_argument("--offline-egress-dir", type=Path,
                                 help="Read private offline guest KVM evidence; gateway status stays separate")
+    console_parser.add_argument("--gateway-lab-dir", type=Path,
+                                help="Read private networked KVM lab report; production egress stays unverified")
     console_parser.add_argument(
         "--no-auto-scan",
         action="store_true",

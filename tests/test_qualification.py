@@ -1,6 +1,6 @@
 import json
 
-from bulldog.qualification import CASES, summarize_kvm, summarize_offline_egress
+from bulldog.qualification import CASES, GATEWAY_CHECKS, summarize_kvm, summarize_offline_egress, summarize_gateway_lab
 
 
 def test_private_kvm_reports_are_bound_and_sanitized(tmp_path):
@@ -54,3 +54,28 @@ def test_offline_guest_report_is_source_bound_and_gateway_unclaimed(tmp_path):
     report["qemu_network"] = "slirp"
     path.write_text(json.dumps(report))
     assert summarize_offline_egress(tmp_path, current_commit=revision)["status"] == "INVALID"
+
+
+def test_networked_gateway_lab_is_source_bound_and_separate_from_production(tmp_path):
+    revision, digest = "a" * 40, "b" * 64
+    report = {
+        "status": "PASS", "source_dirty": False, "source_commit": revision,
+        "kvm": {"status": "PASS"},
+        "guest_assets": {name: digest for name in ("kernel", "initrd", "rootfs")},
+        "guest_result": {
+            "status": "PASS", "checks": {name: True for name in GATEWAY_CHECKS},
+            "scope": "disposable Debian KVM lab guest, restricted QEMU user networking; "
+                     "direct init startup, no systemd or production image",
+            "private_token": "DO-NOT-EXPOSE",
+        },
+    }
+    path = tmp_path / "setup-report.json"
+    path.write_text(json.dumps(report))
+    result = summarize_gateway_lab(tmp_path, current_commit=revision)
+    assert result["status"] == "PASS"
+    assert "production image or systemd claim" in result["evidence"]
+    assert "DO-NOT-EXPOSE" not in str(result)
+    assert summarize_gateway_lab(tmp_path, current_commit="c" * 40)["status"] == "STALE"
+    report["guest_result"]["checks"]["denied_dns"] = False
+    path.write_text(json.dumps(report))
+    assert summarize_gateway_lab(tmp_path, current_commit=revision)["status"] == "INVALID"

@@ -6,6 +6,10 @@ from pathlib import Path
 import re
 
 CASES = ("allowed", "denied", "timeout", "cancel", "missing-protection")
+GATEWAY_CHECKS = {"gateway_uid", "direct_gateway_http", "allowed_http", "denied_http",
+                  "ipv4_alt_closed", "ipv6_alt_closed", "ipv6_web_closed",
+                  "filter_drop_counters", "denied_dns", "gateway_down_closed",
+                  "restart_still_denies"}
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 
@@ -94,3 +98,35 @@ def summarize_offline_egress(directory: str | Path, *, current_commit: str | Non
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
         return {"status": "INVALID", "detail": "Offline guest evidence is missing or inconsistent.",
                 "evidence": "No guest network claim made"}
+
+
+def summarize_gateway_lab(directory: str | Path, *, current_commit: str | None) -> dict[str, str]:
+    """Expose only a validated, revision-bound networked guest lab summary."""
+    try:
+        root = Path(directory)
+        if root.is_symlink() or not root.is_dir():
+            raise ValueError("gateway lab directory unavailable")
+        setup = _read(root / "setup-report.json")
+        revision = setup.get("source_commit")
+        assets = setup.get("guest_assets")
+        guest = setup.get("guest_result")
+        if (setup.get("status") != "PASS" or setup.get("source_dirty") is not False
+                or type(setup.get("kvm")) is not dict or setup["kvm"].get("status") != "PASS"
+                or type(revision) is not str or not HEX40.fullmatch(revision)
+                or type(assets) is not dict or set(assets) != {"kernel", "initrd", "rootfs"}
+                or any(type(v) is not str or not HEX64.fullmatch(v) for v in assets.values())
+                or type(guest) is not dict or guest.get("status") != "PASS"
+                or guest.get("scope") != ("disposable Debian KVM lab guest, restricted QEMU user "
+                                           "networking; direct init startup, no systemd or production image")
+                or type(guest.get("checks")) is not dict
+                or set(guest["checks"]) != GATEWAY_CHECKS
+                or any(v is not True for v in guest["checks"].values())):
+            raise ValueError("incomplete gateway lab report")
+        if current_commit != revision:
+            return {"status": "STALE", "detail": "Networked gateway lab passed for a different source revision.",
+                    "evidence": f"Private KVM lab report: {revision[:12]}; production guest unverified"}
+        return {"status": "PASS", "detail": "11 networked KVM gateway lab checks passed; disposable direct-init guest.",
+                "evidence": f"Private KVM lab report: {revision[:12]}; no production image or systemd claim"}
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return {"status": "INVALID", "detail": "Selected networked KVM lab report is incomplete or inconsistent.",
+                "evidence": "No gateway lab claim made"}
