@@ -82,6 +82,8 @@ def service_ready():
 def main():
     phase = "initialize"
     systemd = "--systemd" in sys.argv[1:]
+    if systemd:
+        print("BULL_GATEWAY_KVM_PHASE=probe_started", flush=True)
     if os.getpid() == 1 or not os.path.exists("/proc/1/cmdline"):
         raise RuntimeError("guest initialization incomplete")
     if systemd:
@@ -141,6 +143,7 @@ def main():
         phase = "start gateway"
         if systemd:
             service_ready()
+            print("BULL_GATEWAY_KVM_PHASE=gateway_ready", flush=True)
             pid = int(command("/usr/bin/systemctl", "show", "-p", "MainPID", "--value",
                               "bull-egress-gateway.service").strip())
         else:
@@ -182,6 +185,7 @@ def main():
         checks["denied_dns"] = answer[:2] == query[:2] and answer[3] & 15 == 5
         phase = "gateway-down closure"
         if systemd:
+            print("BULL_GATEWAY_KVM_PHASE=stopping_gateway", flush=True)
             command("/usr/bin/systemctl", "stop", "bull-egress-gateway.service")
         else:
             process.terminate()
@@ -191,6 +195,7 @@ def main():
         if systemd:
             command("/usr/bin/systemctl", "start", "bull-egress-gateway.service")
             service_ready()
+            print("BULL_GATEWAY_KVM_PHASE=gateway_restarted", flush=True)
         else:
             process = gateway()
             ready(process)
