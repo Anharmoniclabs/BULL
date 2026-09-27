@@ -150,6 +150,7 @@ def _run_console(args: argparse.Namespace) -> int:
         qualification_dir=args.qualification_dir,
         offline_egress_dir=args.offline_egress_dir,
         gateway_lab_dir=args.gateway_lab_dir,
+        gateway_systemd_dir=args.gateway_systemd_dir,
     )
 
 
@@ -237,6 +238,8 @@ def build_parser() -> argparse.ArgumentParser:
                                 help="Read private offline guest KVM evidence; gateway status stays separate")
     console_parser.add_argument("--gateway-lab-dir", type=Path,
                                 help="Read private networked KVM lab report; production egress stays unverified")
+    console_parser.add_argument("--gateway-systemd-dir", type=Path,
+                                help="Read private source-bound KVM systemd candidate evidence")
     console_parser.add_argument(
         "--no-auto-scan",
         action="store_true",
@@ -356,3 +359,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+    console_parser.add_argument("--gateway-systemd-dir", type=Path,
+                                help="private source-bound KVM systemd candidate evidence")

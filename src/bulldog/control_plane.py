@@ -40,7 +40,7 @@ from .audit import AuditLedger
 from .malware_scanner import MalwareScanner, MalwareScannerError, MalwareScannerUnavailable
 from .models import ActionRequest, Capability, Decision, Provenance
 from .policy import DeterministicPolicy
-from .qualification import summarize_kvm, summarize_offline_egress, summarize_gateway_lab
+from .qualification import summarize_kvm, summarize_offline_egress, summarize_gateway_lab, summarize_gateway_systemd
 
 
 @dataclass(frozen=True)
@@ -293,6 +293,7 @@ class ControlPlane:
         qualification_dir: str | Path | None = None,
         offline_egress_dir: str | Path | None = None,
         gateway_lab_dir: str | Path | None = None,
+        gateway_systemd_dir: str | Path | None = None,
     ) -> None:
         self.workspace = Path(workspace or os.getcwd()).resolve()
         self.state_dir = Path(
@@ -303,6 +304,7 @@ class ControlPlane:
         self.qualification_dir = Path(qualification_dir) if qualification_dir else None
         self.offline_egress_dir = Path(offline_egress_dir) if offline_egress_dir else None
         self.gateway_lab_dir = Path(gateway_lab_dir) if gateway_lab_dir else None
+        self.gateway_systemd_dir = Path(gateway_systemd_dir) if gateway_systemd_dir else None
         self._managed_microvm: subprocess.Popen | None = None
         self._managed_microvm_started_at: str | None = None
         self._managed_microvm_log = self.state_dir / "microvm.log"
@@ -871,7 +873,7 @@ class ControlPlane:
         detections = len(malware.get("detections") or [])
         running_protections = sum(1 for item in isolation["items"] if item["status"] == "PASS")
         total_protections = len(isolation["items"])
-        if self.qualification_dir or self.offline_egress_dir or self.gateway_lab_dir:
+        if self.qualification_dir or self.offline_egress_dir or self.gateway_lab_dir or self.gateway_systemd_dir:
             try:
                 repo = Path(__file__).resolve().parents[2]
                 revision = subprocess.check_output(
@@ -885,10 +887,13 @@ class ControlPlane:
                                      if self.offline_egress_dir else None)
             gateway_qualification = (summarize_gateway_lab(self.gateway_lab_dir, current_commit=revision)
                                      if self.gateway_lab_dir else None)
+            systemd_qualification = (summarize_gateway_systemd(self.gateway_systemd_dir, current_commit=revision)
+                                     if self.gateway_systemd_dir else None)
         else:
             kvm_qualification = None
             offline_qualification = None
             gateway_qualification = None
+            systemd_qualification = None
         if kvm_qualification is None:
             kvm_qualification = {
                 "status": "BLOCKED" if not microvm.get("kvm_available") else "NOT_RUN",
@@ -902,6 +907,9 @@ class ControlPlane:
         if gateway_qualification is None:
             gateway_qualification = {"status": "NOT_RUN", "detail": "No networked KVM gateway lab report selected.",
                                      "evidence": "Production image and systemd service remain unverified"}
+        if systemd_qualification is None:
+            systemd_qualification = {"status": "NOT_RUN", "detail": "No networked KVM systemd candidate selected.",
+                                     "evidence": "Pinned production image remains a separate qualification"}
 
         return {
             "meta": {
@@ -961,6 +969,7 @@ class ControlPlane:
                 "kvm_cases": kvm_qualification,
                 "offline_guest": offline_qualification,
                 "gateway_lab": gateway_qualification,
+                "gateway_systemd": systemd_qualification,
             },
             "swarms": swarms,
             "attestation": assurance,
@@ -1132,6 +1141,7 @@ def serve_console(
     qualification_dir: str | Path | None = None,
     offline_egress_dir: str | Path | None = None,
     gateway_lab_dir: str | Path | None = None,
+    gateway_systemd_dir: str | Path | None = None,
 ) -> int:
     control = ControlPlane(
         workspace=workspace,
@@ -1143,6 +1153,7 @@ def serve_console(
         qualification_dir=qualification_dir,
         offline_egress_dir=offline_egress_dir,
         gateway_lab_dir=gateway_lab_dir,
+        gateway_systemd_dir=gateway_systemd_dir,
     )
     server = _ConsoleServer((host, int(port)), ConsoleHandler, control)
     control.start()
