@@ -1,4 +1,5 @@
 """USB transport simulations, not physical presence or signing evidence."""
+
 from collections import deque
 import ctypes
 import json
@@ -20,6 +21,7 @@ def packet(*, nonce=bytes(32), pending=False, decision=0, authority=0):
 
 class Function:
     """A fake C function accepting ctypes signature declarations."""
+
     def __init__(self, function):
         self.function = function
 
@@ -54,8 +56,12 @@ class HID:
             self.replies.append(packet())
         elif command[0] == 1:
             nonce = b"x" * 32 if self.wrong_challenge else self.nonce
-            self.replies.append(packet(nonce=nonce or bytes(32),
-                                       decision=self.decision if self.nonce else 0))
+            self.replies.append(
+                packet(
+                    nonce=nonce or bytes(32),
+                    decision=self.decision if self.nonce else 0,
+                )
+            )
         return size
 
     def read(self, handle, buffer, size, timeout):
@@ -70,7 +76,9 @@ class HID:
 
 
 @pytest.mark.parametrize("decision,expected", [(1, "NO"), (2, "YES")])
-def test_stale_decisions_are_discarded_before_fresh_challenge(monkeypatch, capsys, decision, expected):
+def test_stale_decisions_are_discarded_before_fresh_challenge(
+    monkeypatch, capsys, decision, expected
+):
     old = b"o" * 32
     hid = HID([packet(), packet(nonce=old, decision=2)], decision=decision)
     monkeypatch.setattr(diagnostic.C, "CDLL", lambda name: hid)

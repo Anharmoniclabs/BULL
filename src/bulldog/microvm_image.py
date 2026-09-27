@@ -1,4 +1,5 @@
 """Build a no-clobber root filesystem from a bounded admitted tree."""
+
 import argparse
 from pathlib import Path
 import signal
@@ -19,7 +20,11 @@ def main(argv=None):
     for signum in (signal.SIGTERM, signal.SIGHUP):
         signal.signal(signum, interrupted)
     try:
-        build_image(args.source, args.output, init=Path(__file__).resolve().parents[2] / "microvm/guest/init")
+        build_image(
+            args.source,
+            args.output,
+            init=Path(__file__).resolve().parents[2] / "microvm/guest/init",
+        )
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         parser.exit(2, f"build-ext4: {exc}\n")
     print(args.output)

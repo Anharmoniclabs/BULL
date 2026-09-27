@@ -1,3 +1,5 @@
+"""Describe and apply bounded workload resource settings."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,9 +34,7 @@ def _safe_limit(
     value: int,
 ) -> None:
 
-    current_soft, current_hard = (
-        resource.getrlimit(which)
-    )
+    current_soft, current_hard = resource.getrlimit(which)
 
     # Do not attempt to raise an outer host/container limit.
     if current_hard == resource.RLIM_INFINITY:
@@ -102,31 +102,16 @@ def current_budget() -> dict:
     result = {}
 
     mapping = {
-        "address_space":
-            resource.RLIMIT_AS,
-
-        "cpu":
-            resource.RLIMIT_CPU,
-
-        "processes":
-            resource.RLIMIT_NPROC,
-
-        "open_files":
-            resource.RLIMIT_NOFILE,
-
-        "file_size":
-            resource.RLIMIT_FSIZE,
-
-        "core":
-            resource.RLIMIT_CORE,
+        "address_space": resource.RLIMIT_AS,
+        "cpu": resource.RLIMIT_CPU,
+        "processes": resource.RLIMIT_NPROC,
+        "open_files": resource.RLIMIT_NOFILE,
+        "file_size": resource.RLIMIT_FSIZE,
+        "core": resource.RLIMIT_CORE,
     }
 
     for name, which in mapping.items():
 
-        result[name] = (
-            resource.getrlimit(
-                which
-            )
-        )
+        result[name] = resource.getrlimit(which)
 
     return result

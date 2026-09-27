@@ -8,7 +8,6 @@ from bulldog.canonicalizer import (
 )
 from bulldog.models import Capability, Provenance
 
-
 TRUSTED = TrustedExecutionContext(
     actor="host-agent",
     provenance=(Provenance.HUMAN,),
@@ -24,11 +23,13 @@ def _canonicalize(resource: str):
             "resource": resource,
         },
         trusted=TRUSTED,
-        granted_capabilities=frozenset({
-            Capability.FS_READ_PROJECT,
-            Capability.FS_READ_HOME,
-            Capability.CREDENTIAL_READ,
-        }),
+        granted_capabilities=frozenset(
+            {
+                Capability.FS_READ_PROJECT,
+                Capability.FS_READ_HOME,
+                Capability.CREDENTIAL_READ,
+            }
+        ),
     )
 
 

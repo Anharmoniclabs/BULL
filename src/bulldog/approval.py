@@ -4,6 +4,7 @@ Pending requests grant no authority. An approval is an additional requirement,
 never an override of the reference monitor. The database must not be exposed to
 workloads. A consumed request is never automatically retried after interruption.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,14 +20,37 @@ import stat
 import time
 from typing import Callable
 
-from .approval_crypto import ApprovalError, validate_public_key, verify_hardware_signature
+from .approval_crypto import (
+    ApprovalError,
+    validate_public_key,
+    verify_hardware_signature,
+)
 
 FORMAT = "bull-human-approval-v1"
-OPERATIONS = frozenset({"secret.read", "network.request", "publish", "send", "delete", "access.change", "security.change"})
+OPERATIONS = frozenset(
+    {
+        "secret.read",
+        "network.request",
+        "publish",
+        "send",
+        "delete",
+        "access.change",
+        "security.change",
+    }
+)
 
 
 def canonical_bytes(value: dict) -> bytes:
-    return (json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False) + "\n").encode()
+    return (
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode()
 
 
 def digest(value: bytes) -> str:
@@ -47,21 +71,32 @@ class ApprovalRequired(ApprovalError):
 
 
 def validate_config(config: dict) -> dict:
-    if not isinstance(config, dict) or set(config) != {"state_directory", "credentials", "routine_egress_urls", "ttl_seconds"}:
+    if not isinstance(config, dict) or set(config) != {
+        "state_directory",
+        "credentials",
+        "routine_egress_urls",
+        "ttl_seconds",
+    }:
         raise ApprovalError("invalid human_approval configuration fields")
     ttl = config["ttl_seconds"]
     if type(ttl) is not int or not 30 <= ttl <= 600:
         raise ApprovalError("approval lifetime must be 30..600 seconds")
-    if not isinstance(config["state_directory"], str) or not Path(config["state_directory"]).is_absolute():
+    if (
+        not isinstance(config["state_directory"], str)
+        or not Path(config["state_directory"]).is_absolute()
+    ):
         raise ApprovalError("approval state directory must be absolute")
     credentials = config["credentials"]
     if not isinstance(credentials, dict) or not 1 <= len(credentials) <= 32:
         raise ApprovalError("one to 32 enrolled credentials required")
     for identity, public_key in credentials.items():
-        if not isinstance(identity, str) or not re.fullmatch(r"[A-Za-z0-9_.@-]{1,128}", identity):
+        if not isinstance(identity, str) or not re.fullmatch(
+            r"[A-Za-z0-9_.@-]{1,128}", identity
+        ):
             raise ApprovalError("invalid credential identity")
         if isinstance(public_key, dict):
             from .hardware_approval.provider import validate_credential
+
             validate_credential(public_key)
             if ttl != 30:
                 raise ApprovalError("custom hardware requires a 30-second lifetime")
@@ -70,6 +105,7 @@ def validate_config(config: dict) -> dict:
         else:
             raise ApprovalError("invalid enrolled key")
     from urllib.parse import urlsplit
+
     urls = config["routine_egress_urls"]
     if not isinstance(urls, list) or len(urls) > 256:
         raise ApprovalError("routine egress list must be bounded")
@@ -79,12 +115,23 @@ def validate_config(config: dict) -> dict:
         if any(ord(c) <= 32 or ord(c) == 127 for c in url):
             raise ApprovalError("invalid routine URL characters")
         parsed = urlsplit(url)
-        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
-            raise ApprovalError("routine egress requires exact HTTPS URLs without query or fragment")
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ApprovalError(
+                "routine egress requires exact HTTPS URLs without query or fragment"
+            )
     return json.loads(json.dumps(config))
 
 
-def binding_for(action, *, operation: str, parameters: dict, policy_digest: str, session_id: str) -> dict:
+def binding_for(
+    action, *, operation: str, parameters: dict, policy_digest: str, session_id: str
+) -> dict:
     if operation not in OPERATIONS:
         raise ApprovalError("unsupported consequential operation")
     if not session_id or not policy_digest:
@@ -100,7 +147,11 @@ def binding_for(action, *, operation: str, parameters: dict, policy_digest: str,
         "policy_digest": policy_digest,
         "capability": action.capability.value,
         "granted_capabilities": sorted(x.value for x in action.granted_capabilities),
-        "parent_capabilities": None if action.parent_capabilities is None else sorted(x.value for x in action.parent_capabilities),
+        "parent_capabilities": (
+            None
+            if action.parent_capabilities is None
+            else sorted(x.value for x in action.parent_capabilities)
+        ),
         "provenance": [x.value for x in action.provenance],
         "parameters": parameters,
     }
@@ -110,7 +161,9 @@ def binding_for(action, *, operation: str, parameters: dict, policy_digest: str,
 
 
 class ApprovalGate:
-    def __init__(self, config: dict, *, audit: Callable[[str, dict], str], policy_digest: str):
+    def __init__(
+        self, config: dict, *, audit: Callable[[str, dict], str], policy_digest: str
+    ):
         self.config = validate_config(config)
         self.audit = audit
         self.policy_digest = policy_digest
@@ -119,15 +172,28 @@ class ApprovalGate:
         if self.root.resolve(strict=True) != self.root or self.root.is_symlink():
             raise ApprovalError("approval directory must be canonical without symlinks")
         st = self.root.stat()
-        if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o077:
-            raise ApprovalError("approval directory must be owned by service UID and mode 0700")
+        if (
+            not stat.S_ISDIR(st.st_mode)
+            or st.st_uid != os.getuid()
+            or st.st_mode & 0o077
+        ):
+            raise ApprovalError(
+                "approval directory must be owned by service UID and mode 0700"
+            )
         self.path = self.root / "approvals.sqlite3"
         if self.path.exists() or self.path.is_symlink():
             st = self.path.lstat()
-            if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1 or st.st_uid != os.getuid() or st.st_mode & 0o077:
+            if (
+                not stat.S_ISREG(st.st_mode)
+                or st.st_nlink != 1
+                or st.st_uid != os.getuid()
+                or st.st_mode & 0o077
+            ):
                 raise ApprovalError("approval database must be private regular file")
         else:
-            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+            fd = os.open(
+                self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600
+            )
             os.close(fd)
         with self._connect() as db:
             db.executescript("""
@@ -173,13 +239,26 @@ class ApprovalGate:
             if db.execute("SELECT count(*) FROM requests").fetchone()[0] >= 10000:
                 raise ApprovalError("approval record budget reached")
             request_id = secrets.token_hex(32)
-            request = {"format": FORMAT, "request_id": request_id, "issued_at": now,
-                       "expires_at": now + self.config["ttl_seconds"], "action": binding}
+            request = {
+                "format": FORMAT,
+                "request_id": request_id,
+                "issued_at": now,
+                "expires_at": now + self.config["ttl_seconds"],
+                "action": binding,
+            }
             message = canonical_bytes(request)
-            self.audit("approval.requested", {"request_id": request_id,
-                       "binding_digest": digest(encoded), "operation": binding["operation"]})
-            db.execute("INSERT INTO requests VALUES (?, ?, ?, ?, ?, 'pending', NULL, NULL)",
-                       (request_id, digest(encoded), message, now, request["expires_at"]))
+            self.audit(
+                "approval.requested",
+                {
+                    "request_id": request_id,
+                    "binding_digest": digest(encoded),
+                    "operation": binding["operation"],
+                },
+            )
+            db.execute(
+                "INSERT INTO requests VALUES (?, ?, ?, ?, ?, 'pending', NULL, NULL)",
+                (request_id, digest(encoded), message, now, request["expires_at"]),
+            )
             db.commit()
         return request
 
@@ -193,9 +272,13 @@ class ApprovalGate:
             raise ApprovalError("credential is unknown or revoked")
         expected = digest(canonical_bytes(binding))
         with self._connect() as db:
-            row = db.execute("SELECT * FROM requests WHERE id=?", (proof.request_id,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (proof.request_id,)
+            ).fetchone()
         if row is None or row["state"] != "pending" or row["binding"] != expected:
-            raise ApprovalError("approval is missing, changed, cancelled, or already consumed")
+            raise ApprovalError(
+                "approval is missing, changed, cancelled, or already consumed"
+            )
         if binding.get("policy_digest") != self.policy_digest:
             raise ApprovalError("approval policy changed")
         hardware_assertion = None
@@ -203,6 +286,7 @@ class ApprovalGate:
         if isinstance(key, dict):
             from .hardware_approval.protocol import Assertion
             from .hardware_approval.provider import request_for
+
             hardware_assertion = Assertion.decode(proof.signature)
             hardware_request = request_for(bytes(row["message"]), proof.credential_id)
         else:
@@ -210,7 +294,9 @@ class ApprovalGate:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             now = self._now(db)
-            row = db.execute("SELECT * FROM requests WHERE id=?", (proof.request_id,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (proof.request_id,)
+            ).fetchone()
             if row is None or row["state"] != "pending" or row["binding"] != expected:
                 raise ApprovalError("approval has already been consumed or cancelled")
             if now >= row["expires"] or now < row["issued"]:
@@ -220,24 +306,51 @@ class ApprovalGate:
                 from .hardware_approval.protocol import Decision
                 from .hardware_approval.provider import counter_identity
                 from .hardware_approval.verifier import verify
+
                 identity = counter_identity(key)
-                prior = db.execute("SELECT counter FROM hardware_counters WHERE key_identity=?", (identity,)).fetchone()
-                verify(hardware_assertion, hardware_request, public_key=bytes.fromhex(key["public_key"]),
-                       device_id=bytes.fromhex(key["device_id"]), enabled=key["enabled"],
-                       last_counter=prior[0] if prior else 0, now=now)
-                db.execute("INSERT INTO hardware_counters VALUES (?, ?) ON CONFLICT(key_identity) "
-                           "DO UPDATE SET counter=excluded.counter", (identity, hardware_assertion.counter))
+                prior = db.execute(
+                    "SELECT counter FROM hardware_counters WHERE key_identity=?",
+                    (identity,),
+                ).fetchone()
+                verify(
+                    hardware_assertion,
+                    hardware_request,
+                    public_key=bytes.fromhex(key["public_key"]),
+                    device_id=bytes.fromhex(key["device_id"]),
+                    enabled=key["enabled"],
+                    last_counter=prior[0] if prior else 0,
+                    now=now,
+                )
+                db.execute(
+                    "INSERT INTO hardware_counters VALUES (?, ?) ON CONFLICT(key_identity) "
+                    "DO UPDATE SET counter=excluded.counter",
+                    (identity, hardware_assertion.counter),
+                )
                 denied = hardware_assertion.decision == Decision.DENY
             # Commit consumption BEFORE effect/audit delivery. Failure afterwards
             # leaves a terminal, uncertain request, never a replayable approval.
-            db.execute("UPDATE requests SET state=?, credential=?, outcome=? WHERE id=?",
-                       ("denied" if denied else "consumed", proof.credential_id,
-                        "human-denied" if denied else "uncertain", proof.request_id))
+            db.execute(
+                "UPDATE requests SET state=?, credential=?, outcome=? WHERE id=?",
+                (
+                    "denied" if denied else "consumed",
+                    proof.credential_id,
+                    "human-denied" if denied else "uncertain",
+                    proof.request_id,
+                ),
+            )
             db.commit()
-        detail = {"request_id": proof.request_id, "binding_digest": expected, "credential_id": proof.credential_id}
+        detail = {
+            "request_id": proof.request_id,
+            "binding_digest": expected,
+            "credential_id": proof.credential_id,
+        }
         if hardware_assertion is not None:
-            detail.update(provider=key["type"], counter=hardware_assertion.counter,
-                          decision="DENY" if denied else "APPROVE", device_id=key["device_id"])
+            detail.update(
+                provider=key["type"],
+                counter=hardware_assertion.counter,
+                decision="DENY" if denied else "APPROVE",
+                device_id=key["device_id"],
+            )
         self.audit("approval.human_denied" if denied else "approval.consumed", detail)
         if denied:
             raise ApprovalError("physical human denial")
@@ -246,14 +359,23 @@ class ApprovalGate:
     def hardware_request(self, request_id: str, credential_id: str) -> bytes:
         """Export exact pending bytes; never authorizes, signs or changes a request."""
         from .hardware_approval.provider import request_for
+
         credential = self.config["credentials"].get(credential_id)
         if not isinstance(credential, dict) or credential["enabled"] is not True:
-            raise ApprovalError("custom hardware credential is not enrolled and enabled")
+            raise ApprovalError(
+                "custom hardware credential is not enrolled and enabled"
+            )
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             now = self._now(db)
-            row = db.execute("SELECT * FROM requests WHERE id=?", (request_id,)).fetchone()
-            if row is None or row["state"] != "pending" or not row["issued"] <= now < row["expires"]:
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (request_id,)
+            ).fetchone()
+            if (
+                row is None
+                or row["state"] != "pending"
+                or not row["issued"] <= now < row["expires"]
+            ):
                 raise ApprovalError("hardware request is not pending or has expired")
             message = bytes(row["message"])
             if json.loads(message)["action"]["policy_digest"] != self.policy_digest:
@@ -267,19 +389,31 @@ class ApprovalGate:
             raise ApprovalError("invalid approval outcome")
         self.audit("approval.outcome", {"request_id": request_id, "outcome": outcome})
         with self._connect() as db:
-            db.execute("UPDATE requests SET outcome=? WHERE id=? AND state='consumed'", (outcome, request_id))
+            db.execute(
+                "UPDATE requests SET outcome=? WHERE id=? AND state='consumed'",
+                (outcome, request_id),
+            )
 
     def cancel(self, request_id: str) -> None:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             self.audit("approval.cancelled", {"request_id": request_id})
-            db.execute("UPDATE requests SET state='cancelled' WHERE id=? AND state='pending'", (request_id,))
+            db.execute(
+                "UPDATE requests SET state='cancelled' WHERE id=? AND state='pending'",
+                (request_id,),
+            )
             db.commit()
 
     def inspect(self, request_id: str) -> dict:
         with self._connect() as db:
-            row = db.execute("SELECT * FROM requests WHERE id=?", (request_id,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM requests WHERE id=?", (request_id,)
+            ).fetchone()
         if row is None:
             raise ApprovalError("unknown approval request")
-        return {"request": json.loads(row["message"]), "state": row["state"],
-                "credential_id": row["credential"], "outcome": row["outcome"]}
+        return {
+            "request": json.loads(row["message"]),
+            "state": row["state"],
+            "credential_id": row["credential"],
+            "outcome": row["outcome"],
+        }

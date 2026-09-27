@@ -220,11 +220,16 @@ jobs:
           release="$RUNNER_TEMP/release"
           gh attestation verify "${{ steps.rootfs.outputs.path }}" \
             -R "$GITHUB_REPOSITORY" --format json \
+            --bundle "$release/provenance.sigstore.json" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/guest-release.yml" \
+            --source-digest "$GITHUB_SHA" --deny-self-hosted-runners \
             > "$release/provenance-verification.json"
-          predicate="$(PYTHONPATH=src python3 -m bulldog.release_evidence predicate-type \
-            --bundle "$release/guest-sbom.sigstore.json")"
+          predicate="https://cyclonedx.org/bom"
           gh attestation verify "${{ steps.rootfs.outputs.path }}" \
             -R "$GITHUB_REPOSITORY" --predicate-type "$predicate" --format json \
+            --bundle "$release/guest-sbom.sigstore.json" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/guest-release.yml" \
+            --source-digest "$GITHUB_SHA" --deny-self-hosted-runners \
             > "$release/guest-sbom-verification.json"
           python3 - <<'PY'
           import json, os
@@ -247,7 +252,7 @@ jobs:
           PYTHONPATH=src python3 -m bulldog.release_evidence verify \
             --directory "$release" --checksum SHA256SUMS
           PYTHONPATH=src python3 -m bulldog.release_evidence inspect \
-            --directory "$release"
+            --directory "$release" --expected-source "$GITHUB_SHA"
 
       - name: Create the draft versioned GitHub release
         env:

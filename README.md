@@ -2,66 +2,32 @@
 
 # BULL
 
-An experimental, open-source execution firewall for AI agents. The model proposes
-an action; trusted host integration supplies authority. BULL checks that authority,
-constrains execution, and records an authenticated audit checkpoint.
+BULL is an experimental Linux security runtime for AI agents. It checks whether
+an action has permission before running it, limits what the action can access,
+and records the result. The goal is to keep people in control of the systems an
+agent uses.
 
-[Presentation](docs/PRESENTATION.md) · [Evidence](site/data/validation/ab53f56.json) ·
-[Architecture](docs/PRODUCTION_SECURITY.md) · [Publication](https://doi.org/10.5281/zenodo.22923455) ·
-[Contributing](CONTRIBUTING.md)
+A model's request is input, not permission. The operator configures trusted
+policies and approval credentials. BULL mediates operations that are explicitly
+connected to its enforcement paths; it does not intercept every action on a host.
 
-The software release work and hardware host integration are merged into `main`.
-See the [branch integration record](docs/BRANCH_INTEGRATION.md).
-The KB2040 is a diagnostic prototype: no secure element is connected, so it
-cannot authorize protected actions. Live BOOT tests registered two clicks as YES
-and three as NO; these were unsigned diagnostics. See
-[physical test evidence](site/data/hardware/20260923-gestures.json) and
-[hardware status](docs/HARDWARE_AUTHORITY.md).
+[Documentation](docs/README.md) · [Read the code](docs/CODE_READING_GUIDE.md) ·
+[Security model](docs/PRODUCTION_SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
-## What it does
+## Start here
 
-```text
-untrusted proposal → production dispatcher → policy + exact command binding
-                   → constrained execution → authenticated audit receipt
-```
-
-BULL mediates explicitly integrated operations. It is not a system-wide interceptor.
-The host, kernel, operator, policy storage and enrolled approval channel remain
-trusted. Supported execution paths are [listed here](docs/ADAPTER_VALIDATION.md).
-
-Two paths have live evidence: fixed read-only tools in the host Linux namespace
-sandbox, and one-shot QEMU/KVM guests. The standalone multiagent package is
-host-callable development orchestration, not an automatic production adapter.
-
-## Recorded validation
-
-Full deployment evidence below belongs to clean candidate
-[`ab53f56`](https://github.com/Anharmoniclabs/BULL/commit/ab53f563bcbcaf60820acb318b8212796ce502ff).
-Later documentation or packaging commits do not inherit a new live-validation claim.
-
-| Check | Recorded result |
+| You want to… | Start with… |
 |---|---|
-| Local regression | 501 tests + 21 subtests passed; no failures or skips |
-| GitHub validation | All six validation workflows passed on the same commit |
-| Real KVM | Five cases passed: allowed, denied, timeout, cancellation, missing protection |
-| Production enforcement | Strict host, cgroups, signed configuration and external host/guest receipts passed |
-| Fixed-tool adapter | Both tools executed; empty-grant request denied |
-| Controlled recovery | Worker exit, disposable TLS collector restart, explicit reconciliation and injected storage failures tested |
-| Physical approval | Blocked; successful credential release is not demonstrated |
+| Understand the idea | [Five-minute presentation](docs/PRESENTATION.md) |
+| Follow an action through the code | [Code reading guide](docs/CODE_READING_GUIDE.md) |
+| Run source tests | The commands below and [contributor setup](CONTRIBUTING.md) |
+| Configure a deployment | [Deployment guide](docs/REPRODUCIBLE_DEPLOYMENT.md) |
+| Connect fixed BULL tools to a coding agent | [Local MCP connector preview](docs/AGENT_GATEWAY.md); native agent tools remain outside its coverage |
+| Understand the current candidate | [Production assurance](docs/HUMAN_FIRST_PRODUCTION_ASSURANCE.md) |
+| Review a security claim | [Claims and limits](docs/SECURITY_CLAIMS.md) |
 
-The earlier Qwen run completed **40 actions in 11m 47s with two worker-exit
-recoveries**. Those actions used the **host namespace sandbox, not the MicroVM**.
-Its historical source snapshot and 380-test result are
-[separately attributed](docs/evidence/governed-agent-20260922/README.md).
-
-There has been no independent third-party security audit. Persistent VM recovery,
-host power-loss recovery, arbitrary-agent mediation and multi-day reliability
-remain unverified. A receipt does not establish permanent collector retention.
-See [claims and limits](docs/SECURITY_CLAIMS.md).
-
-## Start with source checks
-
-Python 3.11+ and Git are required. These commands do not provision a deployment:
+Python 3.11+ and Git are required. These commands check source code; they do not
+provision a secure deployment:
 
 ```sh
 git clone https://github.com/Anharmoniclabs/BULL.git
@@ -71,14 +37,56 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-Some tests require Linux namespaces, local sockets, OpenSSL and OpenSSH. Missing
-host features are not passing deployment evidence. Follow the
-[contributor setup](CONTRIBUTING.md) for dependencies and scoped checks.
+Some tests need Linux namespaces, local sockets, OpenSSL or OpenSSH. Follow the
+contributor guide for dependencies. A missing host feature is not a passing test.
 
-For real deployment, use the [portable setup guide](docs/REPRODUCIBLE_DEPLOYMENT.md)
-with your own private authority, signed ClamAV databases, delegated cgroups and
-collector. Hardware approval is a separate step. For the bounded local-model
-workflow, use the [governed-agent guide](docs/GOVERNED_AGENT_RUN.md).
+To check the MCP gateway on a supported Linux host, without a cloud account or
+someone else's key, run from the reviewed gateway branch:
+
+```sh
+python3 tools/run_local_agent_gateway.py --install-deps
+```
+
+This creates its own private audit key, provisions a temporary agent account,
+and runs one fixed harmless command through the real MCP connection and checked
+sandbox. It needs sudo, Linux isolation support and usable ClamAV databases.
+Success is `LOCAL TOOL PASS`; the temporary service stops after the check.
+[Local setup and persistent service instructions](docs/AGENT_GATEWAY.md).
+External audit receipts are an optional, separately configured deployment profile.
+
+## What has been observed
+
+Results belong to the source and environment that produced them. The local MCP
+and combined KVM candidate results below are operator-supplied Codespaces
+transcripts; their private images and reports are not included here.
+
+| Source | Observation | Boundary |
+|---|---|---|
+| `8ae922c` | Local MCP qualification reported `LOCAL TOOL PASS`, with all 16 checks true | One fixed command, separate agent account and authenticated local audit; [transcribed evidence and limits](docs/evidence/agent-gateway-local-20260927/README.md) |
+| `e6df4de` | Combined candidate reported 13 passing checks with separate agent and gateway users, nftables and systemd | Disposable Debian KVM candidate; dispatcher workload path and pinned image release remain separate checks |
+| `ab53f56` | Retained record: 501 tests + 21 subtests and five real-KVM cases | Historical deployment snapshot; [record](site/data/validation/ab53f56.json) |
+| Earlier governed-agent run | 40 actions in 11m 47s and two worker-exit recoveries | Host namespace sandbox; [separate evidence](docs/evidence/governed-agent-20260922/README.md) |
+
+See [the candidate's exact scope](docs/HUMAN_FIRST_PRODUCTION_ASSURANCE.md) and
+[the integration history](docs/INTEGRATION_QUALIFICATION_20260927.md). A source edit
+does not inherit a fresh live-test result from an earlier commit.
+
+The [historical MicroVM report](docs/MICROVM_INTEGRATION_REPORT.md) records:
+Five cases passed; external host/guest receipts passed for `ab53f56` as linked
+above. The earlier governed-agent run used the host namespace sandbox, not the MicroVM.
+Persistent VM recovery remains unverified.
+
+## What still needs evidence
+
+The combined candidate has not established the complete production dispatcher
+workload path in a released, pinned networked image. Hardware approval has not
+been demonstrated end to end. The KB2040 remains an unsigned diagnostic prototype;
+see [hardware status](docs/HARDWARE_AUTHORITY.md).
+
+BULL has no independent third-party security audit. Multi-day reliability,
+host power-loss recovery and universal adapter coverage remain unverified. The
+host administrator, kernel and hypervisor remain trusted. No test result here
+establishes immunity to all prompt injection, kernel compromise or VM escape.
 
 ## Publication and citation
 
@@ -97,13 +105,6 @@ The reproducible source/evidence companion is available from the GitHub links ab
 Zenodo. https://doi.org/10.5281/zenodo.22923455
 
 [Publication record and artifact identity](docs/PUBLICATION.md).
-
-## Review and present
-
-- [Five-minute presentation](docs/PRESENTATION.md): problem, boundary, proof and limits.
-- [Latest live-validation record](site/data/validation/ab53f56.json): exact source, image hashes and retained failures.
-- [MicroVM reproduction](microvm/README.md) and [historical integration report](docs/MICROVM_INTEGRATION_REPORT.md).
-- [Engineering site](https://anharmoniclabs.github.io/BULL/): architecture and historical benchmarks; deployment follows its own branch workflow.
 
 ## License and contributions
 

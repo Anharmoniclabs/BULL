@@ -26,9 +26,7 @@
       "STORAGE.SNAPSHOT_SCRATCH",
       "SANDBOX.BACKEND_CERTIFICATION"
     ],
-    "conditional": [
-      "APPROVAL.CONSEQUENTIAL_GATE"
-    ],
+    "conditional": ["APPROVAL.CONSEQUENTIAL_GATE"],
     "release_required": [
       "SUPPLY.CYCLONEDX_GUEST_SBOM",
       "SUPPLY.SLSA_PROVENANCE",
@@ -49,30 +47,14 @@
       "title": "Explicit capability enforcement before effects",
       "phase": "source",
       "evidence": {
-        "source": [
-          "src/bulldog/policy.py",
-          "src/bulldog/dispatcher.py",
-          "src/bulldog/profiles.py"
-        ],
-        "tests": [
-          "tests/test_policy.py",
-          "tests/test_full_argv_and_production_wiring.py"
-        ]
+        "source": ["src/bulldog/policy.py", "src/bulldog/dispatcher.py", "src/bulldog/profiles.py"],
+        "tests": ["tests/test_policy.py", "tests/test_full_argv_and_production_wiring.py"]
       },
       "frameworks": {
-        "nist-800-53": [
-          "AC-3",
-          "AC-6"
-        ],
-        "nist-csf-2.0": [
-          "PR.AA-05"
-        ],
-        "owasp-llm-2025": [
-          "LLM06"
-        ],
-        "cis-v8.1": [
-          "6"
-        ]
+        "nist-800-53": ["AC-3", "AC-6"],
+        "nist-csf-2.0": ["PR.AA-05"],
+        "owasp-llm-2025": ["LLM06"],
+        "cis-v8.1": ["6"]
       }
     },
     {
@@ -80,24 +62,15 @@
       "title": "Exact host-authorized argv binding",
       "phase": "source",
       "evidence": {
-        "source": [
-          "src/bulldog/dispatcher.py",
-          "src/bulldog/profiles.py"
-        ],
+        "source": ["src/bulldog/dispatcher.py", "src/bulldog/profiles.py"],
         "tests": [
           "tests/test_full_argv_and_production_wiring.py",
           "tests/test_redteam_authorization_binding.py"
         ]
       },
       "frameworks": {
-        "nist-800-53": [
-          "AC-3",
-          "AC-6"
-        ],
-        "owasp-llm-2025": [
-          "LLM05",
-          "LLM06"
-        ]
+        "nist-800-53": ["AC-3", "AC-6"],
+        "owasp-llm-2025": ["LLM05", "LLM06"]
       }
     },
     {
@@ -105,24 +78,13 @@
       "title": "Child authority cannot exceed parent domain ceiling",
       "phase": "source",
       "evidence": {
-        "source": [
-          "src/bulldog/security_domain.py"
-        ],
-        "tests": [
-          "tests/test_security_domains.py"
-        ]
+        "source": ["src/bulldog/security_domain.py"],
+        "tests": ["tests/test_security_domains.py"]
       },
       "frameworks": {
-        "nist-800-53": [
-          "AC-3",
-          "AC-6"
-        ],
-        "nist-csf-2.0": [
-          "PR.AA-05"
-        ],
-        "owasp-llm-2025": [
-          "LLM06"
-        ]
+        "nist-800-53": ["AC-3", "AC-6"],
+        "nist-csf-2.0": ["PR.AA-05"],
+        "owasp-llm-2025": ["LLM06"]
       }
     },
     {
@@ -143,20 +105,9 @@
         ]
       },
       "frameworks": {
-        "nist-800-53": [
-          "SI-3",
-          "SI-7",
-          "SI-10"
-        ],
-        "owasp-llm-2025": [
-          "LLM03",
-          "LLM04",
-          "LLM05"
-        ],
-        "cis-v8.1": [
-          "10",
-          "16"
-        ]
+        "nist-800-53": ["SI-3", "SI-7", "SI-10"],
+        "owasp-llm-2025": ["LLM03", "LLM04", "LLM05"],
+        "cis-v8.1": ["10", "16"]
       }
     },
     {
@@ -170,20 +121,11 @@
           "src/bulldog/pinned_egress.py",
           "src/bulldog/dispatcher.py"
         ],
-        "tests": [
-          "tests/test_policy_hardening_v2.py",
-          "tests/test_security_domains.py"
-        ]
+        "tests": ["tests/test_policy_hardening_v2.py", "tests/test_security_domains.py"]
       },
       "frameworks": {
-        "nist-800-53": [
-          "AC-4",
-          "SC-7"
-        ],
-        "owasp-llm-2025": [
-          "LLM02",
-          "LLM06"
-        ]
+        "nist-800-53": ["AC-4", "SC-7"],
+        "owasp-llm-2025": ["LLM02", "LLM06"]
       }
     },
     {
@@ -191,26 +133,13 @@
       "title": "Tamper-evident local audit chain",
       "phase": "source",
       "evidence": {
-        "source": [
-          "src/bulldog/audit.py"
-        ],
-        "tests": [
-          "tests/test_audit_integrity.py",
-          "tests/test_audit_fail_closed.py"
-        ]
+        "source": ["src/bulldog/audit.py"],
+        "tests": ["tests/test_audit_integrity.py", "tests/test_audit_fail_closed.py"]
       },
       "frameworks": {
-        "nist-800-53": [
-          "AU-2",
-          "AU-9",
-          "AU-12"
-        ],
-        "cis-v8.1": [
-          "8"
-        ],
-        "eu-ai-act": [
-          "Article 12"
-        ]
+        "nist-800-53": ["AU-2", "AU-9", "AU-12"],
+        "cis-v8.1": ["8"],
+        "eu-ai-act": ["Article 12"]
       }
     },
     {
@@ -226,16 +155,9 @@
         "tests": []
       },
       "frameworks": {
-        "nist-ssdf": [
-          "PW",
-          "RV"
-        ],
-        "cis-v8.1": [
-          "16"
-        ],
-        "owasp-llm-2025": [
-          "LLM03"
-        ]
+        "nist-ssdf": ["PW", "RV"],
+        "cis-v8.1": ["16"],
+        "owasp-llm-2025": ["LLM03"]
       }
     },
     {
@@ -243,13 +165,8 @@
       "title": "Signed deployment policy is configured and verifies",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "AC-3",
-          "SI-7"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ]
+        "nist-800-53": ["AC-3", "SI-7"],
+        "nist-csf-2.0": ["PR.PS"]
       }
     },
     {
@@ -257,15 +174,9 @@
       "title": "Signed trusted-runtime integrity manifest verifies",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "SI-7"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ],
-        "owasp-llm-2025": [
-          "LLM03"
-        ]
+        "nist-800-53": ["SI-7"],
+        "nist-csf-2.0": ["PR.PS"],
+        "owasp-llm-2025": ["LLM03"]
       }
     },
     {
@@ -273,16 +184,9 @@
       "title": "Authenticated production audit anchor is configured",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "AU-9",
-          "AU-12"
-        ],
-        "nist-csf-2.0": [
-          "DE.CM"
-        ],
-        "cis-v8.1": [
-          "8"
-        ]
+        "nist-800-53": ["AU-9", "AU-12"],
+        "nist-csf-2.0": ["DE.CM"],
+        "cis-v8.1": ["8"]
       }
     },
     {
@@ -290,13 +194,8 @@
       "title": "Production audit ledger has a usable host-owned path",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "AU-2",
-          "AU-12"
-        ],
-        "cis-v8.1": [
-          "8"
-        ]
+        "nist-800-53": ["AU-2", "AU-12"],
+        "cis-v8.1": ["8"]
       }
     },
     {
@@ -304,14 +203,8 @@
       "title": "Private bounded production snapshot scratch is configured",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "CM-7",
-          "SC-39",
-          "SI-7"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ]
+        "nist-800-53": ["CM-7", "SC-39", "SI-7"],
+        "nist-csf-2.0": ["PR.PS"]
       }
     },
     {
@@ -319,14 +212,8 @@
       "title": "Required sandbox backend prerequisites and requested attestation pass",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "CM-7",
-          "SC-39"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS",
-          "PR.IR"
-        ]
+        "nist-800-53": ["CM-7", "SC-39"],
+        "nist-csf-2.0": ["PR.PS", "PR.IR"]
       }
     },
     {
@@ -334,12 +221,8 @@
       "title": "Delegated cgroup v2 boundary is configured",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "SC-39"
-        ],
-        "owasp-llm-2025": [
-          "LLM10"
-        ]
+        "nist-800-53": ["SC-39"],
+        "owasp-llm-2025": ["LLM10"]
       }
     },
     {
@@ -347,16 +230,9 @@
       "title": "Strict seccomp profile is installed and attested",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "CM-7",
-          "SC-39"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ],
-        "owasp-llm-2025": [
-          "LLM06"
-        ]
+        "nist-800-53": ["CM-7", "SC-39"],
+        "nist-csf-2.0": ["PR.PS"],
+        "owasp-llm-2025": ["LLM06"]
       }
     },
     {
@@ -364,13 +240,8 @@
       "title": "Landlock filesystem restriction is installed and attested",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "AC-3",
-          "SC-39"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ]
+        "nist-800-53": ["AC-3", "SC-39"],
+        "nist-csf-2.0": ["PR.PS"]
       }
     },
     {
@@ -378,13 +249,8 @@
       "title": "no_new_privs is installed and attested",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "CM-7",
-          "SC-39"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ]
+        "nist-800-53": ["CM-7", "SC-39"],
+        "nist-csf-2.0": ["PR.PS"]
       }
     },
     {
@@ -392,15 +258,8 @@
       "title": "Workload network namespace is isolated and attested",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "AC-4",
-          "SC-7",
-          "SC-39"
-        ],
-        "owasp-llm-2025": [
-          "LLM02",
-          "LLM06"
-        ]
+        "nist-800-53": ["AC-4", "SC-7", "SC-39"],
+        "owasp-llm-2025": ["LLM02", "LLM06"]
       }
     },
     {
@@ -408,12 +267,8 @@
       "title": "Trusted sandbox bootstrap is PID 1 in its PID namespace",
       "phase": "deployment",
       "frameworks": {
-        "nist-800-53": [
-          "SC-39"
-        ],
-        "nist-csf-2.0": [
-          "PR.PS"
-        ]
+        "nist-800-53": ["SC-39"],
+        "nist-csf-2.0": ["PR.PS"]
       }
     },
     {
@@ -422,15 +277,9 @@
       "phase": "deployment",
       "conditional": true,
       "frameworks": {
-        "nist-ai-rmf": [
-          "MANAGE"
-        ],
-        "owasp-llm-2025": [
-          "LLM06"
-        ],
-        "eu-ai-act": [
-          "Article 14"
-        ]
+        "nist-ai-rmf": ["MANAGE"],
+        "owasp-llm-2025": ["LLM06"],
+        "eu-ai-act": ["Article 14"]
       }
     },
     {
@@ -438,13 +287,8 @@
       "title": "Guest release includes a validated CycloneDX SBOM",
       "phase": "release",
       "frameworks": {
-        "nist-ssdf": [
-          "PS",
-          "PW"
-        ],
-        "owasp-llm-2025": [
-          "LLM03"
-        ]
+        "nist-ssdf": ["PS", "PW"],
+        "owasp-llm-2025": ["LLM03"]
       }
     },
     {
@@ -452,13 +296,8 @@
       "title": "Release subjects receive SLSA build provenance in in-toto format",
       "phase": "release",
       "frameworks": {
-        "nist-ssdf": [
-          "PS",
-          "PW"
-        ],
-        "slsa-v1.2": [
-          "Build provenance"
-        ]
+        "nist-ssdf": ["PS", "PW"],
+        "slsa-v1.2": ["Build provenance"]
       }
     },
     {
@@ -466,12 +305,8 @@
       "title": "Release attestations use short-lived Sigstore identity",
       "phase": "release",
       "frameworks": {
-        "nist-ssdf": [
-          "PS"
-        ],
-        "slsa-v1.2": [
-          "Build provenance"
-        ]
+        "nist-ssdf": ["PS"],
+        "slsa-v1.2": ["Build provenance"]
       }
     },
     {
@@ -479,13 +314,8 @@
       "title": "Release workflow verifies generated provenance before publication",
       "phase": "release",
       "frameworks": {
-        "nist-ssdf": [
-          "PS",
-          "PW"
-        ],
-        "slsa-v1.2": [
-          "Build provenance"
-        ]
+        "nist-ssdf": ["PS", "PW"],
+        "slsa-v1.2": ["Build provenance"]
       }
     },
     {
@@ -493,9 +323,7 @@
       "title": "Organization operates an independently certified ISO/IEC 27001 ISMS",
       "phase": "external",
       "frameworks": {
-        "iso-27001": [
-          "ISMS"
-        ]
+        "iso-27001": ["ISMS"]
       }
     },
     {
@@ -503,9 +331,7 @@
       "title": "Service organization has an applicable independent SOC 2 examination",
       "phase": "external",
       "frameworks": {
-        "soc-2": [
-          "Trust Services Criteria"
-        ]
+        "soc-2": ["Trust Services Criteria"]
       }
     },
     {
@@ -513,9 +339,7 @@
       "title": "Deployment uses an applicable CMVP-validated cryptographic module and environment",
       "phase": "external",
       "frameworks": {
-        "fips-140-3": [
-          "CMVP"
-        ]
+        "fips-140-3": ["CMVP"]
       }
     },
     {
@@ -523,9 +347,7 @@
       "title": "Applicable AI system obligations and conformity assessment are satisfied",
       "phase": "external",
       "frameworks": {
-        "eu-ai-act": [
-          "Articles 9-15 and applicable conformity obligations"
-        ]
+        "eu-ai-act": ["Articles 9-15 and applicable conformity obligations"]
       }
     },
     {
@@ -533,9 +355,7 @@
       "title": "Covered entity satisfies applicable NIS2 organizational and reporting obligations",
       "phase": "external",
       "frameworks": {
-        "nis2": [
-          "Article 21 and national transposition"
-        ]
+        "nis2": ["Article 21 and national transposition"]
       }
     }
   ]

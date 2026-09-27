@@ -1,3 +1,5 @@
+"""Describe bounded project contents for workspace admission."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -141,9 +143,7 @@ def build_manifest(
                     ) from exc
 
                 if stat.S_ISLNK(st.st_mode):
-                    raise FilesystemManifestViolation(
-                        f"symlink rejected: {relative}"
-                    )
+                    raise FilesystemManifestViolation(f"symlink rejected: {relative}")
 
                 if require_same_device and st.st_dev != root_device:
                     raise FilesystemManifestViolation(
@@ -156,12 +156,7 @@ def build_manifest(
                     )
 
                 if stat.S_ISDIR(st.st_mode):
-                    flags = (
-                        os.O_RDONLY
-                        | os.O_DIRECTORY
-                        | os.O_NOFOLLOW
-                        | os.O_CLOEXEC
-                    )
+                    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
                     try:
                         child_fd = os.open(name, flags, dir_fd=dir_fd)
                     except OSError as exc:
@@ -202,9 +197,7 @@ def build_manifest(
                     )
 
                 if st.st_nlink > 1:
-                    raise FilesystemManifestViolation(
-                        "hardlink rejected: " + relative
-                    )
+                    raise FilesystemManifestViolation("hardlink rejected: " + relative)
                 if st.st_size > budget.max_file_bytes:
                     raise FilesystemManifestViolation(
                         f"file exceeds size limit ({budget.max_file_bytes}): {relative}"

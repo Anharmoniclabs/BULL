@@ -1,3 +1,5 @@
+"""Create admitted workspace snapshots before workload execution."""
+
 from __future__ import annotations
 
 from contextlib import nullcontext
@@ -161,9 +163,7 @@ def _copy_file(
                 break
             copied += len(block)
             if copied > entry.size:
-                raise SnapshotViolation(
-                    f"source grew while snapshotting: {entry.path}"
-                )
+                raise SnapshotViolation(f"source grew while snapshotting: {entry.path}")
             digest.update(block)
             view = memoryview(block)
             while view:
@@ -171,18 +171,14 @@ def _copy_file(
                 view = view[written:]
 
         if copied != entry.size or digest.hexdigest() != entry.sha256:
-            raise SnapshotViolation(
-                f"source changed while snapshotting: {entry.path}"
-            )
+            raise SnapshotViolation(f"source changed while snapshotting: {entry.path}")
         after = os.fstat(source_fd)
         if (
             after.st_dev != entry.device
             or after.st_ino != entry.inode
             or after.st_size != entry.size
         ):
-            raise SnapshotViolation(
-                f"source changed after snapshot copy: {entry.path}"
-            )
+            raise SnapshotViolation(f"source changed after snapshot copy: {entry.path}")
         os.fsync(destination_fd)
         readonly_mode = 0o444 | (entry.mode & 0o111)
         os.fchmod(destination_fd, readonly_mode)
@@ -383,11 +379,14 @@ def create_snapshot_isolated(
                 timeout=budget.snapshot_timeout_seconds + 5.0,
                 env=_worker_environment(budget),
                 cwd="/",
-                preexec_fn=(lambda: _limits(active_scope)) if os.name == "posix" else None,
+                preexec_fn=(
+                    (lambda: _limits(active_scope)) if os.name == "posix" else None
+                ),
             )
         if proc.returncode != 0:
             raise SnapshotViolation(
-                "isolated snapshot worker failed: " + (proc.stderr.strip()[-2000:] or "unknown error")
+                "isolated snapshot worker failed: "
+                + (proc.stderr.strip()[-2000:] or "unknown error")
             )
 
         lines = [line for line in proc.stdout.splitlines() if line.strip()]
@@ -398,7 +397,9 @@ def create_snapshot_isolated(
         try:
             snapshot_path.relative_to(worker_root)
         except ValueError as exc:
-            raise SnapshotViolation("snapshot worker returned path outside scratch scope") from exc
+            raise SnapshotViolation(
+                "snapshot worker returned path outside scratch scope"
+            ) from exc
         if Path(str(data["source_root"])).resolve(strict=True) != source:
             raise SnapshotViolation("snapshot worker source identity mismatch")
 
@@ -409,7 +410,13 @@ def create_snapshot_isolated(
             snapshot_hash=str(data["snapshot_hash"]),
             cleanup_root=worker_root,
         )
-    except (subprocess.TimeoutExpired, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+    except (
+        subprocess.TimeoutExpired,
+        OSError,
+        ValueError,
+        KeyError,
+        json.JSONDecodeError,
+    ) as exc:
         try:
             _force_remove_tree(worker_root)
         except OSError:

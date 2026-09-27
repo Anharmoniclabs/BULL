@@ -1,3 +1,5 @@
+"""Define bounded file, byte and path limits for workspace admission."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -82,11 +84,14 @@ class WorkspaceBudget:
             raise WorkspaceLimitViolation(
                 "maximum file size cannot exceed maximum workspace size"
             )
-        if min(
-            self.manifest_timeout_seconds,
-            self.snapshot_timeout_seconds,
-            self.malware_scan_timeout_seconds,
-        ) <= 0:
+        if (
+            min(
+                self.manifest_timeout_seconds,
+                self.snapshot_timeout_seconds,
+                self.malware_scan_timeout_seconds,
+            )
+            <= 0
+        ):
             raise WorkspaceLimitViolation("workspace timeouts must be positive")
 
 

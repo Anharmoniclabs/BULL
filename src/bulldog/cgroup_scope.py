@@ -1,3 +1,5 @@
+"""Place workloads in delegated cgroups and manage their resource limits."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -74,7 +74,12 @@ chmod 1777 "$ROOTFS/tmp"
 
 mount --bind "$PROJECT" "$ROOTFS/workspace"
 if [ "$PROJECT_MODE" = "ro" ]; then
-    mount -o remount,bind,ro "$ROOTFS/workspace"
+    mount -o remount,bind,ro,nosuid,nodev "$ROOTFS/workspace"
+elif [ "$PROJECT_MODE" = "rw" ]; then
+    mount -o remount,bind,rw,nosuid,nodev "$ROOTFS/workspace"
+else
+    echo "invalid workspace mode" >&2
+    exit 70
 fi
 
 mount --bind "$RUNTIME_ROOT" "$ROOTFS/bull_runtime"

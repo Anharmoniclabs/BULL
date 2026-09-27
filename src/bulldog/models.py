@@ -1,3 +1,5 @@
+"""Shared action, capability, provenance and decision data structures."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -58,8 +60,12 @@ class ActionRequest:
             operation=data["operation"],
             resource=data["resource"],
             capability=Capability(data["capability"]),
-            granted_capabilities=frozenset(Capability(x) for x in data.get("granted_capabilities", [])),
-            provenance=tuple(Provenance(x) for x in data.get("provenance", ["unknown"])),
+            granted_capabilities=frozenset(
+                Capability(x) for x in data.get("granted_capabilities", [])
+            ),
+            provenance=tuple(
+                Provenance(x) for x in data.get("provenance", ["unknown"])
+            ),
             parent_capabilities=(
                 frozenset(Capability(x) for x in data["parent_capabilities"])
                 if data.get("parent_capabilities") is not None
@@ -80,4 +86,7 @@ class Evaluation:
 
 
 def has_external_provenance(values: Iterable[Provenance]) -> bool:
-    return any(v in {Provenance.INTERNET, Provenance.EXTERNAL_AGENT, Provenance.UNKNOWN} for v in values)
+    return any(
+        v in {Provenance.INTERNET, Provenance.EXTERNAL_AGENT, Provenance.UNKNOWN}
+        for v in values
+    )
