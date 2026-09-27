@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from tools.deployment_check import probe_kvm, source_identity
 
 NEEDED = ("debootstrap", "mkfs.ext4", "qemu-system-x86_64", "sudo")
-EXPECTED = {"gateway_uid", "allowed_http", "denied_http", "ipv4_alt_closed",
+EXPECTED = {"gateway_uid", "direct_gateway_http", "allowed_http", "denied_http", "ipv4_alt_closed",
             "ipv6_alt_closed", "ipv6_web_closed", "filter_drop_counters",
             "denied_dns", "gateway_down_closed", "restart_still_denies"}
 

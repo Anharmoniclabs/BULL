@@ -19,8 +19,8 @@ def command(*args):
 
 
 def request(host, port, payload):
-    with socket.create_connection((host, port), timeout=2) as sock:
-        sock.settimeout(2)
+    with socket.create_connection((host, port), timeout=5) as sock:
+        sock.settimeout(5)
         sock.sendall(payload)
         result = bytearray()
         while True:
@@ -106,8 +106,12 @@ def main():
         ready(process)
         checks["gateway_uid"] = int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
             int(open(f"/proc/{process.pid}/status").read().split("Uid:", 1)[1].split()[0]) == 23456
+        allowed_payload = b"GET /ok HTTP/1.1\r\nHost: allowed.test\r\nConnection: close\r\n\r\n"
+        phase = "direct gateway HTTP relay"
+        direct = request("127.0.0.1", 9443, allowed_payload)
+        checks["direct_gateway_http"] = b"200 OK" in direct and b"BULL-GUEST-ORIGIN" in direct
         phase = "allowed HTTP redirect"
-        allowed = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: allowed.test\r\nConnection: close\r\n\r\n")
+        allowed = request("10.0.2.2", 80, allowed_payload)
         checks["allowed_http"] = b"200 OK" in allowed and b"BULL-GUEST-ORIGIN" in allowed
         phase = "denied HTTP redirect"
         denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
