@@ -11,6 +11,7 @@ dependencies = []
 
 [project.optional-dependencies]
 hardware = ["cryptography>=43,<51"]
+egress = ["cryptography>=43,<51"]
 test = ["pytest>=8,<10", "cryptography>=43,<51", "build>=1,<2"]
 
 [project.urls]
@@ -37,7 +38,7 @@ where = ["src"]
 include = ["bulldog*"]
 
 [tool.setuptools.package-data]
-bulldog = ["_namespace_launcher.sh", "data/*.json"]
+bulldog = ["_namespace_launcher.sh", "data/*.json", "console_static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
