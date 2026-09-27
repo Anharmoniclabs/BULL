@@ -13,6 +13,7 @@ from .socket_hardening import (
     HardeningError,
     accept_authenticated,
     bind_private_unix_socket,
+    require_peer_uid,
 )
 import ssl
 import struct
@@ -167,6 +168,7 @@ class EgressBroker:
 
     def _handle(self, conn):
         try:
+            conn.settimeout(self.timeout)
             peer = self._authorize_peer(conn)
             request = json.loads(self._read_line(conn))
             method = str(request.get("method", "GET")).upper()
@@ -191,7 +193,11 @@ class EgressBroker:
         except Exception as exc:
             payload = {"ok": False, "error": str(exc)}
             self._emit({"event": "egress", "allowed": False, "error": str(exc)})
-        conn.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+        try:
+            conn.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+        except OSError:
+            # A cancelled client must not kill the broker's accept loop.
+            return
 
     def fetch(self, *, method: str, url: str) -> EgressResponse:
         method = method.upper()
@@ -326,15 +332,18 @@ def broker_fetch(
     url: str,
     method: str = "GET",
     timeout: float = 10.0,
+    server_uid: int | None = None,
 ) -> EgressResponse:
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.settimeout(timeout)
     try:
         client.connect(str(socket_path))
+        require_peer_uid(client, server_uid)
         client.sendall(
             (json.dumps({"method": method, "url": url}) + "\n").encode("utf-8")
         )
-        response = json.loads(EgressBroker._read_line(client))
+        # A 1 MiB broker body is hex encoded on the wire, plus bounded metadata.
+        response = json.loads(EgressBroker._read_line(client, limit=3 * 1024 * 1024))
         if not response.get("ok"):
             raise EgressDenied(response.get("error", "egress request denied"))
         return EgressResponse(
@@ -344,3 +353,26 @@ def broker_fetch(
         )
     finally:
         client.close()
+
+
+@dataclass(frozen=True)
+class EgressClient:
+    """Production transport: every fetch crosses a peer-verified Unix socket.
+
+    Run the broker as a separate process under the authority UID, with its socket
+    in a private directory inaccessible to the agent's distinct UID.
+    """
+
+    socket_path: Path
+    server_uid: int
+    timeout: float = 10.0
+    peer_auth_enforced = True
+
+    def fetch(self, *, method: str, url: str) -> EgressResponse:
+        return broker_fetch(
+            socket_path=self.socket_path,
+            method=method,
+            url=url,
+            timeout=self.timeout,
+            server_uid=self.server_uid,
+        )

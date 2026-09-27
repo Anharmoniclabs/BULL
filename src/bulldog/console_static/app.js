@@ -433,6 +433,7 @@
   function renderIntegration(x) {
     var i = x.integration || {},
       names = {
+        agent_connector: "Agent connector coverage",
         lifecycle: "Lifecycle governance",
         egress: "Production egress enforcement",
         gateway_systemd: "Systemd gateway KVM candidate",

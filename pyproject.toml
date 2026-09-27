@@ -12,6 +12,7 @@ dependencies = []
 [project.optional-dependencies]
 hardware = ["cryptography>=43,<51"]
 egress = ["cryptography>=43,<51"]
+mcp = ["mcp==2.2.0"]
 test = ["pytest>=8,<10", "cryptography>=43,<51", "build>=1,<2"]
 
 [project.urls]
@@ -21,6 +22,7 @@ Security = "https://github.com/Anharmoniclabs/BULL/security/policy"
 
 [project.scripts]
 bull = "bulldog.cli:main"
+bull-mcp = "bulldog.mcp_gateway:main"
 
 [build-system]
 requires = ["setuptools>=77"]

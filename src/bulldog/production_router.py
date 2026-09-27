@@ -38,6 +38,8 @@ class ProductionEffectRouter:
             or effect.operation not in self.OPERATIONS
         ):
             raise DispatchDenied("effect has no production adapter; deny by default")
+        if not isinstance(effect.request, DispatchRequest):
+            raise DispatchDenied("effect requires a host-issued DispatchRequest")
         params = effect.parameters
         if not isinstance(params, dict):
             raise DispatchDenied("effect parameters must be a host-validated object")
@@ -65,15 +67,33 @@ class ProductionEffectRouter:
                 effect.request, tuple(argv), project_root=root, timeout=float(timeout)
             )
         if effect.operation == "network.request":
-            if set(params) != {"url", "method", "headers", "body"}:
+            if set(params) not in (
+                {"url", "method"},
+                {"url", "method", "headers", "body"},
+            ):
+                raise DispatchDenied("network adapter requires exact URL and method")
+            # Older callers supplied empty payload fields. Preserve that shape,
+            # but never silently discard an actual body or header.
+            if params.get("headers", {}) != {} or params.get("body") not in (
+                None,
+                b"",
+                "",
+            ):
                 raise DispatchDenied(
-                    "network adapter requires exact URL, method, headers and body"
+                    "network headers and request bodies are unsupported"
+                )
+            if (
+                not isinstance(params["url"], str)
+                or not 1 <= len(params["url"]) <= 8192
+                or params["method"] not in ("GET", "HEAD")
+            ):
+                raise DispatchDenied(
+                    "network adapter supports bounded GET/HEAD requests only"
                 )
             return self.dispatcher.fetch_egress(
                 url=params["url"],
                 method=params["method"],
-                headers=params["headers"],
-                body=params["body"],
+                domain_id=effect.request.domain_id,
                 request=effect.request,
                 approval=approval,
             )
@@ -85,6 +105,7 @@ class ProductionEffectRouter:
             token=params["token"],
             name=params["name"],
             sandbox_id=params["sandbox_id"],
+            domain_id=effect.request.domain_id,
             request=effect.request,
             approval=approval,
         )
@@ -95,6 +116,8 @@ class ProductionEffectRouter:
             "routable": sorted(cls.OPERATIONS),
             "default": "DENY",
             "human_approval": ["network.request", "secret.read"],
+            "approval_exceptions": ["signed policy-authorized routine GET/HEAD URLs"],
+            "network_methods": ["GET", "HEAD"],
             "unsupported": [
                 "message.send",
                 "publish",

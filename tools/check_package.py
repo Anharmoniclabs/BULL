@@ -77,6 +77,9 @@ def main():
             "/licenses/THIRD_PARTY_NOTICES.md",
             "bulldog/_namespace_launcher.sh",
             "bulldog/data/assurance_controls.json",
+            "bulldog/data/agent_gateway_release.json",
+            "bulldog/agent_gateway.py",
+            "bulldog/mcp_gateway.py",
         ):
             if not any(name.endswith(suffix) for name in names):
                 raise RuntimeError("missing wheel material: " + suffix)
@@ -98,6 +101,8 @@ def main():
     )
     run(str(environment / "bin/bull"), "--help")
     run(str(environment / "bin/bull"), "assurance", "status", "--help")
+    run(str(environment / "bin/bull"), "gateway", "coverage")
+    run(str(environment / "bin/bull-mcp"), "--help")
     hashes = {
         p.name: hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(artifacts.iterdir())

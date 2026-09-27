@@ -17,6 +17,7 @@ Installed development metadata reviewed on 2026-09-23 records:
 | setuptools | 84.0.0 | MIT | Packaging |
 | wheel | 0.48.0 | MIT | Packaging |
 | build | 1.6.1 | MIT | Source distribution and wheel validation |
+| mcp | 2.2.0 | MIT | Optional local MCP connector; metadata reviewed 2026-09-27 |
 
 Version ranges in pyproject.toml permit other versions. These are direct tools,
 not an exhaustive dependency SBOM. Redistributors must retain the notices for

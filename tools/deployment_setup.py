@@ -119,7 +119,9 @@ def public_key(path):
     return key
 
 
-def policy_for(state, project, key, approval=None, capabilities=None):
+def policy_for(
+    state, project, key, approval=None, capabilities=None, agent_gateway=None
+):
     config = None
     if approval is not None:
         config = {
@@ -134,6 +136,7 @@ def policy_for(state, project, key, approval=None, capabilities=None):
         key=key,
         key_id="deployment-policy",
         human_approval=config,
+        agent_gateway=agent_gateway,
     )
 
 
@@ -148,6 +151,7 @@ def initialize(
     assets=None,
     cgroup_parent=None,
     capabilities=None,
+    gateway_registry=None,
 ):
     state = canonical_path(state, exists=False)
     project = canonical_path(project)
@@ -178,6 +182,17 @@ def initialize(
     )
     if not capabilities:
         raise ValueError("at least one explicit capability is required")
+    agent_gateway = None
+    if gateway_registry is not None:
+        from bulldog.agent_tool_registry import validate_gateway_config
+
+        agent_gateway = validate_gateway_config(
+            json.loads(canonical_path(gateway_registry).read_text())
+        )
+        if agent_gateway["agent_uid"] == os.geteuid():
+            raise ValueError(
+                "gateway agent UID must differ from deployment authority UID"
+            )
     if (
         set(capabilities)
         & {
@@ -221,7 +236,8 @@ def initialize(
     )
     write_new(state / "integrity.json", manifest)
     write_new(
-        state / "policy.json", policy_for(state, project, pk, enrolled, capabilities)
+        state / "policy.json",
+        policy_for(state, project, pk, enrolled, capabilities, agent_gateway),
     )
     if enrolled:
         write_new(state / "approval.pub", (enrolled + "\n").encode())
@@ -240,6 +256,8 @@ def initialize(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip(),
     }
+    if agent_gateway is not None:
+        config["agent_gateway"] = agent_gateway
     write_new(state / "deployment.json", config)
     return state
 
@@ -263,7 +281,7 @@ def read_config(state):
     }
     if (
         not isinstance(config, dict)
-        or set(config) != required
+        or set(config) not in (required, required | {"agent_gateway"})
         or config["format"] != FORMAT
     ):
         raise ValueError("unsupported deployment configuration")
@@ -311,7 +329,12 @@ def environment(state):
         public_key(state / "approval.pub") if config["approval_enrolled"] else None
     )
     expected = policy_for(
-        state, config["project_root"], pk, enrolled, config["capabilities"]
+        state,
+        config["project_root"],
+        pk,
+        enrolled,
+        config["capabilities"],
+        config.get("agent_gateway"),
     )
     if policy != expected:
         raise ValueError("signed approval policy does not match this deployment")
@@ -429,6 +452,11 @@ def main(argv=None):
     init.add_argument("--assets", type=Path)
     init.add_argument("--cgroup-parent", type=Path)
     init.add_argument(
+        "--gateway-registry",
+        type=Path,
+        help="Reviewed fixed-tool lease; signed into a new deployment",
+    )
+    init.add_argument(
         "--capability",
         action="append",
         choices=[c.value for c in Capability],
@@ -469,6 +497,7 @@ def main(argv=None):
                 assets=args.assets,
                 cgroup_parent=args.cgroup_parent,
                 capabilities=args.capability,
+                gateway_registry=args.gateway_registry,
             )
         elif args.command == "configure":
             configure(

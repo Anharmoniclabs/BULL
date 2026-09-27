@@ -60,6 +60,13 @@ def _action_hash(action: ActionRequest) -> str:
 def _verify_broker_boundary(label: str, broker: object | None) -> None:
     if broker is None:
         return
+    if label == "egress":
+        from .egress_proxy import EgressClient
+
+        if type(broker) is not EgressClient:
+            raise DispatchDenied(
+                "production egress requires an authenticated EgressClient transport"
+            )
     if getattr(broker, "peer_auth_enforced", False) is not True:
         raise DispatchDenied(
             f"production {label} broker must enforce Unix peer credentials"

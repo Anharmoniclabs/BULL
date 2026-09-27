@@ -40,6 +40,7 @@ def sign_policy_bundle(
     key: bytes | str,
     key_id: str = "deployment-policy",
     human_approval: dict | None = None,
+    agent_gateway: dict | None = None,
 ) -> dict:
     if isinstance(key, str):
         key = key.encode("utf-8")
@@ -61,6 +62,10 @@ def sign_policy_bundle(
         from .approval import validate_config
 
         payload["human_approval"] = validate_config(human_approval)
+    if agent_gateway is not None:
+        from .agent_tool_registry import validate_gateway_config
+
+        payload["agent_gateway"] = validate_gateway_config(agent_gateway)
     payload["signature"]["value"] = hmac.new(
         key,
         _canonical_bytes(payload),
@@ -109,6 +114,10 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
         from .approval import validate_config
 
         validate_config(payload["human_approval"])
+    if "agent_gateway" in payload:
+        from .agent_tool_registry import validate_gateway_config
+
+        validate_gateway_config(payload["agent_gateway"])
 
     return PolicyBundle(
         project_root=project_root,

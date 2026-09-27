@@ -425,6 +425,8 @@ class CapabilityDispatcher:
         timeout: float = 3.0,
         approval=None,
     ) -> str:
+        if request is not None and request.domain_id != domain_id:
+            raise DispatchDenied("broker request domain does not match host authority")
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
 
@@ -509,6 +511,8 @@ class CapabilityDispatcher:
         request: DispatchRequest | None = None,
         approval=None,
     ) -> EgressResponse:
+        if request is not None and request.domain_id != domain_id:
+            raise DispatchDenied("broker request domain does not match host authority")
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
 

@@ -9,6 +9,9 @@ the process, and what is recorded if it fails?
 | File | Responsibility | Important boundary |
 |---|---|---|
 | `src/bulldog/production_router.py` | Route three named effect types to the production dispatcher | Rejects unknown operations; does not intercept arbitrary Python calls |
+| `src/bulldog/agent_gateway.py` | Admit fixed tools from a signed host registry | Connected tools only; native agent tools remain outside coverage |
+| `src/bulldog/agent_session.py` | Persist lease usage and uncertain outcomes | No automatic replay or silent reset of behavioral history |
+| `src/bulldog/mcp_gateway.py` | Translate bounded MCP requests to authenticated local IPC | Unprivileged connector; no policy keys, shell, or credentials |
 | `src/bulldog/profiles.py` | Apply production dispatch requirements and invoke execution or brokers | Holds policy checks and the broker approval/journal path |
 | `src/bulldog/dispatcher.py` | Define requests and dispatch decisions | A request is not itself an authorization |
 | `src/bulldog/effect_journal.py` | Record an effect before dispatch and retain uncertain outcomes | Prevents automatic redispatch of a consumed key; does not guarantee remote exactly-once delivery |
@@ -28,15 +31,15 @@ operation and parameter names before calling one of three dispatcher methods:
 | Operation | Parameters | Dispatcher method |
 |---|---|---|
 | `process.execute` | `argv`, `project_root`, `timeout` | `execute` |
-| `network.request` | `url`, `method`, `headers`, `body` | `fetch_egress` |
+| `network.request` | `url`, `method` (GET/HEAD only) | `fetch_egress` |
 | `secret.read` | `token`, `name`, `sandbox_id` | `get_secret` |
 
-These are the router's current input fields, not evidence that every route is
-working. The network route passes `headers` and `body` to a dispatcher method
-that does not accept them. The network and secret routes also omit the explicit
-domain identity required by a domain-enabled dispatcher. The
-[enterprise agent gateway plan](ENTERPRISE_AGENT_GATEWAY_PLAN.md) records these
-contract fixes and their test requirements before adding an MCP interface.
+The router forwards the host-issued domain identity for both broker paths.
+Legacy empty `headers` and `body` fields are accepted for compatibility; actual
+payloads are rejected. Production egress requires `EgressClient`, which crosses
+the Unix socket and verifies the server identity. A broker object with a boolean
+peer-auth flag cannot replace this transport. See the
+[gateway implementation guide](AGENT_GATEWAY.md) for the connected-mode scope.
 
 Unknown operations are denied at this entry point. This is a coverage boundary:
 other adapters must deliberately use it before they can inherit its checks.

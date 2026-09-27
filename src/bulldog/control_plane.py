@@ -1104,6 +1104,11 @@ class ControlPlane:
             "malware": malware,
             "microvm": microvm,
             "integration": {
+                "agent_connector": {
+                    "status": "UNQUALIFIED",
+                    "detail": "Fixed-tool MCP connector is available. Native agent tools and other plugins are outside its coverage.",
+                    "evidence": "Signed registry and ProductionDispatcher path; no managed-agent or enterprise deployment qualification supplied",
+                },
                 "lifecycle": {
                     "status": "IMPLEMENTED",
                     "detail": "Packaged one-command host bridge to ProductionDispatcher; no whole-runtime mediation claim.",

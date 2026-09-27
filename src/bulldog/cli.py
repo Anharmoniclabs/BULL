@@ -73,6 +73,11 @@ def _run_policy(args: argparse.Namespace) -> int:
         return 2
 
     capabilities = args.capability or [cap.value for cap in Capability]
+    if args.gateway_config and not args.capability:
+        print(
+            "gateway policy requires explicit --capability selections", file=sys.stderr
+        )
+        return 2
     try:
         signed = sign_policy_bundle(
             project_root=args.project_root,
@@ -82,6 +87,11 @@ def _run_policy(args: argparse.Namespace) -> int:
             human_approval=(
                 json.loads(args.approval_config.read_text())
                 if args.approval_config
+                else None
+            ),
+            agent_gateway=(
+                json.loads(args.gateway_config.read_text())
+                if args.gateway_config
                 else None
             ),
         )
@@ -354,6 +364,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     policy_parser.add_argument("--project-root", default="/workspace")
     policy_parser.add_argument(
+        "--gateway-config",
+        type=Path,
+        help="Reviewed fixed-tool gateway lease to include in signed policy",
+    )
+    policy_parser.add_argument(
         "--capability",
         action="append",
         choices=[cap.value for cap in Capability],
@@ -367,9 +382,11 @@ def build_parser() -> argparse.ArgumentParser:
     policy_parser.set_defaults(handler=_run_policy)
     from .approval_cli import add_parser as add_approval_parser
     from .hardware_approval.cli import add_parser as add_hardware_parser
+    from .gateway_cli import add_parser as add_gateway_parser
 
     add_hardware_parser(subparsers)
     add_approval_parser(subparsers)
+    add_gateway_parser(subparsers)
     return parser
 
 
