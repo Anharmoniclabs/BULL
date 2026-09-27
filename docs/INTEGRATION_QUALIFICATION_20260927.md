@@ -117,6 +117,9 @@ report and share only the printed summary. A PASS qualifies this **disposable
 Debian KVM lab image and direct init startup**, not the published offline BULL
 image or the production systemd unit. The gateway remains unverified in the
 main console until that exact deployment path has its own evidence reader.
+If a build is blocked after debootstrap, rerun the latest clean source with
+`--resume /tmp/bull-gateway-kvm-EXISTING` to reuse that private guest directory
+and avoid downloading the Debian packages again.
 
 For the broader production qualification gate, run:
 

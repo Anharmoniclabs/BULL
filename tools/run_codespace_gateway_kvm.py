@@ -45,17 +45,35 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def build(directory):
+def build(directory, *, resume=False):
     rootfs = directory / "rootfs"
     log = directory / "build.log"
-    print("Building disposable signed-package Debian guest (this can take several minutes)...", flush=True)
-    run(["sudo", "-n", "debootstrap", "--arch=amd64", "--variant=minbase",
-         "--include=linux-image-amd64,python3,nftables,iproute2,util-linux,kmod,passwd",
-         "bookworm", str(rootfs), "https://deb.debian.org/debian"], log=log)
-    kernel = sorted((rootfs / "boot").glob("vmlinuz-*"))
-    initrd = sorted((rootfs / "boot").glob("initrd.img-*"))
-    if len(kernel) != 1 or len(initrd) != 1:
-        raise RuntimeError("expected one Debian kernel and one initrd; inspect private build.log")
+    if resume:
+        run(["sudo", "-n", "test", "-d", str(rootfs / "boot")])
+        print("Reusing signed-package guest from private blocked run...", flush=True)
+    else:
+        print("Building disposable signed-package Debian guest (this can take several minutes)...", flush=True)
+        run(["sudo", "-n", "debootstrap", "--arch=amd64", "--variant=minbase",
+             "--include=linux-image-amd64,python3,nftables,iproute2,util-linux,kmod,passwd",
+             "bookworm", str(rootfs), "https://deb.debian.org/debian"], log=log)
+    # debootstrap owns /boot as root. Stage the boot assets through sudo into
+    # the user's private run directory; QEMU itself remains unprivileged.
+    def boot_asset(pattern, name):
+        found = run(["sudo", "-n", "find", str(rootfs / "boot"), "-maxdepth", "1",
+                     "-type", "f", "-name", pattern, "-print"]).splitlines()
+        if len(found) != 1:
+            raise RuntimeError("expected one Debian " + name + "; inspect private build.log")
+        source = Path(found[0])
+        if source.parent != rootfs / "boot":
+            raise RuntimeError("boot asset path escaped guest root")
+        target = directory / name
+        run(["sudo", "-n", "cp", "--", str(source), str(target)])
+        run(["sudo", "-n", "chown", str(os.getuid()) + ":" + str(os.getgid()), str(target)])
+        target.chmod(0o600)
+        return target
+
+    kernel = boot_asset("vmlinuz-*", "vmlinuz")
+    initrd = boot_asset("initrd.img-*", "initrd.img")
     run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/groupadd", "--gid", "23456", "bullgw"])
     run(["sudo", "-n", "chroot", str(rootfs), "/usr/sbin/useradd", "--system", "--uid", "23456",
          "--gid", "23456", "--no-create-home", "--shell", "/usr/sbin/nologin", "bullgw"])
@@ -81,7 +99,7 @@ def build(directory):
         stream.truncate(size)
     run(["sudo", "-n", "mkfs.ext4", "-q", "-F", "-d", str(rootfs), str(image)], log=log)
     image.chmod(0o600)
-    return kernel[0], initrd[0], image
+    return kernel, initrd, image
 
 
 def boot(directory, kernel, initrd, image):
@@ -135,9 +153,21 @@ def boot(directory, kernel, initrd, image):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--install-deps", action="store_true")
+    parser.add_argument("--resume", type=Path, help="private /tmp/bull-gateway-kvm-* directory from a blocked build")
     args = parser.parse_args()
     os.umask(0o077)
-    directory = Path(tempfile.mkdtemp(prefix="bull-gateway-kvm-", dir="/tmp"))
+    if args.resume:
+        directory = args.resume.absolute()
+        info = directory.lstat()
+        if (directory.parent != Path("/tmp") or not directory.name.startswith("bull-gateway-kvm-")
+                or directory.is_symlink() or not directory.is_dir() or info.st_uid != os.getuid()
+                or info.st_mode & 0o077):
+            parser.error("--resume requires an owned private BULL gateway lab directory directly under /tmp")
+        previous = json.loads((directory / "setup-report.json").read_text())
+        if previous.get("status") != "BLOCKED" or previous.get("evidence_directory") != str(directory):
+            parser.error("--resume requires a blocked BULL gateway setup report")
+    else:
+        directory = Path(tempfile.mkdtemp(prefix="bull-gateway-kvm-", dir="/tmp"))
     source = source_identity()
     report = {"status": "BLOCKED", "source_commit": source["commit"],
               "source_dirty": source["dirty"], "evidence_directory": str(directory),
@@ -161,7 +191,7 @@ def main():
         run(["sudo", "-n", "true"])
         if shutil.disk_usage("/tmp").free < 5 * 1024**3:
             raise RuntimeError("at least 5 GiB free in /tmp required for disposable guest build")
-        kernel, initrd, image = build(directory)
+        kernel, initrd, image = build(directory, resume=bool(args.resume))
         report["guest_assets"] = {name: digest(path) for name, path in
                                   (("kernel", kernel), ("initrd", initrd), ("rootfs", image))}
         print("Booting networked KVM lab guest (QEMU restrict=on)...", flush=True)
