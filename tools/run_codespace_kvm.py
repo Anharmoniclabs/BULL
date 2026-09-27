@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 from tools.deployment_check import checked_assets, probe_kvm, source_identity
+from bulldog.release_evidence import read_checksums
 
 RELEASE = "guest-2026-09-22"
 FILES = ("bzImage", "rootfs.ext4", "qboot.rom", "assets.json", "build.json",
@@ -46,16 +47,16 @@ def obtain_assets(directory: Path) -> Path:
     subprocess.run(command, check=True)
     if any(not (release / filename).is_file() for filename in FILES):
         raise RuntimeError("release is missing one of the required image, manifest or checksum files")
-    expected = {}
-    for line in (release / "SHA256SUMS").read_text().splitlines():
-        parts = line.split("  ", 1)
-        if len(parts) == 2 and parts[1] in FILES:
-            if parts[1] in expected:
-                raise RuntimeError("duplicate release checksum: " + parts[1])
-            expected[parts[1]] = parts[0]
-    if set(expected) != set(FILES) - {"SHA256SUMS"}:
-        raise RuntimeError("required release checksums missing")
+    expected = read_checksums(release / "SHA256SUMS")
+    images = {"bzImage", "rootfs.ext4", "qboot.rom"}
+    if not images <= set(expected):
+        raise RuntimeError("image release checksums missing: " + ", ".join(sorted(images - set(expected))))
+    # Older guest releases cover the VM images but may omit release metadata.
+    # Verify all downloaded files that do have entries; the image hashes are
+    # mandatory, and assets.json must independently agree with each image.
     for filename, sha in expected.items():
+        if filename not in FILES:
+            continue
         with (release / filename).open("rb") as stream:
             actual = hashlib.file_digest(stream, "sha256").hexdigest()
         if actual != sha:
