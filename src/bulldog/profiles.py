@@ -99,21 +99,22 @@ class DevelopmentRuntime(BulldogRuntime):
         super().__init__(**kwargs)
 
 
-class ProductionRuntime(BulldogRuntime):
-    """Fail-closed production runtime assembled from verified host state."""
+class _EnforcedRuntime(BulldogRuntime):
+    """Shared execution safeguards; named profiles choose the audit boundary."""
 
-    production_boundary = True
+    production_boundary = False
+    local_boundary = False
 
     def __init__(self, **kwargs):
         if kwargs:
             forbidden = ", ".join(sorted(kwargs))
             raise TypeError(
-                "ProductionRuntime does not accept caller-supplied security "
+                f"{type(self).__name__} does not accept caller-supplied security "
                 f"components ({forbidden}); use the signed deployment profile"
             )
 
         package_root = Path(__file__).resolve().parent
-        verify_production_environment(package_root=package_root)
+        self._verify_environment(package_root=package_root)
 
         self._package_root = package_root
         self._integrity_manifest_path = Path(
@@ -134,10 +135,7 @@ class ProductionRuntime(BulldogRuntime):
             global_capability_ceiling=policy_bundle.capability_ceiling,
         )
 
-        ledger = AuditLedger(
-            os.environ["BULL_AUDIT_LEDGER"],
-            transport=production_transport_from_environment(),
-        )
+        ledger = self._audit_ledger()
         engine = BulldogEngine(policy=policy, ledger=ledger)
         budget = WorkspaceBudget.from_environment()
         scanner = MalwareScanner(
@@ -267,6 +265,39 @@ class ProductionRuntime(BulldogRuntime):
         )
 
 
+class ProductionRuntime(_EnforcedRuntime):
+    """Strict execution with authenticated external audit receipts."""
+
+    production_boundary = True
+    audit_mode = "external"
+
+    def _verify_environment(self, *, package_root):
+        verify_production_environment(package_root=package_root)
+
+    def _audit_ledger(self):
+        return AuditLedger(
+            os.environ["BULL_AUDIT_LEDGER"],
+            transport=production_transport_from_environment(),
+        )
+
+
+class LocalRuntime(_EnforcedRuntime):
+    """Strict execution with authenticated audit retained on the trusted host."""
+
+    local_boundary = True
+    audit_mode = "local"
+
+    def _verify_environment(self, *, package_root):
+        from .local_gate import verify_local_environment
+
+        verify_local_environment(package_root=package_root)
+
+    def _audit_ledger(self):
+        from .local_audit import local_ledger_from_environment
+
+        return local_ledger_from_environment()
+
+
 class DevelopmentDispatcher(CapabilityDispatcher):
     def __init__(self, *, runtime: BulldogRuntime | None = None, **kwargs):
         warnings.warn(DEVELOPMENT_WARNING, RuntimeWarning, stacklevel=2)
@@ -277,7 +308,82 @@ class DevelopmentDispatcher(CapabilityDispatcher):
         )
 
 
-class ProductionDispatcher(CapabilityDispatcher):
+class _EnforcedDispatcher(CapabilityDispatcher):
+    """Exact host command binding, integrity checks and one execution permit."""
+
+    def execute(
+        self,
+        request: DispatchRequest,
+        command: Sequence[str],
+        *,
+        project_root: str | Path,
+        timeout: float = 30.0,
+    ):
+        self.runtime.verify_trusted_state()
+        action = self._bind_execution(self.canonicalize(request), command, request)
+        if self.domain_registry is not None:
+            assert request.domain_id is not None
+            try:
+                self.domain_registry.record_dispatch(
+                    request.domain_id,
+                    capability=action.capability,
+                    resource=action.resource,
+                    command=command,
+                )
+            except SecurityDomainError as exc:
+                raise DispatchDenied(str(exc)) from exc
+        permit = self.runtime._mint_dispatch_permit(action, command)
+        result = self.runtime.execute(
+            action,
+            command,
+            project_root=project_root,
+            timeout=timeout,
+            permit=permit,
+        )
+        if (
+            self.domain_registry is not None
+            and self.freeze_on_violation
+            and request.domain_id is not None
+        ):
+            behavioral_violation = any(
+                str(reason).startswith("session behavior:")
+                for reason in result.evaluation.reasons
+            )
+            if result.evaluation.hard_block or behavioral_violation:
+                domain = self.domain_registry.get(request.domain_id)
+                self.domain_registry.freeze_root(
+                    domain.root_domain_id,
+                    (
+                        "hard policy block"
+                        if result.evaluation.hard_block
+                        else "cross-agent behavioral violation"
+                    ),
+                )
+        return result
+
+
+class LocalDispatcher(_EnforcedDispatcher):
+    def __init__(self, *, runtime: LocalRuntime | None = None, **kwargs):
+        runtime = runtime if runtime is not None else LocalRuntime()
+        if not isinstance(runtime, LocalRuntime):
+            raise DispatchDenied("LocalDispatcher requires LocalRuntime")
+        if (
+            kwargs.get("egress_broker") is not None
+            or kwargs.get("secret_broker") is not None
+        ):
+            raise DispatchDenied(
+                "local profile does not expose network or secret brokers"
+            )
+        super().__init__(runtime=runtime, local_mode=True, **kwargs)
+
+    def _evaluate_broker_action(self, action):
+        raise DispatchDenied("local profile does not permit broker effects")
+
+    def _perform_broker_effect(self, *args, **kwargs):
+        raise DispatchDenied("local profile does not permit broker effects")
+
+
+class ProductionDispatcher(_EnforcedDispatcher):
     def __init__(self, *, runtime: ProductionRuntime | None = None, **kwargs):
         production_runtime = runtime if runtime is not None else ProductionRuntime()
         if getattr(production_runtime, "production_boundary", False) is not True:
@@ -347,60 +453,4 @@ class ProductionDispatcher(CapabilityDispatcher):
             receipt=hashlib.sha256(repr(result).encode("utf-8", "replace")).hexdigest(),
         )
         gate.finish(request_id, "completed")
-        return result
-
-    def execute(
-        self,
-        request: DispatchRequest,
-        command: Sequence[str],
-        *,
-        project_root: str | Path,
-        timeout: float = 30.0,
-    ):
-        self.runtime.verify_trusted_state()
-        action = self._bind_execution(
-            self.canonicalize(request),
-            command,
-            request,
-        )
-        if self.domain_registry is not None:
-            assert request.domain_id is not None
-            try:
-                self.domain_registry.record_dispatch(
-                    request.domain_id,
-                    capability=action.capability,
-                    resource=action.resource,
-                    command=command,
-                )
-            except SecurityDomainError as exc:
-                raise DispatchDenied(str(exc)) from exc
-
-        permit = self.runtime._mint_dispatch_permit(action, command)
-        result = self.runtime.execute(
-            action,
-            command,
-            project_root=project_root,
-            timeout=timeout,
-            permit=permit,
-        )
-
-        if (
-            self.domain_registry is not None
-            and self.freeze_on_violation
-            and request.domain_id is not None
-        ):
-            behavioral_violation = any(
-                str(reason).startswith("session behavior:")
-                for reason in result.evaluation.reasons
-            )
-            if result.evaluation.hard_block or behavioral_violation:
-                domain = self.domain_registry.get(request.domain_id)
-                self.domain_registry.freeze_root(
-                    domain.root_domain_id,
-                    (
-                        "hard policy block"
-                        if result.evaluation.hard_block
-                        else "cross-agent behavioral violation"
-                    ),
-                )
         return result

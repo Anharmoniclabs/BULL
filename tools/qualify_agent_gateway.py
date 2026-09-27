@@ -40,6 +40,13 @@ def validate_execution_result(data, expected_argv=None):
         )
 
 
+def validate_audit_mode(coverage, expected):
+    if expected not in {"local", "external"} or coverage.get("audit_mode") != expected:
+        raise ValueError(
+            "authority audit profile does not match selected qualification"
+        )
+
+
 async def mcp_check(args):
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
@@ -84,6 +91,9 @@ def main():
     parser.add_argument("--tool", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
+        "--audit-mode", choices=("local", "external"), default="external"
+    )
+    parser.add_argument(
         "--expect-argv-json", help="Expected fixed process argv; also require exit zero"
     )
     args = parser.parse_args()
@@ -105,6 +115,7 @@ def main():
         "scope": "local connected tools; no native-agent containment",
         "checks": {},
         "enterprise_qualified": False,
+        "audit_mode": args.audit_mode,
     }
     # Refuse to replace evidence, follow a symlink, or accidentally print output.
     fd = os.open(
@@ -150,6 +161,8 @@ def main():
         if before["result"]["coverage"]["whole_agent_contained"] is not False:
             raise ValueError("coverage mismatch")
         report["checks"]["coverage_disclosed"] = True
+        validate_audit_mode(before["result"]["coverage"], args.audit_mode)
+        report["checks"]["audit_profile_matches"] = True
         # Check rejected input through the real authority transport and verify
         # that it did not even consume an effect admission.
         spoof = ipc(
@@ -180,7 +193,9 @@ def main():
         )
         if not all(report["checks"].values()):
             raise ValueError("post-execution admission accounting failed")
-        report["status"] = "CONNECTED TOOL PASS"
+        report["status"] = (
+            "LOCAL TOOL PASS" if args.audit_mode == "local" else "CONNECTED TOOL PASS"
+        )
     except Exception as exc:
         report["reason"] = type(exc).__name__ + ": " + str(exc)[:512]
     with os.fdopen(fd, "w") as stream:
@@ -195,7 +210,7 @@ def main():
             }
         )
     )
-    return 0 if report["status"] == "CONNECTED TOOL PASS" else 1
+    return 0 if report["status"] in {"LOCAL TOOL PASS", "CONNECTED TOOL PASS"} else 1
 
 
 if __name__ == "__main__":

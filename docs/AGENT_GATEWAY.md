@@ -3,8 +3,10 @@
 BULL now has a local MCP connector backed by a separate authority service. The
 operator signs a small menu of fixed tools. The agent can select a tool; it
 cannot choose a new command, destination, permission, account or approval key.
-Every supported effect enters `ProductionEffectRouter` and
-`ProductionDispatcher`.
+The local profile routes fixed process tools through `LocalEffectRouter` and
+`LocalDispatcher`. The external-audit profile uses `ProductionEffectRouter` and
+`ProductionDispatcher`. Both share exact command binding and the same execution
+safeguards; their audit evidence is different.
 
 This is a **connected-tool preview**, not an enterprise release or a contained
 coding-agent session. Codex or Claude can still use their own shell, browser,
@@ -18,7 +20,7 @@ this connector as evidence that the whole computer is protected.
 flowchart TD
     Agent["Coding agent"] --> Bridge["Unprivileged MCP connector"]
     Bridge -->|"Kernel-authenticated Unix socket"| Authority["Host authority: signed tools and lease"]
-    Authority --> Router["Production dispatcher"]
+    Authority --> Router["Selected enforcement profile"]
     Router --> Sandbox["Checked Linux sandbox"]
     Router --> Broker["Private egress broker process"]
     Authority --> Journal["Private audit and attempt journal"]
@@ -51,6 +53,41 @@ Transport cancellation is not an immediate process kill: a started operation
 can continue up to its production limits and its outcome remains in the audit.
 
 ## Install and check the code
+
+**No founder key, Cloudflare account or hosted BULL service is needed for local
+use.** Each local installation creates its own private signing and audit keys.
+The key previously requested by the production runner authenticates receipts
+from an external audit collector. It is not a Git push or software license key.
+
+On a supported Linux host, from a clean checkout of this gateway branch:
+
+```bash
+python3 tools/run_local_agent_gateway.py --install-deps
+```
+
+This is a bounded installation check, not a persistent agent session. It creates
+a temporary locked agent account, signs one fixed `/usr/bin/true` tool, runs an
+actual MCP exchange and verifies the local authenticated audit against the
+observed command/result. It removes its temporary service and account afterward.
+Keep the printed evidence directory; share only `report.json`.
+
+Sudo is needed for the temporary account and delegated cgroup. Linux namespaces,
+strict seccomp, dynamic sandbox checks, workspace limits and real malware scanning
+remain required. `--install-deps` installs OS packages; ClamAV needs usable official
+databases. Missing host protections or databases remain an explicit failure.
+Use `--preflight` for read-only host checks before provisioning.
+
+| Profile | Audit evidence | Credentials | Passing live result |
+|---|---|---|---|
+| Local | Hash chain with authenticated checkpoint on your machine | Generated privately for this installation | `LOCAL TOOL PASS` |
+| External | Authenticated receipts from your separately configured HTTPS collector | Your collector's matching key | `CONNECTED TOOL PASS` |
+
+Local auditing detects changed records, missing checkpoints and a log that no
+longer matches its authenticated checkpoint. It cannot establish off-machine
+retention or resist a trusted host administrator replacing both log and key.
+The separate agent account cannot read the key or alter the authority's state.
+Local mode exposes no network or secret broker. It never silently replaces a
+failed external-audit run, and neither result qualifies an enterprise release.
 
 Use this integration branch in a clean checkout:
 
@@ -90,9 +127,10 @@ Provision these directories through your normal Linux administration:
 - Installed BULL code and approved executables: outside the agent's write access.
   Review fixed interpreter scripts and repository contents as untrusted data.
 
-The authority account also needs a verified production deployment: signed
-runtime manifest and policy, authenticated audit transport, delegated cgroup,
-strict sandbox protections and the other existing production gates. Follow
+The authority account also needs a verified deployment: signed runtime manifest
+and policy, authenticated local checkpoint or external audit transport, delegated
+cgroup, and strict sandbox protections. The local profile retains all execution
+checks and requires its own authenticated checkpoint. Follow
 [deployment setup](REPRODUCIBLE_DEPLOYMENT.md). This feature does not turn off a
 failed gate to get a service running.
 
@@ -129,6 +167,21 @@ operator hands until it is signed. Default project-read/process capabilities are
 enough for this example; do not grant all capabilities. A network registry still
 needs the separate production approval configuration. The connector deliberately
 leaves consequential requests pending rather than inventing an approval.
+
+For a local installation, include `--audit-mode local` in the init command:
+
+```bash
+python3 tools/deployment_setup.py init --audit-mode local \
+  --state /var/lib/bull-authority/deployment \
+  --project-root /YOUR/REVIEWED/PROJECT \
+  --cgroup-parent /YOUR/DELEGATED/CGROUP \
+  --gateway-registry /tmp/bull-reviewed-registry.json
+```
+
+The authority must own the parent directory. This creates private local keys and
+the initial authenticated checkpoint; no credential is requested from a server.
+`serve_agent_gateway.py` reads the chosen profile from that deployment. Existing
+external-audit deployments remain external; migrating modes requires new state.
 
 Start the authority from the reviewed repository as its account, substituting
 your provisioned paths and agent access group ID:
@@ -171,7 +224,10 @@ The `bull gateway client-config` command prints the corresponding configuration
 data for review without changing client settings. `bull gateway check` checks the
 real authority connection without executing a tool.
 
-## Record a real connection test
+## Record an external-audit connection test
+
+The local command above is the first-run path. The commands in this section are
+for operators who deliberately require independently retained audit receipts.
 
 For a one-shot Codespaces test of the actual production path, run as the normal
 operator from a clean checkout:
@@ -256,6 +312,10 @@ SDK handshake, tool listing, production result and rejected spoofed arguments
 over the real authority connection. The private report contains a result hash,
 not the tool's output. Success is labelled `CONNECTED TOOL PASS`, with
 `enterprise_qualified: false`.
+
+When probing an already running local-audit authority, add `--audit-mode local`.
+The probe checks the authority's reported profile before executing and labels
+success `LOCAL TOOL PASS`. It rejects a profile mismatch.
 
 To stop future admissions, run `bull gateway revoke --state ...` as authority.
 Review the audit before repeating any request with an uncertain outcome. Do not

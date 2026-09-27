@@ -22,6 +22,9 @@ def add_parser(commands):
     service.add_argument("--socket", type=Path, required=True)
     service.add_argument("--agent-gid", type=int, required=True)
     service.add_argument("--egress-socket", type=Path)
+    service.add_argument(
+        "--audit-mode", choices=("local", "external"), default="external"
+    )
     service.set_defaults(handler=run_service)
     broker = sub.add_parser(
         "broker", help="Run a separate private egress broker from the signed registry"
@@ -71,23 +74,37 @@ def run_service(args):
     from .agent_gateway import COVERAGE, GatewayAuthority
     from .egress_proxy import EgressClient
     from .gateway_transport import GatewayServer
-    from .profiles import ProductionDispatcher, ProductionRuntime
+    from .profiles import (
+        LocalDispatcher,
+        LocalRuntime,
+        ProductionDispatcher,
+        ProductionRuntime,
+    )
 
     authority = server = None
     try:
         _nonroot_authority()
-        runtime = ProductionRuntime()
+        audit_mode = getattr(args, "audit_mode", "external")
+        if audit_mode not in {"local", "external"}:
+            raise ValueError("unknown audit profile")
+        if audit_mode == "local" and args.egress_socket:
+            raise ValueError("local audit profile has no egress broker")
+        runtime = LocalRuntime() if audit_mode == "local" else ProductionRuntime()
         egress = (
             EgressClient(args.egress_socket, os.geteuid())
             if args.egress_socket
             else None
         )
+        dispatcher = LocalDispatcher if audit_mode == "local" else ProductionDispatcher
         authority = GatewayAuthority(
-            ProductionDispatcher(runtime=runtime, egress_broker=egress), args.state
+            dispatcher(runtime=runtime, egress_broker=egress), args.state
         )
         server = GatewayServer(authority, args.socket, agent_gid=args.agent_gid)
         signal.signal(signal.SIGTERM, lambda *_: server.close())
-        print(json.dumps({"status": "LISTENING", "coverage": COVERAGE}), flush=True)
+        print(
+            json.dumps({"status": "LISTENING", "coverage": authority.coverage}),
+            flush=True,
+        )
         server.serve()
         return 0
     except KeyboardInterrupt:

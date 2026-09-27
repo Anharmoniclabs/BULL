@@ -26,6 +26,8 @@ CRITICAL_FILES = (
     "pinned_egress.py",
     "socket_hardening.py",
     "audit.py",
+    "local_audit.py",
+    "local_gate.py",
     "audit_transport.py",
     "canonicalizer.py",
     "cgroup_scope.py",

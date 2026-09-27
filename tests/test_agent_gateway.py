@@ -24,7 +24,12 @@ from bulldog.models import Capability, Decision, Evaluation
 from bulldog.policy import DeterministicPolicy
 from bulldog.engine import BulldogEngine
 from bulldog.policy_bundle import sign_policy_bundle
-from bulldog.profiles import ProductionDispatcher, ProductionRuntime
+from bulldog.profiles import (
+    LocalDispatcher,
+    LocalRuntime,
+    ProductionDispatcher,
+    ProductionRuntime,
+)
 from bulldog.runtime import ExecutionResult
 from bulldog.mcp_gateway import validate_rpc
 
@@ -52,8 +57,9 @@ def config():
     }
 
 
-@pytest.fixture
-def gateway(tmp_path):
+@pytest.fixture(params=("external", "local"))
+def gateway(tmp_path, request):
+    local = request.param == "local"
     project = tmp_path / "project"
     project.mkdir()
     state = tmp_path / "state"
@@ -74,15 +80,33 @@ def gateway(tmp_path):
         )
 
     sign()
+    ledger = AuditLedger(tmp_path / "audit.jsonl")
+    if local:
+        from bulldog.local_audit import LocalAuditLedger
+
+        checkpoint = tmp_path / "checkpoint.json"
+        key = b"fixture-installation-audit-key-0000"
+        checkpoint.write_text(
+            json.dumps(
+                {
+                    "sequence": 0,
+                    "head_hash": "",
+                    "mac": AuditLedger._mac(key, sequence=0, head_hash=""),
+                }
+            )
+        )
+        ledger = LocalAuditLedger(
+            tmp_path / "audit.jsonl", anchor_path=checkpoint, anchor_key=key
+        )
     engine = BulldogEngine(
-        ledger=AuditLedger(tmp_path / "audit.jsonl"),
+        ledger=ledger,
         policy=DeterministicPolicy(
             project_root=str(project),
             global_capability_ceiling=frozenset({Capability.PROCESS_EXEC}),
         ),
     )
     # Use the real production binding/permit methods with a recording OS effect.
-    runtime = object.__new__(ProductionRuntime)
+    runtime = object.__new__(LocalRuntime if local else ProductionRuntime)
     runtime._permit_key = b"test-only-permit"
     runtime.engine = engine
     runtime._policy_bundle_path = policy
@@ -101,9 +125,10 @@ def gateway(tmp_path):
         )
 
     runtime.execute = execute
-    dispatcher = object.__new__(ProductionDispatcher)
+    dispatcher = object.__new__(LocalDispatcher if local else ProductionDispatcher)
     dispatcher.runtime = runtime
-    dispatcher.production_mode = True
+    dispatcher.production_mode = not local
+    dispatcher.local_mode = local
     dispatcher.freeze_on_violation = True
     dispatcher.domain_registry = None
     dispatcher.broker_engine = engine

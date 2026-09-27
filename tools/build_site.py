@@ -52,7 +52,12 @@ GROUPS = [
     (
         "Audit and state models",
         "Local hash-chained records, authenticated checkpoint transports, the durable anchor service, and runtime trace abstractions. The guest relay requires a verified acknowledgment; production operators supply their own collector and authority.",
-        "audit.py audit_transport.py anchor_service.py trace_model.py trace_runtime.py",
+        "audit.py local_audit.py local_gate.py audit_transport.py anchor_service.py trace_model.py trace_runtime.py",
+    ),
+    (
+        "Connected MCP tools",
+        "Signed fixed tools, separate agent identity, leases and bounded Unix IPC. Local and external audit profiles disclose their different evidence; native agent tools remain outside this connection.",
+        "agent_gateway.py agent_tool_registry.py agent_session.py gateway_cli.py gateway_transport.py gateway_wire.py mcp_gateway.py data/agent_gateway_release.json",
     ),
     (
         "Assurance and release evidence",

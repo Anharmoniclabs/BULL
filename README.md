@@ -40,6 +40,20 @@ python3 -m venv .venv
 Some tests need Linux namespaces, local sockets, OpenSSL or OpenSSH. Follow the
 contributor guide for dependencies. A missing host feature is not a passing test.
 
+To check the MCP gateway on a supported Linux host, without a cloud account or
+someone else's key, run from the reviewed gateway branch:
+
+```sh
+python3 tools/run_local_agent_gateway.py --install-deps
+```
+
+This creates its own private audit key, provisions a temporary agent account,
+and runs one fixed harmless command through the real MCP connection and checked
+sandbox. It needs sudo, Linux isolation support and usable ClamAV databases.
+Success is `LOCAL TOOL PASS`; the temporary service stops after the check.
+[Local setup and persistent service instructions](docs/AGENT_GATEWAY.md).
+External audit receipts are an optional, separately configured deployment profile.
+
 ## What has been observed
 
 Results belong to the source and environment that produced them. This branch's

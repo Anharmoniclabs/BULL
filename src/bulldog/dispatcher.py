@@ -61,9 +61,17 @@ class CapabilityDispatcher:
         egress_broker: EgressBroker | None = None,
         domain_registry: SecurityDomainRegistry | None = None,
         production_mode: bool = False,
+        local_mode: bool = False,
         freeze_on_violation: bool = True,
     ):
         self.production_mode = bool(production_mode)
+        self.local_mode = bool(local_mode)
+        if self.local_mode and self.production_mode:
+            raise DispatchDenied("choose one explicit audit boundary")
+        if type(self) is CapabilityDispatcher and self.local_mode:
+            raise DispatchDenied(
+                "use LocalDispatcher for the local enforcement profile"
+            )
 
         if type(self) is CapabilityDispatcher and self.production_mode:
             raise DispatchDenied(
@@ -89,6 +97,14 @@ class CapabilityDispatcher:
             verify_production_environment(
                 package_root=Path(__file__).resolve().parent,
             )
+        if self.local_mode:
+            from .local_gate import verify_local_environment
+
+            if runtime is None or getattr(runtime, "local_boundary", False) is not True:
+                raise DispatchDenied(
+                    "local dispatch requires an explicit LocalRuntime boundary"
+                )
+            verify_local_environment(package_root=Path(__file__).resolve().parent)
 
         self.runtime = runtime if runtime is not None else BulldogRuntime()
         self.secret_broker = secret_broker
@@ -103,13 +119,13 @@ class CapabilityDispatcher:
             else BulldogEngine()
         )
 
-        if self.production_mode:
+        if self.production_mode or self.local_mode:
             self._verify_actual_production_runtime()
 
         if self.domain_registry is not None and self.domain_registry.ledger is not None:
             engine = getattr(self.runtime, "engine", None)
             if engine is None:
-                if self.production_mode:
+                if self.production_mode or self.local_mode:
                     raise DispatchDenied(
                         "production runtime is missing its policy engine"
                     )
@@ -129,7 +145,13 @@ class CapabilityDispatcher:
         ledger = getattr(engine, "ledger", None)
         failures = []
 
-        if getattr(self.runtime, "production_boundary", False) is not True:
+        local = getattr(self, "local_mode", False)
+        if local and getattr(self.runtime, "local_boundary", False) is not True:
+            failures.append("runtime is not an explicit LocalRuntime boundary")
+        if (
+            not local
+            and getattr(self.runtime, "production_boundary", False) is not True
+        ):
             failures.append("runtime is not an explicit ProductionRuntime boundary")
         if not callable(getattr(engine, "evaluate", None)):
             failures.append("runtime policy engine is unavailable")
@@ -138,7 +160,15 @@ class CapabilityDispatcher:
         if ledger is None:
             failures.append("runtime audit ledger is unavailable")
         else:
-            if getattr(ledger, "production_anchor_ready", False) is not True:
+            if local:
+                from .local_audit import LocalAuditLedger
+
+                if (
+                    not isinstance(ledger, LocalAuditLedger)
+                    or not ledger.local_anchor_ready
+                ):
+                    failures.append("runtime authenticated local audit is unavailable")
+            elif getattr(ledger, "production_anchor_ready", False) is not True:
                 failures.append(
                     "runtime authenticated production audit transport is unavailable"
                 )
@@ -223,7 +253,9 @@ class CapabilityDispatcher:
             )
 
         authorized = request.authorized_command
-        if self.production_mode and authorized is None:
+        if (
+            self.production_mode or getattr(self, "local_mode", False)
+        ) and authorized is None:
             raise DispatchDenied(
                 "production command dispatch requires host-authorized full argv"
             )

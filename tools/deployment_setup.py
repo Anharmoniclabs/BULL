@@ -152,7 +152,16 @@ def initialize(
     cgroup_parent=None,
     capabilities=None,
     gateway_registry=None,
+    audit_mode="external",
 ):
+    if audit_mode not in {"local", "external"}:
+        raise ValueError("unknown audit profile")
+    if audit_mode == "local" and any(
+        (url, existing_collector_key, approval_public_key, approval_key)
+    ):
+        raise ValueError(
+            "local audit does not accept collector or hardware approval credentials"
+        )
     state = canonical_path(state, exists=False)
     project = canonical_path(project)
     if not project.is_dir():
@@ -182,6 +191,13 @@ def initialize(
     )
     if not capabilities:
         raise ValueError("at least one explicit capability is required")
+    if audit_mode == "local" and not set(capabilities) <= {
+        "fs.read.project",
+        "process.exec",
+    }:
+        raise ValueError(
+            "local gateway supports only project reads and fixed process execution"
+        )
     agent_gateway = None
     if gateway_registry is not None:
         from bulldog.agent_tool_registry import validate_gateway_config
@@ -189,6 +205,10 @@ def initialize(
         agent_gateway = validate_gateway_config(
             json.loads(canonical_path(gateway_registry).read_text())
         )
+        if audit_mode == "local" and any(
+            x["operation"] != "process.execute" for x in agent_gateway["tools"]
+        ):
+            raise ValueError("local gateway supports only fixed process tools")
         if agent_gateway["agent_uid"] == os.geteuid():
             raise ValueError(
                 "gateway agent UID must differ from deployment authority UID"
@@ -228,9 +248,20 @@ def initialize(
     for name, value in (
         ("integrity.key", ik.encode()),
         ("policy.key", pk.encode()),
-        ("collector.key", master),
+        ("local-audit.key" if audit_mode == "local" else "collector.key", master),
     ):
         write_new(state / "secrets" / name, value)
+    if audit_mode == "local":
+        from bulldog.audit import AuditLedger
+
+        write_new(
+            state / "audit/local-checkpoint.json",
+            {
+                "sequence": 0,
+                "head_hash": "",
+                "mac": AuditLedger._mac(master, sequence=0, head_hash=""),
+            },
+        )
     manifest = sign_integrity_manifest(
         build_integrity_manifest(ROOT / "src/bulldog"), ik
     )
@@ -258,6 +289,8 @@ def initialize(
     }
     if agent_gateway is not None:
         config["agent_gateway"] = agent_gateway
+    if audit_mode == "local":
+        config["audit_mode"] = "local"
     write_new(state / "deployment.json", config)
     return state
 
@@ -281,10 +314,19 @@ def read_config(state):
     }
     if (
         not isinstance(config, dict)
-        or set(config) not in (required, required | {"agent_gateway"})
+        or not required <= set(config) <= required | {"agent_gateway", "audit_mode"}
         or config["format"] != FORMAT
     ):
         raise ValueError("unsupported deployment configuration")
+    if config.get("audit_mode", "external") not in {"local", "external"}:
+        raise ValueError("unknown audit profile")
+    if config.get("audit_mode") == "local" and (
+        config["collector_url"]
+        or config["approval_enrolled"]
+        or config["approval_key"]
+        or not set(config["capabilities"]) <= {"fs.read.project", "process.exec"}
+    ):
+        raise ValueError("local deployment includes external authority")
     for name in ("installation_id", "audit_session"):
         if (
             not isinstance(config[name], str)
@@ -314,7 +356,9 @@ def environment(state):
     state, config = read_config(state)
     ik = secret_text(private_read(state / "secrets/integrity.key", maximum=4096))
     pk = secret_text(private_read(state / "secrets/policy.key", maximum=4096))
-    master = secret_text(private_read(state / "secrets/collector.key", maximum=4096))
+    local = config.get("audit_mode") == "local"
+    key_file = state / "secrets" / ("local-audit.key" if local else "collector.key")
+    master = secret_text(private_read(key_file, maximum=4096))
     manifest = json.loads(private_read(state / "integrity.json", maximum=1024 * 1024))
     verify_integrity_manifest(
         ROOT / "src/bulldog", manifest, signature_key=ik, require_signature=True
@@ -359,6 +403,18 @@ def environment(state):
         "BULL_APPROVAL_PUBLIC_KEY": str(state / "approval.pub") if enrolled else None,
     }
     values.update({k: v for k, v in optional.items() if v is not None})
+    if local:
+        for name in (
+            "BULL_AUDIT_TRANSPORT",
+            "BULL_REMOTE_AUDIT_ANCHOR_KEY",
+            "BULL_DEPLOYMENT_ANCHOR_KEY_FILE",
+        ):
+            values.pop(name, None)
+        values.update(
+            BULL_AUDIT_MODE="local",
+            BULL_LOCAL_AUDIT_KEY_FILE=str(key_file),
+            BULL_LOCAL_AUDIT_CHECKPOINT=str(state / "audit/local-checkpoint.json"),
+        )
     return values
 
 
@@ -376,6 +432,8 @@ def isolated_environment(state, inherited=None):
 def configure(state, *, url=None, cgroup_parent=None, assets=None):
     state, config = read_config(state)
     environment(state)  # Refuse to re-sign or repair changed runtime/policy bytes.
+    if config.get("audit_mode") == "local" and url is not None:
+        raise ValueError("external auditing requires a separate deployment")
     if url is not None:
         if (state / "audit/ledger.jsonl").exists() and url != config["collector_url"]:
             raise ValueError(
@@ -446,6 +504,7 @@ def main(argv=None):
     init.add_argument("--state", type=Path, required=True)
     init.add_argument("--project-root", type=Path, required=True)
     init.add_argument("--collector-url")
+    init.add_argument("--audit-mode", choices=("local", "external"), default="external")
     init.add_argument("--existing-collector-key", type=Path)
     init.add_argument("--approval-public-key", type=Path)
     init.add_argument("--approval-key", type=Path)
@@ -498,6 +557,7 @@ def main(argv=None):
                 cgroup_parent=args.cgroup_parent,
                 capabilities=args.capability,
                 gateway_registry=args.gateway_registry,
+                audit_mode=args.audit_mode,
             )
         elif args.command == "configure":
             configure(
@@ -537,7 +597,19 @@ def main(argv=None):
                     **config,
                     "status": "PREPARED_NOT_CERTIFIED",
                     "certified": False,
-                    "collector_key_file": str(state / "secrets/collector.key"),
+                    (
+                        "local_audit_key_file"
+                        if config.get("audit_mode") == "local"
+                        else "collector_key_file"
+                    ): str(
+                        state
+                        / "secrets"
+                        / (
+                            "local-audit.key"
+                            if config.get("audit_mode") == "local"
+                            else "collector.key"
+                        )
+                    ),
                 },
                 indent=2,
             )

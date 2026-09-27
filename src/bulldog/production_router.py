@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .approval import ApprovalProof
 from .dispatcher import DispatchDenied, DispatchRequest
-from .profiles import ProductionDispatcher
+from .profiles import LocalDispatcher, ProductionDispatcher
 
 
 @dataclass(frozen=True)
@@ -21,14 +21,9 @@ class ProductionEffect:
     parameters: dict
 
 
-class ProductionEffectRouter:
+class _EffectRouter:
     # Coverage applies only to callers that enter through dispatch().
     OPERATIONS = frozenset({"process.execute", "network.request", "secret.read"})
-
-    def __init__(self, dispatcher: ProductionDispatcher):
-        if not isinstance(dispatcher, ProductionDispatcher):
-            raise TypeError("ProductionEffectRouter requires ProductionDispatcher")
-        self.dispatcher = dispatcher
 
     def dispatch(
         self, effect: ProductionEffect, *, approval: ApprovalProof | None = None
@@ -126,4 +121,29 @@ class ProductionEffectRouter:
                 "access.change",
                 "security.change",
             ],
+        }
+
+
+class ProductionEffectRouter(_EffectRouter):
+    def __init__(self, dispatcher: ProductionDispatcher):
+        if not isinstance(dispatcher, ProductionDispatcher):
+            raise TypeError("ProductionEffectRouter requires ProductionDispatcher")
+        self.dispatcher = dispatcher
+
+
+class LocalEffectRouter(_EffectRouter):
+    OPERATIONS = frozenset({"process.execute"})
+
+    def __init__(self, dispatcher: LocalDispatcher):
+        if not isinstance(dispatcher, LocalDispatcher):
+            raise TypeError("LocalEffectRouter requires LocalDispatcher")
+        self.dispatcher = dispatcher
+
+    @classmethod
+    def coverage(cls):
+        return {
+            "routable": sorted(cls.OPERATIONS),
+            "default": "DENY",
+            "audit_mode": "local",
+            "broker_effects": "DISABLED",
         }

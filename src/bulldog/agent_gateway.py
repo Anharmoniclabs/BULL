@@ -1,6 +1,6 @@
 """Host authority for connected MCP tools, separate from the agent process.
 
-All effects enter ProductionEffectRouter. This service does not contain the
+All effects enter the selected profile's effect router. This service does not contain the
 agent's native shell, browser, plugins or other MCP servers.
 """
 
@@ -29,8 +29,12 @@ from .gateway_wire import GatewayDenied
 from .integrity import build_integrity_manifest, sha256_file
 from .models import Provenance
 from .policy_bundle import load_policy_bundle
-from .production_router import ProductionEffect, ProductionEffectRouter
-from .profiles import ProductionDispatcher
+from .production_router import (
+    LocalEffectRouter,
+    ProductionEffect,
+    ProductionEffectRouter,
+)
+from .profiles import LocalDispatcher, ProductionDispatcher
 from .runtime import ExecutionResult
 from .security_domain import SecurityDomainRegistry
 
@@ -53,8 +57,15 @@ def _digest(value: dict) -> str:
 
 
 class GatewayAuthority:
-    def __init__(self, dispatcher: ProductionDispatcher, state_directory: Path):
-        self.router = ProductionEffectRouter(dispatcher)
+    def __init__(
+        self, dispatcher: ProductionDispatcher | LocalDispatcher, state_directory: Path
+    ):
+        self.router = (
+            LocalEffectRouter(dispatcher)
+            if isinstance(dispatcher, LocalDispatcher)
+            else ProductionEffectRouter(dispatcher)
+        )
+        self.coverage = {**COVERAGE, "audit_mode": dispatcher.runtime.audit_mode}
         self.dispatcher = dispatcher
         self.runtime = dispatcher.runtime
         self.runtime.verify_trusted_state()
@@ -75,6 +86,13 @@ class GatewayAuthority:
             build_integrity_manifest(Path(__file__).parent)["files"]
         )
         self.tools = available_tools(self.config, bundle.capability_ceiling)
+        if any(
+            tool["operation"] not in self.router.OPERATIONS
+            for tool in self.tools.values()
+        ):
+            raise GatewayDenied(
+                "signed registry includes effects unavailable in this audit profile"
+            )
         if not self.tools:
             raise GatewayDenied("no tools within signed capability ceiling")
         self.registry = SecurityDomainRegistry(ledger=self.runtime.engine.ledger)
@@ -139,7 +157,7 @@ class GatewayAuthority:
         self._refresh()
         if message == {"method": "status"}:
             return {
-                "coverage": dict(COVERAGE),
+                "coverage": dict(self.coverage),
                 "lease": self.session.status(),
                 "authority_tcb_sha256": self.tcb_digest,
                 "policy_sha256": self.policy_digest,
@@ -154,7 +172,7 @@ class GatewayAuthority:
                     }
                     for x in self.tools.values()
                 ],
-                "coverage": dict(COVERAGE),
+                "coverage": dict(self.coverage),
             }
         if (
             set(message) != {"method", "name", "arguments", "call_id"}

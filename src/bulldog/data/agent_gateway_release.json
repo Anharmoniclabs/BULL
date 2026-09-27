@@ -5,6 +5,7 @@
   "implemented": [
     "fixed host-signed tool registry and exact command binding",
     "explicit ProductionEffectRouter and ProductionDispatcher path",
+    "separate local process-only profile with per-installation authenticated audit",
     "kernel-authenticated local IPC and authenticated egress client",
     "expiring leases, persistent budgets and admission revocation",
     "fail-closed JSON parsing and bounded serial MCP requests",

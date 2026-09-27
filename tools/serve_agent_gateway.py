@@ -32,6 +32,9 @@ def main():
     environment = isolated_environment(args.deployment)
     os.environ.clear()
     os.environ.update(environment)
+    args.audit_mode = environment.get("BULL_AUDIT_MODE", "external")
+    if args.broker and args.audit_mode == "local":
+        parser.error("local audit profile has no external broker")
     return run_broker(args) if args.broker else run_service(args)
 
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Run one fixed command through real MCP, Unix IPC and ProductionDispatcher.
+"""Run one fixed command through real MCP and an enforced Unix authority.
 
 Run as the Codespace operator. A bounded sudo helper creates a temporary locked
 agent account and delegates the existing BULL cgroup. The authority remains the
-operator's non-root account. A real external HTTPS collector is required.
-No listener is exposed on TCP, no firewall is changed, and no gate is disabled.
+operator's non-root account. The external profile requires an HTTPS collector;
+--local uses an installation-specific authenticated local audit checkpoint.
+No listener is exposed on TCP and no firewall is changed.
 """
 
 from __future__ import annotations
@@ -205,6 +206,44 @@ def select_collector(args, user, *, secret_destination=None):
     return url, key
 
 
+def select_audit(args, user, *, secret_destination=None):
+    if getattr(args, "local", False):
+        if any(
+            (
+                args.deployment,
+                args.collector_url,
+                args.collector_key_file,
+                args.collector_from_env,
+            )
+        ):
+            raise ValueError(
+                "choose local auditing or explicit external collector inputs"
+            )
+        # Do not discover, read or reuse the operator's external collector keys.
+        return None, None
+    return select_collector(args, user, secret_destination=secret_destination)
+
+
+def pass_status(mode):
+    if mode not in {"local", "external"}:
+        raise ValueError("unknown audit profile")
+    return "LOCAL TOOL PASS" if mode == "local" else "CONNECTED TOOL PASS"
+
+
+def endpoint_ready(path, authority_uid, agent_gid):
+    # bind() creates the node before the authority grants the agent group access.
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return False
+    return (
+        stat.S_ISSOCK(info.st_mode)
+        and info.st_uid == authority_uid
+        and info.st_gid == agent_gid
+        and stat.S_IMODE(info.st_mode) == 0o660
+    )
+
+
 def host_checks():
     checks = {"nonroot_operator": os.geteuid() != 0}
     try:
@@ -275,6 +314,7 @@ def authority_role(run):
         raise ValueError("authority must be the selected non-root operator")
     from tools.deployment_setup import initialize, isolated_environment
     from bulldog.production_gate import evaluate_production_environment
+    from bulldog.local_gate import evaluate_local_environment
     from bulldog.gateway_cli import run_service
 
     binary = Path("/usr/bin/true").resolve(strict=True)
@@ -302,17 +342,26 @@ def authority_role(run):
         run / "private/deployment",
         run / "project",
         url=cfg["collector_url"],
-        existing_collector_key=Path(cfg["collector_key_file"]),
+        existing_collector_key=(
+            Path(cfg["collector_key_file"]) if cfg["collector_key_file"] else None
+        ),
         cgroup_parent=cfg["cgroup_parent"],
         gateway_registry=run / "registry.json",
+        audit_mode=cfg.get("audit_mode", "external"),
     )
     env = isolated_environment(
         run / "private/deployment", clean_env(pwd.getpwuid(os.geteuid()))
     )
     os.environ.clear()
     os.environ.update(env)
-    gates = evaluate_production_environment(package_root=ROOT / "src/bulldog")
-    write_json(run / "private/production-gates.json", gates)
+    local = cfg.get("audit_mode") == "local"
+    evaluate = evaluate_local_environment if local else evaluate_production_environment
+    gates = evaluate(package_root=ROOT / "src/bulldog")
+    write_json(
+        run
+        / ("private/local-gates.json" if local else "private/production-gates.json"),
+        gates,
+    )
     if not gates["passed"]:
         return 1
     return run_service(
@@ -321,6 +370,7 @@ def authority_role(run):
             socket=run / "endpoint/agent.sock",
             agent_gid=cfg["agent_gid"],
             egress_socket=None,
+            audit_mode=cfg.get("audit_mode", "external"),
         )
     )
 
@@ -334,6 +384,7 @@ def agent_role(run):
         raise ValueError("agent inherited extra host groups")
     for path in (
         run / "private/deployment/secrets/collector.key",
+        run / "private/deployment/secrets/local-audit.key",
         run / "private/lease",
     ):
         if os.access(path, os.R_OK):
@@ -359,16 +410,35 @@ def agent_role(run):
         json.dumps(cfg["argv"]),
         "--output",
         str(run / "agent/result.json"),
+        "--audit-mode",
+        cfg.get("audit_mode", "external"),
     ]
     return qualify()
 
 
-def verify_retained_audit(run, result):
+def verify_retained_audit(run, result, *, audit_mode="external"):
     from bulldog.audit import AuditLedger
     from bulldog.anchor_service import session_key
     from bulldog.audit_transport import AnchorIdentity
 
-    ledger = AuditLedger(run / "private/deployment/audit/ledger.jsonl")
+    pass_status(audit_mode)
+    deployment = run / "private/deployment"
+    if audit_mode == "local":
+        from bulldog.local_audit import LocalAuditLedger
+
+        ledger = LocalAuditLedger(
+            deployment / "audit/ledger.jsonl",
+            anchor_path=deployment / "audit/local-checkpoint.json",
+            anchor_key=private_path(
+                deployment / "secrets/local-audit.key", run.stat().st_uid
+            ).read_bytes(),
+        )
+    else:
+        ledger = AuditLedger(
+            deployment / "audit/ledger.jsonl",
+            remote_anchor_url="",
+            remote_anchor_key=b"",
+        )
     verification = ledger.verify()
     if not verification.valid or not verification.records:
         raise ValueError("retained authority audit did not verify")
@@ -380,17 +450,24 @@ def verify_retained_audit(run, result):
     data = results[0]["data"]
     if (
         data.get("executed") is not True
+        or attempts[0]["data"].get("call_id") != result["call_id"]
         or data.get("call_id") != result["call_id"]
         or data.get("result_digest") != result["result_sha256"]
     ):
         raise ValueError("MCP result is not bound to the retained authority audit")
+    if audit_mode == "local":
+        return {
+            "records": verification.records,
+            "head_hash": verification.head_hash,
+            "audit_mode": "local",
+            "external_receipt": False,
+        }
     checkpoint = json.loads(ledger.remote_checkpoint_path.read_text())
     if (
         checkpoint.get("sequence") != verification.records
         or checkpoint.get("head_hash") != verification.head_hash
     ):
         raise ValueError("external audit checkpoint did not reach the ledger head")
-    deployment = run / "private/deployment"
     session = json.loads((deployment / "deployment.json").read_text())["audit_session"]
     identity = AnchorIdentity(
         session,
@@ -414,6 +491,8 @@ def root_worker(run):
     operator = pwd.getpwuid(info.st_uid)
     config_path = private_path(run / "config.json", operator.pw_uid)
     cfg = json.loads(config_path.read_text())
+    mode = cfg.get("audit_mode", "external")
+    expected_status = pass_status(mode)
     if cfg["operator_uid"] != operator.pw_uid or Path(cfg["source"]) != ROOT:
         raise ValueError("live-test source or operator mismatch")
     report = {
@@ -421,6 +500,7 @@ def root_worker(run):
         "scope": "live host MCP connected-tool qualification",
         "source_commit": cfg["source_commit"],
         "enterprise_qualified": False,
+        "audit_mode": mode,
         "checks": {},
     }
     authority = agent_process = None
@@ -458,6 +538,7 @@ def root_worker(run):
         write_json(config_path, cfg)
         os.chown(config_path, operator.pw_uid, operator.pw_gid)
         agent_cfg = {k: cfg[k] for k in ("agent_uid", "operator_uid")}
+        agent_cfg["audit_mode"] = mode
         agent_cfg["argv"] = [str(Path("/usr/bin/true").resolve(strict=True))]
         write_json(run / "agent-config.json", agent_cfg)
         (run / "agent-config.json").chmod(0o644)
@@ -494,18 +575,24 @@ def root_worker(run):
             preexec_fn=lambda: drop_identity(operator, groups, parent),
         )
         deadline = time.monotonic() + 120
-        while not (run / "endpoint/agent.sock").exists():
+        while not endpoint_ready(
+            run / "endpoint/agent.sock", operator.pw_uid, agent.pw_gid
+        ):
             if authority.poll() is not None or time.monotonic() >= deadline:
-                gate_file = run / "private/production-gates.json"
+                gate_file = run / (
+                    "private/local-gates.json"
+                    if mode == "local"
+                    else "private/production-gates.json"
+                )
                 if gate_file.exists():
-                    report["production_failures"] = json.loads(
-                        gate_file.read_text()
-                    ).get("failures", [])
+                    report["gate_failures"] = json.loads(gate_file.read_text()).get(
+                        "failures", []
+                    )
                 raise RuntimeError(
-                    "production authority did not become ready; inspect private authority.log and production-gates.json"
+                    "authority did not become ready; inspect private authority.log and the profile gate report"
                 )
             time.sleep(0.2)
-        report["checks"]["production_authority_started"] = True
+        report["checks"][mode + "_authority_started"] = True
         report["checks"]["distinct_nonroot_uids"] = (
             agent.pw_uid != operator.pw_uid and agent.pw_uid > 0
         )
@@ -534,7 +621,8 @@ def root_worker(run):
             report["agent_result"] = json.loads(result_path.read_text())
         if (
             rc != 0
-            or report.get("agent_result", {}).get("status") != "CONNECTED TOOL PASS"
+            or report.get("agent_result", {}).get("status") != expected_status
+            or report.get("agent_result", {}).get("audit_mode") != mode
         ):
             raise RuntimeError(
                 "live client refused or failed; inspect private agent.log and agent result"
@@ -543,12 +631,14 @@ def root_worker(run):
         report["checks"].update(report["agent_result"]["checks"])
         stop_child(authority)
         authority = None
-        report["audit"] = verify_retained_audit(run, report["agent_result"])
+        report["audit"] = verify_retained_audit(
+            run, report["agent_result"], audit_mode=mode
+        )
         report["checks"]["retained_audit_matches_mcp_result"] = True
-        report["checks"]["external_checkpoint_reached_head"] = True
+        report["checks"][mode + "_checkpoint_reached_head"] = True
         if not all(report["checks"].values()):
             raise ValueError("one or more live evidence checks failed")
-        report["status"] = "CONNECTED TOOL PASS"
+        report["status"] = expected_status
     except (Exception, KeyboardInterrupt) as exc:
         report["status"] = "BLOCKED"
         report["reason"] = type(exc).__name__ + ": " + str(exc)[:700]
@@ -585,12 +675,18 @@ def root_worker(run):
         report_path = run / "report.json"
         write_json(report_path, report)
         os.chown(report_path, operator.pw_uid, operator.pw_gid)
-    return 0 if report["status"] == "CONNECTED TOOL PASS" else 1
+    return 0 if report["status"] == expected_status else 1
 
 
-def main():
+def main(*, default_local=False):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--deployment", type=Path)
+    parser.add_argument(
+        "--local",
+        action="store_true",
+        default=default_local,
+        help="generate private local audit authority; no collector credentials",
+    )
     parser.add_argument("--collector-url")
     parser.add_argument("--collector-key-file", type=Path)
     parser.add_argument(
@@ -614,7 +710,13 @@ def main():
         ](args._run)
     checks = host_checks()
     user = pwd.getpwuid(os.geteuid())
-    configuration = collector_configuration(user)
+    mode = "local" if args.local else "external"
+    expected_status = pass_status(mode)
+    configuration = (
+        {"mode": "local", "external_collector_required": False}
+        if args.local
+        else collector_configuration(user)
+    )
     if args.preflight:
         report = {
             "status": "BLOCKED",
@@ -623,19 +725,34 @@ def main():
             "certified": False,
         }
         try:
-            select_collector(args, user)
-            report["checks"]["external_collector_configured"] = True
+            select_audit(args, user)
+            report["checks"][
+                (
+                    "local_audit_selected"
+                    if args.local
+                    else "external_collector_configured"
+                )
+            ] = True
         except (OSError, ValueError) as exc:
-            report["checks"]["external_collector_configured"] = False
+            report["checks"]["audit_configuration"] = False
             report["reason"] = str(exc)
         if all(checks.values()):
-            report["status"] = "READY_FOR_PRODUCTION_CHECKS"
+            report["status"] = (
+                "READY_FOR_LOCAL_CHECKS"
+                if args.local
+                else "READY_FOR_PRODUCTION_CHECKS"
+            )
         print(json.dumps(report, indent=2))
         return 0 if all(checks.values()) else 1
 
     run = Path(tempfile.mkdtemp(prefix="bull-mcp-live-"))
     print("Evidence directory: " + str(run), flush=True)
-    report = {"status": "BLOCKED", "checks": checks, "enterprise_qualified": False}
+    report = {
+        "status": "BLOCKED",
+        "checks": checks,
+        "enterprise_qualified": False,
+        "audit_mode": mode,
+    }
     try:
         if not all(checks.values()):
             raise ValueError(
@@ -643,7 +760,7 @@ def main():
                 + ", ".join(k for k, v in checks.items() if not v)
             )
         (run / "private").mkdir(mode=0o700)
-        url, key = select_collector(
+        url, key = select_audit(
             args, user, secret_destination=run / "private/input-collector.key"
         )
         # The authority gets the key from its private deployment. Never forward
@@ -734,11 +851,12 @@ def main():
                 "source": str(code),
                 "source_commit": revision,
                 "collector_url": url,
-                "collector_key_file": str(key),
+                "collector_key_file": str(key) if key is not None else None,
+                "audit_mode": mode,
             },
         )
         print(
-            "Starting separate agent UID and the real production authority...",
+            "Starting separate agent UID and the " + mode + " audit authority...",
             flush=True,
         )
         child = subprocess.run(
@@ -757,7 +875,7 @@ def main():
         if (run / "report.json").exists():
             report = json.loads((run / "report.json").read_text())
         if child.returncode and "reason" not in report:
-            report["reason"] = "sudo provisioning or the live production check failed"
+            report["reason"] = "sudo provisioning or the live gateway check failed"
     except (Exception, KeyboardInterrupt) as exc:
         report["reason"] = type(exc).__name__ + ": " + str(exc)[:700]
     report["collector_configuration"] = configuration
@@ -769,7 +887,8 @@ def main():
                 "report": str(run / "report.json"),
                 "checks": report.get("checks", {}),
                 "reason": report.get("reason"),
-                "production_failures": report.get("production_failures", []),
+                "gate_failures": report.get("gate_failures", []),
+                "audit_mode": mode,
                 "collector_configuration": configuration,
                 "enterprise_qualified": False,
             },
@@ -779,7 +898,7 @@ def main():
     print(
         "Keep private/ and deployment keys local; share only the redacted report.json."
     )
-    return 0 if report["status"] == "CONNECTED TOOL PASS" else 1
+    return 0 if report["status"] == expected_status else 1
 
 
 if __name__ == "__main__":
