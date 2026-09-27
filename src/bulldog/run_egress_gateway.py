@@ -12,10 +12,37 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import ipaddress
 import json
 import sys
 
 from .egress_gateway import EgressGateway, EgressPolicy, GatewayConfig
+
+
+def parse_dns_upstream(value: str) -> tuple[str, int]:
+    """Accept an IP literal with an optional port; IPv6 ports use brackets."""
+    if value.startswith("["):
+        host, closing, suffix = value[1:].partition("]")
+        if not closing or (suffix and not suffix.startswith(":")):
+            raise ValueError("invalid DNS upstream address")
+        port_text = suffix[1:] if suffix else "53"
+    else:
+        try:
+            ipaddress.ip_address(value)
+        except ValueError:
+            host, separator, port_text = value.rpartition(":")
+            if not separator:
+                raise ValueError("DNS upstream must be an IP address") from None
+        else:
+            host, port_text = value, "53"
+    try:
+        ipaddress.ip_address(host)
+        port = int(port_text)
+    except ValueError as exc:
+        raise ValueError("invalid DNS upstream address or port") from exc
+    if not 1 <= port <= 65535:
+        raise ValueError("DNS upstream port out of range")
+    return host, port
 
 
 def load_policy(path: str) -> EgressPolicy:
@@ -51,11 +78,14 @@ def main(argv=None) -> int:
     # therefore never injects upstream credentials from a shared vault.
     # Credentialed effects must use BULL's identity-bound broker path.
 
-    host, _, port = args.dns_upstream.rpartition(":")
+    try:
+        dns_upstream = parse_dns_upstream(args.dns_upstream)
+    except ValueError as exc:
+        ap.error(str(exc))
     cfg = GatewayConfig(listen_host=args.listen,
                         transparent_port=args.transparent_port,
                         dns_port=args.dns_port,
-                        dns_upstream=(host or "127.0.0.53", int(port or 53)))
+                        dns_upstream=dns_upstream)
     gw = EgressGateway(policy, cfg)
 
     async def serve():
