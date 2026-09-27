@@ -79,6 +79,29 @@ manifest can be supplied with `--assets /absolute/assets-local.json`. The
 private run directory contains disposable credentials; share reviewed reports,
 not the whole directory. This fixture does not verify live egress nftables rules.
 
+### Current offline guest boundary
+
+The pinned guest is intentionally launched with QEMU `-net none`; its published
+kernel recipe has no virtio network device or IPv6 support. In a clean KVM
+operator shell, use the verified local image manifest to run the separate
+offline fixture:
+
+```bash
+python3 tools/run_codespace_kvm.py --offline-egress \
+  --assets /absolute/path/to/assets-local.json
+```
+
+This case checks the observed QEMU child command line and runs an IPv4/IPv6
+outbound probe in the actual governed guest workload. It requires only loopback
+to be visible and both connections to fail. The private case report and setup
+report remain source and image bound. To display the sanitized result, start
+`bull console --offline-egress-dir /tmp/bull-kvm-NEW` with that run's directory.
+The console displays an **offline guest boundary** card separately from the
+**egress enforcement** card. A passing offline case is evidence that this
+specific guest workload had no network path; it does not test a deployed
+`bullgw` service or authorize enabling a guest network adapter. A networked
+guest requires a distinct image, boot recipe and in-guest gateway qualification.
+
 For the broader production qualification gate, run:
 
 ```bash

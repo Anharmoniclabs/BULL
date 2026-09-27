@@ -40,7 +40,7 @@ from .audit import AuditLedger
 from .malware_scanner import MalwareScanner, MalwareScannerError, MalwareScannerUnavailable
 from .models import ActionRequest, Capability, Decision, Provenance
 from .policy import DeterministicPolicy
-from .qualification import summarize_kvm
+from .qualification import summarize_kvm, summarize_offline_egress
 
 
 @dataclass(frozen=True)
@@ -291,6 +291,7 @@ class ControlPlane:
         state_dir: str | Path | None = None,
         launch_url: str | None = None,
         qualification_dir: str | Path | None = None,
+        offline_egress_dir: str | Path | None = None,
     ) -> None:
         self.workspace = Path(workspace or os.getcwd()).resolve()
         self.state_dir = Path(
@@ -299,6 +300,7 @@ class ControlPlane:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.launch_url = launch_url
         self.qualification_dir = Path(qualification_dir) if qualification_dir else None
+        self.offline_egress_dir = Path(offline_egress_dir) if offline_egress_dir else None
         self._managed_microvm: subprocess.Popen | None = None
         self._managed_microvm_started_at: str | None = None
         self._managed_microvm_log = self.state_dir / "microvm.log"
@@ -867,7 +869,7 @@ class ControlPlane:
         detections = len(malware.get("detections") or [])
         running_protections = sum(1 for item in isolation["items"] if item["status"] == "PASS")
         total_protections = len(isolation["items"])
-        if self.qualification_dir:
+        if self.qualification_dir or self.offline_egress_dir:
             try:
                 repo = Path(__file__).resolve().parents[2]
                 revision = subprocess.check_output(
@@ -875,14 +877,23 @@ class ControlPlane:
                     timeout=2).strip()
             except (OSError, subprocess.SubprocessError):
                 revision = None
-            kvm_qualification = summarize_kvm(self.qualification_dir, current_commit=revision)
+            kvm_qualification = (summarize_kvm(self.qualification_dir, current_commit=revision)
+                                 if self.qualification_dir else None)
+            offline_qualification = (summarize_offline_egress(self.offline_egress_dir, current_commit=revision)
+                                     if self.offline_egress_dir else None)
         else:
+            kvm_qualification = None
+            offline_qualification = None
+        if kvm_qualification is None:
             kvm_qualification = {
                 "status": "BLOCKED" if not microvm.get("kvm_available") else "NOT_RUN",
                 "detail": "KVM unavailable on this host" if not microvm.get("kvm_available")
                           else "Usable KVM detected; current five-case evidence not loaded",
                 "evidence": "Live host device probe; no case results inferred",
             }
+        if offline_qualification is None:
+            offline_qualification = {"status": "NOT_RUN", "detail": "No current guest-offline KVM evidence selected.",
+                                     "evidence": "Gateway deployment remains a separate qualification"}
 
         return {
             "meta": {
@@ -940,6 +951,7 @@ class ControlPlane:
                     "evidence": "No signed guest route/escape-probe attestation supplied",
                 },
                 "kvm_cases": kvm_qualification,
+                "offline_guest": offline_qualification,
             },
             "swarms": swarms,
             "attestation": assurance,
@@ -1109,6 +1121,7 @@ def serve_console(
     external_url: str | None = None,
     open_browser: bool = False,
     qualification_dir: str | Path | None = None,
+    offline_egress_dir: str | Path | None = None,
 ) -> int:
     control = ControlPlane(
         workspace=workspace,
@@ -1118,6 +1131,7 @@ def serve_console(
         state_dir=state_dir,
         launch_url=external_url,
         qualification_dir=qualification_dir,
+        offline_egress_dir=offline_egress_dir,
     )
     server = _ConsoleServer((host, int(port)), ConsoleHandler, control)
     control.start()

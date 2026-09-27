@@ -58,6 +58,30 @@ print(json.dumps({'checks': 'passed', 'environment_keys': sorted(os.environ),
                   'fixture_duration_ns': time.monotonic_ns() - started}, sort_keys=True))
 '''
 
+OFFLINE_EGRESS_WORKLOAD = '''import errno, json, os, socket
+interfaces = sorted(os.listdir('/sys/class/net'))
+assert interfaces == ['lo'], 'unexpected guest workload network interface: ' + repr(interfaces)
+denials = {}
+for family, address in ((socket.AF_INET, ('198.18.0.2', 81)),
+                        (socket.AF_INET6, ('2001:db8:42::2', 81))):
+    name = 'ipv4' if family == socket.AF_INET else 'ipv6'
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as connection:
+            connection.settimeout(2)
+            connection.connect(address)
+    except OSError as exc:
+        if exc.errno not in (errno.EPERM, errno.EACCES, errno.ENETUNREACH,
+                             errno.EHOSTUNREACH, errno.ENETDOWN, errno.EAFNOSUPPORT,
+                             errno.EPROTONOSUPPORT, errno.ENODEV):
+            raise
+        denials[name] = errno.errorcode[exc.errno]
+    else:
+        raise AssertionError(name + ' outbound connection unexpectedly succeeded')
+assert set(denials) == {'ipv4', 'ipv6'}
+print('BULL_STATUS=PASS: offline guest workload')
+print(json.dumps({'interfaces': interfaces, 'denials': denials}, sort_keys=True))
+'''
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -120,6 +144,8 @@ def run(args):
     save(deployment / 'integrity.json', sign_integrity_manifest(build_integrity_manifest(runtime / 'src/bulldog'), signing_key))
     save(deployment / 'policy.json', sign_policy_bundle(allowed_capabilities=['process.exec'], key=signing_key))
     argv = ['/usr/bin/python3', '-I', '-c', WORKLOAD]
+    if args.case == 'offline-egress':
+        argv = ['/usr/bin/python3', '-I', '-c', OFFLINE_EGRESS_WORKLOAD]
     if args.case in {'timeout', 'cancel'}:
         argv = ['/usr/bin/python3', '-I', '-c', 'import time; time.sleep(25)']
     request = {'argv': argv, 'capabilities': [] if args.case == 'denied' else ['process.exec'],
@@ -230,6 +256,11 @@ def run(args):
                                      cwd=repo, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             conn, _ = listeners['control'].accept()
             vm_pid, vm_started = vm_identity(child.pid)
+            if args.case == 'offline-egress':
+                qemu_argv = Path(f'/proc/{vm_pid}/cmdline').read_bytes().split(b'\0')
+                if not any(qemu_argv[i:i+2] == [b'-net', b'none'] for i in range(len(qemu_argv)-1)):
+                    raise ValueError('QEMU did not launch with -net none')
+                report['qemu_network'] = 'none (observed child command line)'
             report['qemu_pid'] = vm_pid
             report['host_process_clock_resolution_ms'] = 1000 / os.sysconf('SC_CLK_TCK')
             with conn:
@@ -279,6 +310,16 @@ def run(args):
                     if fixture.get('checks') != 'passed' or fixture.get('open_fds') != [0, 1, 2]:
                         raise ValueError('incomplete sandboxed fixture measurements')
                     report['sandboxed_fixture'] = fixture
+                elif args.case == 'offline-egress':
+                    if (result.get('executed') is not True or result.get('returncode') != 0
+                            or not result.get('sandboxed') or not result.get('sandbox_attestation')
+                            or not result.get('stdout', '').startswith('BULL_STATUS=PASS: offline guest workload\n')):
+                        raise ValueError('offline guest workload did not complete with required evidence')
+                    fixture = json.loads(result['stdout'].splitlines()[1])
+                    if (fixture.get('interfaces') != ['lo'] or
+                            set(fixture.get('denials', {})) != {'ipv4', 'ipv6'}):
+                        raise ValueError('incomplete offline network measurements')
+                    report['offline_egress'] = fixture
                 elif args.case == 'timeout':
                     if (result.get('decision') != 'TIMEOUT' or result.get('returncode') is not None
                             or result.get('remaining_workload_cgroups') != []
@@ -341,7 +382,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     for flag in ('kernel', 'rootfs', 'firmware', 'output'):
         parser.add_argument('--' + flag, type=Path, required=True)
-    parser.add_argument('--case', choices=('all', 'allowed', 'denied', 'timeout', 'cancel', 'missing-protection'), required=True)
+    parser.add_argument('--case', choices=('all', 'allowed', 'denied', 'timeout', 'cancel', 'missing-protection', 'offline-egress'), required=True)
     parser.add_argument('--cpu-profile', choices=('host', 'amd-native-ssbd'), default='host')
     parser.add_argument('--external-url', help='Operator-selected collector; sends checkpoint metadata to this HTTPS endpoint.')
     parser.add_argument('--external-key-file', type=Path, help='Private key file, or use BULL_REMOTE_AUDIT_ANCHOR_KEY.')

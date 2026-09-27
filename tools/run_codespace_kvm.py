@@ -78,6 +78,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--assets", type=Path, help="absolute local manifest of SHA-256-pinned guest images")
     parser.add_argument("--install-deps", action="store_true", help="install missing Debian VM tools with sudo apt-get")
+    parser.add_argument("--offline-egress", action="store_true", help="prove the pinned guest workload has no outward network path")
     args = parser.parse_args()
     os.umask(0o077)
     directory = Path(tempfile.mkdtemp(prefix="bull-kvm-", dir="/tmp"))
@@ -100,11 +101,28 @@ def main() -> int:
             missing = [tool for tool in NEEDED if not shutil.which(tool)]
         if missing:
             raise RuntimeError("missing VM tools: " + ", ".join(missing) + "; retry with --install-deps")
-        output = directory / "cases"
-        command = [sys.executable, "microvm/integration.py", "--case", "all", "--output", str(output)]
+        output = directory / ("offline-egress" if args.offline_egress else "cases")
+        command = [sys.executable, "microvm/integration.py", "--case",
+                   "offline-egress" if args.offline_egress else "all", "--output", str(output)]
         for key, item in assets.items():
             command += ["--" + key, item["path"]]
         result = subprocess.run(command, cwd=ROOT, env=dict(os.environ, PYTHONPATH=str(ROOT / "src")), check=False)
+        if args.offline_egress:
+            evidence = json.loads((output / "report.json").read_text())
+            if (result.returncode or evidence.get("status") != "PASS"
+                    or evidence.get("case") != "offline-egress"
+                    or evidence.get("revision") != source["commit"]
+                    or evidence.get("assets") != report["asset_sha256"]
+                    or evidence.get("qemu_network") != "none (observed child command line)"
+                    or evidence.get("offline_egress", {}).get("interfaces") != ["lo"]
+                    or set(evidence.get("offline_egress", {}).get("denials", {})) != {"ipv4", "ipv6"}):
+                raise RuntimeError("offline egress KVM case incomplete or failed; inspect private report")
+            if source_identity() != source:
+                raise RuntimeError("source changed during evidence run")
+            report["status"] = "PASS"
+            report["offline_egress_report"] = str(output / "report.json")
+            print("Offline guest workload egress PASS; QEMU -net none observed. Gateway service is unverified.")
+            return 0
         summary = output / "summary.json"
         if not summary.is_file():
             raise RuntimeError(f"five-case runner exited {result.returncode} without a summary")
