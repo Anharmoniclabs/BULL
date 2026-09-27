@@ -156,7 +156,7 @@ def parse_http_head(data: bytes):
 class GatewayConfig:
     listen_host: str = "127.0.0.1"
     transparent_port: int = 9443     # nftables REDIRECT target for tcp 80/443
-    dns_port: int = 953             # nftables REDIRECT target for udp 53
+    dns_port: int = 1953            # unprivileged nftables REDIRECT target for udp 53
     dns_upstream: Tuple[str, int] = ("127.0.0.53", 53)
     resolver: Callable[[str], Tuple[str, int]] = lambda h: (h, 443)
     # resolver maps a policy-approved hostname to the upstream (ip, port).

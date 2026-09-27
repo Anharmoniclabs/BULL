@@ -38,7 +38,7 @@ def main(argv=None) -> int:
     ap.add_argument("--policy", default="/etc/bull/egress_policy.json")
     ap.add_argument("--listen", default="127.0.0.1")
     ap.add_argument("--transparent-port", type=int, default=9443)
-    ap.add_argument("--dns-port", type=int, default=953)
+    ap.add_argument("--dns-port", type=int, default=1953)
     ap.add_argument("--dns-upstream", default="127.0.0.53")
     ap.add_argument("--check-policy", action="store_true", help="Validate configured policy and exit")
     args = ap.parse_args(argv)
