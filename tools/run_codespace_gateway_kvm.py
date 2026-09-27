@@ -113,12 +113,12 @@ def build(directory, *, resume=False):
     return kernel, initrd, image
 
 
-def boot(directory, kernel, initrd, image):
+def boot(directory, kernel, initrd, image, *, init="/sbin/bull-egress-lab-init"):
     command = ["qemu-system-x86_64", "-machine", "q35,accel=kvm", "-cpu", "host",
                "-m", "1536M", "-smp", "2", "-nodefaults", "-no-user-config",
                "-nographic", "-display", "none", "-monitor", "none", "-no-reboot",
                "-kernel", str(kernel), "-initrd", str(initrd),
-               "-append", "console=ttyS0 root=/dev/vda rw init=/sbin/bull-egress-lab-init",
+               "-append", f"console=ttyS0 root=/dev/vda rw init={init}",
                "-drive", f"file={image},format=raw,if=virtio,snapshot=on",
                "-netdev", "user,id=lab,restrict=on", "-device", "virtio-net-pci,netdev=lab",
                "-serial", "stdio", "-sandbox",

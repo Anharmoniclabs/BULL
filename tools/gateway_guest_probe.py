@@ -65,18 +65,40 @@ def ready(process):
     raise RuntimeError("gateway did not listen")
 
 
+def service_ready():
+    for _ in range(80):
+        active = subprocess.run(["/usr/bin/systemctl", "is-active", "--quiet", "bull-egress-gateway.service"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2).returncode == 0
+        if active:
+            try:
+                with socket.create_connection(("127.0.0.1", 9443), timeout=.1):
+                    return
+            except OSError:
+                pass
+        time.sleep(.1)
+    raise RuntimeError("systemd gateway service did not listen")
+
+
 def main():
     phase = "initialize"
+    systemd = "--systemd" in sys.argv[1:]
     if os.getpid() == 1 or not os.path.exists("/proc/1/cmdline"):
         raise RuntimeError("guest initialization incomplete")
-    command("/usr/sbin/ip", "link", "set", "lo", "up")
+    if systemd:
+        if not os.path.exists("/run/systemd/system"):
+            raise RuntimeError("systemd was not started as guest init")
+        if command("/usr/bin/systemctl", "is-active", "bull-egress-redirect.service").strip() != "active":
+            raise RuntimeError("systemd redirect unit inactive")
+    else:
+        command("/usr/sbin/ip", "link", "set", "lo", "up")
     devices = sorted(set(os.listdir("/sys/class/net")) - {"lo"})
     if len(devices) != 1:
         raise RuntimeError("expected one guest NIC, saw " + repr(devices))
     nic = devices[0]
-    command("/usr/sbin/ip", "link", "set", nic, "up")
-    command("/usr/sbin/ip", "addr", "add", "10.0.2.15/24", "dev", nic)
-    command("/usr/sbin/ip", "-6", "addr", "add", "2001:db8:42::1/64", "dev", nic)
+    if not systemd:
+        command("/usr/sbin/ip", "link", "set", nic, "up")
+        command("/usr/sbin/ip", "addr", "add", "10.0.2.15/24", "dev", nic)
+        command("/usr/sbin/ip", "-6", "addr", "add", "2001:db8:42::1/64", "dev", nic)
     if f" dev {nic} " not in command("/usr/sbin/ip", "route", "get", "10.0.2.2"):
         raise RuntimeError("IPv4 target not routed through guest NIC")
     if f" dev {nic} " not in command("/usr/sbin/ip", "-6", "route", "get", "2001:db8:42::2"):
@@ -100,7 +122,8 @@ def main():
     try:
         phase = "install nftables rules"
         command("/usr/sbin/nft", "-c", "-f", "/etc/bull/egress_redirect.nft")
-        command("/usr/sbin/nft", "-f", "/etc/bull/egress_redirect.nft")
+        if not systemd:
+            command("/usr/sbin/nft", "-f", "/etc/bull/egress_redirect.nft")
         command("/usr/sbin/nft", "add", "rule", "inet", "bull_egress", "filter_output",
                 "ip", "daddr", "10.0.2.2", "tcp", "dport", "81", "counter")
         command("/usr/sbin/nft", "add", "rule", "inet", "bull_egress", "filter_output",
@@ -116,10 +139,20 @@ def main():
                 "/usr/bin/env", "PYTHONPATH=/opt/bull/src", "/usr/bin/python3", "-c",
                 "import bulldog.run_egress_gateway")
         phase = "start gateway"
-        process = gateway()
-        ready(process)
-        checks["gateway_uid"] = int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
-            int(open(f"/proc/{process.pid}/status").read().split("Uid:", 1)[1].split()[0]) == 23456
+        if systemd:
+            service_ready()
+            pid = int(command("/usr/bin/systemctl", "show", "-p", "MainPID", "--value",
+                              "bull-egress-gateway.service").strip())
+        else:
+            process = gateway()
+            ready(process)
+            pid = process.pid
+        checks["gateway_uid"] = pid > 1 and int(command("/usr/bin/id", "-u", "bullgw").strip()) == 23456 and \
+            int(open(f"/proc/{pid}/status").read().split("Uid:", 1)[1].split()[0]) == 23456
+        if systemd:
+            checks["service_units_active"] = (command("/usr/bin/systemctl", "is-active", "bull-egress-gateway.service").strip() == "active"
+                                               and command("/usr/bin/systemctl", "is-enabled", "bull-egress-gateway.service").strip() == "enabled"
+                                               and command("/usr/bin/systemctl", "is-enabled", "bull-egress-redirect.service").strip() == "enabled")
         allowed_payload = b"GET /ok HTTP/1.1\r\nHost: allowed.test\r\nConnection: close\r\n\r\n"
         phase = "direct gateway HTTP relay"
         direct = request("127.0.0.1", 9443, allowed_payload)
@@ -148,12 +181,19 @@ def main():
             answer, _ = udp.recvfrom(512)
         checks["denied_dns"] = answer[:2] == query[:2] and answer[3] & 15 == 5
         phase = "gateway-down closure"
-        process.terminate()
-        process.wait(timeout=5)
+        if systemd:
+            command("/usr/bin/systemctl", "stop", "bull-egress-gateway.service")
+        else:
+            process.terminate()
+            process.wait(timeout=5)
         checks["gateway_down_closed"] = closed("10.0.2.2", 80, b"GET / HTTP/1.0\r\n\r\n")
         phase = "restart gateway and deny"
-        process = gateway()
-        ready(process)
+        if systemd:
+            command("/usr/bin/systemctl", "start", "bull-egress-gateway.service")
+            service_ready()
+        else:
+            process = gateway()
+            ready(process)
         denied = request("10.0.2.2", 80, b"GET /ok HTTP/1.1\r\nHost: denied.test\r\nConnection: close\r\n\r\n")
         checks["restart_still_denies"] = b"403 Forbidden" in denied
     except Exception as exc:
@@ -174,7 +214,8 @@ def main():
         origin.server_close()
     print("BULL_GATEWAY_KVM_RESULT=" + json.dumps({
         "status": "PASS" if checks and all(checks.values()) else "FAIL", "checks": checks, "guest_nic": nic,
-        "scope": "disposable Debian KVM lab guest, restricted QEMU user networking; direct init startup, no systemd or production image"
+        "scope": ("disposable Debian KVM candidate with actual systemd gateway and redirect units; not pinned production image"
+                  if systemd else "disposable Debian KVM lab guest, restricted QEMU user networking; direct init startup, no systemd or production image")
     }, sort_keys=True), flush=True)
 
 
