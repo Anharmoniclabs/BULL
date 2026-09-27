@@ -31,6 +31,25 @@ On a trusted host with KVM and verified release assets, create the local
 `assets-local.json` manifest as in `docs/CODESPACES_VM_AND_KEY_CHECKS.md`, then
 run this candidate from a **clean checkout**:
 
+For the five-case guest fixture alone, use the one-command helper from a clean
+checkout of this integration PR (including its helper commit):
+
+```bash
+python3 tools/run_codespace_kvm.py --install-deps
+```
+
+It first probes the actual KVM device/API. If Codespaces denies it, the helper
+writes a private `setup-report.json` under `/tmp/bull-kvm-*` and stops before
+downloading images or changing packages. With KVM, it downloads the pinned guest
+release through `gh`, verifies the needed release file hashes and local image
+manifest, installs missing Debian VM tools only with `--install-deps`, then runs
+all five cases and checks their source/image identities. An existing verified
+manifest can be supplied with `--assets /absolute/assets-local.json`. The
+private run directory contains disposable credentials; share reviewed reports,
+not the whole directory. This fixture does not verify live egress nftables rules.
+
+For the broader production qualification gate, run:
+
 ```bash
 python3 tools/deployment_check.py \
   --output /private/new-bull-evidence-dir \
