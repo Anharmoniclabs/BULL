@@ -135,6 +135,7 @@ def test_transport_delivers_outcome_when_result_cannot_encode():
 
 
 def test_mcp_oversize_reply_is_bounded_error_for_same_request():
+    pytest.importorskip("mcp")
     import mcp.types as types
 
     reply = types.JSONRPCResponse(jsonrpc="2.0", id=7, result={"x": "y"})
