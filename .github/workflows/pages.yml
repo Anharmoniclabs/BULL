@@ -3,10 +3,32 @@ name: Deploy BULL Lab to Pages
 on:
   pull_request:
     branches: [main]
-    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+    paths:
+      [
+        "site/**",
+        "tools/**",
+        "src/bulldog/**",
+        "tests/**",
+        "formal/**",
+        "docs/**",
+        "README.md",
+        "pyproject.toml",
+        ".github/workflows/pages.yml",
+      ]
   push:
     branches: [main]
-    paths: ["site/**", "tools/**", "src/bulldog/**", "tests/**", "formal/**", "docs/**", "README.md", "pyproject.toml", ".github/workflows/pages.yml"]
+    paths:
+      [
+        "site/**",
+        "tools/**",
+        "src/bulldog/**",
+        "tests/**",
+        "formal/**",
+        "docs/**",
+        "README.md",
+        "pyproject.toml",
+        ".github/workflows/pages.yml",
+      ]
   workflow_dispatch:
 
 permissions:

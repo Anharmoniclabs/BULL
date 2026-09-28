@@ -1,4 +1,5 @@
 """Hardware-only MicroVM launcher. Deployment configuration is data, never code."""
+
 from __future__ import annotations
 
 import argparse
@@ -26,12 +27,21 @@ class MicroVMError(ValueError):
 
 
 DEFAULTS = {
-    "MEMORY_MIB": "4096", "CPUS": "2", "ACCEL": "kvm",
-    "QEMU": "qemu-system-x86_64", "ENGINE_GUEST": "/bull_runtime/bin/bull-engine",
-    "WORKSPACE": "", "RUNTIME_DIR": "", "KERNEL": "", "ROOTFS": "",
-    "TIMEOUT_SECONDS": "3600", "DEV_9P": "false",
-    "FIRMWARE": "", "FIRMWARE_SHA256": "",
-    "CONTROL_SOCKET": "", "AUDIT_SOCKET": "",
+    "MEMORY_MIB": "4096",
+    "CPUS": "2",
+    "ACCEL": "kvm",
+    "QEMU": "qemu-system-x86_64",
+    "ENGINE_GUEST": "/bull_runtime/bin/bull-engine",
+    "WORKSPACE": "",
+    "RUNTIME_DIR": "",
+    "KERNEL": "",
+    "ROOTFS": "",
+    "TIMEOUT_SECONDS": "3600",
+    "DEV_9P": "false",
+    "FIRMWARE": "",
+    "FIRMWARE_SHA256": "",
+    "CONTROL_SOCKET": "",
+    "AUDIT_SOCKET": "",
     "CPU_PROFILE": "host",
 }
 MACHINE = "microvm,acpi=off,x-option-roms=off,auto-kernel-cmdline=on"
@@ -44,15 +54,23 @@ def config_file(path: Path) -> dict[str, str]:
     if path.is_symlink():
         raise MicroVMError("deployment configuration may not be a symlink")
     info = path.stat()
-    if not stat.S_ISREG(info.st_mode) or info.st_uid not in {0, os.getuid()} or info.st_mode & 0o022:
-        raise MicroVMError("deployment configuration must be owner-controlled and not group/world writable")
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or info.st_uid not in {0, os.getuid()}
+        or info.st_mode & 0o022
+    ):
+        raise MicroVMError(
+            "deployment configuration must be owner-controlled and not group/world writable"
+        )
     if info.st_size > 16384:
         raise MicroVMError("deployment configuration is too large")
     result = {}
     for number, line in enumerate(path.read_text().splitlines(), 1):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        match = re.fullmatch(r"BULL_MICROVM_([A-Z][A-Z0-9_]*)=([A-Za-z0-9_./:+@%-]*)", line)
+        match = re.fullmatch(
+            r"BULL_MICROVM_([A-Z][A-Z0-9_]*)=([A-Za-z0-9_./:+@%-]*)", line
+        )
         if not match:
             raise MicroVMError(f"invalid literal configuration at line {number}")
         key, value = match.groups()
@@ -73,9 +91,47 @@ def restricted_root(raw: str) -> Path:
         raise MicroVMError("export and approved roots must be explicit absolute paths")
     path = Path(raw).resolve(strict=True)
     homes = {Path(p.pw_dir).resolve() for p in pwd.getpwall() if p.pw_dir}
-    broad = {Path(p) for p in ("/", "/home", "/Users", "/root", "/tmp", "/var", "/var/tmp", "/var/lib", "/var/log", "/var/cache", "/var/spool", "/var/backups", "/var/www", "/srv", "/opt", "/mnt", "/media")}
-    forbidden = ("/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64", "/dev", "/proc", "/sys", "/boot", "/run")
-    if path in broad or path in homes or path.parent in {Path("/home"), Path("/Users")} or any(path.is_relative_to(Path(p).resolve()) for p in forbidden):
+    broad = {
+        Path(p)
+        for p in (
+            "/",
+            "/home",
+            "/Users",
+            "/root",
+            "/tmp",
+            "/var",
+            "/var/tmp",
+            "/var/lib",
+            "/var/log",
+            "/var/cache",
+            "/var/spool",
+            "/var/backups",
+            "/var/www",
+            "/srv",
+            "/opt",
+            "/mnt",
+            "/media",
+        )
+    }
+    forbidden = (
+        "/etc",
+        "/usr",
+        "/bin",
+        "/sbin",
+        "/lib",
+        "/lib64",
+        "/dev",
+        "/proc",
+        "/sys",
+        "/boot",
+        "/run",
+    )
+    if (
+        path in broad
+        or path in homes
+        or path.parent in {Path("/home"), Path("/Users")}
+        or any(path.is_relative_to(Path(p).resolve()) for p in forbidden)
+    ):
         raise MicroVMError("broad system and home-directory roots are forbidden")
     if not path.is_dir():
         raise MicroVMError("export root is not a directory")
@@ -84,9 +140,14 @@ def restricted_root(raw: str) -> Path:
 
 def roots(values: dict[str, str], trusted: dict[str, str]) -> tuple[Path, Path]:
     selected = []
-    for key, approval in (("WORKSPACE", "APPROVED_WORKSPACE_ROOT"), ("RUNTIME_DIR", "APPROVED_RUNTIME_ROOT")):
+    for key, approval in (
+        ("WORKSPACE", "APPROVED_WORKSPACE_ROOT"),
+        ("RUNTIME_DIR", "APPROVED_RUNTIME_ROOT"),
+    ):
         if not trusted.get(approval):
-            raise MicroVMError(f"trusted deployment configuration must specify {approval}")
+            raise MicroVMError(
+                f"trusted deployment configuration must specify {approval}"
+            )
         allowed = restricted_root(trusted[approval])
         path = restricted_root(values[key])
         if not path.is_relative_to(allowed):
@@ -98,7 +159,10 @@ def roots(values: dict[str, str], trusted: dict[str, str]) -> tuple[Path, Path]:
 
 
 def engine_path(runtime: Path, guest: str) -> None:
-    if not re.fullmatch(r"/bull_runtime/(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*", guest):
+    if not re.fullmatch(
+        r"/bull_runtime/(?:[A-Za-z0-9_-][A-Za-z0-9_.-]*/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*",
+        guest,
+    ):
         raise MicroVMError("engine must be a normalized path beneath /bull_runtime")
     relative = guest.removeprefix("/bull_runtime/")
     with trusted_root_fd(runtime) as fd:
@@ -136,15 +200,23 @@ def firmware_bytes(values: dict[str, str]) -> bytes:
     path = Path(values["FIRMWARE"])
     expected = values["FIRMWARE_SHA256"]
     if not path.is_absolute() or not re.fullmatch(r"[0-9a-f]{64}", expected):
-        raise MicroVMError("trusted configuration must pin FIRMWARE and FIRMWARE_SHA256 for qboot")
+        raise MicroVMError(
+            "trusted configuration must pin FIRMWARE and FIRMWARE_SHA256 for qboot"
+        )
     safe_qemu_path(path)
     with trusted_root_fd(Path("/")) as root_fd:
         fd = open_beneath(root_fd, str(path).lstrip("/"))
     with os.fdopen(fd, "rb") as stream:
         info = os.fstat(stream.fileno())
-        if (not stat.S_ISREG(info.st_mode) or info.st_uid not in {0, os.getuid()}
-                or info.st_mode & 0o022 or not 0 < info.st_size <= 2 * 1024**2):
-            raise MicroVMError("firmware must be a bounded owner-controlled regular file")
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid not in {0, os.getuid()}
+            or info.st_mode & 0o022
+            or not 0 < info.st_size <= 2 * 1024**2
+        ):
+            raise MicroVMError(
+                "firmware must be a bounded owner-controlled regular file"
+            )
         data = stream.read(2 * 1024**2 + 1)
     if hashlib.sha256(data).hexdigest() != expected:
         raise MicroVMError("firmware SHA-256 mismatch")
@@ -157,11 +229,15 @@ def build_image(source: Path, output: Path, *, init: Path | None = None) -> None
     output = output.absolute()
     # Pin every output parent component. Never traverse a caller's symlink.
     with trusted_root_fd(Path("/")) as root_fd:
-        parent_fd = open_beneath(root_fd, str(output.parent).lstrip("/"), directory=True)
+        parent_fd = open_beneath(
+            root_fd, str(output.parent).lstrip("/"), directory=True
+        )
     try:
         info = os.fstat(parent_fd)
         if info.st_uid != os.getuid() or info.st_mode & 0o022:
-            raise MicroVMError("image output parent must be private and owned by the builder")
+            raise MicroVMError(
+                "image output parent must be private and owned by the builder"
+            )
         if overlap(source, output.parent.resolve(strict=True)):
             raise MicroVMError("image output directory must be outside source tree")
         try:
@@ -170,14 +246,27 @@ def build_image(source: Path, output: Path, *, init: Path | None = None) -> None
             pass
         else:
             raise MicroVMError("image output already exists; replacement is forbidden")
-        with tempfile.TemporaryDirectory(prefix=".bull-image-", dir=output.parent) as work:
+        with tempfile.TemporaryDirectory(
+            prefix=".bull-image-", dir=output.parent
+        ) as work:
             scratch = Path(work)
-            snapshot = create_snapshot(source, budget=WorkspaceBudget(), scratch_root=scratch)
+            snapshot = create_snapshot(
+                source, budget=WorkspaceBudget(), scratch_root=scratch
+            )
             try:
                 stage = snapshot.snapshot_root
                 if init is not None:
                     os.chmod(stage, 0o700)
-                    for name in ("sbin", "dev", "proc", "sys", "run", "tmp", "workspace", "bull_runtime"):
+                    for name in (
+                        "sbin",
+                        "dev",
+                        "proc",
+                        "sys",
+                        "run",
+                        "tmp",
+                        "workspace",
+                        "bull_runtime",
+                    ):
                         (stage / name).mkdir(exist_ok=True)
                     os.chmod(stage / "sbin", 0o700)
                     target = stage / "sbin/bull-init"
@@ -215,10 +304,16 @@ def validate_channels(values: dict[str, str]) -> None:
         if not path.is_absolute() or path.resolve() != path:
             raise MicroVMError("channel socket must be an absolute canonical path")
         info, parent = path.lstat(), path.parent.stat()
-        if (not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid()
-                or info.st_mode & 0o077 or parent.st_uid != os.getuid()
-                or parent.st_mode & 0o077):
-            raise MicroVMError("channel sockets require a private owner-controlled directory and mode")
+        if (
+            not stat.S_ISSOCK(info.st_mode)
+            or info.st_uid != os.getuid()
+            or info.st_mode & 0o077
+            or parent.st_uid != os.getuid()
+            or parent.st_mode & 0o077
+        ):
+            raise MicroVMError(
+                "channel sockets require a private owner-controlled directory and mode"
+            )
         safe_qemu_path(path)
 
 
@@ -227,12 +322,20 @@ def cpu_argument(profile: str) -> str:
         return "host"
     if profile != "amd-native-ssbd":
         raise MicroVMError("unsupported CPU_PROFILE")
-    info = Path('/proc/cpuinfo').read_text()
-    processors = [dict(line.split(':', 1) for line in block.splitlines() if ':' in line)
-                  for block in info.split('\n\n') if block.strip()]
-    normalized = [{key.strip(): value.strip() for key, value in cpu.items()} for cpu in processors]
-    if not normalized or any(cpu.get('vendor_id') != 'AuthenticAMD' or 'ssbd' not in cpu.get('flags', '').split()
-                             for cpu in normalized):
+    info = Path("/proc/cpuinfo").read_text()
+    processors = [
+        dict(line.split(":", 1) for line in block.splitlines() if ":" in line)
+        for block in info.split("\n\n")
+        if block.strip()
+    ]
+    normalized = [
+        {key.strip(): value.strip() for key, value in cpu.items()} for cpu in processors
+    ]
+    if not normalized or any(
+        cpu.get("vendor_id") != "AuthenticAMD"
+        or "ssbd" not in cpu.get("flags", "").split()
+        for cpu in normalized
+    ):
         raise MicroVMError("amd-native-ssbd requires an AMD host with SSBD support")
     # QEMU's Intel CPUID.7 SSBD alias requires SPEC_CTRL, which this AMD KVM
     # host cannot expose. Use AMD's native SSBD CPUID bit instead. enforce
@@ -240,32 +343,79 @@ def cpu_argument(profile: str) -> str:
     return "host,ssbd=off,amd-ssbd=on,enforce"
 
 
-def qemu_command(values: dict[str, str], workspace: Path, runtime: Path, run: Path) -> list[str]:
-    cmd = [values["QEMU"], "-M", MACHINE, "-bios", safe_qemu_path(run / "qboot.rom"),
-           "-accel", "kvm", "-cpu", cpu_argument(values.get("CPU_PROFILE", "host")),
-           "-m", values["MEMORY_MIB"] + "M", "-smp", values["CPUS"],
-           "-nodefaults", "-no-user-config", "-nographic", "-display", "none", "-monitor", "none", "-no-reboot",
-           "-kernel", values["KERNEL"], "-append",
-           "console=ttyS0 reboot=t panic=1 root=/dev/vda ro init=/sbin/bull-init bull.engine=" + values["ENGINE_GUEST"] + " bull.dev9p=" + values["DEV_9P"]]
+def qemu_command(
+    values: dict[str, str], workspace: Path, runtime: Path, run: Path
+) -> list[str]:
+    cmd = [
+        values["QEMU"],
+        "-M",
+        MACHINE,
+        "-bios",
+        safe_qemu_path(run / "qboot.rom"),
+        "-accel",
+        "kvm",
+        "-cpu",
+        cpu_argument(values.get("CPU_PROFILE", "host")),
+        "-m",
+        values["MEMORY_MIB"] + "M",
+        "-smp",
+        values["CPUS"],
+        "-nodefaults",
+        "-no-user-config",
+        "-nographic",
+        "-display",
+        "none",
+        "-monitor",
+        "none",
+        "-no-reboot",
+        "-kernel",
+        values["KERNEL"],
+        "-append",
+        "console=ttyS0 reboot=t panic=1 root=/dev/vda ro init=/sbin/bull-init bull.engine="
+        + values["ENGINE_GUEST"]
+        + " bull.dev9p="
+        + values["DEV_9P"],
+    ]
     rootfs = Path(values["ROOTFS"])
     disks = [("rootfs", run / "rootfs.ext4" if rootfs.is_dir() else rootfs)]
     if values["DEV_9P"] == "true":
         for name, path in (("workspace", workspace), ("runtime", runtime)):
-            cmd += ["-fsdev", f"local,id=bull_{name},path={safe_qemu_path(path)},security_model=none,readonly=on",
-                    "-device", f"virtio-9p-device,fsdev=bull_{name},mount_tag=bull_{name}"]
+            cmd += [
+                "-fsdev",
+                f"local,id=bull_{name},path={safe_qemu_path(path)},security_model=none,readonly=on",
+                "-device",
+                f"virtio-9p-device,fsdev=bull_{name},mount_tag=bull_{name}",
+            ]
     else:
-        disks += [("workspace", run / "workspace.ext4"), ("runtime", run / "runtime.ext4")]
+        disks += [
+            ("workspace", run / "workspace.ext4"),
+            ("runtime", run / "runtime.ext4"),
+        ]
     for name, path in disks:
-        cmd += ["-drive", f"id={name},file={safe_qemu_path(path)},format=raw,if=none,readonly=on",
-                "-device", f"virtio-blk-device,drive={name}"]
+        cmd += [
+            "-drive",
+            f"id={name},file={safe_qemu_path(path)},format=raw,if=none,readonly=on",
+            "-device",
+            f"virtio-blk-device,drive={name}",
+        ]
     if values.get("CONTROL_SOCKET"):
         cmd += ["-device", "virtio-serial-device,id=bull_serial"]
         for name in ("control", "audit"):
             path = safe_qemu_path(Path(values[name.upper() + "_SOCKET"]))
-            cmd += ["-chardev", f"socket,id=bull_{name},path={path},server=off",
-                    "-device", f"virtserialport,bus=bull_serial.0,chardev=bull_{name},name=org.bull.{name}"]
-    return cmd + ["-net", "none", "-serial", "stdio", "-sandbox",
-                  "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny"]
+            cmd += [
+                "-chardev",
+                f"socket,id=bull_{name},path={path},server=off",
+                "-device",
+                f"virtserialport,bus=bull_serial.0,chardev=bull_{name},name=org.bull.{name}",
+            ]
+    return cmd + [
+        "-net",
+        "none",
+        "-serial",
+        "stdio",
+        "-sandbox",
+        "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny",
+    ]
 
 
 def supervise(command: list[str], timeout: int) -> int:
@@ -274,15 +424,22 @@ def supervise(command: list[str], timeout: int) -> int:
     original_mask = signal.pthread_sigmask(signal.SIG_BLOCK, signals)
     child = None
     previous = {}
+
     def forward(signum, frame):
         if child is not None and child.poll() is None:
             child.send_signal(signum)
         raise MicroVMError(f"VM interrupted by signal {signum}")
+
     try:
         # The launcher is single-threaded. Block signals across spawn/handler
         # installation so a signal cannot leave an untracked child behind.
-        child = subprocess.Popen(command, start_new_session=True,
-                                 preexec_fn=lambda: signal.pthread_sigmask(signal.SIG_SETMASK, original_mask))
+        child = subprocess.Popen(
+            command,
+            start_new_session=True,
+            preexec_fn=lambda: signal.pthread_sigmask(
+                signal.SIG_SETMASK, original_mask
+            ),
+        )
         for signum in signals:
             previous[signum] = signal.signal(signum, forward)
         signal.pthread_sigmask(signal.SIG_SETMASK, original_mask)
@@ -307,24 +464,52 @@ def supervise(command: list[str], timeout: int) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=os.environ.get(PREFIX + "CONFIG_FILE"))
-    flags = {"workspace": "WORKSPACE", "bull-runtime": "RUNTIME_DIR", "kernel": "KERNEL", "rootfs": "ROOTFS",
-             "engine": "ENGINE_GUEST", "memory-mib": "MEMORY_MIB", "cpus": "CPUS", "qemu": "QEMU",
-             "accel": "ACCEL", "timeout-seconds": "TIMEOUT_SECONDS"}
+    flags = {
+        "workspace": "WORKSPACE",
+        "bull-runtime": "RUNTIME_DIR",
+        "kernel": "KERNEL",
+        "rootfs": "ROOTFS",
+        "engine": "ENGINE_GUEST",
+        "memory-mib": "MEMORY_MIB",
+        "cpus": "CPUS",
+        "qemu": "QEMU",
+        "accel": "ACCEL",
+        "timeout-seconds": "TIMEOUT_SECONDS",
+    }
     for flag, key in flags.items():
         parser.add_argument("--" + flag, dest=key)
     parser.add_argument("--dev-9p", action="store_true", default=None)
     parser.add_argument("--print-command", action="store_true")
     args = parser.parse_args(argv)
+
     def interrupted(signum, frame):
         raise MicroVMError(f"launcher interrupted by signal {signum}")
-    old_handlers = {s: signal.signal(s, interrupted) for s in (signal.SIGTERM, signal.SIGHUP)}
+
+    old_handlers = {
+        s: signal.signal(s, interrupted) for s in (signal.SIGTERM, signal.SIGHUP)
+    }
     try:
         trusted = config_file(Path(args.config)) if args.config else {}
-        values = {key: os.environ.get(PREFIX + key, trusted.get(key, default)) for key, default in DEFAULTS.items()}
+        values = {
+            key: os.environ.get(PREFIX + key, trusted.get(key, default))
+            for key, default in DEFAULTS.items()
+        }
         # Like export approvals, firmware authority cannot come from the environment.
-        for key in ("FIRMWARE", "FIRMWARE_SHA256", "CONTROL_SOCKET", "AUDIT_SOCKET", "CPU_PROFILE"):
+        for key in (
+            "FIRMWARE",
+            "FIRMWARE_SHA256",
+            "CONTROL_SOCKET",
+            "AUDIT_SOCKET",
+            "CPU_PROFILE",
+        ):
             values[key] = trusted.get(key, DEFAULTS[key])
-        values.update({key: getattr(args, key) for key in flags.values() if getattr(args, key) is not None})
+        values.update(
+            {
+                key: getattr(args, key)
+                for key in flags.values()
+                if getattr(args, key) is not None
+            }
+        )
         if args.dev_9p:
             values["DEV_9P"] = "true"
         if values["DEV_9P"] not in {"true", "false"}:
@@ -332,11 +517,21 @@ def main(argv=None) -> int:
         bounded(values["MEMORY_MIB"], "memory MiB", 4096, 65536)
         bounded(values["CPUS"], "CPUs", 1, 64)
         timeout = bounded(values["TIMEOUT_SECONDS"], "timeout seconds", 1, 86400)
-        if values["ACCEL"] not in {"auto", "kvm"} or platform.system() != "Linux" or platform.machine() != "x86_64":
-            raise MicroVMError("only Linux x86-64/KVM is supported; HVF and ARM are experimental and disabled")
+        if (
+            values["ACCEL"] not in {"auto", "kvm"}
+            or platform.system() != "Linux"
+            or platform.machine() != "x86_64"
+        ):
+            raise MicroVMError(
+                "only Linux x86-64/KVM is supported; HVF and ARM are experimental and disabled"
+            )
         workspace, runtime = roots(values, trusted)
-        if args.config and Path(args.config).resolve(strict=True).is_relative_to(workspace):
-            raise MicroVMError("trusted deployment configuration may not be inside the workspace")
+        if args.config and Path(args.config).resolve(strict=True).is_relative_to(
+            workspace
+        ):
+            raise MicroVMError(
+                "trusted deployment configuration may not be inside the workspace"
+            )
         engine_path(runtime, values["ENGINE_GUEST"])
         for key in ("KERNEL", "ROOTFS"):
             if not values[key]:
@@ -348,10 +543,27 @@ def main(argv=None) -> int:
         firmware = firmware_bytes(values)
         validate_channels(values)
         if args.print_command:
-            print(json.dumps({"hardware_checked": False, "command": shlex.join(qemu_command(values, workspace, runtime, Path("/PRIVATE_RUN_DIRECTORY")))}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "hardware_checked": False,
+                        "command": shlex.join(
+                            qemu_command(
+                                values,
+                                workspace,
+                                runtime,
+                                Path("/PRIVATE_RUN_DIRECTORY"),
+                            )
+                        ),
+                    },
+                    indent=2,
+                )
+            )
             return 0
         if not os.access("/dev/kvm", os.R_OK | os.W_OK):
-            raise MicroVMError("KVM unavailable: require read/write /dev/kvm; software fallback is forbidden")
+            raise MicroVMError(
+                "KVM unavailable: require read/write /dev/kvm; software fallback is forbidden"
+            )
         if not shutil.which(values["QEMU"]):
             raise MicroVMError("QEMU is unavailable")
         with tempfile.TemporaryDirectory(prefix="bull-microvm-") as directory:

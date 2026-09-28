@@ -1,0 +1,25 @@
+#!/usr/sbin/nft -f
+# Dedicated guest only. NAT redirects TCP web and UDP DNS traffic.
+# The filter permits gateway-owned output, translated gateway traffic and
+# loopback (except the explicit drops below); other output is dropped.
+table inet bull_egress {
+    chain redirect_output {
+        type nat hook output priority -100; policy accept;
+        meta skuid "bullgw" return
+        udp dport 53 redirect to :1953
+        tcp dport { 80, 443 } redirect to :9443
+        oifname "lo" return
+    }
+    chain filter_output {
+        type filter hook output priority 0; policy drop;
+        meta skuid "bullgw" accept
+        # OUTPUT REDIRECT can retain the original egress interface at this
+        # hook. Admit only packets that NAT actually translated to our local
+        # gateway ports; ordinary outbound traffic still hits policy drop.
+        ct status dnat tcp dport 9443 accept
+        ct status dnat udp dport 1953 accept
+        tcp dport 53 drop
+        udp dport 443 drop
+        oifname "lo" accept
+    }
+}

@@ -1,3 +1,5 @@
+"""Evaluate actions against policy and retained session history."""
+
 from __future__ import annotations
 
 from .advisory import AdvisoryModel, NullAdvisoryModel
@@ -5,7 +7,6 @@ from .audit import AuditLedger
 from .models import ActionRequest, Decision, Evaluation
 from .policy import DeterministicPolicy
 from .session_guard import SessionGuard
-
 
 _DECISION_ORDER = {
     Decision.ALLOW: 0,
@@ -48,13 +49,8 @@ class BulldogEngine:
 
             reasons = hard.reasons
 
-            if (
-                advisory.reason
-                and advisory.reason != "no advisory model configured"
-            ):
-                reasons = reasons + (
-                    f"advisory: {advisory.reason}",
-                )
+            if advisory.reason and advisory.reason != "no advisory model configured":
+                reasons = reasons + (f"advisory: {advisory.reason}",)
 
             result = Evaluation(
                 decision,

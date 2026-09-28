@@ -1,0 +1,149 @@
+"""Single fail-closed entrypoint for agent-facing production effects.
+
+Only explicitly implemented operations are routable. Adding an enum or callable
+elsewhere does not make it reachable from this boundary.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from .approval import ApprovalProof
+from .dispatcher import DispatchDenied, DispatchRequest
+from .profiles import LocalDispatcher, ProductionDispatcher
+
+
+@dataclass(frozen=True)
+class ProductionEffect:
+    operation: str
+    request: DispatchRequest
+    parameters: dict
+
+
+class _EffectRouter:
+    # Coverage applies only to callers that enter through dispatch().
+    OPERATIONS = frozenset({"process.execute", "network.request", "secret.read"})
+
+    def dispatch(
+        self, effect: ProductionEffect, *, approval: ApprovalProof | None = None
+    ):
+        if (
+            not isinstance(effect, ProductionEffect)
+            or effect.operation not in self.OPERATIONS
+        ):
+            raise DispatchDenied("effect has no production adapter; deny by default")
+        if not isinstance(effect.request, DispatchRequest):
+            raise DispatchDenied("effect requires a host-issued DispatchRequest")
+        params = effect.parameters
+        if not isinstance(params, dict):
+            raise DispatchDenied("effect parameters must be a host-validated object")
+        if effect.operation == "process.execute":
+            if approval is not None:
+                raise DispatchDenied(
+                    "process approval must be represented by signed policy and dispatch authority"
+                )
+            if set(params) != {"argv", "project_root", "timeout"}:
+                raise DispatchDenied(
+                    "execute adapter requires exact argv, project_root and timeout"
+                )
+            argv = params["argv"]
+            timeout = params["timeout"]
+            if (
+                not isinstance(argv, (tuple, list))
+                or not argv
+                or any(not isinstance(x, str) or not x for x in argv)
+                or type(timeout) not in {int, float}
+                or not 0 < timeout <= 300
+            ):
+                raise DispatchDenied("invalid bounded execute parameters")
+            root = Path(params["project_root"]).resolve(strict=True)
+            return self.dispatcher.execute(
+                effect.request, tuple(argv), project_root=root, timeout=float(timeout)
+            )
+        if effect.operation == "network.request":
+            if set(params) not in (
+                {"url", "method"},
+                {"url", "method", "headers", "body"},
+            ):
+                raise DispatchDenied("network adapter requires exact URL and method")
+            # Older callers supplied empty payload fields. Preserve that shape,
+            # but never silently discard an actual body or header.
+            if params.get("headers", {}) != {} or params.get("body") not in (
+                None,
+                b"",
+                "",
+            ):
+                raise DispatchDenied(
+                    "network headers and request bodies are unsupported"
+                )
+            if (
+                not isinstance(params["url"], str)
+                or not 1 <= len(params["url"]) <= 8192
+                or params["method"] not in ("GET", "HEAD")
+            ):
+                raise DispatchDenied(
+                    "network adapter supports bounded GET/HEAD requests only"
+                )
+            return self.dispatcher.fetch_egress(
+                url=params["url"],
+                method=params["method"],
+                domain_id=effect.request.domain_id,
+                request=effect.request,
+                approval=approval,
+            )
+        if set(params) != {"token", "name", "sandbox_id"}:
+            raise DispatchDenied(
+                "secret adapter requires exact token, name and sandbox identity"
+            )
+        return self.dispatcher.get_secret(
+            token=params["token"],
+            name=params["name"],
+            sandbox_id=params["sandbox_id"],
+            domain_id=effect.request.domain_id,
+            request=effect.request,
+            approval=approval,
+        )
+
+    @classmethod
+    def coverage(cls) -> dict:
+        return {
+            "routable": sorted(cls.OPERATIONS),
+            "default": "DENY",
+            "human_approval": ["network.request", "secret.read"],
+            "approval_exceptions": ["signed policy-authorized routine GET/HEAD URLs"],
+            "network_methods": ["GET", "HEAD"],
+            "unsupported": [
+                "message.send",
+                "publish",
+                "persist",
+                "replicate",
+                "access.change",
+                "security.change",
+            ],
+        }
+
+
+class ProductionEffectRouter(_EffectRouter):
+    def __init__(self, dispatcher: ProductionDispatcher):
+        if not isinstance(dispatcher, ProductionDispatcher):
+            raise TypeError("ProductionEffectRouter requires ProductionDispatcher")
+        self.dispatcher = dispatcher
+
+
+class LocalEffectRouter(_EffectRouter):
+    OPERATIONS = frozenset({"process.execute"})
+
+    def __init__(self, dispatcher: LocalDispatcher):
+        if not isinstance(dispatcher, LocalDispatcher):
+            raise TypeError("LocalEffectRouter requires LocalDispatcher")
+        self.dispatcher = dispatcher
+
+    @classmethod
+    def coverage(cls):
+        return {
+            "routable": sorted(cls.OPERATIONS),
+            "default": "DENY",
+            "audit_mode": "local",
+            "broker_effects": "DISABLED",
+        }

@@ -43,7 +43,9 @@ class MessageBus:
         with self._lock:
             self._boundary_guard = guard
 
-    def inspect_handler_exception(self, envelope: Envelope, error: BaseException) -> None:
+    def inspect_handler_exception(
+        self, envelope: Envelope, error: BaseException
+    ) -> None:
         """Inspect an exception before an agent is allowed to log or summarize it.
 
         This gives the host boundary guard a chance to detect protected canary
@@ -174,6 +176,8 @@ class MessageBus:
     ) -> None:
         with self._lock:
             self._trace.append(
-                TraceEvent(trace_id=trace_id, agent_id=agent_id, event=event, detail=detail)
+                TraceEvent(
+                    trace_id=trace_id, agent_id=agent_id, event=event, detail=detail
+                )
             )
         logger.debug("bus event %s by %s: %s", event, agent_id, detail)

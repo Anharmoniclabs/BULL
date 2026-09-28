@@ -1,10 +1,7 @@
-"""Behavioral model attribution for attacking agents.
+"""Score response phrases against a small model-family signature corpus.
 
-BULL fingerprints which model family is driving an attacker by scoring
-probe responses against a signature corpus. Signatures are behavioral
-(phrase and refusal patterns) rather than network artifacts, because
-attacking agents arrive through the workload itself.
-"""
+The result is a heuristic label, not authenticated attribution. Responses can
+be copied or fabricated, and the score is not a calibrated probability."""
 
 from __future__ import annotations
 
@@ -53,7 +50,7 @@ def _compile(corpus: Dict[str, Sequence[str]]) -> Dict[str, Sequence]:
 
 
 class ModelFingerprinter:
-    """Scores probe responses to attribute the driving model family."""
+    """Score phrase matches and return a heuristic family label."""
 
     def __init__(self, corpus: Dict[str, Sequence[str]] = None) -> None:
         self._corpus = _compile(corpus or MODEL_SIGNATURES)

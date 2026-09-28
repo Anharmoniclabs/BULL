@@ -1,4 +1,5 @@
 """Recipe rejection tests; actual upstream Kconfig configuration is a CI job."""
+
 import json
 from pathlib import Path
 
@@ -11,26 +12,38 @@ def sealed_configuration(tmp_path):
     inputs = tmp_path / "inputs"
     (inputs / "overlay/var/lib/clamav").mkdir(parents=True)
     (tmp_path / "output").mkdir()
-    (tmp_path / "output/.config").write_text("configuration fixture, not a compiled image\n")
-    record = {"format": "bull-public-guest-build-v1", "recipe_sha256": recipe.sha(recipe.__file__),
-              "sources": {}, "inputs": recipe.snapshot(inputs),
-              "resolved_config_sha256": recipe.sha(tmp_path / "output/.config"),
-              "database_verification": "NOT_RUN"}
+    (tmp_path / "output/.config").write_text(
+        "configuration fixture, not a compiled image\n"
+    )
+    record = {
+        "format": "bull-public-guest-build-v1",
+        "recipe_sha256": recipe.sha(recipe.__file__),
+        "sources": {},
+        "inputs": recipe.snapshot(inputs),
+        "resolved_config_sha256": recipe.sha(tmp_path / "output/.config"),
+        "database_verification": "NOT_RUN",
+    }
     recipe.save(tmp_path / "build.json", record)
     return record
 
 
-def test_guest_build_refuses_unverified_databases_before_running_make(tmp_path, monkeypatch):
+def test_guest_build_refuses_unverified_databases_before_running_make(
+    tmp_path, monkeypatch
+):
     sealed_configuration(tmp_path)
     # Supply the pinned source map separately so this fixture can exercise the
     # database gate without cloning or claiming a source checkout was inspected.
     record = json.loads((tmp_path / "build.json").read_text())
-    record["sources"] = {name: {"path": str(tmp_path / name), "commit": pin, "url": url}
-                         for name, (url, pin) in recipe.SOURCES.items()}
+    record["sources"] = {
+        name: {"path": str(tmp_path / name), "commit": pin, "url": url}
+        for name, (url, pin) in recipe.SOURCES.items()
+    }
     recipe.save(tmp_path / "build.json", record)
     monkeypatch.setattr(recipe, "source", lambda *args: tmp_path)
+
     def forbidden(*args, **kwargs):
         pytest.fail("an unverified database must stop before compilation")
+
     monkeypatch.setattr(recipe, "command", forbidden)
     with pytest.raises(ValueError, match="verified before building"):
         recipe.build(tmp_path)
@@ -56,8 +69,10 @@ def test_missing_config_requirement_is_a_failure(tmp_path):
 def test_source_identity_cannot_be_removed_or_changed(tmp_path, changed):
     record = sealed_configuration(tmp_path)
     if changed == "revision":
-        record["sources"] = {name: {"path": str(tmp_path / name), "commit": "0" * 40, "url": url}
-                             for name, (url, _) in recipe.SOURCES.items()}
+        record["sources"] = {
+            name: {"path": str(tmp_path / name), "commit": "0" * 40, "url": url}
+            for name, (url, _) in recipe.SOURCES.items()
+        }
         recipe.save(tmp_path / "build.json", record)
     with pytest.raises(ValueError, match="source"):
         recipe.load(tmp_path)
@@ -75,8 +90,10 @@ def test_build_job_limit_reaches_package_builders_and_firmware(tmp_path, monkeyp
     """Check child-process limits without producing synthetic build evidence."""
     record = sealed_configuration(tmp_path)
     record.update(
-        sources={name: {"path": str(tmp_path / name), "commit": pin, "url": url}
-                 for name, (url, pin) in recipe.SOURCES.items()},
+        sources={
+            name: {"path": str(tmp_path / name), "commit": pin, "url": url}
+            for name, (url, pin) in recipe.SOURCES.items()
+        },
         database_verification="VERIFIED_BY_SIGTOOL",
         source_date_epoch="1",
     )

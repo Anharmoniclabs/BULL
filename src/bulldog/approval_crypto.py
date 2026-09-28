@@ -4,6 +4,7 @@ Enrollment of a real authenticator is an operator trust requirement. Signature
 flags attest presence/verification under that enrolled key, not informed consent
 or hardware manufacturer identity. No authenticator is attached in ordinary CI.
 """
+
 from __future__ import annotations
 
 import base64
@@ -30,7 +31,7 @@ class _Reader:
     def take(self, count: int) -> bytes:
         if count < 0 or count > len(self.data) - self.offset:
             raise ApprovalError("truncated signature encoding")
-        value = self.data[self.offset:self.offset + count]
+        value = self.data[self.offset : self.offset + count]
         self.offset += count
         return value
 
@@ -76,7 +77,11 @@ def _inspect_signature(signature: bytes, public_blob: bytes) -> None:
         raise ApprovalError("invalid signature size")
     try:
         lines = signature.strip().splitlines()
-        if not lines or lines[0] != b"-----BEGIN SSH SIGNATURE-----" or lines[-1] != b"-----END SSH SIGNATURE-----":
+        if (
+            not lines
+            or lines[0] != b"-----BEGIN SSH SIGNATURE-----"
+            or lines[-1] != b"-----END SSH SIGNATURE-----"
+        ):
             raise ApprovalError("expected an SSH signature, not approval text")
         reader = _Reader(base64.b64decode(b"".join(lines[1:-1]), validate=True))
         if reader.take(6) != b"SSHSIG" or reader.uint() != 1:
@@ -101,21 +106,40 @@ def _inspect_signature(signature: bytes, public_blob: bytes) -> None:
         raise ApprovalError("invalid SSH signature encoding") from exc
 
 
-def verify_hardware_signature(message: bytes, signature: bytes, public_key: str) -> None:
+def verify_hardware_signature(
+    message: bytes, signature: bytes, public_key: str
+) -> None:
     blob = validate_public_key(public_key)
     _inspect_signature(signature, blob)
     # OpenSSH checks that flags, application, key and message are cryptographically
     # bound. Inspecting flags without verifying the signature would be insufficient.
     with tempfile.TemporaryDirectory(prefix="bull-approval-verify-") as directory:
         root = Path(directory)
-        (root / "signers").write_text(f'approver namespaces="{NAMESPACE}" {public_key}\n')
+        (root / "signers").write_text(
+            f'approver namespaces="{NAMESPACE}" {public_key}\n'
+        )
         (root / "proof").write_bytes(signature)
         try:
             result = subprocess.run(
-                [SSH_KEYGEN, "-Y", "verify", "-f", str(root / "signers"),
-                 "-I", "approver", "-n", NAMESPACE, "-s", str(root / "proof")],
-                input=message, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                timeout=10, env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"}, check=False,
+                [
+                    SSH_KEYGEN,
+                    "-Y",
+                    "verify",
+                    "-f",
+                    str(root / "signers"),
+                    "-I",
+                    "approver",
+                    "-n",
+                    NAMESPACE,
+                    "-s",
+                    str(root / "proof"),
+                ],
+                input=message,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+                check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ApprovalError("signature verifier unavailable") from exc

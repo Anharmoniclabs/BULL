@@ -1,0 +1,20 @@
+{
+  "format": "bull-tla-refinement-map-v1",
+  "model": "formal/tla/BullRuntime.tla",
+  "implementation": "src/bulldog/trace_model.py",
+  "mapping": {
+    "Evaluate": "apply_transition:Evaluate",
+    "ScanClean": "apply_transition:ScanClean",
+    "ScanMalware": "apply_transition:ScanMalware",
+    "BlockMalware": "apply_transition:BlockMalware",
+    "Execute": "apply_transition:Execute",
+    "ResolveDeny": "apply_transition:ResolveDeny",
+    "ResolveEscalate": "apply_transition:ResolveEscalate",
+    "GrantChildCapability": "apply_transition:GrantChildCapability",
+    "GrantSecret": "apply_transition:GrantSecret",
+    "ReturnSecret": "apply_transition:ReturnSecret",
+    "GrantBroker": "apply_transition:GrantBroker",
+    "BrokerEgress": "apply_transition:BrokerEgress"
+  },
+  "claim": "Traceability map checked against names and executable Python trace invariants. This is not a machine-checked refinement proof from the deployed runtime."
+}

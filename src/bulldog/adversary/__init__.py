@@ -1,4 +1,6 @@
-"""BULL adversary capture: tabulate, attribute, and contain agent swarms."""
+"""Experimental observation records and heuristic grouping of agent responses.
+
+This package does not discover arbitrary remote bots or install containment."""
 
 from .contracts import (
     AttackerRecord,

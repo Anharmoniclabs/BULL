@@ -1,3 +1,5 @@
+"""Open paths with containment and symlink checks for trusted filesystem access."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -67,11 +69,7 @@ def _openat2(
     how = _OpenHow(
         flags=int(flags),
         mode=int(mode if flags & os.O_CREAT else 0),
-        resolve=(
-            _RESOLVE_BENEATH
-            | _RESOLVE_NO_SYMLINKS
-            | _RESOLVE_NO_MAGICLINKS
-        ),
+        resolve=(_RESOLVE_BENEATH | _RESOLVE_NO_SYMLINKS | _RESOLVE_NO_MAGICLINKS),
     )
     encoded = os.fsencode(relative_path)
     result = int(
@@ -130,10 +128,7 @@ def open_beneath(
         for component in parts[:-1]:
             next_fd = os.open(
                 component,
-                os.O_RDONLY
-                | os.O_DIRECTORY
-                | os.O_NOFOLLOW
-                | os.O_CLOEXEC,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,
                 dir_fd=current,
             )
             os.close(current)
