@@ -188,13 +188,20 @@ class TokenBroker:
         self._version += 1
 
     def revoke_all(self):
-        """Kill-switch: zero-grace every epoch, then rotate. All tokens die."""
+        """Kill-switch: zero-grace every epoch, then rotate. All tokens die.
+
+        Epochs an earlier rotate() closed are still inside their grace window,
+        so they are zeroed too. Only then is it safe to forget individual
+        revocations: no token from any old epoch can verify again.
+        """
         n = len(self._revoked)
+        now = time.time()
         for e in self._epochs:
             if e.closed_at is None:
-                e.closed_at = time.time()
-                e.grace_seconds = 0.0
+                e.closed_at = now
+            e.grace_seconds = 0.0
         self.rotate()
+        self.reap()
         self._revoked.clear()
         self._version += 1
         return n

@@ -1082,8 +1082,10 @@ class ControlPlane:
                 "audit_records": int(audit.get("records") or 0),
                 "protections_passing": running_protections,
                 "protections_total": total_protections,
+                # No ledger (valid is None) is not operational: nothing is
+                # being recorded, so the console must not report health.
                 "operational": bool(
-                    audit.get("valid") is not False
+                    audit.get("valid") is True
                     and malware.get("status") != "error"
                     and assurance.get("status") != "error"
                 ),

@@ -10,6 +10,7 @@ import asyncio
 import ipaddress
 import re
 import socket
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
@@ -510,9 +511,12 @@ class _DnsProtocol(asyncio.DatagramProtocol):
     everything else REFUSED. The sandbox client sees a normal resolver - it
     never learns there is a policy in front of it."""
 
+    MAX_FORWARDS = 64
+
     def __init__(self, gw):
         self.gw = gw
         self.transport = None
+        self._slots = threading.BoundedSemaphore(self.MAX_FORWARDS)
 
     def connection_made(self, transport):
         self.transport = transport
@@ -526,13 +530,22 @@ class _DnsProtocol(asyncio.DatagramProtocol):
             if self.transport:
                 self.transport.sendto(self._refuse(data), addr)
             return
-        import threading
-
+        # A bounded number of forwards in flight: repeated allowed queries
+        # against a slow upstream cannot exhaust the gateway's threads.
+        if not self._slots.acquire(blocking=False):
+            if self.transport:
+                self.transport.sendto(self._refuse(data), addr)
+            return
+        host, port = self.gw.cfg.dns_upstream
+        family = socket.AF_INET6 if ":" in host else socket.AF_INET
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock = socket.socket(family, socket.SOCK_DGRAM)
             sock.settimeout(2.0)
-            sock.connect(self.gw.cfg.dns_upstream)
+            sock.connect((host, port))
         except OSError:
+            self._slots.release()
+            if self.transport:  # Always answer: a silent drop stalls clients.
+                self.transport.sendto(self._refuse(data), addr)
             return
 
         def fwd():
@@ -546,6 +559,7 @@ class _DnsProtocol(asyncio.DatagramProtocol):
                     self.transport.sendto(self._refuse(data), addr)
             finally:
                 sock.close()
+                self._slots.release()
 
         threading.Thread(target=fwd, daemon=True).start()
 

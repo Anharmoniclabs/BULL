@@ -35,10 +35,6 @@ EOF
 fi
 chmod 640 "${CONF_DIR}/egress_policy.json"; chown root:"${GW_GROUP}" "${CONF_DIR}/egress_policy.json"
 
-# Refuse to change host networking until the operator has supplied a real
-# allowlist and the installed entrypoint accepts it.
-python3 -m bulldog.run_egress_gateway --policy "${CONF_DIR}/egress_policy.json" --check-policy
-
 echo "[4/6] staging and validating nftables ruleset"
 install -m 600 "${REPO_ROOT}/deploy/egress_redirect.nft" "${CONF_DIR}/egress_redirect.nft"
 chown root:root "${CONF_DIR}/egress_redirect.nft"
@@ -61,6 +57,16 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
+
+# Everything above is staged but inactive. Refuse to change host networking
+# until the operator has supplied a real allowlist that the installed
+# entrypoint accepts; a fresh install stops here successfully.
+if ! python3 -m bulldog.run_egress_gateway --policy "${CONF_DIR}/egress_policy.json" --check-policy; then
+    echo
+    echo "STAGED_NOT_ACTIVE: units and ruleset are installed but not enabled."
+    echo "Add allowed hosts to ${CONF_DIR}/egress_policy.json, then rerun this script."
+    exit 0
+fi
 systemctl enable bull-egress-redirect.service
 systemctl start bull-egress-redirect.service
 
