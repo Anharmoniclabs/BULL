@@ -560,13 +560,24 @@ def run_cases(stack: Stack, results: list, phase: str):
                not reached and not created_down)
 
     # C10: OpenShell events, BULL decisions and effects form one audit trail.
-    events = []
-    for sandbox in ("coder", "reader", "auditor"):
-        done, _ = run(stack.cli + ["logs", sandbox, "-n", "20000", "--source", "sandbox"],
-                      timeout=60)
-        (stack.work / f"ocsf-{sandbox}.txt").write_text(done.stdout)
-        events += parse_shorthand(done.stdout.splitlines(), sandbox)
+    # The supervisor pushes events to the gateway asynchronously; poll until
+    # the event count is stable so late events are not mistaken for gaps.
+    events, previous = [], -1
+    for _ in range(15):
+        events, raw = [], {}
+        for sandbox in ("coder", "reader", "auditor"):
+            done, _ = run(stack.cli + ["logs", sandbox, "-n", "20000", "--source", "sandbox"],
+                          timeout=60)
+            raw[sandbox] = done.stdout
+            events += parse_shorthand(done.stdout.splitlines(), sandbox)
+        if len(events) == previous:
+            break
+        previous = len(events)
+        time.sleep(2)
+    for sandbox, text in raw.items():
+        (stack.work / f"ocsf-{sandbox}.txt").write_text(text)
     receipts = up.receipts(since=started)
+    (stack.work / "upstream-receipts.json").write_text(json.dumps(receipts, indent=1))
     http_events = {"l7": sum(e["engine"] == "l7" for e in events),
                    "middleware": sum(e["engine"] == "middleware" for e in events)}
     if stack.with_bull:
@@ -580,7 +591,7 @@ def run_cases(stack: Stack, results: list, phase: str):
                   and summary["matched_openshell_event"] == summary["bull_decisions"]
                   and summary["consistent"] == summary["bull_decisions"]
                   and summary["effects_without_bull_allow"] == 0
-                  and summary["unexplained_effects"] == 0)
+                  and summary["orphans_fail_closed"])
         record("C10", "OpenShell events + BULL decisions + effects correlate",
                "every decision matched, consistent; no unexplained effect; ledger verifies",
                json.dumps({**summary, "ledger_valid": verification.valid,
@@ -656,6 +667,8 @@ def main() -> int:
                 shutil.copy2(work / "bull-audit.jsonl", args.output / "bull-audit.jsonl")
                 shutil.copy2(work / "bull.log", args.output / "bull.log")
             shutil.copy2(work / "gateway.log", args.output / f"gateway-{phase[0]}.log")
+            shutil.copy2(work / "upstream-receipts.json",
+                         args.output / f"upstream-receipts-{phase[0]}.json")
             for ocsf in work.glob("ocsf-*.txt"):
                 shutil.copy2(ocsf, args.output / f"{ocsf.stem}-{phase[0]}.txt")
             if getattr(stack, "correlation", None):

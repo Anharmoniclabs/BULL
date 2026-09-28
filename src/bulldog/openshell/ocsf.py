@@ -71,29 +71,33 @@ def correlate(ledger_records: list[dict], events: list[dict], receipts: list[dic
     """Join every BULL egress decision to OpenShell's events and the effect.
 
     ``receipts`` are what the destination recorded: dicts with ``time``,
-    ``method``, ``url``. Returns rows plus a summary of agreement.
+    ``method``, ``url``. Receipts carry no sandbox identity, so they are
+    assigned only to decisions BULL allowed (nearest at or after the
+    decision); any receipt left over is an effect BULL never allowed.
     """
     receipts = receipts or []
-    used = {"l7": set(), "middleware": set(), "effect": set()}
+    decisions = [r for r in ledger_records if r.get("event_type") == "openshell_egress"]
+    used_mw: set[int] = set()
+    used_l7: set[int] = set()
+    used_effect: set[int] = set()
     rows = []
-    for record in ledger_records:
-        if record.get("event_type") != "openshell_egress":
-            continue
+    for record in decisions:
         data = record["data"]
         when = _epoch(record["timestamp"])
 
-        def same(item, engine=None):
-            return (item.get("sandbox", data["sandbox"]) == data["sandbox"]
-                    and item["method"] == data["method"]
+        def same(item, engine, data=data):
+            return (item["sandbox"] == data["sandbox"] and item["method"] == data["method"]
                     and _target(item["url"]) == _target(data["resource"])
-                    and (engine is None or item["engine"] == engine))
+                    and item["engine"] == engine)
 
-        l7 = _take([e for e in events if same(e, "l7")], set(), when, window)
-        mw_candidates = [e for e in events if same(e, "middleware")]
-        middleware = _take(mw_candidates, used["middleware"], when, window)
-        effect_candidates = [r for r in receipts if r["method"] == data["method"]
-                             and _target(r["url"]) == _target(data["resource"])]
-        effect = _take(effect_candidates, used["effect"], when, window)
+        l7 = _take([e for e in events if same(e, "l7")], used_l7, when, window)
+        middleware = _take([e for e in events if same(e, "middleware")], used_mw, when, window)
+        effect = None
+        if data["allowed"]:
+            later = [r for r in receipts if r["method"] == data["method"]
+                     and _target(r["url"]) == _target(data["resource"])
+                     and r["time"] >= when - 0.05]
+            effect = _take(later, used_effect, when, window)
         openshell_says = middleware["action"] if middleware else None
         rows.append({
             "ledger_hash": record.get("record_hash"),
@@ -112,12 +116,17 @@ def correlate(ledger_records: list[dict], events: list[dict], receipts: list[dic
                 and (effect is not None) == bool(data["allowed"])
                 and (data["allowed"] or data.get("reason_code", "") in middleware["reason"])),
         })
+    orphans = [e for e in events if e["engine"] == "middleware" and id(e) not in used_mw]
+    unexplained = [r for r in receipts if id(r) not in used_effect]
     summary = {
         "bull_decisions": len(rows),
         "matched_openshell_event": sum(r["openshell_middleware"] is not None for r in rows),
         "consistent": sum(r["consistent"] for r in rows),
-        "effects_without_bull_allow": sum(r["effect_observed"] and not r["bull_allowed"]
-                                          for r in rows),
-        "unexplained_effects": len(receipts) - len(used["effect"]),
+        "effects_without_bull_allow": len(unexplained),
+        # Middleware events BULL never decided: expected only when BULL was
+        # unreachable, which OpenShell must then fail closed.
+        "openshell_events_without_bull_decision": len(orphans),
+        "orphans_fail_closed": all(e["action"] == "DENIED" for e in orphans),
     }
-    return {"rows": rows, "summary": summary}
+    return {"rows": rows, "summary": summary,
+            "orphan_events": orphans, "unexplained_effects": unexplained}

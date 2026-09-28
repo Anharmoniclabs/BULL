@@ -343,7 +343,9 @@ def test_ocsf_shorthand_correlates_with_ledger_and_effects():
                  "url": "http://h.internal:40605/v1/records"}]
     out = correlate(ledger, events, receipts)
     assert out["summary"] == {"bull_decisions": 2, "matched_openshell_event": 2, "consistent": 2,
-                              "effects_without_bull_allow": 0, "unexplained_effects": 0}
+                              "effects_without_bull_allow": 0,
+                              "openshell_events_without_bull_decision": 0,
+                              "orphans_fail_closed": True}
     assert out["rows"][1]["openshell_reason"].endswith("bull_approval_required")
 
 
@@ -356,6 +358,7 @@ def test_ocsf_correlation_flags_an_effect_bull_did_not_allow():
                  "url": "http://h.internal:40605/v1/records"},
                 {"time": 1790618401.0, "method": "GET", "url": "http://other:1/"}]
     out = correlate(ledger, events, receipts)
-    assert out["summary"]["effects_without_bull_allow"] == 1
-    assert out["summary"]["unexplained_effects"] == 1
-    assert not out["rows"][0]["consistent"]
+    assert out["summary"]["effects_without_bull_allow"] == 2
+    assert out["rows"][0]["consistent"]  # BULL denied and OpenShell agreed
+    assert {r["url"] for r in out["unexplained_effects"]} == {
+        "http://h.internal:40605/v1/records", "http://other:1/"}
