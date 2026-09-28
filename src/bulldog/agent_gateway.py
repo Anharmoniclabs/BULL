@@ -25,7 +25,13 @@ from .agent_tool_registry import (
 from .approval import ApprovalRequired
 from .dispatcher import DispatchDenied, DispatchRequest
 from .egress_proxy import EgressResponse
-from .gateway_wire import GatewayDenied
+from .gateway_wire import (
+    GatewayDenied,
+    OUTPUT_FIELD_BYTES,
+    RESULT_BYTES,
+    json_size,
+    safe_output,
+)
 from .integrity import build_integrity_manifest, sha256_file
 from .models import Provenance
 from .policy_bundle import load_policy_bundle
@@ -48,6 +54,26 @@ COVERAGE = {
     "identity": "dedicated agent OS UID; one signed lease per service",
     "enterprise_release": "UNQUALIFIED",
 }
+
+
+# Outcome fields always survive; bulky output is the only thing ever dropped.
+_OUTCOME = (
+    "call_id",
+    "content_trust",
+    "status",
+    "executed",
+    "decision",
+    "returncode",
+    "http_status",
+)
+
+
+def fit_result(response: dict, limit: int = RESULT_BYTES) -> dict:
+    """Keep the true execution outcome deliverable whatever the output holds."""
+    if json_size(response) <= limit:
+        return response
+    compact = {k: response[k] for k in _OUTCOME if k in response}
+    return {**compact, "truncated": True, "output_omitted": True}
 
 
 def _digest(value: dict) -> str:
@@ -288,24 +314,34 @@ class GatewayAuthority:
     def _result(result, tool: dict, call_id: str) -> dict:
         base = {"call_id": call_id, "content_trust": "untrusted tool output"}
         if isinstance(result, ExecutionResult):
-            return {
+            stdout, cut_out, raw_out = safe_output(result.stdout)
+            stderr, cut_err, raw_err = safe_output(result.stderr)
+            response = {
                 **base,
                 "status": "COMPLETED" if result.executed else "DENIED",
                 "executed": result.executed,
                 "decision": result.evaluation.decision.value,
                 "authorized_argv": tool["argv"],
                 "returncode": result.returncode,
-                "stdout": result.stdout[:8192],
-                "stderr": result.stderr[:8192],
-                "truncated": len(result.stdout) > 8192 or len(result.stderr) > 8192,
+                "stdout": stdout,
+                "stderr": stderr,
+                "truncated": cut_out or cut_err,
+                "controls_replaced": raw_out or raw_err,
             }
-        if isinstance(result, EgressResponse):
-            return {
+        elif isinstance(result, EgressResponse):
+            body, cut, replaced = safe_output(
+                result.body[: 2 * OUTPUT_FIELD_BYTES].decode("utf-8", "replace")
+            )
+            cut = cut or len(result.body) > 2 * OUTPUT_FIELD_BYTES
+            response = {
                 **base,
                 "status": "COMPLETED",
                 "executed": True,
                 "http_status": result.status,
-                "body": result.body[:8192].decode("utf-8", "replace"),
-                "truncated": len(result.body) > 8192,
+                "body": body,
+                "truncated": cut,
+                "controls_replaced": replaced,
             }
-        raise GatewayDenied("unsupported effect result")
+        else:
+            raise GatewayDenied("unsupported effect result")
+        return fit_result(response)

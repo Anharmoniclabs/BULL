@@ -6,11 +6,13 @@ plugin loading, dynamic URL, upload, or administrator operation.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
+import unicodedata
 from urllib.parse import urlsplit
 
-from .gateway_wire import GatewayDenied, decode_message
+from .gateway_wire import GatewayDenied, MAX_TOOL_TIMEOUT, decode_message, json_size
 from .models import Capability
 
 _ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}\Z")
@@ -18,12 +20,33 @@ _HASH = re.compile(r"[0-9a-f]{64}\Z")
 EMPTY_INPUT = {"type": "object", "properties": {}, "additionalProperties": False}
 
 
-def _text(value, maximum):
+# Controls, format (bidirectional, zero-width), surrogate, private-use,
+# unassigned and line/paragraph separators can make a signed command or
+# description read differently to its human reviewer than it executes.
+_HIDDEN = {"Cc", "Cf", "Cs", "Co", "Cn", "Zl", "Zp"}
+
+
+def _text(value, maximum, *, encoded=None):
     return (
         isinstance(value, str)
         and 0 < len(value) <= maximum
-        and not any(ord(c) < 32 or ord(c) == 127 for c in value)
+        and not any(unicodedata.category(c) in _HIDDEN for c in value)
+        and (encoded is None or json_size(value) <= encoded)
     )
+
+
+def _public_host(host: str) -> bool:
+    """Fixed URLs name public services; internal targets need another adapter."""
+    host = host.rstrip(".").lower()
+    if not host or host == "localhost" or host.endswith(
+        (".localhost", ".local", ".internal", ".home.arpa")
+    ):
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return "." in host and "%" not in host  # Single-label names are local.
+    return address.is_global
 
 
 def validate_gateway_config(value: dict) -> dict:
@@ -64,7 +87,7 @@ def validate_gateway_config(value: dict) -> dict:
         if not isinstance(name, str) or not _ID.fullmatch(name) or name in names:
             raise GatewayDenied("invalid or repeated tool name")
         names.add(name)
-        if not _text(tool.get("description"), 512):
+        if not _text(tool.get("description"), 512, encoded=1024):
             raise GatewayDenied("invalid tool description")
         common = {"name", "description", "operation"}
         if tool.get("operation") == "process.execute":
@@ -78,6 +101,7 @@ def validate_gateway_config(value: dict) -> dict:
                 or not 1 <= len(argv) <= 64
                 or any(not _text(x, 4096) for x in argv)
                 or sum(len(x) for x in argv) > 8192
+                or json_size(argv) > 16384
                 or not argv[0].startswith("/")
             ):
                 raise GatewayDenied("invalid fixed command")
@@ -85,15 +109,20 @@ def validate_gateway_config(value: dict) -> dict:
                 tool["executable_sha256"]
             ):
                 raise GatewayDenied("executable digest is required")
-            if type(tool["timeout"]) is not int or not 1 <= tool["timeout"] <= 120:
-                raise GatewayDenied("tool timeout must be 1..120 seconds")
+            if (
+                type(tool["timeout"]) is not int
+                or not 1 <= tool["timeout"] <= MAX_TOOL_TIMEOUT
+            ):
+                raise GatewayDenied(
+                    f"tool timeout must be 1..{MAX_TOOL_TIMEOUT} seconds"
+                )
         elif tool.get("operation") == "network.request":
             if set(tool) != common | {"url", "method"} or tool["method"] not in (
                 "GET",
                 "HEAD",
             ):
                 raise GatewayDenied("network tool requires a fixed GET/HEAD URL")
-            if not _text(tool["url"], 4096):
+            if not _text(tool["url"], 4096, encoded=4096):
                 raise GatewayDenied("invalid fixed URL")
             try:
                 url = urlsplit(tool["url"])
@@ -110,6 +139,11 @@ def validate_gateway_config(value: dict) -> dict:
                 raise GatewayDenied(
                     "fixed URL must be HTTPS on port 443 without credentials or fragment"
                 ) from exc
+            if not _public_host(url.hostname):
+                raise GatewayDenied(
+                    "fixed URL must name a public host, not a loopback, "
+                    "private, link-local or local-only address"
+                )
         else:
             raise GatewayDenied("tool has no supported adapter")
     return value

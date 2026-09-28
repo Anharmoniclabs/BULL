@@ -9,6 +9,7 @@ import stat
 import threading
 
 from .gateway_wire import (
+    CALL_DEADLINE,
     GatewayDenied,
     MAX_REQUEST,
     MAX_RESPONSE,
@@ -58,7 +59,42 @@ def request(socket_path: Path, *, server_uid: int, message: dict) -> dict:
         require_peer_uid(conn, server_uid)
         conn.sendall(encode_message(message, limit=MAX_REQUEST))
         # One request, no reconnect or effect retry after a lost response.
-        return read_frame(conn, limit=MAX_RESPONSE, timeout=150)
+        # The deadline exceeds the longest signed tool plus authority overhead,
+        # so a normal completed call is not reported to the agent as lost.
+        return read_frame(conn, limit=MAX_RESPONSE, timeout=CALL_DEADLINE)
+
+
+def _peer_gone(conn: socket.socket) -> bool:
+    """True when the client already closed: it will never see this result."""
+    timeout = conn.gettimeout()
+    conn.setblocking(False)  # A timeout socket would wait instead of peeking.
+    try:
+        return conn.recv(1, socket.MSG_PEEK) == b""
+    except (BlockingIOError, InterruptedError):
+        return False
+    except OSError:
+        return True
+    finally:
+        conn.settimeout(timeout)
+
+
+# Outcome fields a client needs to avoid repeating a completed effect.
+_OUTCOME = ("call_id", "status", "executed", "decision", "returncode", "http_status")
+
+
+def _deliverable(response: dict) -> bytes:
+    try:
+        return encode_message(response)
+    except GatewayDenied:
+        pass
+    result = response.get("result")
+    if response.get("ok") is True and isinstance(result, dict):
+        compact = {k: result[k] for k in _OUTCOME if k in result}
+        compact.update(truncated=True, output_omitted=True)
+        return encode_message({"ok": True, "result": compact})
+    return encode_message(
+        {"ok": False, "error": "authority response exceeded the transport limit"}
+    )
 
 
 class GatewayServer:
@@ -107,6 +143,10 @@ class GatewayServer:
                     if uid != self.authority.config["agent_uid"]:
                         continue  # Reject before reading or exposing the tool menu.
                     message = read_frame(conn, limit=MAX_REQUEST, timeout=3)
+                    if _peer_gone(conn):
+                        # A request queued behind a long call whose client
+                        # timed out must not run after it was reported lost.
+                        continue
                     value = self.authority.handle(message, peer_uid=uid)
                     response = {"ok": True, "result": value}
                 except GatewayDenied as exc:
@@ -118,6 +158,6 @@ class GatewayServer:
                     }
                 try:
                     conn.settimeout(3)
-                    conn.sendall(encode_message(response))
+                    conn.sendall(_deliverable(response))
                 except (OSError, GatewayDenied):
                     pass

@@ -22,13 +22,23 @@ def validate_rpc(raw: bytes):
     message = decode_message(raw)
     if message.get("jsonrpc") != "2.0":
         raise GatewayDenied("JSON-RPC 2.0 required")
-    allowed = {"jsonrpc", "id", "method", "params"}
-    if set(message) - allowed or not isinstance(message.get("method"), str):
-        raise GatewayDenied("unsupported request envelope")
     if "id" in message and (
         type(message["id"]) not in {int, str} or len(str(message["id"])) > 128
     ):
         raise GatewayDenied("invalid request ID")
+    if "method" not in message:
+        # A client's reply to a server request (ping, roots/list). It carries
+        # no authority and is passed to the SDK rather than ending the session.
+        keys = set(message)
+        if "id" not in message or keys not in (
+            {"jsonrpc", "id", "result"},
+            {"jsonrpc", "id", "error"},
+        ):
+            raise GatewayDenied("unsupported response envelope")
+        return message
+    allowed = {"jsonrpc", "id", "method", "params"}
+    if set(message) - allowed or not isinstance(message.get("method"), str):
+        raise GatewayDenied("unsupported request envelope")
     params = message.get("params", {})
     if not isinstance(params, dict):
         raise GatewayDenied("parameters must be an object")
@@ -40,6 +50,34 @@ def validate_rpc(raw: bytes):
         if type(params.get("arguments", {})) is not dict or params.get("arguments", {}):
             raise GatewayDenied("fixed tools require empty arguments")
     return message
+
+
+MCP_FRAME_LIMIT = 256 * 1024
+_OVERSIZE = (
+    "BULL's reply exceeded the connector size limit. The tool may have run; "
+    "check the operator audit before repeating it."
+)
+
+
+def oversize_reply(message) -> bytes:
+    """Replace an undeliverable reply with a bounded one for the same request.
+
+    Raising here would end the task group and the whole connector session.
+    """
+    value = message.model_dump(by_alias=True, exclude_unset=True)
+    if "id" not in value or "method" in value:
+        raise GatewayDenied("MCP message size limit")  # Not a reply: fail closed.
+    return (
+        json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": value["id"],
+                "error": {"code": -32603, "message": _OVERSIZE},
+            },
+            ensure_ascii=True,
+        )
+        + "\n"
+    ).encode()
 
 
 def build_server(forward):
@@ -155,10 +193,11 @@ async def serve(socket_path: Path, server_uid: int):
                     item.message.model_dump_json(by_alias=True, exclude_unset=True)
                     + "\n"
                 ).encode()
-                if len(raw) > 256 * 1024:
-                    raise GatewayDenied("MCP response size limit")
+                if len(raw) > MCP_FRAME_LIMIT:
+                    raw = oversize_reply(item.message)
                 await anyio.to_thread.run_sync(lambda: writer.write(raw))
                 if "id" in item.message.model_dump():
+                    # A reply, or a server request whose answer must be read.
                     response_sent.set()
 
     try:
