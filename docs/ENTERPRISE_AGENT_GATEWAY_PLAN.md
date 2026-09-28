@@ -2,7 +2,7 @@
 
 Date: 27 September 2026
 
-Status: design baseline. The initial fixed-tool connector and router corrections are now implemented on the integration branch; see [implementation and remaining gates](AGENT_GATEWAY.md). A managed agent launcher is still not delivered. The source findings and validation section below describe the pre-implementation baseline, not current runtime behavior.
+Status: design baseline. The initial fixed-tool connector and router corrections are now implemented on the integration branch; see [implementation and remaining gates](AGENT_GATEWAY.md). A managed agent launcher is now implemented as `bull agent launch`; see [managed agent sessions](MANAGED_AGENT_SESSIONS.md) for its controls and recorded qualification. The source findings and validation section below describe the pre-implementation baseline, not current runtime behavior.
 
 Inspected production source: `9a358f7630c862cc253e51578c2aacdac1d334ef`
 

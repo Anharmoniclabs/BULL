@@ -447,3 +447,104 @@ def install_bull_seccomp(
         _lib.seccomp_release(ctx)
 
     return tuple(installed)
+
+
+# Contained coding-agent profile. Coding agents run arbitrary toolchains (Node,
+# Rust, Python, compilers), so a userland allowlist would break them; the
+# mount/network/PID namespaces are the primary boundary. This profile removes
+# kernel-control surfaces and the calls that would let a workload build new
+# namespaces or type into the operator's terminal.
+AGENT_DENIED_SYSCALLS = DENIED_SYSCALLS + (
+    "chroot",
+    "acct",
+    "swapon",
+    "swapoff",
+    "quotactl",
+    "syslog",
+    "vhangup",
+    "iopl",
+    "ioperm",
+    "settimeofday",
+    "clock_settime",
+    "clock_adjtime",
+    "adjtimex",
+    "lookup_dcookie",
+    "fanotify_init",
+    "mbind",
+    "migrate_pages",
+    "move_pages",
+    "set_mempolicy",
+    "kcmp",
+)
+# Refused with ENOSYS so runtimes take their documented fallback paths
+# (glibc falls back from clone3 to clone; libuv from io_uring to threads).
+AGENT_ENOSYS_SYSCALLS = (
+    "clone3",
+    "io_uring_setup",
+    "io_uring_enter",
+    "io_uring_register",
+)
+# clone() flags that create namespaces. clone3 is ENOSYS, so every new task
+# goes through clone(), whose first argument carries these flags on Linux.
+_CLONE_NAMESPACE_FLAGS = (
+    0x00020000,  # CLONE_NEWNS
+    0x02000000,  # CLONE_NEWCGROUP
+    0x04000000,  # CLONE_NEWUTS
+    0x08000000,  # CLONE_NEWIPC
+    0x10000000,  # CLONE_NEWUSER
+    0x20000000,  # CLONE_NEWPID
+    0x40000000,  # CLONE_NEWNET
+)
+# TIOCSTI queues input on a terminal (keystrokes the operator's shell would
+# run after the agent exits); TIOCLINUX can do the same on a virtual console.
+_TERMINAL_INJECTION_IOCTLS = (0x5412, 0x541C)
+
+
+def install_agent_seccomp() -> tuple[str, ...]:
+    """Install the contained-agent profile on the current process and children."""
+    ctx = _lib.seccomp_init(SCMP_ACT_ALLOW)
+    if not ctx:
+        raise SeccompError("seccomp_init returned NULL")
+    installed: list[str] = []
+    deny = SCMP_ACT_ERRNO(errno.EPERM)
+    try:
+        # ENOSYS first: DENIED_SYSCALLS also lists clone3 and io_uring, and
+        # EPERM there would stop glibc and libuv from falling back.
+        for names, action in (
+            (AGENT_ENOSYS_SYSCALLS, SCMP_ACT_ERRNO(errno.ENOSYS)),
+            (AGENT_DENIED_SYSCALLS, deny),
+        ):
+            for name in names:
+                number = _resolve(name)
+                if number is None or name in installed:
+                    continue
+                _check(_lib.seccomp_rule_add(ctx, action, number, 0), name)
+                installed.append(name)
+        clone_nr = _resolve("clone")
+        if clone_nr is not None:
+            for flag in _CLONE_NAMESPACE_FLAGS:
+                _add_cmp_rule(
+                    ctx,
+                    action=deny,
+                    syscall_number=clone_nr,
+                    comparisons=(_ScmpArgCmp(0, SCMP_CMP_MASKED_EQ, flag, flag),),
+                    label=f"clone:{flag:#x}",
+                )
+            installed.append("clone(namespace flags)")
+        ioctl_nr = _resolve("ioctl")
+        if ioctl_nr is not None:
+            for request in _TERMINAL_INJECTION_IOCTLS:
+                _add_cmp_rule(
+                    ctx,
+                    action=deny,
+                    syscall_number=ioctl_nr,
+                    comparisons=(
+                        _ScmpArgCmp(1, SCMP_CMP_MASKED_EQ, 0xFFFFFFFF, request),
+                    ),
+                    label=f"ioctl:{request:#x}",
+                )
+            installed.append("ioctl(TIOCSTI,TIOCLINUX)")
+        _check(_lib.seccomp_load(ctx), "seccomp_load")
+    finally:
+        _lib.seccomp_release(ctx)
+    return tuple(installed)

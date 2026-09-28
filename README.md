@@ -23,6 +23,7 @@ connected to its enforcement paths; it does not intercept every action on a host
 | Run source tests | The commands below and [contributor setup](CONTRIBUTING.md) |
 | Configure a deployment | [Deployment guide](docs/REPRODUCIBLE_DEPLOYMENT.md) |
 | Connect fixed BULL tools to a coding agent | [Local MCP connector preview](docs/AGENT_GATEWAY.md); native agent tools remain outside its coverage |
+| Contain a whole coding agent, native tools included | [Managed agent sessions](docs/MANAGED_AGENT_SESSIONS.md) (`bull agent launch`) |
 | Understand the current candidate | [Production assurance](docs/HUMAN_FIRST_PRODUCTION_ASSURANCE.md) |
 | Review a security claim | [Claims and limits](docs/SECURITY_CLAIMS.md) |
 

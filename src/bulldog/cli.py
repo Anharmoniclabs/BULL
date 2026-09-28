@@ -383,10 +383,12 @@ def build_parser() -> argparse.ArgumentParser:
     from .approval_cli import add_parser as add_approval_parser
     from .hardware_approval.cli import add_parser as add_hardware_parser
     from .gateway_cli import add_parser as add_gateway_parser
+    from .agent_launcher import add_parser as add_agent_parser
 
     add_hardware_parser(subparsers)
     add_approval_parser(subparsers)
     add_gateway_parser(subparsers)
+    add_agent_parser(subparsers)
     return parser
 
 

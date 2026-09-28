@@ -60,6 +60,11 @@ GROUPS = [
         "agent_gateway.py agent_tool_registry.py agent_session.py gateway_cli.py gateway_transport.py gateway_wire.py mcp_gateway.py data/agent_gateway_release.json",
     ),
     (
+        "Managed agent sessions",
+        "Launches Codex or Claude Code with every native tool inside a checked Linux boundary: allowlisted read-only root, disposable workspace, loopback-only network with a provider-only relay, dedicated agent account, seccomp and reviewed export.",
+        "agent_launcher.py client_profiles.py inference_relay.py containment_probes.py",
+    ),
+    (
         "Assurance and release evidence",
         "Machine-readable BULL control definitions, source/deployment/release status evaluation, and release-evidence integrity helpers. These report BULL evidence and never substitute for an external certification or legal assessment.",
         "assurance.py release_evidence.py data/assurance_controls.json",

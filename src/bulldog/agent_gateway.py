@@ -47,7 +47,9 @@ from .security_domain import SecurityDomainRegistry
 COVERAGE = {
     "mode": "connected-tools-only",
     "whole_agent_contained": False,
-    "managed_launcher": "NOT_IMPLEMENTED",
+    # This authority cannot see how its agent was started; a managed session
+    # (bull agent launch) reports its own containment coverage.
+    "managed_launcher": "AVAILABLE: bull agent launch",
     "remote_http": "DISABLED",
     "secret_export": "DISABLED",
     "argument_control": "fixed host-signed tools; empty arguments only",

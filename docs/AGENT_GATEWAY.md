@@ -8,11 +8,12 @@ The local profile routes fixed process tools through `LocalEffectRouter` and
 `ProductionDispatcher`. Both share exact command binding and the same execution
 safeguards; their audit evidence is different.
 
-This is a **connected-tool preview**, not an enterprise release or a contained
-coding-agent session. Codex or Claude can still use their own shell, browser,
-other servers and native tools unless a separately qualified launcher removes
-those routes. Do not put an unrestricted agent in the authority account or use
-this connector as evidence that the whole computer is protected.
+This is a **connected-tool preview**, not an enterprise release. Registered in
+an ordinary client, Codex or Claude can still use their own shell, browser,
+other servers and native tools. To contain those too, start the client with
+`bull agent launch`; see [managed agent sessions](MANAGED_AGENT_SESSIONS.md).
+Do not put an unrestricted agent in the authority account or use this
+connector alone as evidence that the whole computer is protected.
 
 ## The boundary
 
@@ -332,8 +333,9 @@ delete state or remove `REVOKED` to make a failed qualification turn green.
 
 ## What still blocks an enterprise release
 
-`bull gateway coverage` reads the shipped gate inventory. Whole-agent containment,
-native client bypass tests, long-running recovery, live multi-tenant separation,
+`bull gateway coverage` reads the shipped gate inventory. Managed sessions
+(`bull agent launch`) contain the whole client and passed their native-bypass
+probes on one host; model-driven client runs, long-running recovery, live multi-tenant separation,
 hardware approval through this connector, signed release packaging, full
 refinement tracing, independent review and enterprise identity/operations remain
 open. HTTP/OAuth access is disabled. Existing KVM candidate results remain
