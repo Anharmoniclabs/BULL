@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 from .gateway_wire import GatewayDenied, MAX_TOOL_TIMEOUT, decode_message, json_size
 from .models import Capability
+from .public_address import is_public
 
 _ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}\Z")
 _HASH = re.compile(r"[0-9a-f]{64}\Z")
@@ -46,7 +47,7 @@ def _public_host(host: str) -> bool:
         address = ipaddress.ip_address(host)
     except ValueError:
         return "." in host and "%" not in host  # Single-label names are local.
-    return address.is_global
+    return is_public(address)
 
 
 def validate_gateway_config(value: dict) -> dict:

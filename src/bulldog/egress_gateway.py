@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
 from urllib.parse import unquote
 
+from .public_address import is_public
+
 AuditFn = Callable[[Dict], None]
 
 
@@ -136,7 +138,7 @@ def public_resolver(host: str) -> Tuple[str, Optional[int]]:
     """
     for *_, sockaddr in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM):
         address = ipaddress.ip_address(sockaddr[0].split("%", 1)[0])
-        if address.is_global:
+        if is_public(address):
             return str(address), None
     raise OSError(f"{host} has no public address")
 

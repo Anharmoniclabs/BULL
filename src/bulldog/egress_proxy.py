@@ -22,6 +22,7 @@ import urllib.parse
 from typing import Callable
 
 from .trace_runtime import RuntimeTraceVerifier
+from .public_address import is_public
 
 
 class EgressDenied(RuntimeError):
@@ -284,16 +285,7 @@ class EgressBroker:
         for info in infos:
             raw = info[4][0].split("%", 1)[0]
             address = ipaddress.ip_address(raw)
-            if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
-                address = address.ipv4_mapped
-            if (
-                address.is_private
-                or address.is_loopback
-                or address.is_link_local
-                or address.is_multicast
-                or address.is_reserved
-                or address.is_unspecified
-            ):
+            if not is_public(address):
                 raise EgressDenied(
                     "destination resolved to non-public address: " f"{address}"
                 )

@@ -13,6 +13,7 @@ from .egress_proxy import (
     EgressDenied,
     EgressResponse,
 )
+from .public_address import is_public
 
 
 class _PinnedHTTPSConnection(http.client.HTTPSConnection):
@@ -77,14 +78,7 @@ def resolve_public_once(
 
         address = ipaddress.ip_address(raw)
 
-        if (
-            address.is_private
-            or address.is_loopback
-            or address.is_link_local
-            or address.is_multicast
-            or address.is_reserved
-            or address.is_unspecified
-        ):
+        if not is_public(address):
             continue
 
         public.append(str(address))
