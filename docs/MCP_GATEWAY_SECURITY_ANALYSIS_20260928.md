@@ -228,7 +228,7 @@ Linux container, Python 3.11.15, MCP SDK 2.2.0, OpenSSH installed, running as ro
 
 | Check | Result |
 |---|---|
-| Full `pytest -q` | **976 passed**, 1 skipped, 21 subtests passed, 1 failed. The failure needs cgroup v2 (`test_partial_cgroup_configuration_removes_empty_scope`), which the container lacks. The skip is the live huge-result transport test, because the client correctly refuses a root authority; a unit test covers that path. |
+| Full `pytest -q` | **978 passed**, 1 skipped, 21 subtests passed, 1 failed. The failure needs cgroup v2 (`test_partial_cgroup_configuration_removes_empty_scope`), which the container lacks. The skip is the live huge-result transport test, because the client correctly refuses a root authority; a unit test covers that path. |
 | `python -m compileall -q src/bulldog` | Passed |
 | `tools/adversarial_check.py` | 49 probes, 49 held |
 | `tools/check_package.py` | Passed |

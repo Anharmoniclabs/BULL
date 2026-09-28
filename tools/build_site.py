@@ -47,7 +47,7 @@ GROUPS = [
     (
         "Broker components",
         "Secret retrieval and outbound requests have their own authorization and transport controls. Alternate hardening helpers are documented as components, not assumed to be wired into every execution route.",
-        "secret_broker.py egress_proxy.py socket_hardening.py broker_hardening.py pinned_egress.py egress_gateway.py run_egress_gateway.py token_broker.py semantic_intent.py",
+        "secret_broker.py egress_proxy.py socket_hardening.py broker_hardening.py pinned_egress.py public_address.py egress_gateway.py run_egress_gateway.py token_broker.py semantic_intent.py",
     ),
     (
         "Audit and state models",
