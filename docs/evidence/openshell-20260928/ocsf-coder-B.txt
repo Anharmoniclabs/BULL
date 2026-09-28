@@ -1,0 +1,103 @@
+[1790619183.191] [sandbox] [INFO ] [openshell_supervisor] Starting sandbox supervision command=["sleep", "infinity"]
+[1790619183.279] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=http://127.0.0.1:59465 sandbox=coder sandbox_id=e16cc1af-1d48-4972-8619-deb484fc9b72
+[1790619183.294] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1790619183.316] [sandbox] [INFO ] [openshell_supervisor_network::opa] Configured OPA runtime binary identity mode require_binary_identity=true source=proto
+[1790619183.317] [sandbox] [OCSF ] [ocsf] CONFIG:CONFIGURED [INFO] OPA runtime binary identity mode configured [source:proto require_binary_identity:true] [source:proto]
+[1790619183.339] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary attached backend=openshell-sandbox
+[1790619183.341] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary enforcement confirmed backend=openshell-sandbox
+[1790619183.344] [sandbox] [OCSF ] [ocsf] CONFIG:ENABLED [INFO] TLS termination enabled: ephemeral CA generated
+[1790619183.344] [sandbox] [OCSF ] [ocsf] CONFIG:READY [INFO] Policy DNS connected to isolation boundary
+[1790619183.344] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1790619183.344] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1790619183.366] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary agent started backend=openshell-sandbox
+[1790619183.368] [sandbox] [OCSF ] [ocsf] SSH:LISTEN [INFO]
+[1790619183.378] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:c87a895f50bfc865c4d92e682661c432fa212c412e59cb02730c9e78f46aa2dd]
+[1790619183.380] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:59465
+[1790619183.381] [sandbox] [INFO ] [openshell_supervisor] Control-mode access plane started backend=openshell-sandbox
+[1790619184.347] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=d4a1ce7c-532e-4142-b4d0-fd7fc5fefedb, target=unix:/run/openshell/ssh.sock)
+[1790619184.348] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.378] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=8ae5d7e9-e825-4c05-9230-653739392087
+[1790619184.383] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:40959 [policy:docs engine:opa]
+[1790619184.386] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:40959/guide [policy:docs engine:l7]
+[1790619184.390] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:40959/guide [policy:docs engine:middleware] [failed:false transformed:false]
+[1790619184.394] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=d4a1ce7c-532e-4142-b4d0-fd7fc5fefedb, target=unix:/run/openshell/ssh.sock)
+[1790619184.406] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=687a27a7-7fef-48be-bf7c-1fd1018ef187, target=unix:/run/openshell/ssh.sock)
+[1790619184.406] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.431] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=5b258986-21c6-4013-a45d-bf63b7d06212
+[1790619184.436] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.437] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619184.442] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:false transformed:false]
+[1790619184.448] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=687a27a7-7fef-48be-bf7c-1fd1018ef187, target=unix:/run/openshell/ssh.sock)
+[1790619184.532] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=00e65ce3-4e99-4f94-b180-5f61494def96, target=unix:/run/openshell/ssh.sock)
+[1790619184.532] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.562] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=c6ee0a1c-75bc-4d93-927a-8cc060941e8e
+[1790619184.566] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.567] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/admin/delete [policy:api engine:l7] [reason:L7_REQUEST deny POST host.openshell.internal:35911/admin/delete reason=POST /admin/delete not permitted by policy]
+[1790619184.572] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=00e65ce3-4e99-4f94-b180-5f61494def96, target=unix:/run/openshell/ssh.sock)
+[1790619184.611] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=420ccf58-682b-40eb-b21d-f20f99f6f4dc, target=unix:/run/openshell/ssh.sock)
+[1790619184.612] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.641] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=4814f499-61c6-40a0-8108-4353be34b502
+[1790619184.644] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:46731 [policy:news engine:opa]
+[1790619184.645] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:46731/article [policy:news engine:l7]
+[1790619184.649] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:46731/article [policy:news engine:middleware] [failed:false transformed:false]
+[1790619184.654] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=420ccf58-682b-40eb-b21d-f20f99f6f4dc, target=unix:/run/openshell/ssh.sock)
+[1790619184.667] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=9c9b7e97-eb4f-4a0a-bbc6-4d5c9db4f75b, target=unix:/run/openshell/ssh.sock)
+[1790619184.667] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.697] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=7f0d669f-6921-42ea-944c-95f427d2756e
+[1790619184.703] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.704] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619184.709] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:false transformed:false reason:middleware_denied:bull-governance:bull_approval_required]
+[1790619184.722] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=9c9b7e97-eb4f-4a0a-bbc6-4d5c9db4f75b, target=unix:/run/openshell/ssh.sock)
+[1790619184.743] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=3a667dc1-833a-4d74-a150-4d828e6dc955, target=unix:/run/openshell/ssh.sock)
+[1790619184.744] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.778] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=93c66cbe-6e82-4630-896b-90e154fd5c6a
+[1790619184.782] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.785] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619184.790] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:false transformed:false]
+[1790619184.797] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=3a667dc1-833a-4d74-a150-4d828e6dc955, target=unix:/run/openshell/ssh.sock)
+[1790619184.809] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=6f3542a8-6586-477c-8802-815a3bf3fce0, target=unix:/run/openshell/ssh.sock)
+[1790619184.809] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.839] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=052c8a7c-e414-4c62-a8a9-58303adde364
+[1790619184.844] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.845] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619184.852] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:false transformed:false reason:middleware_denied:bull-governance:bull_approval_required]
+[1790619184.864] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=6f3542a8-6586-477c-8802-815a3bf3fce0, target=unix:/run/openshell/ssh.sock)
+[1790619184.925] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=73542fb7-7aae-49ad-855e-21dfff13a436, target=unix:/run/openshell/ssh.sock)
+[1790619184.926] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.953] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=cc038a4f-291d-4793-8326-9b21d41e1b2d
+[1790619184.956] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.957] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/x [policy:api engine:l7]
+[1790619184.962] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/v1/x [policy:api engine:middleware] [failed:false transformed:false reason:middleware_denied:bull-governance:bull_approval_required]
+[1790619184.965] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=73542fb7-7aae-49ad-855e-21dfff13a436, target=unix:/run/openshell/ssh.sock)
+[1790619184.975] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=e134fa1d-ac4b-40e4-8580-ecf2e53dd10e, target=unix:/run/openshell/ssh.sock)
+[1790619184.976] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.097] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=1.1.1.1:443 reason=endpoint 1.1.1.1:443 is not allowed by any policy
+[1790619185.097] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/python3.12(0) -> 1.1.1.1:443 [reason:transparent_tcp_policy_denied]
+[1790619185.111] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=e134fa1d-ac4b-40e4-8580-ecf2e53dd10e, target=unix:/run/openshell/ssh.sock)
+[1790619185.128] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=890cff1c-b2e9-4c9d-8171-d40b22c823af, target=unix:/run/openshell/ssh.sock)
+[1790619185.129] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.266] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=26c65052-f2b4-45b6-8200-f31c41473ef2
+[1790619185.269] [sandbox] [WARN ] [openshell_supervisor_network::proxy] Denied staged transparent connection destination=198.18.0.2:35911 reason=binary '/usr/bin/python3.12' not allowed in policy 'api' (ancestors: [], cmdline: []). SYMLINK HINT: the binary path is the kernel-resolved target from /proc/<pid>/exe, not the symlink. If your policy specifies a symlink (e.g., /usr/bin/python3) but the actual binary is /usr/bin/python3.11, either: (1) use the canonical path in your policy (run 'readlink -f /usr/bin/python3' inside the sandbox), or (2) ensure symlink resolution is working (check sandbox logs for 'Cannot access container filesystem')
+[1790619185.270] [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/python3.12(0) -> host.openshell.internal:35911 [reason:transparent_tcp_policy_denied]
+[1790619185.290] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=890cff1c-b2e9-4c9d-8171-d40b22c823af, target=unix:/run/openshell/ssh.sock)
+[1790619185.304] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=9d6441d2-9e1b-4db2-ad62-0c58752cb217, target=unix:/run/openshell/ssh.sock)
+[1790619185.305] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.350] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=9d6441d2-9e1b-4db2-ad62-0c58752cb217, target=unix:/run/openshell/ssh.sock)
+[1790619185.434] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=fe5bc186-ec9c-471c-a563-5ab10e54fd26, target=unix:/run/openshell/ssh.sock)
+[1790619185.434] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.461] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=fe5bc186-ec9c-471c-a563-5ab10e54fd26, target=unix:/run/openshell/ssh.sock)
+[1790619185.481] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=14a54fe8-2ceb-4ab1-9c00-a2c98b3eea40, target=unix:/run/openshell/ssh.sock)
+[1790619185.481] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.508] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=0f7e831f-39d7-4b56-a3b9-3194ba682a42
+[1790619185.511] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619185.512] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619185.513] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:true transformed:false reason:middleware_failed: external_service_error]
+[1790619185.513] [sandbox] [OCSF ] [ocsf] FINDING:CREATE [HIGH] "Supervisor middleware failure" [type:openshell.middleware.failure]
+[1790619185.517] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=14a54fe8-2ceb-4ab1-9c00-a2c98b3eea40, target=unix:/run/openshell/ssh.sock)
+[1790619185.843] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=786aca7b-76af-4b57-8627-e96b11b46ab4, target=unix:/run/openshell/ssh.sock)
+[1790619185.845] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619185.872] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=fd698412-e86d-4215-adb8-98abecd25105
+[1790619185.875] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:40959 [policy:docs engine:opa]
+[1790619185.877] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:40959/after-restart [policy:docs engine:l7]
+[1790619185.884] [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED GET http://host.openshell.internal:40959/after-restart [policy:docs engine:middleware] [failed:false transformed:false]
+[1790619185.889] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=786aca7b-76af-4b57-8627-e96b11b46ab4, target=unix:/run/openshell/ssh.sock)

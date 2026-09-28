@@ -65,6 +65,11 @@ GROUPS = [
         "agent_launcher.py client_profiles.py inference_relay.py containment_probes.py",
     ),
     (
+        "NVIDIA OpenShell integration",
+        "BULL as an OpenShell supervisor middleware and gateway interceptor: signed per-sandbox grants, provenance-based escalation, fail-closed policy attachment, widening and credential-attach control, and OCSF-to-ledger correlation. The _proto stubs are generated from OpenShell v0.1.2 (Apache-2.0).",
+        "openshell/__init__.py openshell/_proto/README.md openshell/_proto/__init__.py openshell/_proto/compute_driver_pb2.py openshell/_proto/compute_driver_pb2_grpc.py openshell/_proto/credential_driver_pb2.py openshell/_proto/credential_driver_pb2_grpc.py openshell/_proto/datamodel_pb2.py openshell/_proto/datamodel_pb2_grpc.py openshell/_proto/extension_pb2.py openshell/_proto/extension_pb2_grpc.py openshell/_proto/gateway_interceptor_pb2.py openshell/_proto/gateway_interceptor_pb2_grpc.py openshell/_proto/openshell_pb2.py openshell/_proto/openshell_pb2_grpc.py openshell/_proto/options_pb2.py openshell/_proto/options_pb2_grpc.py openshell/_proto/pagination_pb2.py openshell/_proto/pagination_pb2_grpc.py openshell/_proto/sandbox_pb2.py openshell/_proto/sandbox_pb2_grpc.py openshell/_proto/supervisor_middleware_pb2.py openshell/_proto/supervisor_middleware_pb2_grpc.py openshell/authority.py openshell/backend.py openshell/grants.py openshell/ocsf.py openshell/server.py openshell/services.py",
+    ),
+    (
         "Assurance and release evidence",
         "Machine-readable BULL control definitions, source/deployment/release status evaluation, and release-evidence integrity helpers. These report BULL evidence and never substitute for an external certification or legal assessment.",
         "assurance.py release_evidence.py data/assurance_controls.json",

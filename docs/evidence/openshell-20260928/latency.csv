@@ -1,0 +1,7 @@
+phase,metric,n,mean,median,p95,min,max,stdev
+A-openshell-only,sandbox_create_seconds,6,0.914,0.925,0.939,0.811,1.026,0.067
+A-openshell-only,get_trusted_ms,200,10.228,8.985,16.916,6.359,31.196,3.493
+A-openshell-only,post_api_ms,200,11.458,9.847,21.169,6.645,33.856,4.598
+B-openshell+bull,sandbox_create_seconds,6,0.986,0.995,1.01,0.908,1.058,0.048
+B-openshell+bull,get_trusted_ms,200,17.881,17.069,26.029,11.43,43.457,4.337
+B-openshell+bull,post_api_ms,200,22.653,20.829,34.17,14.422,65.327,6.601
