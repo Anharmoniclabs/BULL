@@ -102,3 +102,26 @@ def test_oversized_body_is_refused_not_split(console):
 def test_operator_url_keeps_key_in_fragment():
     url = console_url("http://127.0.0.1:11510/", "abc")
     assert url == "http://127.0.0.1:11510/#token=abc"
+
+
+def test_forwarded_codespaces_host_is_admitted(console):
+    console.allowed_hosts.add("demo-11510.app.github.dev")
+    status, _ = send(console, "GET", "/api/v1/snapshot", key=console.access_key,
+                     host="demo-11510.app.github.dev")
+    assert status == 200
+
+
+
+def test_launch_url_host_joins_allowlist():
+    try:
+        server = _ConsoleServer(
+            ("127.0.0.1", 0), ConsoleHandler, None,
+            external_url="https://demo-11510.app.github.dev/",
+        )
+    except OSError as exc:
+        pytest.skip(f"loopback HTTP unavailable: {exc}")
+    try:
+        assert "demo-11510.app.github.dev" in server.allowed_hosts
+        assert "https://demo-11510.app.github.dev" in server.allowed_origins
+    finally:
+        server.server_close()

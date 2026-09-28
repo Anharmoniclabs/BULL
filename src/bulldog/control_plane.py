@@ -1391,6 +1391,12 @@ def serve_console(
         gateway_lab_dir=gateway_lab_dir,
         gateway_systemd_dir=gateway_systemd_dir,
     )
+    if external_url is None:
+        from .bootstrap import _is_codespaces, _url
+
+        if _is_codespaces():
+            # The forwarded browser request carries this Host; admit it.
+            external_url = _url(int(port), True)
     server = _ConsoleServer(
         (host, int(port)), ConsoleHandler, control, external_url=external_url
     )

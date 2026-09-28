@@ -39,6 +39,19 @@ bull console --host 0.0.0.0 --port 11510 --workspace /workspaces/BULL
 Keep the forwarded port private. The console deliberately provides no arbitrary
 shell endpoint, no environment dump, and no generic process-kill endpoint.
 
+### Access key
+
+Loopback is not an identity: any local account, including a coding agent's, and
+any web page in the operator's browser can reach `127.0.0.1`. Each console run
+therefore generates a random access key and prints it in the `open:` URL
+fragment (`#token=...`). Browsers keep the fragment local; the page stores it
+for that tab and sends it with every API call. Without it the page loads but
+reports that the key is missing. A restarted console has a new key.
+
+The API also refuses requests whose `Host` is not the bound or forwarded
+address (DNS rebinding), cross-origin `Origin` headers, and POST bodies that
+are not `application/json`. Treat the printed URL like a password.
+
 ## What is live
 
 On startup the console immediately begins read-only process/service discovery.

@@ -187,3 +187,57 @@ Whether the egress broker enforces this was not reviewed.
 3. Add the small hardening changes for F3–F5 along with that fix.
 4. Repeat the full suite on a host with OpenSSH and cgroup v2, then run the live
    attachment procedure in `LOCAL_MCP_ATTACHMENT_TESTS.md` as non-root accounts.
+
+## Remediation
+
+Fixed on `claude/great-lamport-725s0i`, on top of `c65fef0`. The same pass
+red-teamed the wider build: the operator console, the transparent egress
+gateway, the host egress brokers, the audit collector, the sudo host helper,
+the service launcher and the lifecycle governor. It found and fixed the gaps
+marked **new** below.
+
+### MCP gateway findings
+
+| Finding | Fix | Regression tests |
+|---|---|---|
+| F1 lost or oversize results | Output is budgeted by encoded bytes (`OUTPUT_FIELD_BYTES`, `RESULT_BYTES`). An oversize result keeps `call_id`, `status`, `executed` and `returncode` and drops only output (`output_omitted`). The authority server sends that compact outcome instead of closing silently. The MCP writer answers an oversize reply with a bounded JSON-RPC error for the same request id instead of crashing the connector. | `tests/test_gateway_delivery.py` covers ASCII, BMP, astral, escape-heavy and control output at 7,800, 8,192 and 100,000 repetitions |
+| F2 deadline split | The client waits `CALL_DEADLINE` = the longest signed tool timeout plus a 60 s overhead allowance. A request whose client disconnected while it was queued is skipped before admission, so it never runs after being reported lost. | `test_request_abandoned_while_queued_never_runs` (live Unix socket) |
+| F3 client replies | `validate_rpc` passes well-formed `{jsonrpc,id,result|error}` replies to the SDK and still rejects malformed ones. | `test_client_replies_do_not_end_the_session`, `test_malformed_replies_still_rejected` |
+| F4 display controls | C0/C1 controls (except `\n`, `\t`), CR, and bidirectional controls in tool output become U+FFFD. `controls_replaced` reports this separately from `truncated`. | `test_display_controls_are_neutralized_but_lines_kept` |
+| F5 hidden registry text | Registry strings reject Unicode categories Cc, Cf, Cs, Co, Cn, Zl and Zp. argv and descriptions are also capped by encoded size. | `test_registry_rejects_text_that_reads_differently`, `test_registry_bounds_encoded_sizes` |
+| F6 internal URLs | Fixed URLs must name a public host. IP literals must be public (see the shared check below), and `localhost`, `.local`, `.internal`, `.home.arpa` and single-label names are refused. | `test_fixed_urls_cannot_target_local_or_private_hosts` |
+
+### Gaps found in the wider red team
+
+| Area | Gap (new) | Fix |
+|---|---|---|
+| Operator console (`control_plane.py`) | **High.** No authentication. Any local account, including the agent's, could read the snapshot and start or stop the managed MicroVM. A web page could do the same with a `text/plain` POST (no preflight), and DNS rebinding could read the snapshot. Exception text was returned to callers. | A per-run access key is required on every `/api/` call and carried in the printed URL fragment. `Host` is checked against an allowlist (including the forwarded Codespaces host). Foreign `Origin` headers are refused and POST must be `application/json`. Oversized bodies close the connection. Errors are generic. Tests: `tests/test_console_access.py` (real HTTP server). |
+| Transparent egress gateway (`egress_gateway.py`) | **High.** Only the first HTTP request on a connection was inspected. Keep-alive, pipelined and body-smuggled requests reached upstream without method/path policy or Authorization stripping. Bare CR/LF/NUL in headers could smuggle a second `Host` or `Authorization`. Path rules accepted `/v1/../admin`, encoded dot segments and `/v1-admin`. | Each connection carries one Content-Length request. Chunked bodies and trailing bytes are refused. `Connection: close` is forced and hop-by-hop and `Upgrade` headers are dropped. Header framing is strict. Client copies of injected headers are removed. Path rules match on segment boundaries. Tests: `tests/test_egress_smuggling.py`; 26 of its 30 cases fail on the previous code. |
+| Transparent egress gateway | **Medium.** The default resolver connected to whatever an allowlisted name resolved to, so a rebinding answer made the gateway identity a path to internal addresses. It also sent port-80 traffic to port 443. A dotted single DNS label matched a dotted allowlist name. | The resolver requires a public address and runs off the event loop. HTTP goes to port 80. DNS labels must be hostname labels. |
+| Host brokers (`egress_proxy.py`, `pinned_egress.py`) | **Medium.** The deny-list admitted shared address space `100.64.0.0/10`, which includes cloud metadata services such as `100.100.100.200`. | `bulldog.public_address.is_public` requires `is_global` for the address and for any IPv4 it embeds (mapped, 6to4, Teredo, NAT64). Every egress path now uses it. Tests: `tests/test_public_address.py`. |
+| Audit collector Worker | **Low.** The checkpoint MAC was compared with `!==`, which stops at the first differing character. | `crypto.subtle.verify`, which compares in constant time. The compiled Worker was run under Node: a valid MAC gave 200, forged and non-hex MACs gave 409. |
+
+Reviewed with no change needed: the sudo host helper (`tools/host_setup.py`),
+`tools/serve_agent_gateway.py`, `gateway_cli.py` revocation, the lifecycle
+governor's grant and approval binding, the egress installer and systemd unit,
+and secret comparisons elsewhere (all use `hmac.compare_digest`).
+
+### Validation after remediation
+
+Linux container, Python 3.11.15, MCP SDK 2.2.0, OpenSSH installed, running as root:
+
+| Check | Result |
+|---|---|
+| Full `pytest -q` | **976 passed**, 1 skipped, 21 subtests passed, 1 failed. The failure needs cgroup v2 (`test_partial_cgroup_configuration_removes_empty_scope`), which the container lacks. The skip is the live huge-result transport test, because the client correctly refuses a root authority; a unit test covers that path. |
+| `python -m compileall -q src/bulldog` | Passed |
+| `tools/adversarial_check.py` | 49 probes, 49 held |
+| `tools/check_package.py` | Passed |
+| `node --check` console script | Passed |
+
+### Still open
+
+- Operational issue, not changed here: with the guest nftables rules, a local
+  stub resolver's upstream queries are redirected back into the gateway.
+  Setting `--dns-upstream` to the guest's real resolver avoids this loop.
+- The residual risks listed above are unchanged. The native agent is still not
+  contained, and no live Codex or Claude Code attachment has been run.
