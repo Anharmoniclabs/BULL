@@ -283,7 +283,12 @@ def test_l7_rules_in_default_audit_mode_are_refused(authority):
     operation["spec"]["policy"]["networkPolicies"]["p"]["endpoints"][0]["rules"] = [
         {"allow": {"method": "GET", "path": "/**"}}]
     assert authority.validate_create(operation).reason_code == "bull_l7_audit_mode"
-    operation["spec"]["policy"]["networkPolicies"]["p"]["endpoints"][0]["enforcement"] = "enforce"
+    endpoint = operation["spec"]["policy"]["networkPolicies"]["p"]["endpoints"][0]
+    endpoint["enforcement"] = "NETWORK_ENFORCEMENT_MODE_UNSPECIFIED"  # = audit
+    assert authority.validate_create(operation).reason_code == "bull_l7_audit_mode"
+    endpoint["enforcement"] = "NETWORK_ENFORCEMENT_MODE_ENFORCE"  # as protobuf JSON renders it
+    assert authority.validate_create(operation).allowed
+    endpoint["enforcement"] = "enforce"
     assert authority.validate_create(operation).allowed
 
 

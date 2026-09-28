@@ -370,6 +370,8 @@ def curl(stack, sandbox, role, method="GET", path="/", body=None):
 def run_cases(stack: Stack, results: list, phase: str):
     up = stack.up
     started = time.time()
+    with up.lock:  # the upstream is shared across phases
+        up.received.clear()
     policy = stack.work / "policy.yaml"
     policy.write_text(policy_yaml(up))
 
@@ -501,14 +503,28 @@ def run_cases(stack: Stack, results: list, phase: str):
     for label, command in probes.items():
         done, _ = stack.exec("coder", *command, timeout=60)
         bypass[label] = {"rc": done.returncode, "out": (done.stdout + done.stderr)[-160:].strip()}
-    leaked = bool(up.posts("C8-bypass") or up.posts("C8-python"))
-    opened = any("open" == v["out"].splitlines()[-1:][0] if v["out"] else False
-                 for v in bypass.values())
+    # An effect that reached the upstream is acceptable only if OpenShell
+    # mediated it (transparent interception shows up as an OCSF HTTP event,
+    # and with BULL registered, as a middleware event too).
+    logs, _ = run(stack.cli + ["logs", "coder", "-n", "20000", "--source", "sandbox"], timeout=60)
+    seen = parse_shorthand(logs.stdout.splitlines(), "coder")
+    reached = {"/v1/x": bool(up.posts("C8-bypass")), "/v1/y": bool(up.posts("C8-python"))}
+    unmediated = []
+    for path, hit in reached.items():
+        engines = {e["engine"] for e in seen if e["url"].endswith(path)}
+        needed = {"l7", "middleware"} if stack.with_bull else {"l7"}
+        bypass[path] = {"reached_upstream": hit, "ocsf_engines": sorted(engines)}
+        if hit and not needed <= engines:
+            unmediated.append(path)
+    opened = any(v.get("out", "").splitlines()[-1:] == ["open"] for v in bypass.values())
     record("C8", "Native tool bypass (no proxy, other binary, raw socket, DNS) contained",
-           "no effect reached upstream", json.dumps(bypass), not leaked and not opened, bypass)
+           "no unmediated effect; raw socket and DNS fail", json.dumps(bypass),
+           not unmediated and not opened, bypass)
 
     # C6: provider credential never readable by the workload.
     canary = "sk-bull-canary-" + os.urandom(6).hex()
+    run(stack.cli + ["profile", "import", "-f", str(stack.args.os_src / "providers/github.yaml"),
+                     "--global"], timeout=60)
     done, _ = run(stack.cli + ["provider", "create", "--name", "canary", "--type", "github",
                                "--credential", f"GITHUB_TOKEN={canary}"], timeout=60)
     created = done.returncode == 0
@@ -581,9 +597,17 @@ def run_cases(stack: Stack, results: list, phase: str):
 def measure(stack: Stack, latency: list, phase: str, n: int):
     up = stack.up
     policy = stack.work / "policy.yaml"
+    creates = []
+    for i in range(5):
+        done, seconds = stack.create(f"cold-{i}", policy)
+        if done.returncode == 0:
+            creates.append(seconds)
+        run(stack.cli + ["sandbox", "delete", f"cold-{i}"], timeout=120)
     done, create_seconds = stack.create("bench", policy)
-    latency.append({"phase": phase, "metric": "sandbox_create_seconds", "n": 1,
-                    "values": [round(create_seconds, 3)]})
+    if done.returncode == 0:
+        creates.append(create_seconds)
+    latency.append({"phase": phase, "metric": "sandbox_create_seconds", "n": len(creates),
+                    "values": [round(v, 3) for v in creates]})
     for label, method, role, path in (("get_trusted", "GET", "docs", "/bench"),
                                       ("post_api", "POST", "api", "/v1/bench")):
         data = "" if method == "GET" else "--data bench-payload"

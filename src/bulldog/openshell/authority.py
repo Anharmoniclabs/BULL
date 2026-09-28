@@ -22,6 +22,9 @@ from ..policy import DeterministicPolicy
 from .grants import host_matches, validate_grants
 
 READ_METHODS = {"GET", "HEAD", "OPTIONS"}
+# Protobuf JSON renders the NetworkEnforcementMode enum by name; YAML-facing
+# callers use the short form. UNSPECIFIED means OpenShell's default, audit.
+_ENFORCE = {"enforce", "NETWORK_ENFORCEMENT_MODE_ENFORCE", 1}
 
 
 @dataclass(frozen=True)
@@ -234,7 +237,7 @@ class OpenShellAuthority:
         found = []
         for name, rule in ((policy or {}).get("networkPolicies") or {}).items():
             for endpoint in rule.get("endpoints", []):
-                if endpoint.get("rules") and endpoint.get("enforcement") != "enforce":
+                if endpoint.get("rules") and endpoint.get("enforcement") not in _ENFORCE:
                     found.append(f"{name}:{endpoint.get('host', '')}")
         return sorted(found)
 
