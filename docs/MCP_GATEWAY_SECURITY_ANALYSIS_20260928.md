@@ -7,9 +7,8 @@ Reviewed source: `c65fef0e3e88ec40884b2a3bdd9ac9ebe0a29fa3`, the head of
 
 This is a static source review of the local MCP connector and its host authority.
 It is not a live penetration test, a deployment qualification or an independent
-audit. No client (Codex, Claude Code) was attached. The code was not run for this
-review: the test suite could not be run in the editing environment. The test
-evidence below comes from CI and from the branch's own recorded review.
+audit. No client (Codex, Claude Code) was attached. The test suites were run
+locally on the reviewed commit (see below); they use fixtures, not a live host.
 
 Files reviewed in full:
 
@@ -32,12 +31,24 @@ Their guarantees are assumed as documented.
 
 | Source | Result |
 |---|---|
+| Local run, focused gateway/MCP suites (see command below) | **132 passed**, 0 skipped. This includes the 4 `test_gateway_pentest_repro.py` cases; a pass there means the F1 defect reproduced. |
+| Local run, full `pytest -q` | 834 passed, 21 subtests passed, **12 failed**. All 12 are environmental: 11 need `/usr/bin/ssh-keygen` (OpenSSH not installed in the container: `test_human_approval.py`) and 1 needs cgroup v2 (`test_deployment_setup.py::test_partial_cgroup_configuration_removes_empty_scope`). None are in gateway or MCP code. |
 | CI on `c65fef0`: `test (3.11)`, `test (3.13)` (BULL security regression) | Passed |
 | CI on `c65fef0`: MicroVM regression, conformance, TLA+ model check, FreshClam, guest recipe | Passed |
 | CI on `c65fef0`: Cloudflare `Workers Builds: bull` and `bull-audit` | **Failed**. These are external Cloudflare builds, not part of the gateway code path. Not investigated here. |
 | Branch review `docs/GATEWAY_PENTEST_20260927.md` | Focused gateway suite: 128 passed. Defect reproductions: 4 passed (a pass means the defect reproduced). |
 
-CI runs the fixture-based suites. It does not run a live Linux authority with a
+Local environment: Linux container, Python 3.11.15, MCP SDK 2.2.0, running as
+root. The editable install used the `test,mcp` extras. Focused command:
+
+```bash
+python -m pytest -q tests/test_agent_gateway.py tests/test_gateway_transport.py \
+  tests/test_gateway_broker_boundary.py tests/test_mcp_stdio.py \
+  tests/test_mcp_gateway_sdk.py tests/test_local_gateway.py \
+  tests/test_gateway_pentest_repro.py
+```
+
+Both the local run and CI use the fixture-based suites. It does not run a live Linux authority with a
 real agent account, so these results do not show that the connection is safe on
 a specific host.
 
@@ -174,7 +185,5 @@ Whether the egress broker enforces this was not reviewed.
 1. Fix F1 at both layers and turn the reproduction tests into delivery regression tests.
 2. Measure the authority's per-call overhead and bound the client deadline (F2).
 3. Add the small hardening changes for F3–F5 along with that fix.
-4. Run `tests/test_agent_gateway.py`, `tests/test_gateway_transport.py`,
-   `tests/test_mcp_stdio.py`, `tests/test_mcp_gateway_sdk.py` and
-   `tests/test_gateway_pentest_repro.py` on a normal Linux host with the
-   `test,mcp` extras, and record the results here.
+4. Repeat the full suite on a host with OpenSSH and cgroup v2, then run the live
+   attachment procedure in `LOCAL_MCP_ATTACHMENT_TESTS.md` as non-root accounts.
