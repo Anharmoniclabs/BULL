@@ -7,11 +7,13 @@ opaque, and the bullgw identity is trusted for upstream access."""
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
 import socket
 import time
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional, Tuple
+from urllib.parse import unquote
 
 AuditFn = Callable[[Dict], None]
 
@@ -94,17 +96,49 @@ class EgressPolicy:
                 and req.method.upper() not in rule["methods"]
             ):
                 return False, f"method {req.method} not permitted for {host}"
-            if (
-                rule.get("paths")
-                and req.path
-                and not any(req.path.startswith(p) for p in rule["paths"])
-            ):
-                return False, f"path {req.path} not permitted for {host}"
+            if rule.get("paths") and req.path:
+                if not _plain_path(req.path):
+                    return False, "ambiguous path (dot segment, encoded slash or backslash)"
+                if not any(_path_within(req.path, p) for p in rule["paths"]):
+                    return False, f"path {req.path} not permitted for {host}"
             return True, f"host {host} allowlisted"
         return False, f"host {host!r} not in allowlist"
 
     def allows_host(self, host: str) -> bool:
         return (host or "").lower().rstrip(".") in self._rules
+
+
+def _plain_path(target: str) -> bool:
+    """Reject paths an upstream may normalize differently from this check."""
+    path = target.split("?", 1)[0]
+    if "\\" in path or "#" in path:
+        return False
+    lowered = path.lower()
+    if "%2f" in lowered or "%5c" in lowered or "%00" in lowered:
+        return False
+    segments = unquote(path).split("/")
+    return not any(x in (".", "..") for x in segments)
+
+
+def _path_within(target: str, prefix: str) -> bool:
+    """Prefix match on segment boundaries: /api allows /api/x, not /api-admin."""
+    if prefix.endswith("/"):
+        return target.startswith(prefix)
+    return target == prefix or target.startswith((prefix + "/", prefix + "?"))
+
+
+def public_resolver(host: str) -> Tuple[str, Optional[int]]:
+    """Resolve an allowlisted name, refusing non-public answers.
+
+    The gateway identity may reach addresses the guest cannot. A DNS answer
+    for an allowlisted name pointing at loopback, private or link-local
+    space (rebinding) must not turn the gateway into a path to them.
+    """
+    for *_, sockaddr in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM):
+        address = ipaddress.ip_address(sockaddr[0].split("%", 1)[0])
+        if address.is_global:
+            return str(address), None
+    raise OSError(f"{host} has no public address")
 
 
 def extract_sni(data: bytes) -> Optional[str]:
@@ -148,8 +182,14 @@ def extract_sni(data: bytes) -> Optional[str]:
 def parse_http_head(data: bytes):
     try:
         head = data.split(b"\r\n\r\n", 1)[0]
+        # A bare CR/LF or NUL is one line here but two to lenient upstreams:
+        # it would smuggle headers (Authorization, a second Host) past checks.
+        if re.search(rb"[\r\n\x00]", head.replace(b"\r\n", b"")):
+            return None
         lines = head.decode("latin-1").split("\r\n")
-        method, target, _proto = lines[0].split(" ", 2)
+        method, target, proto = lines[0].split(" ", 2)
+        if proto not in ("HTTP/1.1", "HTTP/1.0"):
+            return None
         headers = {}
         for line in lines[1:]:
             if not line or line[0].isspace() or ":" not in line:
@@ -173,9 +213,9 @@ class GatewayConfig:
     transparent_port: int = 9443  # nftables REDIRECT target for tcp 80/443
     dns_port: int = 1953  # unprivileged nftables REDIRECT target for udp 53
     dns_upstream: Tuple[str, int] = ("127.0.0.53", 53)
-    resolver: Callable[[str], Tuple[str, int]] = lambda h: (h, 443)
-    # resolver maps a policy-approved hostname to the upstream (ip, port).
-    # Production default resolves via allowlisted DNS; tests override.
+    resolver: Callable[[str], Tuple[str, Optional[int]]] = public_resolver
+    # resolver maps a policy-approved hostname to the upstream (ip, port);
+    # a None port means the protocol default (443 for TLS, 80 for HTTP).
     connect_timeout: float = 5.0
     peek_bytes: int = 2048
 
@@ -290,8 +330,8 @@ class EgressGateway:
             writer.close()
             return
         self.stats["allowed"] += 1
-        ip, port = self.cfg.resolver(sni)
-        await self._relay(first, reader, writer, ip, port)
+        ip, port = await asyncio.to_thread(self.cfg.resolver, sni)
+        await self._relay(first, reader, writer, ip, port or 443)
 
     async def _handle_http(self, first, reader, writer, peer):
         self.stats["http"] += 1
@@ -321,19 +361,47 @@ class EgressGateway:
             finally:
                 writer.close()
             return
+        headers = parsed[3]
+        length = headers.get("content-length", "0")
+        rest = first.split(b"\r\n\r\n", 1)[1]
+        if (
+            "transfer-encoding" in headers
+            or not re.fullmatch(r"[0-9]{1,15}", length)
+            or len(rest) > int(length)
+        ):
+            # Only a declared body may follow; anything more is a second,
+            # uninspected request (pipelining or request smuggling).
+            self.stats["denied"] += 1
+            self._emit(
+                event="deny",
+                kind="http",
+                host=host,
+                client=str(peer),
+                reason="only one Content-Length request per connection",
+            )
+            writer.close()
+            return
         self.stats["allowed"] += 1
-        # Credential isolation: strip client Authorization; inject broker creds.
-        head = first.split(b"\r\n\r\n", 1)[0].decode("latin-1")
-        lines = [
-            l for l in head.split("\r\n") if not l.lower().startswith("authorization:")
+        injected = self._injector(req) if self._injector else {}
+        # Credential isolation: strip client Authorization and any header the
+        # broker injects. Forcing close means the upstream ends the exchange.
+        dropped = _HOP_HEADERS | {"authorization"} | {k.lower() for k in injected}
+        head = first.split(b"\r\n\r\n", 1)[0].decode("latin-1").split("\r\n")
+        lines = [head[0]] + [
+            l for l in head[1:] if l.split(":", 1)[0].strip().lower() not in dropped
         ]
-        if self._injector:
-            for k, v in self._injector(req).items():
-                lines.append(f"{k}: {v}")
+        lines += [f"{k}: {v}" for k, v in injected.items()]
+        lines.append("Connection: close")
         new_head = "\r\n".join(lines).encode("latin-1") + b"\r\n\r\n"
-        rest = first[len(head.encode("latin-1")) + 4 :]
-        ip, port = self.cfg.resolver(host)
-        await self._relay(new_head + rest, reader, writer, ip, port)
+        ip, port = await asyncio.to_thread(self.cfg.resolver, host)
+        await self._relay(
+            new_head + rest,
+            reader,
+            writer,
+            ip,
+            port or 80,
+            client_bytes=int(length) - len(rest),
+        )
 
     def _decide(self, req):
         try:
@@ -351,7 +419,9 @@ class EgressGateway:
         )
         return allowed, reason
 
-    async def _relay(self, first, reader, writer, ip, port):
+    async def _relay(self, first, reader, writer, ip, port, client_bytes=None):
+        """Relay a connection. With ``client_bytes``, the client may send only
+        that many more bytes (the rest of one request body), never more."""
         try:
             ur, uw = await asyncio.wait_for(
                 asyncio.open_connection(ip, port), self.cfg.connect_timeout
@@ -367,23 +437,32 @@ class EgressGateway:
         uw.write(first)
         await uw.drain()
 
-        async def pump(src, dst):
+        async def pump(src, dst, budget=None, close=True):
             try:
-                while True:
-                    data = await src.read(65536)
+                while budget is None or budget > 0:
+                    data = await src.read(65536 if budget is None else min(65536, budget))
                     if not data:
                         break
+                    if budget is not None:
+                        budget -= len(data)
                     dst.write(data)
                     await dst.drain()
             except (ConnectionError, asyncio.TimeoutError):
                 pass
             finally:
-                try:
-                    dst.close()
-                except Exception:
-                    pass
+                if close:
+                    try:
+                        dst.close()
+                    except Exception:
+                        pass
 
-        await asyncio.gather(pump(reader, uw), pump(ur, writer), return_exceptions=True)
+        # The upstream stays open after a bounded body so it can respond.
+        upstream = (
+            pump(reader, uw)
+            if client_bytes is None
+            else pump(reader, uw, client_bytes, close=False)
+        )
+        await asyncio.gather(upstream, pump(ur, writer), return_exceptions=True)
         writer.close()
 
     def dns_decide(self, qname: str) -> bool:
@@ -414,6 +493,14 @@ class EgressGateway:
             await self._server.wait_closed()
         if getattr(self, "_dns_transport", None):
             self._dns_transport.close()
+
+
+# Hop-by-hop and protocol-switching headers: the gateway sets its own
+# Connection, and an Upgrade would turn an inspected request into a tunnel.
+_HOP_HEADERS = frozenset(
+    {"connection", "keep-alive", "proxy-connection", "upgrade", "te", "trailer",
+     "proxy-authorization", "http2-settings"}
+)
 
 
 class _DnsProtocol(asyncio.DatagramProtocol):
@@ -471,7 +558,10 @@ class _DnsProtocol(asyncio.DatagramProtocol):
             l = data[p]
             if l == 0 or l > 63 or p + 1 + l > len(data):
                 return None
-            labels.append(data[p + 1 : p + 1 + l].decode("ascii", errors="strict"))
+            label = data[p + 1 : p + 1 + l].decode("ascii", errors="strict")
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", label):
+                return None  # "a.b" inside one label must not match "a.b".
+            labels.append(label)
             p += 1 + l
         qname = ".".join(labels).lower()
         return qname or None
