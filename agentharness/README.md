@@ -81,16 +81,16 @@ Spec file example:
 ], "tables": true}
 ```
 
-## Batch / Kaggle
+## Batch runs
 
 ```bash
-python -m agentharness batch --comp /kaggle/input/<competition> --base-url http://127.0.0.1:8000/v1 \
-  --model gemma-4-31b-it-qat-w4a16-ct --workers 4 --limit 2
+python -m agentharness batch --comp <folder with tasks.jsonl + snapshots/> --workers 4 --limit 2
 ```
 
-Or use `kaggle/gemma4_agent/cell2_agent.py` as the notebook cell. Plans are
-auto-approved. Results are resumable: finished tasks are skipped and errored ones are
-retried.
+Runs the harness unattended over a `tasks.jsonl` (plans auto-approved, resumable).
+This is for your own experiments. The Gemma 4 Developer Agent competition runs its
+own harness (`swegemma`) on a declarative submission; that lives in
+`kaggle/gemma4_submission/`.
 
 ## Extension points
 
