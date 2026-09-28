@@ -27,9 +27,11 @@ from pathlib import Path
 from threading import Event, Lock, Thread
 from typing import Any
 from urllib.parse import urlparse, urlsplit, urlunsplit
+import hmac
 import json
 import os
 import platform
+import secrets
 import shutil
 import socket
 import subprocess
@@ -1133,9 +1135,39 @@ class ControlPlane:
 class _ConsoleServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, address: tuple[str, int], handler, control: ControlPlane):
+    def __init__(
+        self,
+        address: tuple[str, int],
+        handler,
+        control: ControlPlane,
+        *,
+        access_key: str | None = None,
+        external_url: str | None = None,
+    ):
         super().__init__(address, handler)
         self.control = control
+        # Loopback is not an identity: any local account, including an agent's,
+        # can reach it. Every API call must present this per-run key.
+        self.access_key = access_key or secrets.token_urlsafe(32)
+        port = self.server_address[1]
+        hosts = {"127.0.0.1", "localhost", "[::1]", _host_literal(self.server_address[0])}
+        # A Host allowlist defeats DNS rebinding of the loopback console.
+        self.allowed_hosts = {f"{h}:{port}" for h in hosts}
+        if external_url:
+            self.allowed_hosts.add(urlsplit(external_url).netloc.lower())
+        self.allowed_origins = {
+            f"{scheme}://{h}" for h in self.allowed_hosts for scheme in ("http", "https")
+        }
+
+
+def _host_literal(host: str) -> str:
+    return f"[{host}]" if ":" in host else host
+
+
+def console_url(base: str, access_key: str) -> str:
+    """The operator URL, carrying the key in a fragment the browser keeps local."""
+    parts = urlsplit(base)
+    return urlunsplit(parts._replace(fragment="token=" + access_key))
 
 
 class ConsoleHandler(BaseHTTPRequestHandler):
@@ -1171,8 +1203,35 @@ class ConsoleHandler(BaseHTTPRequestHandler):
     def _asset(name: str) -> bytes:
         return resources.files("bulldog").joinpath("console_static", name).read_bytes()
 
+    def _refuse(self, message: str, status: HTTPStatus) -> bool:
+        self.close_connection = True  # Any unread body must not become a request.
+        self._json({"error": message}, status)
+        return False
+
+    def _authorized(self, *, write: bool) -> bool:
+        server: _ConsoleServer = self.server
+        host = (self.headers.get("Host") or "").lower()
+        if host not in server.allowed_hosts:
+            return self._refuse("unrecognized Host", HTTPStatus.MISDIRECTED_REQUEST)
+        origin = self.headers.get("Origin")
+        if origin is not None and origin.lower() not in server.allowed_origins:
+            return self._refuse("cross-origin request refused", HTTPStatus.FORBIDDEN)
+        if write:
+            content_type = self.headers.get("Content-Type", "").split(";")[0].strip()
+            if content_type.lower() != "application/json":
+                # Forces a CORS preflight that this server never approves.
+                return self._refuse("Content-Type must be application/json", HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        scheme, _, presented = (self.headers.get("Authorization") or "").partition(" ")
+        if scheme != "Bearer" or not hmac.compare_digest(
+            presented.encode(), server.access_key.encode()
+        ):
+            return self._refuse("console access key required", HTTPStatus.UNAUTHORIZED)
+        return True
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/") and not self._authorized(write=False):
+            return
         if parsed.path in {"/", "/index.html"}:
             self._send_bytes(self._asset("index.html"), "text/html; charset=utf-8")
             return
@@ -1193,9 +1252,13 @@ class ConsoleHandler(BaseHTTPRequestHandler):
     def _body(self) -> dict[str, Any]:
         raw_length = self.headers.get("Content-Length", "0")
         try:
-            length = min(int(raw_length), 64 * 1024)
-        except ValueError:
-            length = 0
+            length = int(raw_length)
+        except ValueError as exc:
+            raise ValueError("invalid Content-Length") from exc
+        if length > 64 * 1024:
+            # Reading a prefix would leave the rest to be parsed as a request.
+            self.close_connection = True
+            raise ValueError("request body too large")
         if length <= 0:
             return {}
         raw = self.rfile.read(length)
@@ -1210,6 +1273,8 @@ class ConsoleHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         control: ControlPlane = self.server.control
+        if not self._authorized(write=True):
+            return
         try:
             body = self._body()
             if parsed.path == "/api/v1/actions/rescan":
@@ -1288,8 +1353,10 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             return
         except Exception as exc:
+            # Exception text can carry paths or configuration; keep it local.
+            print(f"BULL console: action failed: {type(exc).__name__}: {exc}")
             self._json(
-                {"error": f"{type(exc).__name__}: {exc}"},
+                {"error": "console action failed; see the console terminal"},
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
             return
@@ -1324,7 +1391,9 @@ def serve_console(
         gateway_lab_dir=gateway_lab_dir,
         gateway_systemd_dir=gateway_systemd_dir,
     )
-    server = _ConsoleServer((host, int(port)), ConsoleHandler, control)
+    server = _ConsoleServer(
+        (host, int(port)), ConsoleHandler, control, external_url=external_url
+    )
     control.start()
     bind_host, bind_port = server.server_address[:2]
     print("=" * 78)
@@ -1336,9 +1405,10 @@ def serve_console(
         if bind_host in {"0.0.0.0", "::"}
         else f"http://{bind_host}:{bind_port}/"
     )
-    operator_url = external_url or local_url
+    operator_url = console_url(external_url or local_url, server.access_key)
     print(f"listening: http://{bind_host}:{bind_port}")
     print(f"open: {operator_url}")
+    print("The URL holds this run's console access key; do not share it.")
     if open_browser and bind_host in {"127.0.0.1", "::1", "localhost"}:
         Thread(target=webbrowser.open, args=(operator_url,), daemon=True).start()
     if host not in {"127.0.0.1", "::1", "localhost"}:

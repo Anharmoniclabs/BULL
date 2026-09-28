@@ -1,6 +1,27 @@
 (function () {
   "use strict";
   var S = { snapshot: null, view: "overview", q: "" };
+  // The console prints its URL with a per-run access key in the fragment,
+  // which is never sent to the server or in a Referer. Keep it for this tab.
+  var KEY = (function () {
+    var m = /(?:^#|&)token=([A-Za-z0-9_-]+)/.exec(location.hash),
+      k = null;
+    try {
+      if (m) sessionStorage.setItem("bull-console-key", m[1]);
+      k = sessionStorage.getItem("bull-console-key");
+    } catch (e) {
+      k = m ? m[1] : null;
+    }
+    if (m) history.replaceState(null, "", location.pathname + location.search);
+    return k || (m ? m[1] : "");
+  })();
+  function api(path, options) {
+    options = options || {};
+    options.headers = Object.assign({}, options.headers, {
+      Authorization: "Bearer " + KEY,
+    });
+    return fetch(path, options);
+  }
   var $ = function (id) {
       return document.getElementById(id);
     },
@@ -679,7 +700,9 @@
   }
   async function refresh() {
     try {
-      var r = await fetch("/api/v1/snapshot", { cache: "no-store" });
+      var r = await api("/api/v1/snapshot", { cache: "no-store" });
+      if (r.status === 401)
+        throw new Error("open the full URL printed by the console; it holds this run's access key");
       if (!r.ok) throw new Error("snapshot HTTP " + r.status);
       render(await r.json());
     } catch (e) {
@@ -690,7 +713,7 @@
     }
   }
   async function action(name, body) {
-    var r = await fetch("/api/v1/actions/" + name, {
+    var r = await api("/api/v1/actions/" + name, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body || {}),
@@ -811,7 +834,7 @@
       b = e.currentTarget.querySelector("button[type=submit]");
     b.disabled = true;
     try {
-      var r = await fetch("/api/v1/actions/policy-evaluate", {
+      var r = await api("/api/v1/actions/policy-evaluate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(p),
