@@ -55,9 +55,24 @@ async function authenticate(body: Record<string, unknown>, key: Uint8Array, purp
 
 async function verifyMac(message: Record<string, unknown>, key: Uint8Array, purpose: string) {
   const supplied = message.mac;
-  if (typeof supplied !== "string") throw new Error("missing mac");
-  const expected = await authenticate(message, key, purpose);
-  if (expected.mac !== supplied) throw new Error("authentication failed");
+  if (typeof supplied !== "string" || !HEX64.test(supplied)) throw new Error("missing mac");
+  const clean = { ...message };
+  delete clean.mac;
+  // crypto.subtle.verify compares in constant time; string !== does not.
+  const hmacKey = await crypto.subtle.importKey(
+    "raw",
+    key,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const valid = await crypto.subtle.verify(
+    "HMAC",
+    hmacKey,
+    Uint8Array.from(supplied.match(/../g)!.map((x) => parseInt(x, 16))),
+    new TextEncoder().encode(purpose + "\0" + canonical(clean)),
+  );
+  if (!valid) throw new Error("authentication failed");
 }
 
 function reject(): Response {
