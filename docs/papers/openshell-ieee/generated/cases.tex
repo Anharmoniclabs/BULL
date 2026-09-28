@@ -1,0 +1,13 @@
+C1 & BULL ALLOW $\wedge$ OpenShell ALLOW executes & HTTP 200; effect reached upstream & HTTP 200; effect reached upstream & \textbf{held} \\
+C2 & BULL DENY $\wedge$ OpenShell ALLOW is blocked & HTTP 200; effect reached upstream & HTTP 403; no effect & \textbf{held} \\
+C3 & BULL ALLOW $\wedge$ OpenShell DENY is blocked & HTTP 403; no effect & HTTP 403; no effect & \textbf{held} \\
+C3b & L7 rules left at default (audit) enforcement & created; out-of-rule POST reached upstream & creation refused (enforcement not enforce) & \textbf{held} \\
+C4 & ESCALATE: no effect before approval, one after & HTTP 200; effect reached upstream & HTTP 403 $\rightarrow$ approve $\rightarrow$ 200 $\rightarrow$ reuse 403; upstream count 1 & \textbf{held} \\
+C5 & Unauthorized policy widening rejected & applied (policy v3 loaded) & refused: approval required for 'host.openshell.internal:9' & \textbf{held} \\
+C5b & Host outside signed ceiling rejected & --- & refused: outside signed ceiling & \textbf{held} \\
+C6 & Provider credential never readable & canary not in sandbox env; attach pending supervisor & attach refused; canary not in env & \textbf{held} \\
+C7 & Internet-derived content $\rightarrow$ POST & effect reached upstream & HTTP 403; no effect & \textbf{held} \\
+C8 & Native bypass contained & \texttt{-{}-noproxy} POST reached (OCSF: l7); other binary, raw socket, UDP DNS failed & \texttt{-{}-noproxy} POST blocked (OCSF: l7+middleware); other binary, raw socket, UDP DNS failed & \textbf{held} \\
+C9 & BULL unavailable $\Rightarrow$ fail closed & --- & POST HTTP 403, no effect; create refused; after restart GET 200 & \textbf{held} \\
+C10 & One correlatable audit trail & 8 OCSF L7 events; no authority record & 9/9 decisions consistent; 0 effects w/o allow; ledger valid & \textbf{held} \\
+\bottomrule

@@ -1,0 +1,10 @@
+1 & coder & GET & :40959/guide & ALLOW & ALLOWED & ALLOWED & yes & yes \\
+2 & coder & POST & :35911/v1/records & ALLOW & ALLOWED & ALLOWED & yes & yes \\
+3 & reader & POST & :35911/v1/records & DENY & ALLOWED & DENIED & no & yes \\
+4 & coder & GET & :46731/article & ALLOW & ALLOWED & ALLOWED & yes & yes \\
+5 & coder & POST & :35911/v1/records & ESCALATE* & ALLOWED & DENIED & no & yes \\
+6 & coder & POST & :35911/v1/records & ESCALATE* & ALLOWED & ALLOWED & yes & yes \\
+7 & coder & POST & :35911/v1/records & ESCALATE* & ALLOWED & DENIED & no & yes \\
+8 & coder & POST & :35911/v1/x & ESCALATE* & ALLOWED & DENIED & no & yes \\
+9 & coder & GET & :40959/after-restart & ALLOW & ALLOWED & ALLOWED & yes & yes \\
+\bottomrule

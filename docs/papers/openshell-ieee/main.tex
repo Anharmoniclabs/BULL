@@ -1,0 +1,548 @@
+\documentclass[journal]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\interdisplaylinepenalty=2500
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{longtable}
+\usepackage{xurl}
+\usepackage{hyperref}
+
+\hypersetup{
+  pdftitle={Composing an Authority Layer with a Sandbox Runtime: BULL on NVIDIA OpenShell},
+  pdfauthor={Luis Minier},
+  pdfsubject={Empirical qualification of BULL execution governance composed with NVIDIA OpenShell v0.1.2 through its supervisor-middleware and gateway-interceptor extension points},
+  pdfkeywords={AI-agent security, execution governance, sandbox runtime, OpenShell, supervisor middleware, gateway interceptor, provenance, fail-closed, OCSF, audit integrity},
+  colorlinks=false,
+  pdfborder={0 0 0}
+}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\bull}{\textsc{BULL}}
+\newcommand{\openshell}{OpenShell}
+\newcommand{\expshort}{\texttt{56faa30}}
+\newcommand{\baseshort}{\texttt{6682adb}}
+\newcommand{\osshort}{\texttt{6648bd0}}
+\input{generated/numbers}
+
+\begin{document}
+
+\title{Composing an Authority Layer with a Sandbox Runtime: \bull{} on NVIDIA \openshell}
+
+\author{Luis~Minier%
+\thanks{Luis Minier is an independent researcher at Anharmoniclabs. Technical report, version 0.1, September 28, 2026. Author-review manuscript; not peer-reviewed. Experiment branch \texttt{experiment/bull-openshell-20260928}; tested \bull{} source commit \expshort.}}
+
+\maketitle
+
+\begin{abstract}
+A sandbox runtime decides \emph{where} an agent's code may reach; an authority layer decides \emph{whether a specific action, given where its inputs came from, is authorized and by whom}. This report tests whether the two can be composed without the composition itself opening a bypass. \bull{}, an execution-governance runtime with signed grants, provenance tracking, single-use human approvals, and a hash-chained ledger, was implemented as an NVIDIA \openshell{} supervisor middleware and gateway interceptor and evaluated against a live \openshell{} \osVersion{} gateway built from source (commit \osshort) on the Docker compute driver. The invariant under test is $\mathrm{Effect}(r) \Rightarrow \mathrm{BULL}(r) \wedge \mathrm{OpenShell}(r)$, with absence of \bull{} implying no effect. A ten-case proof suite plus two added cases was run in two phases---\openshell{} alone and \openshell{} with \bull{} registered fail-closed---and every outcome was judged at the destination service, not from client output. In the final run \passAll{} of \totalAll{} checks behaved as specified; with \bull{}, \passB{} of \totalB{} properties held, including approval-gated exfiltration after untrusted input, refusal of unapproved policy widening and credential attachment, fail-closed behavior when \bull{} was killed, and a join of \corrConsistent{} of \corrDecisions{} \bull{} decisions to \openshell{}'s OCSF telemetry with zero effects lacking a \bull{} allow. Composition added a median \deltaGet{}\,ms per GET (95\% CI [\ciLoGet, \ciHiGet]) and \deltaPost{}\,ms per POST ([\ciLoPost, \ciHiPost]), $n=\nLatGet$ each. The experiment also surfaced findings about both systems: \openshell{}'s L7 rules default to an audit mode that forwards violations, its middleware requests misreport scheme and omit the originating process, and \bull{}'s ledger append is $O(n)$ in ledger length. Six integration defects in \bull{} were found only against the live gateway and fixed. These are project-authored results from a single host, not independent certification.
+\end{abstract}
+
+\begin{IEEEkeywords}
+AI-agent security, execution governance, sandbox runtime, OpenShell, supervisor middleware, gateway interceptor, provenance, fail-closed, OCSF, audit integrity.
+\end{IEEEkeywords}
+
+%%% ------------------------------------------------------------------
+\section{Introduction}
+%%% ------------------------------------------------------------------
+\IEEEPARstart{A}{gent} sandboxes and agent authority layers answer different questions. NVIDIA \openshell{} runs each agent in a sandbox whose declarative network and filesystem policy, enforced by a per-sandbox supervisor, bounds the hosts, ports, methods, paths, and binaries the workload can use, and it emits OCSF security telemetry for what it allows and denies~\cite{OS_Repo,OS_Logging}. It does not know that the text an agent just read came from an attacker, and anyone able to call its configuration API can widen a policy. \bull{} treats agent output as a proposal and binds execution to host-owned authority, provenance, and approvals~\cite{BULL_Report}; but a decision layer binds only the traffic that passes through it.
+
+\openshell{} exposes two extension points that make composition possible without modifying either system: a \emph{supervisor middleware} called for each proxied HTTP request after \openshell{}'s own policy and before credential injection, and a \emph{gateway interceptor} called on control-plane RPCs, able to patch a proposed operation or refuse it~\cite{OS_MiddlewareDoc,OS_InterceptorDoc}. This report asks three questions. \textbf{RQ1:} Can \bull{} be composed through these extension points as a narrowing-only layer, such that an effect requires both systems' consent? \textbf{RQ2:} Does the composition fail closed when \bull{} is absent, and can the two systems' records be joined into one trail? \textbf{RQ3:} What does the composition cost, and what does exercising it reveal about either component?
+
+\subsection{Scope and Evidence Discipline}
+This report separates four evidence classes: (1) upstream \openshell{} source and documentation at tag \texttt{v0.1.2}; (2) \bull{} source on the experiment branch; (3) measurements from one automated two-phase run on one host, whose raw files are hashed in Supplement~S6; and (4) limitations and experiments not performed. All tables, figures, and in-text numbers are generated from the evidence files by the build script; none are transcribed by hand. A passing case demonstrates the stated behavior for this configuration; it is not proof against unknown attacks.
+
+%%% ------------------------------------------------------------------
+\section{Threat Model and Composition Contract}
+%%% ------------------------------------------------------------------
+\subsection{Adversaries and Assets}
+The untrusted side is the sandboxed workload and everything it reads: model output, fetched content, and processes it starts. Three adversary behaviors are exercised: a workload that attempts an effect it was not granted; a workload steered by untrusted content toward exfiltration through an allowed endpoint; and a caller of the \openshell{} API who attempts to widen a sandbox's authority or attach a credential. Protected assets are effects at destination services, provider credentials, and the integrity of the combined audit record.
+
+\subsection{Trusted Computing Base}
+Both systems are trusted: the \openshell{} gateway, supervisor, and sandbox runtime; the Docker daemon and Linux kernel; the \bull{} authority process, its signing key, and its ledger; and the operator who approves escalations. A malicious host administrator and a compromised kernel or container runtime are out of scope. In this experiment the middleware transport was not authenticated (Section~\ref{sec:limits}); that is a deviation from a production trust configuration, not an assumption about it.
+
+\subsection{Contract}
+Let $r$ be a request from sandbox $s$. Let $\mathrm{OS}(r)$ denote \openshell{}'s network and L7 policy decision and $\mathrm{B}(r)$ \bull{}'s decision. The composition is intended to satisfy
+\begin{align*}
+\mathrm{Effect}(r) \implies{} & \mathrm{OS}(r) \land \mathrm{B}(r), \\
+\neg\mathrm{Available}(\bull) \implies{} & \neg\mathrm{Effect}(r) \land \neg\mathrm{Admit}(s'), \\
+\mathrm{Policy}_{t+1}(s) \supsetneq \mathrm{Policy}_t(s) \implies{} & \mathrm{Approved}(\Delta), \\
+\mathrm{Effect}(r) \implies{} & \exists\, \ell \in \mathrm{Ledger}: \ell \sim r,
+\end{align*}
+where $s'$ is a sandbox being created, $\Delta$ the added endpoints, and $\ell \sim r$ a ledger record joinable to $r$'s OCSF events. $\mathrm{B}$ is \emph{narrowing only}: the middleware can return allow or deny, never widen \openshell{}'s decision, and the interceptor can only attach \bull{}'s middleware or refuse.
+
+%%% ------------------------------------------------------------------
+\section{Design}
+%%% ------------------------------------------------------------------
+\subsection{Data Plane: Supervisor Middleware}
+\bull{} registers one binding: HTTP request, phase \texttt{PRE\_CREDENTIALS}, 256\,KiB payload ceiling~\cite{OS_MiddlewareProto}. For each request, \texttt{GET}/\texttt{HEAD}/\texttt{OPTIONS} map to capability \texttt{network.outbound} and other methods to \texttt{network.post}; the sandbox's signed grant must contain the capability. A sandbox's provenance becomes \texttt{internet} once it performs an allowed read from a \texttt{host:port} not listed as trusted; afterwards \bull{}'s deterministic policy escalates any \texttt{network.post}. An escalation creates a pending approval bound to method, URL, and body hash; an operator's approval admits that exact request once. Every decision is appended to \bull{}'s hash-chained ledger. Taint and approvals persist across restarts.
+
+\subsection{Control Plane: Gateway Interceptor}
+\bull{} governs \texttt{CreateSandbox} and \texttt{UpdateConfig} in the \texttt{modify\_operation} and \texttt{validate} phases, and \texttt{AttachSandboxProvider}, \texttt{ApproveDraftChunk}, \texttt{ApproveAllDraftChunks}, and \texttt{EditDraftChunk} in \texttt{validate}~\cite{OS_InterceptorProto}. \texttt{modify\_operation} returns RFC~6902 patches~\cite{RFC6902} that attach \bull{}'s middleware with \texttt{onError: fail\_closed} to every host of a new or replacement policy. \texttt{validate} refuses: sandboxes not fully mediated; hosts outside the signed ceiling; L7 rules not in \texttt{enforce} mode; any new \texttt{host:port} or new L7 rule set without a matching single-use approval; all draft-policy approvals without \bull{} approval; global policy changes; and provider attachment for sandboxes lacking a \texttt{credential.read} grant. Both extensions are registered with \texttt{failure\_policy = fail\_closed}.
+
+\subsection{Grants and Audit Join}
+Per-sandbox grants (capabilities, trusted \texttt{host:port} sources, and a global host ceiling) are embedded in \bull{}'s HMAC-signed policy bundle. For the audit join, \openshell{}'s supervisor pushes OCSF events to the gateway, which serves them in shorthand~\cite{OS_Logging}. A correlator matches each \bull{} ledger decision to the \openshell{} L7 and middleware events of the same sandbox, method, and target within a time window, and assigns destination receipts only to decisions \bull{} allowed; any receipt left unassigned is an effect \bull{} never allowed.
+
+%%% ------------------------------------------------------------------
+\section{Method}
+%%% ------------------------------------------------------------------
+\subsection{Environment and Deviations}
+Table~\ref{tab:env} records the environment. The session's network policy blocked the official installer and image registries, so all binaries and images were built locally from the upstream source and Dockerfiles, with two deviations: the supervisor image used \texttt{distroless/cc-debian13} instead of the pinned \texttt{base-nossl-debian13}, because a locally linked supervisor requires \texttt{libgcc\_s}; and \texttt{host.openshell.internal} was mapped on the host to the Docker bridge (172.17.0.1) so that the host-resident gateway reaches the middleware at the address the supervisors use. Policies list \texttt{allowed\_ips: [172.17.0.1/32]} because \openshell{}'s SSRF guard otherwise refuses private destinations~\cite{OS_Logging}.
+
+\begin{table}[!t]
+\caption{Experimental Environment}
+\label{tab:env}
+\centering
+\small
+\begin{tabularx}{\columnwidth}{lY}
+\toprule
+\textbf{Item} & \textbf{Value} \\
+\midrule
+\openshell{} & \osVersion{}, tag \texttt{v0.1.2}, commit \osshort{}; gateway, CLI, supervisor glibc; sandbox runtime static musl; Rust 1.95.0 \\
+Compute driver & \dockerVersion{}, pull policy \texttt{never} \\
+Host & Linux \hostKernel{}, 4 vCPU, 15\,GiB, shared cloud container \\
+Sandbox image & \texttt{ubuntu:24.04} + curl, python3; uid 1500 \\
+\bull{} & commit \expshort{}; Python 3.11; grpcio 1.84; protobuf 7.36 \\
+Transport & middleware: plaintext gRPC on bridge; interceptor: Unix socket \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Topology and Grants}
+Three host services record every request that reaches them: \emph{docs} (trusted by \bull{}), \emph{news} (untrusted; returns a prompt-injection string), and \emph{api} (the effect target). \openshell{}'s policy allows \texttt{GET /**} on docs and news and \texttt{POST /v1/**} on api, each with \texttt{enforcement: enforce} and binary \texttt{/usr/bin/curl}. \bull{} grants sandbox \texttt{coder} outbound and post, \texttt{reader} outbound only, and \texttt{bench} outbound and post; all trust only docs; the ceiling is \texttt{host.openshell.internal}.
+
+\subsection{Phases, Judging, and Measurement}
+Phase~A runs \openshell{} alone; Phase~B runs the same requests with both \bull{} extensions registered. A case passes on destination evidence: a request is ``blocked'' only if the destination never received it. Phase~A rows for \bull{}-specific properties record what \openshell{} alone does; their ``as expected'' status means the observation was made, not that the property holds. Latency is \texttt{curl}'s \texttt{time\_total} for \nLatGet{} trusted GETs and \nLatPost{} allowed POSTs in one in-sandbox loop, excluding exec overhead; admission time is \texttt{sandbox create --detach} wall time over \createN{} creations and measures admission including interceptor round trips, not boot to Ready. The harness (\texttt{tools/openshell\_experiment.py}) is fully automated.
+
+%%% ------------------------------------------------------------------
+\section{Results}
+%%% ------------------------------------------------------------------
+\subsection{Proof Suite}
+Table~\ref{tab:cases} and Fig.~\ref{fig:outcomes} give the outcomes. In Phase~A, \passA{} of \totalA{} observations were as expected; in Phase~B, \passB{} of \totalB{} properties held (both counts include two setup rows). The complete observed output of every case is reproduced in Supplement~S1.
+
+\begin{table*}[!t]
+\caption{Proof-Suite Outcomes, Judged at the Destination}
+\label{tab:cases}
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}p{3.6cm}YYl}
+\toprule
+\textbf{Case} & \textbf{Property} & \textbf{A: \openshell{} only} & \textbf{B: \openshell{} + \bull{}} & \textbf{B} \\
+\midrule
+\input{generated/cases}
+\end{tabularx}
+\end{table*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figs/outcomes.pdf}
+\caption{Outcome matrix. Red cells in row~A mark effects that \openshell{} alone permitted and the composed system blocked; ``n/a'' marks cases that exist only with \bull{}.}
+\label{fig:outcomes}
+\end{figure*}
+
+Three results carry most of the weight. First, in C2, C4, and C7, \openshell{}'s own L7 engine allowed every request (Table~\ref{tab:corr}), so the blocked effects in Phase~B are attributable to \bull{} alone: without an authority layer, a sandbox that read attacker-controlled content posted to the allowed API (C7-A). Second, C4 shows exactly-once semantics: a pending escalation produced no effect, an approval admitted one request, and reusing the approval was refused, leaving exactly one upstream record. Third, C9 killed the \bull{} process: the next POST was denied by \openshell{} with \texttt{middleware\_failed: external\_service\_error} and never reached the destination, sandbox creation was refused, and after restart a trusted read succeeded with persisted taint and approvals intact.
+
+\subsection{Unified Audit Trail}
+Table~\ref{tab:corr} lists every Phase~B \bull{} decision joined to \openshell{}'s telemetry and to the destination. All \corrMatched{} of \corrDecisions{} decisions matched an \openshell{} middleware event, \corrConsistent{} were consistent in decision and effect, and \corrUnexplained{} destination receipts lacked a \bull{} allow. The single \openshell{} middleware event with no \bull{} decision (\corrOrphans{}) is the C9 fail-closed denial issued while \bull{} was down. The ledger verified intact at \ledgerRecordsCTen{} records at the time of C10. \openshell{} carries \bull{}'s reason code into its own denial telemetry (e.g., \texttt{middleware\_denied:\allowbreak bull-governance:\allowbreak bull\_approval\_required}), so an OCSF-only consumer still sees why \bull{} refused.
+
+\begin{table*}[!t]
+\caption{Phase B Audit Join: \bull{} Ledger $\times$ \openshell{} OCSF $\times$ Destination (* = approval bound)}
+\label{tab:corr}
+\centering
+\scriptsize
+\begin{tabular}{rllllllll}
+\toprule
+\# & \textbf{Sandbox} & \textbf{Method} & \textbf{Target} & \textbf{\bull{}} & \textbf{OS L7} & \textbf{OS middleware} & \textbf{Effect} & \textbf{Consistent} \\
+\midrule
+\input{generated/correlation}
+\end{tabular}
+\end{table*}
+
+\subsection{Latency}
+Table~\ref{tab:latency} and Figs.~\ref{fig:dist}--\ref{fig:create} summarize performance. Composition increased median request latency from \medGetA{} to \medGetB{}\,ms for GET and from \medPostA{} to \medPostB{}\,ms for POST. Table~\ref{tab:stats} gives bootstrap confidence intervals (10\,000 resamples, fixed seed) and two-sided Mann--Whitney tests. From OCSF timestamps, \openshell{}'s L7 event preceded \bull{}'s verdict by a median of \gapMedian{}\,ms (range \gapMin--\gapMax{}\,ms, $n=\gapN$, 1\,ms resolution); this interval contains the plaintext gRPC round trip, the Python decision, and a synchronous ledger append. Mean admission time rose by \createDelta{}\,ms ($n=\createN$), which is within run-to-run spread.
+
+\begin{table}[!t]
+\caption{Latency Summary (Requests in ms; Creation in ms)}
+\label{tab:latency}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{llrrrrrrrr}
+\toprule
+\textbf{Metric} & \textbf{Ph.} & $n$ & \textbf{Mean} & \textbf{Med.} & \textbf{p95} & \textbf{p99} & \textbf{Min} & \textbf{Max} & $\sigma$ \\
+\midrule
+\input{generated/latency}
+\end{tabular}
+\end{table}
+
+\begin{table}[!t]
+\caption{Overhead (B $-$ A): Median Difference, 95\% Bootstrap CI, Mann--Whitney U}
+\label{tab:stats}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Metric} & $\Delta$\textbf{med} & \textbf{95\% CI} & $U$ & $z$ & $p$ & $|r|$ \\
+\midrule
+\input{generated/stats}
+\end{tabular}
+\end{table}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/distributions.pdf}
+\caption{Per-request latency distributions, $n=\nLatGet$ per cell.}
+\label{fig:dist}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/ecdf.pdf}
+\caption{Empirical CDFs of request latency for Phases A and B.}
+\label{fig:ecdf}
+\end{figure}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figs/drift.pdf}
+\caption{Latency by request index. Phase~B's rolling median rises through the run while Phase~A's stays flat (Table~\ref{tab:drift}).}
+\label{fig:drift}
+\end{figure*}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/create_gap.pdf}
+\caption{Left: sandbox admission time (bar = median). Right: interval from \openshell{}'s L7 event to \bull{}'s middleware verdict.}
+\label{fig:create}
+\end{figure}
+
+\begin{table}[!t]
+\caption{Latency Drift: Median of First vs.\ Last 50 Requests (ms)}
+\label{tab:drift}
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Metric} & \textbf{Phase} & \textbf{First 50} & \textbf{Last 50} & \textbf{Change} \\
+\midrule
+\input{generated/drift}
+\end{tabular}
+\end{table}
+
+Phase~B latency drifts upward within each loop (Fig.~\ref{fig:drift}, Table~\ref{tab:drift}): the GET median moved from \driftFirstGetB{} to \driftLastGetB{}\,ms and the POST median from \driftFirstPostB{} to \driftLastPostB{}\,ms, while Phase~A stayed near constant. \bull{}'s \texttt{AuditLedger} re-verifies the entire hash chain before each append, making append cost linear in ledger length; the ledger held \ledgerRecordsTotal{} records at the end of Phase~B. This is the most plausible cause but was not isolated experimentally. It also explains why POST overhead exceeds GET overhead: the POST loop ran second against a longer ledger.
+
+%%% ------------------------------------------------------------------
+\section{Findings About the Components}
+%%% ------------------------------------------------------------------
+\textbf{F1: \openshell{} L7 rules default to audit.} An endpoint with L7 rules and no \texttt{enforcement} field logs violations and forwards them; \openshell{} documents \texttt{audit} as the default~\cite{OS_Schema}. In C3b-A, a POST outside the only allowed path reached the destination, logged as \texttt{ALLOWED \ldots{} engine:l7}. \bull{} now refuses such policies at creation, replacement, and rule merge, accepting both the YAML form and the protobuf-JSON enum name \texttt{NETWORK\_ENFORCEMENT\_MODE\_ENFORCE}~\cite{PB_JSON}; \texttt{UNSPECIFIED} is treated as audit.
+
+\textbf{F2: Transparent interception held.} Policy DNS resolved the destination to a trap address, so \texttt{curl --noproxy} traffic was still captured, L7-evaluated, and in Phase~B sent through \bull{}, which escalated it. Binary identity refused a Python client to an endpoint curl was allowed to use; a raw socket to a public address and UDP DNS both failed (C8).
+
+\textbf{F3: Middleware metadata gaps in v0.1.2.} On the relay paths exercised, \openshell{} passes the literal scheme \texttt{https} to middleware for plaintext HTTP while its own OCSF events report \texttt{http}~\cite{OS_Relay}, and \texttt{RequestContext.originating\_process} is set to \texttt{None} for operator middleware~\cite{OS_MiddlewareSrc}, so \bull{} cannot bind a decision to the executable. \bull{} therefore does not trust \texttt{scheme}; the correlator compares host, port, and path only.
+
+\textbf{F4: The extension contract is strict, and its failures closed.} A middleware reply whose \texttt{reason\_code} does not match \texttt{[a-z][a-z0-9\_]*} is treated as a middleware failure and the request is denied~\cite{OS_MiddlewareSrc}; an extension not declaring \texttt{openshell.<family>.contract} is refused at gateway start~\cite{OS_ExtProto}. Both mistakes appeared during integration and both stopped traffic rather than admitting it.
+
+\textbf{F5: OCSF JSONL export requires a writable \texttt{/var/log} in the supervisor container}~\cite{OS_OCSFExport}, which the Docker driver's image did not provide; the same events were obtained through the gateway's log API.
+
+\textbf{F6: \texttt{openshell sandbox exec} reads a non-TTY stdin to EOF before dispatching}~\cite{OS_CLIRun}; automation inheriting an open stdin blocks indefinitely.
+
+%%% ------------------------------------------------------------------
+\section{Defects Found in \bull{}}
+%%% ------------------------------------------------------------------
+Six defects passed \bull{}'s unit tests and surfaced only against the live gateway (Table~\ref{tab:defects}). Each has a regression test in \texttt{tests/test\_openshell\_authority.py}. Defect~3 is the most consequential: endpoints rendered as \texttt{host:40605.0} would never equal later \texttt{host:40605} comparisons, a latent source of false widening or missed widening.
+
+\begin{table*}[!t]
+\caption{Integration Defects Found and Fixed}
+\label{tab:defects}
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{lYYY}
+\toprule
+\# & \textbf{Defect} & \textbf{Symptom against the live gateway} & \textbf{Fix} \\
+\midrule
+1 & Contract capabilities missing from \texttt{PeerMetadata} & Gateway refused to start & Declare \texttt{openshell.<family>.contract} as supported and required \\
+2 & Dotted reason codes (\texttt{bull.denied}) & Every request denied as \texttt{response\_reason\_code\_invalid} (closed, but unusable) & Codes renamed \texttt{bull\_*}; grammar test \\
+3 & Protobuf-JSON ports are doubles (\texttt{40605.0}) & Endpoint keys would not match later comparisons & Normalize to integers; cover every entry in \texttt{ports} \\
+4 & No enforcement-mode check & \openshell{}-deny cases silently allowed (F1) & Refuse L7 rules not in \texttt{enforce} \\
+5 & Enum form of enforcement not recognized & After fix 4, every sandbox refused & Accept \texttt{NETWORK\_ENFORCEMENT\_MODE\_ENFORCE} \\
+6 & Correlator let a denied decision claim a nearby allowed receipt & C10 reported a false ``effect without allow'' & Assign receipts only to allowed decisions at or after decision time \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+%%% ------------------------------------------------------------------
+\section{Related Work and Positioning}
+%%% ------------------------------------------------------------------
+CaMeL separates control and data flow and applies capability policies to agent tool use~\cite{Debenedetti2025}; the provenance escalation here is a coarse, sandbox-granular instance of the same idea enforced at the network layer. gVisor and Firecracker isolate untrusted workloads with an application kernel or a lightweight VM~\cite{gVisor,Agache2020}; \openshell{} composes Landlock, seccomp, network namespaces, and an L7 proxy~\cite{OS_Repo,LinuxLandlock,LinuxSeccomp}. The contribution of this report is not a new isolation or authorization mechanism but a tested composition of the two through documented extension points, with destination-judged evidence and a joined audit trail.
+
+%%% ------------------------------------------------------------------
+\section{Limitations}
+\label{sec:limits}
+%%% ------------------------------------------------------------------
+\textbf{Unauthenticated extension transport.} The middleware used plaintext gRPC with \texttt{allow\_insecure\_transport}, and \openshell{} warns that the service then cannot distinguish \openshell{} from any other network client. A bridge-local process could query \bull{} verdicts, although it could not alter an enforcement outcome. Production requires HTTPS with gateway-JWT validation; that configuration was not tested.
+
+\textbf{Scope of mediation.} \bull{} sees HTTP egress and governed control-plane RPCs. It does not authorize process execution inside a sandbox; \openshell{}'s Landlock, seccomp, and binary identity contain exec. WebSocket sessions are not mediated. The ``exec'' half of the architecture's C7 is therefore \openshell{}'s guarantee, not \bull{}'s.
+
+\textbf{Weak Phase~A evidence for C6.} The provider attachment was still awaiting the supervisor when the environment was inspected, so absence of the canary in Phase~A does not demonstrate \openshell{}'s placeholder mechanism. Phase~B's result rests on \bull{} refusing the attachment.
+
+\textbf{Heuristic correlation.} OCSF shorthand carries no request identifier; the join uses sandbox, method, target, and time. It was exact here because requests were serialized; under concurrency, identical requests could swap row attribution without changing the counts on which C10 is judged. OCSF JSONL (F5) would remove this ambiguity.
+
+\textbf{Single host, few runs.} One Docker host, no Kubernetes, VM, or hardware-isolated driver. Three complete runs were made; the first surfaced defect~5, and in the last two every case outcome was identical except C10, whose earlier failure was defect~6. Latency figures come from the final run and include shared-host noise. Approval latency (a human decision) is excluded.
+
+%%% ------------------------------------------------------------------
+\section{Conclusion}
+%%% ------------------------------------------------------------------
+On a live \openshell{} \osVersion{} gateway, \bull{} composed as a narrowing-only layer: every observed effect required both systems' consent; \bull{}'s absence failed closed on both data and control planes; provenance-based escalation stopped a post-read exfiltration that \openshell{}'s static policy permitted; unapproved widening and credential attachment were refused; and the two systems' records joined into one consistent trail. The measured cost was a median \deltaGet{}--\deltaPost{}\,ms per request in this build, much of it plausibly due to \bull{}'s linear-time ledger verification. The most consequential risk found was not in the composition but in a default: \openshell{}'s audit-mode L7 rules, which \bull{} now refuses.
+
+\section*{Declarations}
+\textbf{Research and authorship.} This manuscript describes the \bull{} project under Luis Minier / Anharmoniclabs. The author is a project stakeholder; the document is not an independent assessment. NVIDIA has not reviewed or endorsed this work; \openshell{} is cited as third-party software used under its Apache-2.0 license.
+
+\textbf{AI assistance.} Claude Code (Anthropic) implemented the \openshell{} adapters, built \openshell{} from source, ran the experiment harness, and drafted this manuscript under the author's direction. AI-generated text is not experimental evidence; every measurement is generated from the recorded evidence files, whose SHA-256 digests are listed in Supplement~S6.
+
+\textbf{Responsible reporting.} No secrets are published. The C6 canary credential was generated per run and verified absent from the evidence set; gateway JWT keys were generated per run and not retained.
+
+\appendices
+
+%%% ------------------------------------------------------------------
+\section{Version and Evidence Identity}
+%%% ------------------------------------------------------------------
+\textbf{A1. \bull{}.} Repository \texttt{Anharmoniclabs/BULL}, branch \path{experiment/bull-openshell-20260928}, branched from \baseshort{}. The final experiment run executed \bull{} source identical to commit \expshort{}~\cite{BULL_Branch}.
+
+\textbf{A2. \openshell{}.} \texttt{github.com/NVIDIA/OpenShell}, tag \texttt{v0.1.2}, commit \osshort{}~\cite{OS_Repo}. Middleware and interceptor stubs were generated from that tag's \texttt{.proto} files.
+
+\textbf{A3. Evidence.} \path{docs/evidence/openshell-20260928/}~\cite{BULL_Evidence}; file digests in Supplement~S6.
+
+\textbf{A4. Reproduction.}
+{\footnotesize
+\begin{verbatim}
+cargo build --release \
+  -p openshell-cli -p openshell-gateway \
+  -p openshell-supervisor
+cargo build --release \
+  --target x86_64-unknown-linux-musl \
+  -p openshell-sandbox
+echo "172.17.0.1 host.openshell.internal" \
+  >> /etc/hosts
+python tools/openshell_experiment.py \
+  --os-src $OS --latency-n 200 \
+  --output \
+  docs/evidence/openshell-20260928
+python \
+  tools/build_openshell_ieee_paper.py
+\end{verbatim}}
+
+%%% ------------------------------------------------------------------
+\section{Claim-to-Evidence Ledger}
+%%% ------------------------------------------------------------------
+\begin{table*}[!t]
+\caption{Claims, Supporting Evidence, and Boundaries of Interpretation}
+\label{tab:ledger}
+\centering
+\small
+\begin{tabularx}{\textwidth}{lYY}
+\toprule
+\textbf{Claim} & \textbf{Evidence} & \textbf{Not established} \\
+\midrule
+Effects required both systems' consent & C1--C3, C7; Table~\ref{tab:corr}; destination receipts (S3) & Behavior under concurrent or adversarially timed requests. \\
+Escalation admits exactly once & C4 upstream count 1 with reuse refused & Approval UX or human-decision quality. \\
+\bull{} absence fails closed & C9: POST denied, create refused; orphan event is a denial & Partial failures (slow, not dead, \bull{}); timeout tuning. \\
+Unapproved widening refused & C5 new port, C5b ceiling, C3b audit mode & Widening through RPCs not bound by the interceptor. \\
+Credential attachment governed & C6-B attach refused, canary absent & \openshell{} placeholder mechanism itself (C6-A inconclusive). \\
+Native bypass contained & C8 OCSF evidence, EACCES, blocked UDP & Kernel or container-runtime escape. \\
+Joined audit trail & \corrConsistent{}/\corrDecisions{} consistent, \corrUnexplained{} unexplained effects & Exact attribution under concurrency. \\
+Overhead $\approx$\deltaGet--\deltaPost\,ms/request & Tables~\ref{tab:latency}, \ref{tab:stats}; raw samples S4 & Other hosts, authenticated transport, or an $O(1)$ ledger. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\sloppy
+\begin{thebibliography}{20}
+
+\bibitem{OS_Repo}
+NVIDIA, ``OpenShell,'' tag \texttt{v0.1.2}, commit \texttt{6648bd0}, 2026. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/tree/v0.1.2}
+
+\bibitem{OS_MiddlewareDoc}
+NVIDIA, ``Configure supervisor middleware,'' OpenShell documentation, \path{docs/extensibility/supervisor-middleware/configure.mdx}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/docs/extensibility/supervisor-middleware/configure.mdx}
+
+\bibitem{OS_InterceptorDoc}
+NVIDIA, ``Gateway interceptors,'' OpenShell documentation, \path{docs/extensibility/gateway-interceptors.mdx}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/docs/extensibility/gateway-interceptors.mdx}
+
+\bibitem{OS_MiddlewareProto}
+NVIDIA, ``Supervisor middleware protocol,'' \path{proto/supervisor_middleware.proto}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/proto/supervisor_middleware.proto}
+
+\bibitem{OS_InterceptorProto}
+NVIDIA, ``Gateway interceptor protocol,'' \path{proto/gateway_interceptor.proto}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/proto/gateway_interceptor.proto}
+
+\bibitem{OS_Schema}
+NVIDIA, ``Policy schema,'' OpenShell documentation, \path{docs/how-it-works/policies/schema.mdx}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/docs/how-it-works/policies/schema.mdx}
+
+\bibitem{OS_Logging}
+NVIDIA, ``Logging,'' OpenShell documentation, \path{docs/observability/logging.mdx}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/docs/observability/logging.mdx}
+
+\bibitem{OS_OCSFExport}
+NVIDIA, ``OCSF JSON export,'' OpenShell documentation, \path{docs/observability/ocsf-json-export.mdx}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/docs/observability/ocsf-json-export.mdx}
+
+\bibitem{OS_MiddlewareSrc}
+NVIDIA, ``Supervisor middleware runtime,'' \path{crates/openshell-supervisor-middleware/src/lib.rs} (reason-code grammar, line 824; \texttt{originating\_process}, line 1710), v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/crates/openshell-supervisor-middleware/src/lib.rs}
+
+\bibitem{OS_Relay}
+NVIDIA, ``L7 relay,'' \path{crates/openshell-supervisor-network/src/l7/relay.rs} (lines 1235, 1991), v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/crates/openshell-supervisor-network/src/l7/relay.rs}
+
+\bibitem{OS_ExtProto}
+NVIDIA, ``Extension protocol negotiation,'' \path{crates/openshell-core/src/extension_protocol.rs}, v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/crates/openshell-core/src/extension_protocol.rs}
+
+\bibitem{OS_CLIRun}
+NVIDIA, ``CLI sandbox exec,'' \path{crates/openshell-cli/src/run.rs} (line 1857), v0.1.2. [Online]. Available: \url{https://github.com/NVIDIA/OpenShell/blob/v0.1.2/crates/openshell-cli/src/run.rs}
+
+\bibitem{RFC6902}
+P.~Bryan and M.~Nottingham, ``JavaScript Object Notation (JSON) Patch,'' RFC~6902, IETF, 2013.
+
+\bibitem{PB_JSON}
+Google, ``ProtoJSON format,'' Protocol Buffers documentation. [Online]. Available: \url{https://protobuf.dev/programming-guides/json/}
+
+\bibitem{BULL_Report}
+L.~Minier, ``BULL: Blocking unauthorized logic loopholes,'' Anharmoniclabs technical report, v0.2, Sept. 20, 2026.
+
+\bibitem{BULL_Branch}
+Anharmoniclabs, ``BULL experiment branch \texttt{experiment/bull-openshell-20260928},'' 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/tree/experiment/bull-openshell-20260928}
+
+\bibitem{BULL_Evidence}
+Anharmoniclabs, ``BULL $\times$ OpenShell experiment evidence,'' \path{docs/evidence/openshell-20260928/}, 2026. [Online]. Available: \url{https://github.com/Anharmoniclabs/BULL/tree/experiment/bull-openshell-20260928/docs/evidence/openshell-20260928}
+
+\bibitem{Debenedetti2025}
+E.~Debenedetti \emph{et al.}, ``Defeating prompt injections by design,'' arXiv:2503.18813v2, 2025.
+
+\bibitem{gVisor}
+gVisor contributors, ``What is gVisor?'' [Online]. Available: \url{https://gvisor.dev/docs/}
+
+\bibitem{Agache2020}
+A.~Agache \emph{et al.}, ``Firecracker: Lightweight virtualization for serverless applications,'' in \emph{Proc. USENIX NSDI}, 2020.
+
+\bibitem{LinuxSeccomp}
+The Linux Kernel Documentation, ``Seccomp BPF (SECure COMPuting with filters).'' [Online]. Available: \url{https://docs.kernel.org/userspace-api/seccomp_filter.html}
+
+\bibitem{LinuxLandlock}
+The Linux Kernel Documentation, ``Landlock: unprivileged access control.'' [Online]. Available: \url{https://docs.kernel.org/userspace-api/landlock.html}
+
+\end{thebibliography}
+
+\section*{Biography}
+\begingroup\footnotesize
+\noindent\textbf{Luis Minier} is an independent researcher based in New York, NY, USA.\par
+\endgroup
+
+%%% ------------------------------------------------------------------
+%%% Supplementary data: complete datasets, generated from the evidence
+%%% ------------------------------------------------------------------
+\onecolumn
+\section*{Supplementary Material: Complete Datasets}
+All tables below are generated verbatim from the evidence files listed in S6.
+
+\subsection*{S1. Complete Case Results (\texttt{cases.csv})}
+\scriptsize
+\begin{longtable}{|p{0.3cm}|p{0.7cm}|p{2.6cm}|p{2.2cm}|p{8.0cm}|p{0.5cm}|}
+\hline
+\textbf{Ph.} & \textbf{Case} & \textbf{Property} & \textbf{Expected} & \textbf{Observed} & \textbf{Pass} \\ \hline
+\endhead
+\input{generated/app_cases}
+\end{longtable}
+
+\normalsize
+\subsection*{S2. Audit Join, Phase B (\texttt{correlation.json})}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{rllp{2.9cm}llp{1.9cm}p{2.4cm}llll}
+\toprule
+\# & \textbf{Sbx} & \textbf{Meth.} & \textbf{Resource} & \textbf{Prov.} & \textbf{\bull{}} & \textbf{Code} & \textbf{Approval} & \textbf{L7} & \textbf{MW} & \textbf{Eff.} & \textbf{Ledger} \\
+\midrule
+\endhead
+\input{generated/app_correlation}
+\end{longtable}
+
+\normalsize
+\setlength{\tabcolsep}{6pt}
+\subsection*{S3. \openshell{} OCSF HTTP Events and Destination Receipts}
+\textbf{Phase A events} (\texttt{ocsf-*-A.txt}):
+\scriptsize
+\begin{longtable}{rlllp{0.8cm}p{4.6cm}p{4.8cm}}
+\toprule
+\textbf{Epoch (s)} & \textbf{Sandbox} & \textbf{Engine} & \textbf{Action} & \textbf{Meth.} & \textbf{Target} & \textbf{Reason} \\
+\midrule
+\endhead
+\input{generated/app_ocsf_A}
+\end{longtable}
+\normalsize
+\textbf{Phase B events} (\texttt{ocsf-*-B.txt}):
+\scriptsize
+\begin{longtable}{rlllp{0.8cm}p{4.6cm}p{4.8cm}}
+\toprule
+\textbf{Epoch (s)} & \textbf{Sandbox} & \textbf{Engine} & \textbf{Action} & \textbf{Meth.} & \textbf{Target} & \textbf{Reason} \\
+\midrule
+\endhead
+\input{generated/app_ocsf_B}
+\end{longtable}
+\normalsize
+\textbf{Destination receipts, Phase A} (\texttt{upstream-receipts-A.json}):
+\scriptsize
+\begin{longtable}{rlp{11cm}}
+\toprule
+\textbf{Epoch (s)} & \textbf{Method} & \textbf{URL} \\
+\midrule
+\endhead
+\input{generated/app_receipts_A}
+\end{longtable}
+\normalsize
+\textbf{Destination receipts, Phase B} (\texttt{upstream-receipts-B.json}):
+\scriptsize
+\begin{longtable}{rlp{11cm}}
+\toprule
+\textbf{Epoch (s)} & \textbf{Method} & \textbf{URL} \\
+\midrule
+\endhead
+\input{generated/app_receipts_B}
+\end{longtable}
+
+\normalsize
+\subsection*{S4. Raw Request Latency, All Samples in Run Order (\texttt{latency-raw.json}, ms)}
+\scriptsize
+\begin{longtable}{r|rrrr||r|rrrr}
+\toprule
+\# & \textbf{A GET} & \textbf{B GET} & \textbf{A POST} & \textbf{B POST} & \# & \textbf{A GET} & \textbf{B GET} & \textbf{A POST} & \textbf{B POST} \\
+\midrule
+\endhead
+\input{generated/app_raw}
+\end{longtable}
+
+\normalsize
+\subsection*{S5. Sandbox Creation Samples (s) and L7-to-Verdict Intervals (ms)}
+\begin{center}
+\small
+\begin{tabular}{rrr}
+\toprule
+\# & \textbf{A} & \textbf{B} \\
+\midrule
+\input{generated/app_create}
+\end{tabular}
+\end{center}
+L7-to-verdict intervals, Phase B, in event order: \input{generated/app_gaps}
+
+\subsection*{S6. Evidence File Integrity (SHA-256)}
+Every number in this paper was computed from these files by \texttt{tools/build\_openshell\_ieee\_paper.py}.
+\scriptsize
+\begin{longtable}{lrl}
+\toprule
+\textbf{File} & \textbf{Bytes} & \textbf{SHA-256} \\
+\midrule
+\endhead
+\input{generated/app_hashes}
+\end{longtable}
+
+\end{document}
