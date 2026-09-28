@@ -1,16 +1,8 @@
-"""Race-free AF_UNIX socket binding and peer authentication.
+"""Bind private Unix sockets and check the credentials of connecting peers.
 
-Replaces the bind()-then-chmod() TOCTOU pattern found in secret_broker.py
-and egress_proxy.py. bind() creates the socket node with permissions derived
-from the process umask; chmod() afterwards leaves a window where any local
-user can connect(). This module clamps the umask *around* bind(), verifies
-the resulting node, and adds SO_PEERCRED peer authentication so a leaked or
-raced socket path cannot be used by another local principal.
-
-Doctrine: directory privacy + umask clamp + peer-credential check. Any one
-layer alone has a failure mode; together they cover race, leak, and mount
-exposure.
-"""
+The helper sets the parent directory mode and clamps the process umask during
+bind to avoid a bind-then-chmod permission window. Callers still own the parent
+path, process-wide umask coordination and the decision to apply peer checks."""
 
 from __future__ import annotations
 
@@ -31,13 +23,12 @@ def bind_private_unix_socket(
     backlog: int = 16,
     timeout: float | None = 0.25,
 ) -> socket.socket:
-    """Bind an AF_UNIX stream socket with no cross-user race window.
+    """Bind an AF_UNIX stream socket with owner-only node permissions.
 
     - Parent directory is forced to mode 0o700 (owner-only traversal).
     - umask is clamped to 0o177 *during* bind(), so the node is born 0o600;
       there is no bind-then-chmod window.
-    - Refuses to bind over any existing node (including symlinks), killing
-      symlink-preplant attacks.
+    - Refuses to bind over an existing node, including a symlink.
     - Post-bind lstat verifies the mode; any surprise tears down and raises.
     """
     path = Path(path)
@@ -98,9 +89,7 @@ def require_peer_uid(conn: socket.socket, expected_uid: int | None = None) -> in
         expected_uid = os.geteuid()
     _pid, uid, _gid = peer_credentials(conn)
     if uid != expected_uid:
-        raise HardeningError(
-            f"rejected peer uid {uid}; expected {expected_uid}"
-        )
+        raise HardeningError(f"rejected peer uid {uid}; expected {expected_uid}")
     return uid
 
 

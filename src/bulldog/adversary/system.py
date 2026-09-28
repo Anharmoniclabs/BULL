@@ -1,10 +1,6 @@
-"""Adversary capture system: fingerprint, extract, tabulate, contain.
+"""Combine callback probes, phrase scoring, task parsing and observation records.
 
-Given any observable attacker that can be probed via a callable, BULL
-fingerprints the model driving it, lures out its initial task, clusters
-it into a swarm, tabulates the record, and quarantines it in a locked
-cell chosen by its findings.
-"""
+The optional quarantine step records a profile; it does not enforce isolation."""
 
 from __future__ import annotations
 

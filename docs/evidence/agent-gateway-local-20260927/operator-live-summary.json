@@ -1,0 +1,51 @@
+{
+  "record_type": "operator_reported_live_qualification",
+  "reported_on": "2026-09-27",
+  "source_commit": "8ae922ce24a0aa2ab653697c57eaf965268279ff",
+  "environment": "GitHub Codespaces",
+  "command": "python3 tools/run_local_agent_gateway.py",
+  "provenance": {
+    "source": "Operator-supplied console output",
+    "original_private_report_inspected": false,
+    "independently_reproduced": false,
+    "note": "Transcribed summary, not an original report or signed attestation. Private paths omitted."
+  },
+  "reported_result": {
+    "status": "LOCAL TOOL PASS",
+    "checks": {
+      "agent_cannot_modify_authority_or_read_keys": true,
+      "audit_profile_matches": true,
+      "coverage_disclosed": true,
+      "current_authority_source": true,
+      "distinct_nonroot_uids": true,
+      "exactly_one_admission": true,
+      "expected_argv_and_zero_exit": true,
+      "local_authority_started": true,
+      "local_checkpoint_reached_head": true,
+      "mcp_initialized": true,
+      "public_runtime_permissions": true,
+      "retained_audit_matches_mcp_result": true,
+      "spoof_has_no_admission": true,
+      "temporary_agent_removed": true,
+      "tool_executed": true,
+      "tool_listed": true
+    },
+    "reason": null,
+    "gate_failures": [],
+    "audit_mode": "local",
+    "collector_configuration": {
+      "mode": "local",
+      "external_collector_required": false
+    },
+    "enterprise_qualified": false
+  },
+  "scope": "One bounded fixed-command local MCP qualification; temporary authority and separate agent account.",
+  "limits": [
+    "The 16 checks are not 16 independent adversarial attacks.",
+    "The command-substitution probe used the authority socket directly.",
+    "One admission is not proof of exactly-once external effects under failure.",
+    "No live Codex or Claude session or native-tool containment was tested.",
+    "No external audit receipt, persistent installation or enterprise qualification is established.",
+    "The result applies to the recorded source commit, not later revisions."
+  ]
+}

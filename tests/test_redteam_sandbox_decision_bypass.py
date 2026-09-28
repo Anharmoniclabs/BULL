@@ -80,9 +80,7 @@ def test_redteam_sandbox_verdict_cannot_pass_egress_broker():
     assert broker.calls == []
 
 
-def test_redteam_sandbox_verdict_cannot_reach_secret_broker(
-    monkeypatch, tmp_path
-):
+def test_redteam_sandbox_verdict_cannot_reach_secret_broker(monkeypatch, tmp_path):
     class FakeSecretBroker:
         socket_path = tmp_path / "secret.sock"
 

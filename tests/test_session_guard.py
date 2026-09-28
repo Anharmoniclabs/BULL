@@ -154,12 +154,7 @@ class SessionEnforcementTests(unittest.TestCase):
 
         self.assertEqual(result.decision, Decision.ESCALATE)
 
-        self.assertTrue(
-            any(
-                "TOOL_SHOPPING" in reason
-                for reason in result.reasons
-            )
-        )
+        self.assertTrue(any("TOOL_SHOPPING" in reason for reason in result.reasons))
 
     def test_session_id_switch_preserves_security_history(self):
         """
@@ -189,12 +184,7 @@ class SessionEnforcementTests(unittest.TestCase):
             )
         )
 
-        self.assertTrue(
-            any(
-                "GOAL_DRIFT" in reason
-                for reason in result.reasons
-            )
-        )
+        self.assertTrue(any("GOAL_DRIFT" in reason for reason in result.reasons))
 
         self.assertIn(
             result.decision,
@@ -203,7 +193,6 @@ class SessionEnforcementTests(unittest.TestCase):
                 Decision.DENY,
             },
         )
-
 
     def test_different_actors_are_isolated(self):
         """
@@ -252,13 +241,7 @@ class SessionEnforcementTests(unittest.TestCase):
 
         result = engine.evaluate(second)
 
-        self.assertFalse(
-            any(
-                "GOAL_DRIFT" in reason
-                for reason in result.reasons
-            )
-        )
-
+        self.assertFalse(any("GOAL_DRIFT" in reason for reason in result.reasons))
 
     def test_trusted_security_contexts_are_isolated(self):
         """
@@ -310,12 +293,7 @@ class SessionEnforcementTests(unittest.TestCase):
 
         result = engine.evaluate(second)
 
-        self.assertFalse(
-            any(
-                "GOAL_DRIFT" in reason
-                for reason in result.reasons
-            )
-        )
+        self.assertFalse(any("GOAL_DRIFT" in reason for reason in result.reasons))
 
     def test_hard_deny_cannot_be_weakened(self):
         engine = BulldogEngine()

@@ -1,3 +1,5 @@
+"""Convert runtime events into the trace model used by bounded checks."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,13 +21,9 @@ class RuntimeTraceVerifier:
     transition vocabulary used by the formal model.
     """
 
-    state: BullTraceState = field(
-        default_factory=BullTraceState
-    )
+    state: BullTraceState = field(default_factory=BullTraceState)
 
-    events: list[TraceEvent] = field(
-        default_factory=list
-    )
+    events: list[TraceEvent] = field(default_factory=list)
 
     def emit(
         self,
@@ -43,13 +41,9 @@ class RuntimeTraceVerifier:
             event,
         )
 
-        self.events.append(
-            event
-        )
+        self.events.append(event)
 
-        self.state = (
-            next_state
-        )
+        self.state = next_state
 
         return self.state
 
@@ -65,10 +59,6 @@ class RuntimeTraceVerifier:
         parent_has_capability: bool = False,
     ) -> None:
 
-        self.state = BullTraceState(
-            parent_has_capability=(
-                parent_has_capability
-            )
-        )
+        self.state = BullTraceState(parent_has_capability=(parent_has_capability))
 
         self.events.clear()

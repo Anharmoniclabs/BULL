@@ -54,3 +54,25 @@ welcome; maintainers may remove abusive content and restrict participation.
 
 No external collector account or physical key is required to read the code,
 contribute documentation, or run the source tests supported by your host.
+
+## Write for the next reader
+
+Use names that describe the data or action. Keep authority checks and external
+side effects visible. Expand compressed control flow; add a helper when it names
+a distinct responsibility, rather than just moving a line elsewhere.
+
+Comments should explain a constraint or decision. Documentation should distinguish
+an implemented feature, a test result and a future requirement. Link the source
+revision and fixture for evidence claims. Keep attribution, license notices and
+historical results intact.
+
+Separate formatting and documentation from behavior changes. Preserve public
+interfaces, defaults, error behavior, audit ordering and transaction boundaries
+unless the PR explicitly changes and tests them. Start with
+[the code reading guide](docs/CODE_READING_GUIDE.md).
+
+The repository-wide pass is recorded in [the per-file inventory](docs/REPOSITORY_READABILITY.md).
+For Python layout, use Black with the target and artifact exclusions in
+`pyproject.toml`. Do not format publication snapshots or regenerate evidence to
+make it match new source. Browser templates can have whitespace-sensitive text
+and build markers; run the site and console tests after editing them.

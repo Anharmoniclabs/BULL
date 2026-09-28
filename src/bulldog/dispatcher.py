@@ -1,3 +1,8 @@
+"""Bind requests to operations before calling runtime or broker methods.
+
+CapabilityDispatcher is the development interface. Production integrations
+use ProductionDispatcher in profiles.py and supply trusted deployment state."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -56,9 +61,17 @@ class CapabilityDispatcher:
         egress_broker: EgressBroker | None = None,
         domain_registry: SecurityDomainRegistry | None = None,
         production_mode: bool = False,
+        local_mode: bool = False,
         freeze_on_violation: bool = True,
     ):
         self.production_mode = bool(production_mode)
+        self.local_mode = bool(local_mode)
+        if self.local_mode and self.production_mode:
+            raise DispatchDenied("choose one explicit audit boundary")
+        if type(self) is CapabilityDispatcher and self.local_mode:
+            raise DispatchDenied(
+                "use LocalDispatcher for the local enforcement profile"
+            )
 
         if type(self) is CapabilityDispatcher and self.production_mode:
             raise DispatchDenied(
@@ -74,13 +87,24 @@ class CapabilityDispatcher:
             )
 
         if self.production_mode:
-            if runtime is None or getattr(runtime, "production_boundary", False) is not True:
+            if (
+                runtime is None
+                or getattr(runtime, "production_boundary", False) is not True
+            ):
                 raise DispatchDenied(
                     "production dispatch requires an explicit ProductionRuntime boundary"
                 )
             verify_production_environment(
                 package_root=Path(__file__).resolve().parent,
             )
+        if self.local_mode:
+            from .local_gate import verify_local_environment
+
+            if runtime is None or getattr(runtime, "local_boundary", False) is not True:
+                raise DispatchDenied(
+                    "local dispatch requires an explicit LocalRuntime boundary"
+                )
+            verify_local_environment(package_root=Path(__file__).resolve().parent)
 
         self.runtime = runtime if runtime is not None else BulldogRuntime()
         self.secret_broker = secret_broker
@@ -95,13 +119,13 @@ class CapabilityDispatcher:
             else BulldogEngine()
         )
 
-        if self.production_mode:
+        if self.production_mode or self.local_mode:
             self._verify_actual_production_runtime()
 
         if self.domain_registry is not None and self.domain_registry.ledger is not None:
             engine = getattr(self.runtime, "engine", None)
             if engine is None:
-                if self.production_mode:
+                if self.production_mode or self.local_mode:
                     raise DispatchDenied(
                         "production runtime is missing its policy engine"
                     )
@@ -121,7 +145,13 @@ class CapabilityDispatcher:
         ledger = getattr(engine, "ledger", None)
         failures = []
 
-        if getattr(self.runtime, "production_boundary", False) is not True:
+        local = getattr(self, "local_mode", False)
+        if local and getattr(self.runtime, "local_boundary", False) is not True:
+            failures.append("runtime is not an explicit LocalRuntime boundary")
+        if (
+            not local
+            and getattr(self.runtime, "production_boundary", False) is not True
+        ):
             failures.append("runtime is not an explicit ProductionRuntime boundary")
         if not callable(getattr(engine, "evaluate", None)):
             failures.append("runtime policy engine is unavailable")
@@ -130,8 +160,18 @@ class CapabilityDispatcher:
         if ledger is None:
             failures.append("runtime audit ledger is unavailable")
         else:
-            if getattr(ledger, "production_anchor_ready", False) is not True:
-                failures.append("runtime authenticated production audit transport is unavailable")
+            if local:
+                from .local_audit import LocalAuditLedger
+
+                if (
+                    not isinstance(ledger, LocalAuditLedger)
+                    or not ledger.local_anchor_ready
+                ):
+                    failures.append("runtime authenticated local audit is unavailable")
+            elif getattr(ledger, "production_anchor_ready", False) is not True:
+                failures.append(
+                    "runtime authenticated production audit transport is unavailable"
+                )
         if not getattr(self.runtime, "malware_scan_required", False):
             failures.append("runtime malware scanning is not required")
         scanner = getattr(self.runtime, "malware_scanner", None)
@@ -167,9 +207,7 @@ class CapabilityDispatcher:
         if self.domain_registry is None:
             return request.trusted, request.parent_capabilities
         if not request.domain_id:
-            raise DispatchDenied(
-                "domain-enabled dispatcher requires a security domain"
-            )
+            raise DispatchDenied("domain-enabled dispatcher requires a security domain")
         try:
             self.domain_registry.assert_capabilities(
                 request.domain_id,
@@ -215,7 +253,9 @@ class CapabilityDispatcher:
             )
 
         authorized = request.authorized_command
-        if self.production_mode and authorized is None:
+        if (
+            self.production_mode or getattr(self, "local_mode", False)
+        ) and authorized is None:
             raise DispatchDenied(
                 "production command dispatch requires host-authorized full argv"
             )
@@ -236,8 +276,7 @@ class CapabilityDispatcher:
         if evaluation.decision != Decision.ALLOW:
             raise DispatchDenied(
                 "broker operation requires explicit ALLOW; got "
-                f"{evaluation.decision.value}: "
-                + "; ".join(evaluation.reasons)
+                f"{evaluation.decision.value}: " + "; ".join(evaluation.reasons)
             )
         return action
 
@@ -266,9 +305,7 @@ class CapabilityDispatcher:
         except ActionCanonicalizationError as exc:
             raise DispatchDenied(str(exc)) from exc
         if action.resource != canonical_expected:
-            raise DispatchDenied(
-                "broker resource does not match authorized resource"
-            )
+            raise DispatchDenied("broker resource does not match authorized resource")
         return self._evaluate_broker_action(action)
 
     def _authorize_domain_broker_action(
@@ -355,9 +392,11 @@ class CapabilityDispatcher:
                 domain = self.domain_registry.get(request.domain_id)
                 self.domain_registry.freeze_root(
                     domain.root_domain_id,
-                    "hard policy block"
-                    if result.evaluation.hard_block
-                    else "cross-agent behavioral violation",
+                    (
+                        "hard policy block"
+                        if result.evaluation.hard_block
+                        else "cross-agent behavioral violation"
+                    ),
                 )
         return result
 
@@ -378,9 +417,7 @@ class CapabilityDispatcher:
         try:
             domain = self.domain_registry.require_active(domain_id)
             if Capability.CREDENTIAL_READ not in domain.capability_ceiling:
-                raise SecurityDomainError(
-                    "domain lacks credential.read authority"
-                )
+                raise SecurityDomainError("domain lacks credential.read authority")
         except SecurityDomainError as exc:
             raise DispatchDenied(str(exc)) from exc
 
@@ -402,7 +439,9 @@ class CapabilityDispatcher:
         )
         return grant
 
-    def _perform_broker_effect(self, action, *, operation, parameters, approval, effect):
+    def _perform_broker_effect(
+        self, action, *, operation, parameters, approval, effect
+    ):
         if approval is not None:
             raise DispatchDenied("credential approval requires ProductionDispatcher")
         return effect()
@@ -418,6 +457,8 @@ class CapabilityDispatcher:
         timeout: float = 3.0,
         approval=None,
     ) -> str:
+        if request is not None and request.domain_id != domain_id:
+            raise DispatchDenied("broker request domain does not match host authority")
         if self.secret_broker is None:
             raise DispatchDenied("secret broker is not configured")
 
@@ -454,14 +495,22 @@ class CapabilityDispatcher:
 
         try:
             from hashlib import sha256
+
             value = self._perform_broker_effect(
-                action, operation="secret.read",
-                parameters={"grant_digest": sha256(token.encode()).hexdigest(),
-                            "sandbox_id": sandbox_id, "timeout": timeout},
+                action,
+                operation="secret.read",
+                parameters={
+                    "grant_digest": sha256(token.encode()).hexdigest(),
+                    "sandbox_id": sandbox_id,
+                    "timeout": timeout,
+                },
                 approval=approval,
                 effect=lambda: request_secret(
-                    socket_path=self.secret_broker.socket_path, token=token,
-                    name=authorized_name, sandbox_id=sandbox_id, timeout=timeout,
+                    socket_path=self.secret_broker.socket_path,
+                    token=token,
+                    name=authorized_name,
+                    sandbox_id=sandbox_id,
+                    timeout=timeout,
                 ),
             )
         except Exception as exc:
@@ -494,6 +543,8 @@ class CapabilityDispatcher:
         request: DispatchRequest | None = None,
         approval=None,
     ) -> EgressResponse:
+        if request is not None and request.domain_id != domain_id:
+            raise DispatchDenied("broker request domain does not match host authority")
         if self.egress_broker is None:
             raise DispatchDenied("egress broker is not configured")
 
@@ -528,9 +579,7 @@ class CapabilityDispatcher:
             operation = (
                 "head"
                 if method_upper == "HEAD"
-                else "fetch"
-                if method_upper == "GET"
-                else "post"
+                else "fetch" if method_upper == "GET" else "post"
             )
             action = self._authorize_domain_broker_action(
                 domain_id=domain_id,
@@ -550,9 +599,13 @@ class CapabilityDispatcher:
 
         try:
             response = self._perform_broker_effect(
-                action, operation="network.request",
-                parameters={"method": method_upper}, approval=approval,
-                effect=lambda: self.egress_broker.fetch(method=method_upper, url=authorized_url),
+                action,
+                operation="network.request",
+                parameters={"method": method_upper},
+                approval=approval,
+                effect=lambda: self.egress_broker.fetch(
+                    method=method_upper, url=authorized_url
+                ),
             )
         except Exception as exc:
             if self.domain_registry is not None and domain_id is not None:

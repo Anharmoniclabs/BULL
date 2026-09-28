@@ -1,3 +1,5 @@
+"""Append and verify audit records, checkpoint their heads, and retain failures."""
+
 from __future__ import annotations
 
 import fcntl
@@ -118,9 +120,7 @@ class AuditLedger:
     @staticmethod
     def _calculate_hash(payload: dict) -> str:
         canonical = {
-            key: value
-            for key, value in payload.items()
-            if key != "record_hash"
+            key: value for key, value in payload.items() if key != "record_hash"
         }
         encoded = json.dumps(
             canonical,
@@ -210,18 +210,29 @@ class AuditLedger:
 
     @property
     def production_anchor_ready(self) -> bool:
-        return isinstance(self.transport, (HTTPSAnchorTransport, RelayAnchorTransport)) and self.transport.production_ready
+        return (
+            isinstance(self.transport, (HTTPSAnchorTransport, RelayAnchorTransport))
+            and self.transport.production_ready
+        )
 
-    def _write_remote_anchor(self, *, sequence: int, head_hash: str, record: dict | None = None) -> None:
+    def _write_remote_anchor(
+        self, *, sequence: int, head_hash: str, record: dict | None = None
+    ) -> None:
         if self.transport is not None:
             try:
                 if record is None:
-                    raise AuditIntegrityError("transport requires the complete audit record")
+                    raise AuditIntegrityError(
+                        "transport requires the complete audit record"
+                    )
                 ack = self.transport.submit(sequence, record)
                 self.transport.identity.check_ack(ack, sequence, head_hash)
-                self._write_atomic_json(self.remote_checkpoint_path, ack, ".bull-remote-anchor-")
+                self._write_atomic_json(
+                    self.remote_checkpoint_path, ack, ".bull-remote-anchor-"
+                )
             except Exception as exc:
-                raise AuditIntegrityError("remote audit anchor delivery failed: " + str(exc)) from exc
+                raise AuditIntegrityError(
+                    "remote audit anchor delivery failed: " + str(exc)
+                ) from exc
             return
         if self.remote_anchor_url is None:
             return
@@ -294,9 +305,7 @@ class AuditLedger:
             return "remote audit checkpoint missing"
 
         try:
-            data = json.loads(
-                self.remote_checkpoint_path.read_text(encoding="utf-8")
-            )
+            data = json.loads(self.remote_checkpoint_path.read_text(encoding="utf-8"))
             sequence = int(data["sequence"])
             remote_head = str(data["head_hash"])
             supplied = str(data["mac"])
@@ -463,10 +472,18 @@ class AuditLedger:
                 record_hash = self._calculate_hash(record)
                 record["record_hash"] = record_hash
                 encoded_record = json.dumps(record, sort_keys=True) + "\n"
-                if self.transport is not None and len(encoded_record.encode()) > 60 * 1024:
-                    raise AuditIntegrityError("audit record exceeds transport framing budget")
+                if (
+                    self.transport is not None
+                    and len(encoded_record.encode()) > 60 * 1024
+                ):
+                    raise AuditIntegrityError(
+                        "audit record exceeds transport framing budget"
+                    )
                 existing_bytes = self.path.stat().st_size if self.path.exists() else 0
-                if existing_bytes + len(encoded_record.encode()) > self.max_ledger_bytes:
+                if (
+                    existing_bytes + len(encoded_record.encode())
+                    > self.max_ledger_bytes
+                ):
                     raise AuditIntegrityError("audit storage budget exhausted")
 
                 with self.path.open("a", encoding="utf-8") as fh:
@@ -481,7 +498,9 @@ class AuditLedger:
 
                 sequence = existing.records + 1
                 self._write_anchor(sequence=sequence, head_hash=record_hash)
-                self._write_remote_anchor(sequence=sequence, head_hash=record_hash, record=record)
+                self._write_remote_anchor(
+                    sequence=sequence, head_hash=record_hash, record=record
+                )
                 return record_hash
             finally:
                 fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
@@ -496,14 +515,20 @@ class AuditLedger:
             try:
                 result = self._verify_unlocked(verify_anchor=False)
                 if not result.valid or result.records == 0:
-                    raise AuditIntegrityError("cannot recover an empty or invalid local ledger")
+                    raise AuditIntegrityError(
+                        "cannot recover an empty or invalid local ledger"
+                    )
                 last = None
                 with self.path.open() as stream:
                     for line in stream:
                         if line.strip():
                             last = json.loads(line)
                 assert last is not None
-                self._write_remote_anchor(sequence=result.records, head_hash=result.head_hash or "", record=last)
+                self._write_remote_anchor(
+                    sequence=result.records,
+                    head_hash=result.head_hash or "",
+                    record=last,
+                )
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 

@@ -1,3 +1,5 @@
+"""Check retained audit evidence and report consistency failures."""
+
 from __future__ import annotations
 
 import argparse
@@ -65,9 +67,7 @@ def verify_production(package_root: Path, enabled: bool) -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Verify BULL runtime integrity."
-    )
+    parser = argparse.ArgumentParser(description="Verify BULL runtime integrity.")
     parser.add_argument(
         "--audit",
         type=Path,

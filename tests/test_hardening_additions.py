@@ -95,7 +95,9 @@ def test_effective_capabilities_parsing():
 
 
 def test_launcher_audit_flags_missing_and_unquoted():
-    findings = audit_launcher_script("#!/bin/sh\nmount --bind $PROJECT $ROOTFS/workspace\n")
+    findings = audit_launcher_script(
+        "#!/bin/sh\nmount --bind $PROJECT $ROOTFS/workspace\n"
+    )
     assert any("set -euo pipefail" in f for f in findings)
     assert any("unquoted" in f for f in findings)
 
@@ -119,7 +121,9 @@ def test_sentinel_env_marker_raises_verdict():
 
 def test_sentinel_verdict_monotonic_in_signals():
     weak = AgentSentinel(env={"MCP_TOKEN": "x"})
-    strong = AgentSentinel(env={"MCP_TOKEN": "x", "CLAUDECODE": "1", "OPENAI_API_KEY": "y"})
+    strong = AgentSentinel(
+        env={"MCP_TOKEN": "x", "CLAUDECODE": "1", "OPENAI_API_KEY": "y"}
+    )
     assert strong.evaluate().score >= weak.evaluate().score
 
 
@@ -151,6 +155,7 @@ def test_unshare_invocation_includes_ipc_namespace():
     import inspect
     from pathlib import Path
     from bulldog import namespace_sandbox
+
     src = Path(inspect.getsourcefile(namespace_sandbox)).read_text()
     assert '"--ipc",' in src
     assert src.index('"--ipc",') < src.index("str(self.launcher),")

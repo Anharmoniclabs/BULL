@@ -1,90 +1,62 @@
-# BULL hardening field manual
+# Hardening components and their boundaries
 
-This commit adds three hardening primitives. This document says how to wire
-them in. No system is impenetrable; the goal is that every layer an attacker
-beats costs them detection surface and buys the audit trail time.
+This guide explains the additional socket, launcher and observation helpers.
+Their presence in source does not mean every execution path calls them. Use
+[the code reading guide](CODE_READING_GUIDE.md) to trace the path being deployed.
 
-## 1. Kill the broker/proxy socket race (secret_broker.py, egress_proxy.py)
+## Local broker sockets
 
-Replace this pattern in both files:
+`socket_hardening.py` provides two separate operations:
 
-```python
-server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-server.bind(str(self.socket_path))
-os.chmod(self.socket_path, 0o600)   # TOCTOU window
-server.listen(16)
-```
+- `bind_private_unix_socket` creates the parent directory if necessary, sets its
+  mode to 0700, refuses an existing socket path, and clamps the process umask
+  while binding the socket. It then checks the node's type and permissions.
+- `accept_authenticated` checks the accepted peer's UID using `SO_PEERCRED` and
+  closes rejected connections.
 
-with:
+The caller must own and protect the parent path. The umask affects the whole
+process, so concurrent file creation needs consideration. These helpers address
+specific checks; they are not a proof that every filesystem race is eliminated.
+Existing broker implementations and `broker_hardening.py` have their own call
+paths. Inspect the selected implementation before asserting which helper it uses.
 
-```python
-from .socket_hardening import accept_authenticated, bind_private_unix_socket
+## Launcher and namespace checks
 
-server = bind_private_unix_socket(self.socket_path)
-# and at accept time, replace server.accept() with:
-conn = accept_authenticated(server)   # verifies SO_PEERCRED uid
-```
+`container_hardening.py` contains a text check for expected launcher tokens and
+runtime helpers for mount propagation, `no_new_privs` and effective capabilities.
+A successful text check means the tokens were found. It does not establish that
+the operating system applied them or that the workload is contained.
 
-`bind_private_unix_socket` clamps the umask during bind (node is born
-0600), forces the parent directory to 0700, refuses pre-planted symlinks,
-and `accept_authenticated` authenticates every peer by uid — closing the
-hole even if the socket path later leaks through a shared mount.
+The production path also requires live startup attestation. Namespace setup or
+attestation failure must remain a failure; replacing it with an unrestricted
+subprocess would change the security boundary.
 
-## 2. Prove the containerizer actually isolates
+## Process observations
 
-- In the production gate, statically audit the launcher every run:
+`AgentSentinel` combines environment markers, process ancestry, input timing and
+I/O rate into a heuristic score. Callers can inspect the report or receive it
+through `on_verdict`. The score is not authenticated identity. Ordinary tools
+can resemble agents, and agents can hide these signals.
 
-```python
-from .container_hardening import audit_launcher_script
+Treat observations as information for the operator. Permission and isolation must
+continue to work when no agent is detected. Do not grant additional access based
+on a clean observation.
 
-findings = audit_launcher_script(launcher_text)
-if findings:
-    raise ProductionGateError(findings)
-```
+## Workflow dependencies
 
-- Inside the namespace, before executing the workload:
+The repository pins GitHub Actions to commit SHAs and declares dependency update
+configuration. Pinning fixes the fetched version; it does not independently
+validate the action's implementation. Review permissions and release subjects
+when changing workflows, and preserve the pinned inputs in reviewable commits.
 
-```python
-from .container_hardening import assert_sandbox_invariants
+## Checks
 
-assert_sandbox_invariants()  # shared mounts, no_new_privs, CapEff == 0
-```
+From the configured development environment:
 
-- Ensure `_namespace_launcher.sh` invokes unshare with
-  `--mount --propagation private` and runs `mount --make-rprivate /` before
-  any bind mount. Without this, sandbox mounts leak to the host table.
-
-## 3. Agent detection (AgentSentinel)
-
-```python
-from .agent_sentinel import AgentSentinel
-
-def alert(report):
-    audit.record("agent_sentinel", verdict=report.verdict,
-                 score=report.score, signals=report.signals)
-
-sentinel = AgentSentinel(on_verdict=alert, agent_at=0.6)
-dispatcher.register_input_hook(sentinel.record_input_event)  # cadence signal
-report = sentinel.evaluate()
-```
-
-Notes:
-- The verdict combines environment markers, process ancestry, input-burst
-  cadence, and I/O tempo with a saturating weighted fusion; one weak signal
-  alone cannot flip the verdict to `agent`.
-- Treat `agent` as a policy input (deny, downgrade domains, require human
-  co-signature), not as a security boundary. Isolation remains the boundary.
-
-## 4. CI supply chain
-
-Pin workflow actions to commit SHAs instead of tags
-(`actions/checkout@<full-sha> # v4`) in `.github/workflows/pytest.yml` and
-`formal.yml`, and enable Dependabot for `github-actions` so pins receive
-update PRs. Triggers and token permissions are already correct
-(`pull_request`/`push` only, `contents: read`).
-
-## Test
-
-```bash
+```sh
 python -m pytest tests/test_hardening_additions.py -q
 ```
+
+The socket and sandbox cases require an environment that permits those operations.
+Record unavailable host features and failed checks explicitly. Do not reinterpret
+an environment failure as a successful live test.

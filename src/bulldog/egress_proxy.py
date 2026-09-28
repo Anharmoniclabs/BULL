@@ -1,3 +1,5 @@
+"""Authorize outbound broker requests over a local socket."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,7 +10,10 @@ import json
 import os
 import socket
 from .socket_hardening import (
-    HardeningError, accept_authenticated, bind_private_unix_socket,
+    HardeningError,
+    accept_authenticated,
+    bind_private_unix_socket,
+    require_peer_uid,
 )
 import ssl
 import struct
@@ -17,6 +22,7 @@ import urllib.parse
 from typing import Callable
 
 from .trace_runtime import RuntimeTraceVerifier
+from .public_address import is_public
 
 
 class EgressDenied(RuntimeError):
@@ -72,9 +78,13 @@ class EgressBroker:
         allowed_peer_uids: set[int] | frozenset[int] | None = None,
         require_peer_credentials: bool = False,
     ):
-        self.trace = trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
+        self.trace = (
+            trace_verifier if trace_verifier is not None else RuntimeTraceVerifier()
+        )
         self.socket_path = Path(socket_path)
-        self.allowed_hosts = frozenset(host.lower().rstrip(".") for host in allowed_hosts)
+        self.allowed_hosts = frozenset(
+            host.lower().rstrip(".") for host in allowed_hosts
+        )
         if self.allowed_hosts:
             self.trace.emit("GrantBroker")
         self.allowed_methods = frozenset(method.upper() for method in allowed_methods)
@@ -84,7 +94,8 @@ class EgressBroker:
         self.audit = audit
         self.require_peer_credentials = bool(require_peer_credentials)
         self.allowed_peer_uids = frozenset(
-            int(uid) for uid in (
+            int(uid)
+            for uid in (
                 allowed_peer_uids
                 if allowed_peer_uids is not None
                 else ({os.getuid()} if self.require_peer_credentials else set())
@@ -103,9 +114,7 @@ class EgressBroker:
             self.socket_path.unlink()
         except FileNotFoundError:
             pass
-        server = bind_private_unix_socket(
-            self.socket_path, backlog=16, timeout=0.25
-        )
+        server = bind_private_unix_socket(self.socket_path, backlog=16, timeout=0.25)
         self._server = server
         self._stop.clear()
         self._thread = threading.Thread(
@@ -160,6 +169,7 @@ class EgressBroker:
 
     def _handle(self, conn):
         try:
+            conn.settimeout(self.timeout)
             peer = self._authorize_peer(conn)
             request = json.loads(self._read_line(conn))
             method = str(request.get("method", "GET")).upper()
@@ -184,7 +194,11 @@ class EgressBroker:
         except Exception as exc:
             payload = {"ok": False, "error": str(exc)}
             self._emit({"event": "egress", "allowed": False, "error": str(exc)})
-        conn.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+        try:
+            conn.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+        except OSError:
+            # A cancelled client must not kill the broker's accept loop.
+            return
 
     def fetch(self, *, method: str, url: str) -> EgressResponse:
         method = method.upper()
@@ -271,16 +285,7 @@ class EgressBroker:
         for info in infos:
             raw = info[4][0].split("%", 1)[0]
             address = ipaddress.ip_address(raw)
-            if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
-                address = address.ipv4_mapped
-            if (
-                address.is_private
-                or address.is_loopback
-                or address.is_link_local
-                or address.is_multicast
-                or address.is_reserved
-                or address.is_unspecified
-            ):
+            if not is_public(address):
                 raise EgressDenied(
                     "destination resolved to non-public address: " f"{address}"
                 )
@@ -319,15 +324,18 @@ def broker_fetch(
     url: str,
     method: str = "GET",
     timeout: float = 10.0,
+    server_uid: int | None = None,
 ) -> EgressResponse:
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.settimeout(timeout)
     try:
         client.connect(str(socket_path))
+        require_peer_uid(client, server_uid)
         client.sendall(
             (json.dumps({"method": method, "url": url}) + "\n").encode("utf-8")
         )
-        response = json.loads(EgressBroker._read_line(client))
+        # A 1 MiB broker body is hex encoded on the wire, plus bounded metadata.
+        response = json.loads(EgressBroker._read_line(client, limit=3 * 1024 * 1024))
         if not response.get("ok"):
             raise EgressDenied(response.get("error", "egress request denied"))
         return EgressResponse(
@@ -337,3 +345,26 @@ def broker_fetch(
         )
     finally:
         client.close()
+
+
+@dataclass(frozen=True)
+class EgressClient:
+    """Production transport: every fetch crosses a peer-verified Unix socket.
+
+    Run the broker as a separate process under the authority UID, with its socket
+    in a private directory inaccessible to the agent's distinct UID.
+    """
+
+    socket_path: Path
+    server_uid: int
+    timeout: float = 10.0
+    peer_auth_enforced = True
+
+    def fetch(self, *, method: str, url: str) -> EgressResponse:
+        return broker_fetch(
+            socket_path=self.socket_path,
+            method=method,
+            url=url,
+            timeout=self.timeout,
+            server_uid=self.server_uid,
+        )

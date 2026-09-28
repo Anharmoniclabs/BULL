@@ -1,14 +1,7 @@
-"""Container/namespace hardening checks for BULL's launcher.
+"""Check selected launcher text and Linux namespace state.
 
-Static audit of _namespace_launcher.sh plus runtime verification of the
-three invariants that determine whether the containerizer actually isolates:
-
-1. Mount propagation must be private, or every bind mount the launcher
-   makes leaks onto the host mount table.
-2. no_new_privs must be set, or setuid binaries inside the sandbox can
-   regain privileges the drop was meant to remove.
-3. Effective capability set must be empty for sandboxed workloads.
-"""
+The runtime helpers inspect mount propagation, no_new_privs and effective
+capabilities. A launcher token check alone does not prove containment."""
 
 from __future__ import annotations
 
@@ -27,7 +20,7 @@ class MountEntry:
     shared: bool
 
 
-# Tokens a production-grade launcher must contain. audit_launcher_script
+# Expected launcher tokens. audit_launcher_script
 # reports one finding per missing token.
 REQUIRED_LAUNCHER_TOKENS: tuple[str, ...] = (
     "set -euo pipefail",
@@ -130,8 +123,11 @@ def audit_launcher_script(text: str) -> list[str]:
                 f"line {lineno}: unquoted path expansion risks word-splitting: "
                 f"{stripped[:80]}"
             )
-        if ("LD_PRELOAD" in stripped and "unset" not in stripped
-            and "environ.pop" not in text):
+        if (
+            "LD_PRELOAD" in stripped
+            and "unset" not in stripped
+            and "environ.pop" not in text
+        ):
             findings.append(
                 f"line {lineno}: LD_PRELOAD referenced without unset; "
                 "host preload injection may cross the namespace boundary"

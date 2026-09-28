@@ -1,11 +1,7 @@
-"""Lure field for extracting an attacker agent's initial task.
+"""Send diagnostic prompts through a supplied callback and parse claimed tasks.
 
-Attackers are autonomous agents executing an assigned objective. BULL
-deploys lures formatted as system notices that an obedient agent will
-follow, inducing it to disclose its current objective verbatim. The
-extracted text is tabulated on the attacker record and used to cluster
-swarms (many agents sharing one task).
-"""
+A returned objective is untrusted text. The callback controls who is contacted;
+this module neither discovers remote agents nor verifies their actual goals."""
 
 from __future__ import annotations
 
@@ -51,7 +47,7 @@ def extract_task(response: str) -> Optional[str]:
 
 
 class LureField:
-    """Deploys lures against an attacker until one discloses its task."""
+    """Try diagnostic prompts until a response contains a claimed task."""
 
     def __init__(self, lures: Sequence[Tuple[str, str]] = None) -> None:
         self._lures = tuple(lures) if lures else LURES

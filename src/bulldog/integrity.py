@@ -1,3 +1,5 @@
+"""Sign and verify the trusted runtime file manifest."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,10 +26,20 @@ CRITICAL_FILES = (
     "pinned_egress.py",
     "socket_hardening.py",
     "audit.py",
+    "local_audit.py",
+    "local_gate.py",
     "audit_transport.py",
     "canonicalizer.py",
     "cgroup_scope.py",
     "dispatcher.py",
+    "production_router.py",
+    "effect_journal.py",
+    "agent_tool_registry.py",
+    "agent_session.py",
+    "agent_gateway.py",
+    "gateway_transport.py",
+    "gateway_wire.py",
+    "gateway_cli.py",
     "egress_proxy.py",
     "engine.py",
     "filesystem_manifest.py",
@@ -44,6 +56,18 @@ CRITICAL_FILES = (
     "policy.py",
     "policy_bundle.py",
     "production_gate.py",
+    "assurance.py",
+    "release_evidence.py",
+    "lifecycle_governance.py",
+    "lifecycle_bridge.py",
+    "egress_gateway.py",
+    "run_egress_gateway.py",
+    "agent_launcher.py",
+    "client_profiles.py",
+    "inference_relay.py",
+    "public_address.py",
+    "data/assurance_controls.json",
+    "data/agent_gateway_release.json",
     "profiles.py",
     "resource_limits.py",
     "runtime.py",
@@ -73,11 +97,7 @@ def sha256_file(path: Path) -> str:
 
 
 def _canonical_manifest_bytes(manifest: dict) -> bytes:
-    payload = {
-        key: value
-        for key, value in manifest.items()
-        if key != "signature"
-    }
+    payload = {key: value for key, value in manifest.items() if key != "signature"}
     return json.dumps(
         payload,
         sort_keys=True,
