@@ -22,17 +22,20 @@ from ._proto import supervisor_middleware_pb2 as mw
 from ._proto import supervisor_middleware_pb2_grpc as mw_grpc
 from .authority import OpenShellAuthority
 
-LOG = logging.getLogger("bull.openshell")
+LOG = logging.getLogger("bull_openshell")
 MAX_PAYLOAD = 256 * 1024
 SERVICE = "openshell.v1.OpenShell"
 
 
-def _metadata(name: str) -> ext.PeerMetadata:
+def _metadata(family: str) -> ext.PeerMetadata:
     major, minor = OPENSHELL_PROTOCOL
+    contract = f"openshell.{family}.contract"
     return ext.PeerMetadata(
         protocol_version=ext.ProtocolVersion(major=major, minor=minor),
-        implementation_name=f"bull/{name}",
+        implementation_name=f"bull/{family}",
         implementation_version="bull-openshell-0.1",
+        supported_capabilities=[contract],
+        required_capabilities=[contract],
     )
 
 
@@ -84,7 +87,7 @@ class BullMiddleware(mw_grpc.SupervisorMiddlewareServicer):
             if event.HasField("preflight"):
                 yield mw.WebSocketSessionEventResult(preflight_decision=mw.WebSocketPreflightDecision(
                     action=mw.WEB_SOCKET_PREFLIGHT_ACTION_DENY,
-                    reason="BULL does not mediate WebSocket sessions", reason_code="bull.unsupported"))
+                    reason="BULL does not mediate WebSocket sessions", reason_code="bull_unsupported"))
                 return
 
 

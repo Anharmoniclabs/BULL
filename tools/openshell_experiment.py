@@ -34,11 +34,16 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from bulldog.audit import AuditLedger  # noqa: E402
 from bulldog.models import Capability  # noqa: E402
+from bulldog.openshell.ocsf import correlate, parse_shorthand  # noqa: E402
 from bulldog.policy_bundle import sign_policy_bundle  # noqa: E402
 
 HOST = "host.openshell.internal"
 BASE_IMAGE = "bull-local/openshell-base:ubuntu24.04"
+# host.openshell.internal resolves to the Docker bridge gateway; OpenShell's
+# SSRF guard blocks private destinations unless the endpoint lists them.
+BRIDGE_IP = "172.17.0.1"
 
 
 # ----------------------------------------------------------------- upstream
@@ -101,6 +106,12 @@ class Upstream:
         with self.lock:
             return [r for r in self.received if r["method"] == "POST" and marker in r["body"]]
 
+    def receipts(self, since=0.0):
+        with self.lock:
+            return [{"time": r["time"], "method": r["method"],
+                     "url": f"http://{HOST}:{r['port']}{r['path']}"}
+                    for r in self.received if r["time"] >= since]
+
     def count(self, role, method=None):
         with self.lock:
             return sum(1 for r in self.received if r["port"] == self.port(role)
@@ -111,7 +122,9 @@ class Upstream:
 
 def run(cmd, *, timeout=300, check=False, env=None):
     started = time.perf_counter()
-    done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+    # stdin=DEVNULL: `openshell sandbox exec` reads a non-TTY stdin to EOF first.
+    done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env,
+                          stdin=subprocess.DEVNULL)
     elapsed = time.perf_counter() - started
     if check and done.returncode != 0:
         raise RuntimeError(f"{cmd[:3]} failed: {done.stdout[-800:]} {done.stderr[-800:]}")
@@ -133,9 +146,19 @@ def build_images(os_src: Path, tag: str):
     images = {}
     for kind in ("supervisor", "sandbox"):
         image = f"bull-local/openshell-{kind}:{tag}"
+        dockerfile = os_src / f"deploy/docker/Dockerfile.{kind}"
+        if kind == "supervisor":
+            # Upstream's distroless base-nossl lacks libgcc_s, which a locally
+            # built (non-release-profile-linked) supervisor needs. Swap to the
+            # distroless "cc" variant: same family, plus the GCC runtime only.
+            text = dockerfile.read_text().replace(
+                "gcr.io/distroless/base-nossl-debian13@sha256:"
+                "af5cb8dd589b8520b8c06bebb9efb73d7e16406cab58e85c51761fff49d370a0",
+                "gcr.io/distroless/cc-debian13")
+            dockerfile = Path(tempfile.mkdtemp(prefix="bull-sup-")) / "Dockerfile"
+            dockerfile.write_text(text)
         run(["docker", "build", "-q", "--build-arg", "TARGETARCH=amd64", "--target", kind,
-             "-f", str(os_src / f"deploy/docker/Dockerfile.{kind}"), "-t", image, str(os_src)],
-            timeout=900, check=True)
+             "-f", str(dockerfile), "-t", image, str(os_src)], timeout=900, check=True)
         images[kind] = image
     base = tempfile.mkdtemp(prefix="bull-base-")
     Path(base, "Dockerfile").write_text(
@@ -144,11 +167,15 @@ def build_images(os_src: Path, tag: str):
         "nftables python3 ca-certificates dnsutils && rm -rf /var/lib/apt/lists/*\n"
         "RUN groupadd --gid 1500 app && useradd --uid 1500 --gid app --create-home app "
         "&& install -d -o app -g app /sandbox\nWORKDIR /sandbox\nUSER app\n")
-    run(["docker", "build", "-q", "-t", BASE_IMAGE, base], timeout=900, check=True)
+    if run(["docker", "image", "inspect", BASE_IMAGE])[0].returncode != 0:
+        run(["docker", "build", "-q", "-t", BASE_IMAGE, base], timeout=900, check=True)
     return images
 
 
-def policy_yaml(up: Upstream) -> str:
+def policy_yaml(up: Upstream, enforcement: str | None = "enforce") -> str:
+    """OpenShell policy for the three upstreams. ``enforcement=None`` leaves
+    OpenShell's default, which is ``audit`` (violations logged, then allowed)."""
+    mode = f"\n        enforcement: {enforcement}" if enforcement else ""
     rules = []
     for name, role, method, path in (("docs", "docs", "GET", "/**"), ("news", "news", "GET", "/**"),
                                      ("api", "api", "POST", "/v1/**")):
@@ -158,6 +185,7 @@ def policy_yaml(up: Upstream) -> str:
       - host: {HOST}
         port: {up.port(role)}
         protocol: rest
+        allowed_ips: ["{BRIDGE_IP}/32"]{mode}
         rules:
           - allow:
               method: {method}
@@ -203,6 +231,8 @@ class Stack:
         (self.work / "bundle.json").write_text(json.dumps(bundle))
         self.admin = self.work / "admin.sock"
         self.interceptor_sock = self.work / "interceptor.sock"
+        for stale in (self.admin, self.interceptor_sock):  # restart after C9
+            stale.unlink(missing_ok=True)
         log = open(self.work / "bull.log", "a")
         self.procs["bull"] = subprocess.Popen(
             [sys.executable, "-m", "bulldog.openshell.server",
@@ -253,7 +283,6 @@ gateway_id = "bull-experiment"
 supervisor_image = "{self.images['supervisor']}"
 sandbox_runtime_image = "{self.images['sandbox']}"
 image_pull_policy = "never"
-sandbox_runtime_image_pull_policy = "never"
 """
         if self.with_bull:
             config += f"""
@@ -340,6 +369,7 @@ def curl(stack, sandbox, role, method="GET", path="/", body=None):
 
 def run_cases(stack: Stack, results: list, phase: str):
     up = stack.up
+    started = time.time()
     policy = stack.work / "policy.yaml"
     policy.write_text(policy_yaml(up))
 
@@ -372,6 +402,26 @@ def run_cases(stack: Stack, results: list, phase: str):
     reached = up.count("api") > before
     record("C3", "BULL ALLOW + OpenShell DENY is blocked", "not reached",
            f"http {code}; reached={reached}", not reached)
+
+    # C3b: the same L7 rules in OpenShell's default enforcement mode (audit).
+    audit_policy = stack.work / "audit-mode.yaml"
+    audit_policy.write_text(policy_yaml(up, enforcement=None))
+    done_a, _ = stack.create("auditor", audit_policy)
+    created = done_a.returncode == 0
+    reached = False
+    if created:
+        before = up.count("api")
+        code, _, _ = curl(stack, "auditor", "api", "POST", "/admin/delete", "C3b-audit-mode")
+        reached = up.count("api") > before
+    out = (done_a.stdout + done_a.stderr)[-300:].strip().replace("\n", " ")
+    if stack.with_bull:
+        record("C3b", "L7 rules in default audit mode are refused at creation",
+               "create refused (bull_l7_audit_mode)", f"created={created}; {out}",
+               not created and "enforce" in out)
+    else:
+        record("C3b", "L7 rules in default audit mode (OpenShell only)",
+               "observe: violation allowed", f"created={created}; admin POST reached={reached}",
+               True, {"observation_only": True, "violation_reached_upstream": reached})
 
     # C4/C7: internet-derived content then POST -> escalation; approval admits once.
     curl(stack, "coder", "news", path="/article")
@@ -409,6 +459,8 @@ def run_cases(stack: Stack, results: list, phase: str):
       - host: {HOST}
         port: 9
         protocol: rest
+        allowed_ips: ["{BRIDGE_IP}/32"]
+        enforcement: enforce
         rules:
           - allow:
               method: POST
@@ -425,7 +477,7 @@ def run_cases(stack: Stack, results: list, phase: str):
                out.strip().replace("\n", " "), refused)
         outside = stack.work / "outside.yaml"
         outside.write_text(policy_yaml(up).replace(f"host: {HOST}\n        port: {up.port('docs')}",
-                                                    f"host: attacker.example\n        port: 443", 1))
+                                                    "host: attacker.example\n        port: 443", 1))
         done2, _ = stack.create("outsider", outside)
         out2 = (done2.stdout + done2.stderr)[-300:]
         record("C5b", "Sandbox with host outside BULL ceiling refused", "rejected",
@@ -457,9 +509,10 @@ def run_cases(stack: Stack, results: list, phase: str):
 
     # C6: provider credential never readable by the workload.
     canary = "sk-bull-canary-" + os.urandom(6).hex()
-    done, _ = run(stack.cli + ["provider", "create", "--name", "canary", "--type", "generic",
-                               "--credential", f"API_KEY={canary}"], timeout=60)
+    done, _ = run(stack.cli + ["provider", "create", "--name", "canary", "--type", "github",
+                               "--credential", f"GITHUB_TOKEN={canary}"], timeout=60)
     created = done.returncode == 0
+    provider_out = (done.stdout + done.stderr)[-300:].strip().replace("\n", " ")
     done_a, _ = run(stack.cli + ["sandbox", "provider", "attach", "coder", "canary"], timeout=60)
     attach_out = (done_a.stdout + done_a.stderr)[-300:].strip().replace("\n", " ")
     env_dump, _ = stack.exec("coder", "sh", "-c", "env; cat /proc/self/environ 2>/dev/null | tr '\\0' '\\n'")
@@ -467,11 +520,13 @@ def run_cases(stack: Stack, results: list, phase: str):
     if stack.with_bull:
         record("C6", "Provider attach governed; credential never readable by the agent",
                "attach refused (no credential.use grant); secret not in sandbox",
-               f"provider_created={created}; attach: {attach_out}; secret_visible={visible}",
+               f"provider_created={created} ({provider_out}); attach: {attach_out}; "
+               f"secret_visible={visible}",
                done_a.returncode != 0 and not visible)
     else:
         record("C6", "Provider credential not readable (OpenShell placeholder)",
-               "secret not in sandbox env", f"attach rc={done_a.returncode}; secret_visible={visible}",
+               "secret not in sandbox env", f"provider_created={created} ({provider_out}); "
+               f"attach rc={done_a.returncode} {attach_out}; secret_visible={visible}",
                not visible)
 
     # C9: BULL disappears -> governed operations fail closed.
@@ -487,6 +542,40 @@ def run_cases(stack: Stack, results: list, phase: str):
                "not reached; create refused", f"post http {code} reached={reached}; "
                f"create_while_down={created_down}; after_restart_docs_http={code_after}",
                not reached and not created_down)
+
+    # C10: OpenShell events, BULL decisions and effects form one audit trail.
+    events = []
+    for sandbox in ("coder", "reader", "auditor"):
+        done, _ = run(stack.cli + ["logs", sandbox, "-n", "20000", "--source", "sandbox"],
+                      timeout=60)
+        (stack.work / f"ocsf-{sandbox}.txt").write_text(done.stdout)
+        events += parse_shorthand(done.stdout.splitlines(), sandbox)
+    receipts = up.receipts(since=started)
+    http_events = {"l7": sum(e["engine"] == "l7" for e in events),
+                   "middleware": sum(e["engine"] == "middleware" for e in events)}
+    if stack.with_bull:
+        ledger_path = stack.work / "bull-audit.jsonl"
+        ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line]
+        verification = AuditLedger(ledger_path).verify()
+        joined = correlate(ledger, events, receipts)
+        stack.correlation = joined
+        summary = joined["summary"]
+        passed = (verification.valid and summary["bull_decisions"] > 0
+                  and summary["matched_openshell_event"] == summary["bull_decisions"]
+                  and summary["consistent"] == summary["bull_decisions"]
+                  and summary["effects_without_bull_allow"] == 0
+                  and summary["unexplained_effects"] == 0)
+        record("C10", "OpenShell events + BULL decisions + effects correlate",
+               "every decision matched, consistent; no unexplained effect; ledger verifies",
+               json.dumps({**summary, "ledger_valid": verification.valid,
+                           "ledger_records": len(ledger), "ocsf_http_events": http_events,
+                           "upstream_receipts": len(receipts)}),
+               passed, {"summary": summary, "ledger_valid": verification.valid})
+    else:
+        record("C10", "Audit trail without BULL (OpenShell OCSF only)",
+               "observe: OCSF events, no authority decision record",
+               json.dumps({"ocsf_http_events": http_events, "upstream_receipts": len(receipts)}),
+               True, {"observation_only": True})
 
 
 def measure(stack: Stack, latency: list, phase: str, n: int):
@@ -543,10 +632,13 @@ def main() -> int:
                 shutil.copy2(work / "bull-audit.jsonl", args.output / "bull-audit.jsonl")
                 shutil.copy2(work / "bull.log", args.output / "bull.log")
             shutil.copy2(work / "gateway.log", args.output / f"gateway-{phase[0]}.log")
-            ocsf, _ = run(["sh", "-c", "for c in $(docker ps -q --filter label=openshell.ai/managed-by); do "
-                           "docker exec $c sh -c 'cat /var/log/openshell-ocsf.*.log /var/log/openshell.*.log "
-                           "2>/dev/null'; done"], timeout=120)
-            (args.output / f"openshell-logs-{phase[0]}.txt").write_text(ocsf.stdout)
+            for ocsf in work.glob("ocsf-*.txt"):
+                shutil.copy2(ocsf, args.output / f"{ocsf.stem}-{phase[0]}.txt")
+            if getattr(stack, "correlation", None):
+                (args.output / "correlation.json").write_text(
+                    json.dumps(stack.correlation, indent=2))
+            shutil.copy2(work / "gateway.toml", args.output / f"gateway-{phase[0]}.toml")
+            shutil.copy2(work / "policy.yaml", args.output / "policy.yaml")
         finally:
             stack.stop()
     version, _ = run([str(args.os_src / "target/release/openshell"), "--version"])

@@ -181,20 +181,20 @@ class OpenShellAuthority:
         if decision == Decision.ESCALATE:
             consumed = self.approvals.consume(binding)
             if consumed:
-                verdict = Verdict(True, "bull.approved", "operator approved this exact request",
+                verdict = Verdict(True, "bull_approved", "operator approved this exact request",
                                   decision.value, consumed)
             else:
                 approval_id = self.approvals.pending_for(binding, {
                     "sandbox": sandbox, "method": method, "resource": resource,
                     "body_sha256": body_digest, "reasons": list(evaluation.reasons)})
-                verdict = Verdict(False, "bull.approval_required",
+                verdict = Verdict(False, "bull_approval_required",
                                   f"approval {approval_id} required: "
                                   + "; ".join(evaluation.reasons),
                                   decision.value, approval_id)
         elif decision == Decision.DENY:
-            verdict = Verdict(False, "bull.denied", "; ".join(evaluation.reasons), decision.value)
+            verdict = Verdict(False, "bull_denied", "; ".join(evaluation.reasons), decision.value)
         else:
-            verdict = Verdict(True, "bull.allowed", "; ".join(evaluation.reasons), decision.value)
+            verdict = Verdict(True, "bull_allowed", "; ".join(evaluation.reasons), decision.value)
         if verdict.allowed and capability == Capability.NETWORK_OUTBOUND and not self._trusted(
             grant, host, port
         ):
@@ -221,8 +221,22 @@ class OpenShellAuthority:
         for rule in (policy or {}).get("networkPolicies", {}).values():
             for endpoint in rule.get("endpoints", []):
                 if endpoint.get("host"):
-                    endpoints.add(f"{endpoint['host'].lower()}:{endpoint.get('port', 443)}")
+                    # Protobuf JSON renders integers as doubles (443.0).
+                    ports = {int(p) for p in endpoint.get("ports") or []}
+                    ports.add(int(endpoint.get("port") or 443))
+                    endpoints |= {f"{endpoint['host'].lower()}:{p}" for p in ports}
         return endpoints
+
+    @staticmethod
+    def audit_mode_endpoints(policy: dict | None) -> list[str]:
+        """Endpoints whose L7 rules only log. OpenShell defaults ``enforcement``
+        to ``audit``, which allows rule violations; BULL requires ``enforce``."""
+        found = []
+        for name, rule in ((policy or {}).get("networkPolicies") or {}).items():
+            for endpoint in rule.get("endpoints", []):
+                if endpoint.get("rules") and endpoint.get("enforcement") != "enforce":
+                    found.append(f"{name}:{endpoint.get('host', '')}")
+        return sorted(found)
 
     @staticmethod
     def _host(endpoint: str) -> str:
@@ -236,7 +250,7 @@ class OpenShellAuthority:
         hosts = {self._host(e) for e in endpoints}
         outside = sorted(h for h in hosts if not self._within_ceiling(h))
         if outside:
-            verdict = Verdict(False, "bull.outside_ceiling",
+            verdict = Verdict(False, "bull_outside_ceiling",
                               f"policy grants hosts outside the signed BULL ceiling: {outside}",
                               Decision.DENY.value)
             self._audit("openshell_control", rpc="CreateSandbox", sandbox=name,
@@ -253,7 +267,7 @@ class OpenShellAuthority:
             self._save()
         self._audit("openshell_control", rpc="CreateSandbox", sandbox=name, allowed=True,
                     endpoints=sorted(endpoints), patched="bull middleware attached")
-        return Verdict(True, "bull.attached", "BULL middleware attached",
+        return Verdict(True, "bull_attached", "BULL middleware attached",
                        Decision.ALLOW.value), patches
 
     def attach_patches(self, policy: dict, base: str) -> list[dict]:
@@ -283,9 +297,14 @@ class OpenShellAuthority:
         attached = (policy.get("networkMiddlewares") or {}).get(MIDDLEWARE_NAME)
         hosts = {self._host(e) for e in self.policy_endpoints(policy)}
         if not attached or not hosts <= set(attached.get("endpoints", {}).get("include", [])):
-            return Verdict(False, "bull.unmediated", "BULL middleware must cover every host",
+            return Verdict(False, "bull_unmediated", "BULL middleware must cover every host",
                            Decision.DENY.value)
-        return Verdict(True, "bull.valid", "sandbox is mediated by BULL", Decision.ALLOW.value)
+        audit_only = self.audit_mode_endpoints(policy)
+        if audit_only:
+            return self._control_deny("CreateSandbox", operation.get("name", ""),
+                                      "bull_l7_audit_mode",
+                                      f"L7 rules must set enforcement: enforce: {audit_only}")
+        return Verdict(True, "bull_valid", "sandbox is mediated by BULL", Decision.ALLOW.value)
 
     def validate_policy_change(self, rpc: str, operation: dict) -> Verdict:
         """UpdateConfig and draft approvals: no widening without approval."""
@@ -293,7 +312,7 @@ class OpenShellAuthority:
 
         sandbox = operation.get("sandbox") or operation.get("name") or ""
         if operation.get("global") and (operation.get("policy") or operation.get("mergeOperations")):
-            return self._control_deny(rpc, sandbox, "bull.global_policy",
+            return self._control_deny(rpc, sandbox, "bull_global_policy",
                                       "global policy changes are outside BULL's per-sandbox grants")
         new_hosts: set[str] = set()
         policy = operation.get("policy")
@@ -301,16 +320,21 @@ class OpenShellAuthority:
             new_hosts |= self.policy_endpoints(policy)
             attached = (policy.get("networkMiddlewares") or {}).get(MIDDLEWARE_NAME)
             if not attached:
-                return self._control_deny(rpc, sandbox, "bull.unmediated",
+                return self._control_deny(rpc, sandbox, "bull_unmediated",
                                           "a replacement policy must keep BULL middleware")
+        audit_only = self.audit_mode_endpoints(policy)
         for merge in operation.get("mergeOperations", []) or []:
             rule = (merge.get("addRule") or {}).get("rule") or {}
             new_hosts |= self.policy_endpoints({"networkPolicies": {"x": rule}})
+            audit_only += self.audit_mode_endpoints({"networkPolicies": {"x": rule}})
             allow = merge.get("addAllowRules")
             if allow:
                 # New L7 rules on an existing endpoint are still new authority.
                 new_hosts.add(f"{str(allow.get('host', '')).lower()}:{allow.get('port', 443)}"
                               f"#rules:{json.dumps(allow.get('rules', []), sort_keys=True)}")
+        if audit_only:
+            return self._control_deny(rpc, sandbox, "bull_l7_audit_mode",
+                                      f"L7 rules must set enforcement: enforce: {audit_only}")
         if rpc in ("ApproveDraftChunk", "ApproveAllDraftChunks", "EditDraftChunk"):
             # Draft approvals merge agent-proposed access; BULL must approve.
             return self._widening(rpc, sandbox, {f"draft:{operation.get('chunkId', 'all')}"})
@@ -320,13 +344,13 @@ class OpenShellAuthority:
         added_hosts = {self._host(h.split("#", 1)[0]) for h in added}
         outside = sorted(h for h in added_hosts if not self._within_ceiling(h))
         if outside:
-            return self._control_deny(rpc, sandbox, "bull.outside_ceiling",
+            return self._control_deny(rpc, sandbox, "bull_outside_ceiling",
                                       f"hosts outside the signed BULL ceiling: {outside}")
         if added:
             return self._widening(rpc, sandbox, added)
         self._audit("openshell_control", rpc=rpc, sandbox=sandbox, allowed=True,
                     reason="no new authority")
-        return Verdict(True, "bull.no_widening", "no new authority", Decision.ALLOW.value)
+        return Verdict(True, "bull_no_widening", "no new authority", Decision.ALLOW.value)
 
     def _widening(self, rpc: str, sandbox: str, added: set[str]) -> Verdict:
         binding = json.dumps(["policy", sandbox, sorted(added)])
@@ -338,13 +362,13 @@ class OpenShellAuthority:
                 self._save()
             self._audit("openshell_control", rpc=rpc, sandbox=sandbox, allowed=True,
                         approval_id=consumed, added=sorted(added))
-            return Verdict(True, "bull.approved", "operator approved this widening",
+            return Verdict(True, "bull_approved", "operator approved this widening",
                            Decision.ESCALATE.value, consumed)
         aid = self.approvals.pending_for(binding, {"sandbox": sandbox, "rpc": rpc,
                                                    "adds": sorted(added)})
         self._audit("openshell_control", rpc=rpc, sandbox=sandbox, allowed=False,
                     approval_id=aid, added=sorted(added), reason="authority increase")
-        return Verdict(False, "bull.approval_required",
+        return Verdict(False, "bull_approval_required",
                        f"approval {aid} required to widen policy with {sorted(added)}",
                        Decision.ESCALATE.value, aid)
 
@@ -356,7 +380,7 @@ class OpenShellAuthority:
         sandbox = operation.get("sandboxName") or operation.get("sandbox") or ""
         grant = self._grant(sandbox)
         if Capability.CREDENTIAL_READ.value not in grant["capabilities"]:
-            return self._control_deny("AttachSandboxProvider", sandbox, "bull.no_credential_use",
+            return self._control_deny("AttachSandboxProvider", sandbox, "bull_no_credential_use",
                                       "sandbox has no BULL grant to use provider credentials")
         return self._widening("AttachSandboxProvider", sandbox,
                               {f"provider:{operation.get('providerName', '')}"})

@@ -49,7 +49,7 @@ def test_trusted_read_then_post_is_allowed(authority):
 
 def test_capability_not_granted_is_denied(authority):
     verdict = ask(authority, sandbox="reader", method="POST", host="api.internal")
-    assert not verdict.allowed and verdict.reason_code == "bull.denied"
+    assert not verdict.allowed and verdict.reason_code == "bull_denied"
 
 
 def test_unknown_sandbox_gets_nothing(authority):
@@ -59,7 +59,7 @@ def test_unknown_sandbox_gets_nothing(authority):
 def test_internet_content_taints_later_posts(authority):
     assert ask(authority, host="news.example.com").allowed  # untrusted read
     verdict = ask(authority, method="POST", host="api.internal", body=b"exfil")
-    assert not verdict.allowed and verdict.reason_code == "bull.approval_required"
+    assert not verdict.allowed and verdict.reason_code == "bull_approval_required"
     assert verdict.decision == "ESCALATE" and verdict.approval_id
 
 
@@ -98,7 +98,7 @@ def test_create_attaches_bull_middleware_to_every_host(authority):
 
 def test_create_outside_ceiling_is_refused(authority):
     verdict, patches = authority.create_sandbox_patches(op(hosts=("evil.test",)))
-    assert not verdict.allowed and verdict.reason_code == "bull.outside_ceiling" and not patches
+    assert not verdict.allowed and verdict.reason_code == "bull_outside_ceiling" and not patches
 
 
 def test_create_validate_requires_full_mediation(authority):
@@ -111,24 +111,24 @@ def test_policy_widening_needs_approval_and_is_single_use(authority):
     change = {"sandbox": "coder", "mergeOperations": [{"addRule": {"ruleName": "n", "rule": {
         "endpoints": [{"host": "api.internal", "port": 80}]}}}]}
     first = authority.validate_policy_change("UpdateConfig", change)
-    assert not first.allowed and first.reason_code == "bull.approval_required"
+    assert not first.allowed and first.reason_code == "bull_approval_required"
     authority.approvals.approve(first.approval_id)
     assert authority.validate_policy_change("UpdateConfig", change).allowed
     # The approved host is now part of BULL's accepted set: no new authority.
-    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull.no_widening"
+    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull_no_widening"
 
 
 def test_widening_outside_ceiling_is_refused_outright(authority):
     authority.create_sandbox_patches(op())
     change = {"sandbox": "coder", "mergeOperations": [{"addRule": {"ruleName": "n", "rule": {
         "endpoints": [{"host": "attacker.test", "port": 443}]}}}]}
-    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull.outside_ceiling"
+    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull_outside_ceiling"
 
 
 def test_replacement_policy_must_keep_bull(authority):
     authority.create_sandbox_patches(op())
     change = {"sandbox": "coder", "policy": op()["spec"]["policy"]}
-    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull.unmediated"
+    assert authority.validate_policy_change("UpdateConfig", change).reason_code == "bull_unmediated"
 
 
 def test_global_policy_change_is_refused(authority):
@@ -138,14 +138,14 @@ def test_global_policy_change_is_refused(authority):
 
 def test_draft_approval_is_an_authority_increase(authority):
     verdict = authority.validate_policy_change("ApproveAllDraftChunks", {"name": "coder"})
-    assert verdict.reason_code == "bull.approval_required"
+    assert verdict.reason_code == "bull_approval_required"
 
 
 def test_provider_attach_requires_credential_use_grant(authority):
     assert authority.validate_provider_attach(
-        {"sandboxName": "coder", "providerName": "gh"}).reason_code == "bull.no_credential_use"
+        {"sandboxName": "coder", "providerName": "gh"}).reason_code == "bull_no_credential_use"
     assert authority.validate_provider_attach(
-        {"sandboxName": "keyed", "providerName": "gh"}).reason_code == "bull.approval_required"
+        {"sandboxName": "keyed", "providerName": "gh"}).reason_code == "bull_approval_required"
 
 
 def test_grants_are_validated():
@@ -184,7 +184,7 @@ def test_grpc_contract_round_trip(authority):
             target=mw.HttpRequestTarget(scheme="http", host="api.internal", port=80,
                                         method="POST", path="/v1"),
             body=b"x"))
-        assert result.decision == mw.DECISION_DENY and result.reason_code == "bull.denied"
+        assert result.decision == mw.DECISION_DENY and result.reason_code == "bull_denied"
         interceptor = gi_grpc.GatewayInterceptorStub(channel)
         described = interceptor.Describe(gi.DescribeRequest())
         assert described.failure_policy == "fail_closed"
@@ -235,7 +235,7 @@ def test_new_port_on_an_allowed_host_is_widening(authority):
     change = {"sandbox": "coder", "mergeOperations": [{"addRule": {"ruleName": "n", "rule": {
         "endpoints": [{"host": "docs.internal", "port": 9}]}}}]}
     assert authority.validate_policy_change("UpdateConfig", change).reason_code == \
-        "bull.approval_required"
+        "bull_approval_required"
 
 
 def test_new_l7_rules_on_an_existing_endpoint_are_widening(authority):
@@ -243,7 +243,7 @@ def test_new_l7_rules_on_an_existing_endpoint_are_widening(authority):
     change = {"sandbox": "coder", "mergeOperations": [{"addAllowRules": {
         "host": "docs.internal", "port": 80, "rules": [{"allow": {"method": "DELETE"}}]}}]}
     assert authority.validate_policy_change("UpdateConfig", change).reason_code == \
-        "bull.approval_required"
+        "bull_approval_required"
 
 
 def test_replacement_policy_is_reattached_before_validation(authority):
@@ -251,3 +251,106 @@ def test_replacement_policy_is_reattached_before_validation(authority):
     replacement = {"sandbox": "coder", "policy": op()["spec"]["policy"]}
     patches = authority.update_config_patches(replacement)
     assert patches[-1]["path"] == "/policy/networkMiddlewares/bull-governance"
+
+
+def test_reason_codes_match_openshell_stable_code_grammar():
+    # OpenShell rejects middleware replies whose reason_code is not
+    # [a-z][a-z0-9_]* (is_stable_reason_code), failing the request closed.
+    import re
+    from pathlib import Path
+    import bulldog.openshell.authority as authority_module
+    source = Path(authority_module.__file__).read_text()
+    codes = set(re.findall(r'"(bull[^"]*)"', source)) - {"bull-governance"}
+    codes = {c for c in codes if not c.startswith("bull-") and " " not in c and "." != c[-1]}
+    codes.discard("bull.invalid")  # placeholder host, not a reason code
+    codes.discard("bull.openshell")  # logger name
+    assert codes
+    for code in codes:
+        assert re.fullmatch(r"[a-z][a-z0-9_]{0,63}", code), code
+
+
+def _attached(operation):
+    authority_policy = operation["spec"]["policy"]
+    authority_policy["networkMiddlewares"] = {"bull-governance": {
+        "middleware": "bull-governance", "onError": "fail_closed",
+        "endpoints": {"include": ["docs.internal"]}}}
+    return operation
+
+
+def test_l7_rules_in_default_audit_mode_are_refused(authority):
+    # OpenShell defaults enforcement to "audit": violations are logged, then allowed.
+    operation = _attached(op())
+    operation["spec"]["policy"]["networkPolicies"]["p"]["endpoints"][0]["rules"] = [
+        {"allow": {"method": "GET", "path": "/**"}}]
+    assert authority.validate_create(operation).reason_code == "bull_l7_audit_mode"
+    operation["spec"]["policy"]["networkPolicies"]["p"]["endpoints"][0]["enforcement"] = "enforce"
+    assert authority.validate_create(operation).allowed
+
+
+def test_audit_mode_rule_merge_is_refused(authority):
+    authority.create_sandbox_patches(op())
+    change = {"sandbox": "coder", "mergeOperations": [{"addRule": {"ruleName": "n", "rule": {
+        "endpoints": [{"host": "docs.internal", "port": 80,
+                       "rules": [{"allow": {"method": "POST"}}]}]}}}]}
+    assert authority.validate_policy_change("UpdateConfig", change).reason_code == \
+        "bull_l7_audit_mode"
+
+
+def test_protobuf_json_ports_are_normalized():
+    from bulldog.openshell.authority import OpenShellAuthority
+    policy = {"networkPolicies": {"p": {"endpoints": [
+        {"host": "Docs.Internal", "port": 8080.0, "ports": [8080.0, 8443.0]}]}}}
+    assert OpenShellAuthority.policy_endpoints(policy) == {"docs.internal:8080",
+                                                          "docs.internal:8443"}
+
+
+OCSF_LINES = [
+    "[1790618400.094] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST "
+    "http://h.internal:40605/v1/records [policy:api engine:l7]",
+    "[1790618400.098] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST "
+    "http://h.internal:40605/v1/records [policy:api engine:middleware] "
+    "[failed:false transformed:false]",
+    "[1790618400.329] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST "
+    "http://h.internal:40605/v1/records [policy:api engine:l7]",
+    "[1790618400.334] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST "
+    "http://h.internal:40605/v1/records [policy:api engine:middleware] [failed:false "
+    "transformed:false reason:middleware_denied:bull-governance:bull_approval_required]",
+    "[1790618400.400] [sandbox] [INFO ] [openshell_supervisor] unrelated line",
+]
+
+
+def _ledger_row(ts, allowed, decision, code):
+    return {"event_type": "openshell_egress", "record_hash": ts, "timestamp": ts,
+            "data": {"sandbox": "coder", "request_id": "r", "method": "POST",
+                     "resource": "https://h.internal:40605/v1/records", "provenance": [],
+                     "bull_decision": decision, "allowed": allowed, "reason_code": code}}
+
+
+def test_ocsf_shorthand_correlates_with_ledger_and_effects():
+    from bulldog.openshell.ocsf import correlate, parse_shorthand
+    events = parse_shorthand(OCSF_LINES, "coder")
+    assert [(e["engine"], e["action"]) for e in events] == [
+        ("l7", "ALLOWED"), ("middleware", "ALLOWED"), ("l7", "ALLOWED"), ("middleware", "DENIED")]
+    ledger = [_ledger_row("2026-09-28T18:00:00.096+00:00", True, "ALLOW", "bull_allowed"),
+              _ledger_row("2026-09-28T18:00:00.332+00:00", False, "ESCALATE",
+                          "bull_approval_required")]
+    receipts = [{"time": 1790618400.099, "method": "POST",
+                 "url": "http://h.internal:40605/v1/records"}]
+    out = correlate(ledger, events, receipts)
+    assert out["summary"] == {"bull_decisions": 2, "matched_openshell_event": 2, "consistent": 2,
+                              "effects_without_bull_allow": 0, "unexplained_effects": 0}
+    assert out["rows"][1]["openshell_reason"].endswith("bull_approval_required")
+
+
+def test_ocsf_correlation_flags_an_effect_bull_did_not_allow():
+    from bulldog.openshell.ocsf import correlate, parse_shorthand
+    events = parse_shorthand(OCSF_LINES[2:4], "coder")
+    ledger = [_ledger_row("2026-09-28T18:00:00.332+00:00", False, "ESCALATE",
+                          "bull_approval_required")]
+    receipts = [{"time": 1790618400.335, "method": "POST",
+                 "url": "http://h.internal:40605/v1/records"},
+                {"time": 1790618401.0, "method": "GET", "url": "http://other:1/"}]
+    out = correlate(ledger, events, receipts)
+    assert out["summary"]["effects_without_bull_allow"] == 1
+    assert out["summary"]["unexplained_effects"] == 1
+    assert not out["rows"][0]["consistent"]
