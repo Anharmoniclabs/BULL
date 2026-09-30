@@ -1,0 +1,203 @@
+{
+  "source": "20a42c807214f47c2b5d6521089485cee0898017",
+  "working_tree_modified": true,
+  "python": "3.12.14",
+  "native_openshell": {
+    "docker": null,
+    "openshell": null,
+    "status": "NOT_RUN"
+  },
+  "faults": {
+    "cases": [
+      {
+        "case": "delay_10",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.021165651000046637,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_50",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.05377560499982792,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_100",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.10677312600000732,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_250",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.20151325500000894,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "delay_1000",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.20216655900003389,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "delay_5000",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.20285903800004235,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "reset",
+        "reason_code": "bull_unavailable",
+        "elapsed_seconds": 0.0033595889999560313,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "first_delivery",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.003913295999609545,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "duplicate_delivery",
+        "reason_code": "bull_replayed_request",
+        "elapsed_seconds": 0.0010725189999902796,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "short_client_deadline",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.03131481899981736,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "authority_down",
+        "reason_code": "grpc_unavailable",
+        "elapsed_seconds": 0.001112153000121907,
+        "destination_effects": 0,
+        "pass": true
+      }
+    ],
+    "passed": true,
+    "scope": "real BULL gRPC, injected policy faults, observed loopback HTTP destination"
+  },
+  "concurrency": {
+    "requests": 10000,
+    "concurrency": 32,
+    "effects": 10000,
+    "elapsed_seconds": 26.377702678999867,
+    "ledger_verification": {
+      "valid": true,
+      "records": 10000,
+      "error_index": null,
+      "error": null,
+      "head_hash": "5787979180103e6c151401c922a7072a21be01349041cbe0f5647db8f77aa0bb"
+    },
+    "correlation": {
+      "bull_decisions": 10000,
+      "consistent": 10000,
+      "duplicate_identities": 0,
+      "missing_identity": 0,
+      "effects_without_dual_allow": 0,
+      "orphan_events": 0,
+      "exact": true
+    },
+    "reason_codes": {
+      "bull_allowed": 10000
+    },
+    "scope": "real BULL gRPC + real loopback HTTP effects; native OpenShell layer is a contract fixture"
+  },
+  "scaling": {
+    "rows": [
+      {
+        "records": 1000,
+        "sample_count": 300,
+        "append_p50_ms": 0.35332249990460696,
+        "append_p95_ms": 0.664432000121451,
+        "full_verifications_during_append": 1,
+        "elapsed_seconds": 0.45037134799986234,
+        "bytes": 292828
+      },
+      {
+        "records": 10000,
+        "sample_count": 300,
+        "append_p50_ms": 0.3817894998974225,
+        "append_p95_ms": 0.7815960002517386,
+        "full_verifications_during_append": 1,
+        "elapsed_seconds": 4.777507274000072,
+        "bytes": 2938828
+      },
+      {
+        "records": 100000,
+        "sample_count": 300,
+        "append_p50_ms": 0.3461719998085755,
+        "append_p95_ms": 0.5198180001571018,
+        "full_verifications_during_append": 1,
+        "elapsed_seconds": 45.042419657999744,
+        "bytes": 29488828
+      },
+      {
+        "records": 1000000,
+        "sample_count": 300,
+        "append_p50_ms": 0.39647150015298394,
+        "append_p95_ms": 0.7004569997661747,
+        "full_verifications_during_append": 1,
+        "elapsed_seconds": 457.0114931340004,
+        "bytes": 295888828
+      }
+    ],
+    "final_verification": {
+      "valid": true,
+      "records": 1000000,
+      "error_index": null,
+      "error": null,
+      "head_hash": "19aa5ff1c7d633d2c1f9c1ea1f94b031c98582b8f248c1290f78fd6104945091"
+    },
+    "final_verification_seconds": 5.788352212999598,
+    "scope": "single persistent writer; real fsync plus authenticated local checkpoint"
+  },
+  "passed": true,
+  "runtime_source_sha256": {
+    "src/bulldog/audit.py": "78c5305d3527c43fcda84a8088eca580ce05fb8c7491a1240543fbf72b3af3f7",
+    "src/bulldog/openshell/services.py": "284647a5ee0e38cb21965f7e8c997bec98a400d590029b67684326a5e70ca009",
+    "src/bulldog/openshell/grants.py": "40a3eb6e71c36363126bab008e51d39b940c499b092c545069daca0a7783c6ed",
+    "src/bulldog/openshell/boundary.py": "f01047c2244cddc10d3928f7a2e5928211bac89873b76c7b062b466a907102cc",
+    "src/bulldog/openshell/backend.py": "630246130050daa8fbad71c6bb429c35c95450a4292725dc243fbc21d0f291a0",
+    "src/bulldog/openshell/ocsf.py": "e09d8bac15758514a48200f1147683db4378ac9e2dc4c7543368a96b3222f92e",
+    "src/bulldog/openshell/server.py": "3be45ea4482bab5a7ce75fdb00f74b0f77173f90e4a6fba0de3acccf51f1e29e",
+    "src/bulldog/openshell/authority.py": "b1e25196dd52154ac59c976c8fdd2b9dff9ecb4ccce5dbc52ba8d1bcf2711fdf",
+    "src/bulldog/openshell/__init__.py": "5fed2e0ee6f625e279ccb92cf76bc3bca568bc17aaf77194159e61b5bdb322e1"
+  },
+  "published_runtime_commit": "78363371428b70abd3577af507099851917ae411",
+  "source_note": "Executed from the modified experiment checkout; published runtime files match the retained source SHA256 manifest.",
+  "regression": {
+    "passed": 1063,
+    "subtests_passed": 21,
+    "skipped": 4,
+    "failed": 5,
+    "same_failures_on_unchanged_base": true,
+    "focused_passed": 85,
+    "new_operational_tests": 29
+  },
+  "first_scaling_run": {
+    "qualified": false,
+    "final_verification": {
+      "valid": false,
+      "records": 44440,
+      "error_index": 44440,
+      "error": "previous_hash mismatch",
+      "head_hash": "8632ea44ca8532718e5b6091f12359eb6ee415370c7d64e09cf290216da6ab99"
+    },
+    "retained_in_evidence": true
+  },
+  "native_qualification": "BLOCKED here: no Docker/OpenShell, Unix socket and namespace restrictions; Codespaces runner provided."
+}

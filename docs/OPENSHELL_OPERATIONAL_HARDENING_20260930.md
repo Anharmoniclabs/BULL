@@ -21,9 +21,18 @@ The focused operational, adapter, audit integrity, storage recovery and anchor s
 
 The identical-request workload uses **10,000 requests with 32 clients in flight**, not 10,000 simultaneously active clients. It exercises real BULL gRPC, a real HTTP destination, and an explicitly labelled OpenShell policy-layer fixture. Native OpenShell OCSF evidence is not substituted by that fixture.
 
-The first million-record run failed final verification: it contained missing record ranges. Its latency measurements are rejected as qualified scaling evidence. Investigation exposed an append-cache gap: a file changed during checkpoint publication could be adopted as valid. Regression tests now reproduce truncation, replacement, and same-size modification in that window. The source of the original missing-range writes was not identified; the corrected run is required before accepting scaling results. Both runs must be retained in the evidence bundle.
+The first million-record run failed final verification: it contained missing record ranges. Its latency measurements are rejected as qualified scaling evidence. Investigation exposed an append-cache gap: a file changed during checkpoint publication could be adopted as valid. Regression tests now reproduce truncation, replacement, and same-size modification in that window. The source of the original missing-range writes was not identified; the corrected run is required before accepting scaling results. Both runs are retained in the evidence bundle. The corrected run passes final verification for exactly **1,000,000 records** (head `19aa5ff1c7d633d2c1f9c1ea1f94b031c98582b8f248c1290f78fd6104945091`); the forensic full scan takes 5.79 s. Append medians below use the final 300 appends at each size, real fsync and an authenticated local checkpoint.
 
-The broad source suite has five failures on this host: four unavailable Unix socket operations and one unavailable namespace/backend attestation case. The unchanged experiment base reproduces the same five failures. Missing protections remain failures, not simulated passes. Four pre-existing checks are skipped. Codespaces must rerun the full suite on its actual host.
+| Existing workload size | Append p50 (ms) | Append p95 (ms) | Full scans during append |
+| --- | ---: | ---: | ---: |
+| 1,000 | 0.353 | 0.664 | 1 |
+| 10,000 | 0.382 | 0.782 | 1 |
+| 100,000 | 0.346 | 0.520 | 1 |
+| 1,000,000 | 0.396 | 0.700 | 1 |
+
+The corrected run also observes 10,000 distinct destination effects and a complete exact fixture join with zero missing/duplicate identities, unmatched effects, or orphan events. All 11 real gRPC fault cases pass. These observations support flat steady-writer history work on this host; they do not establish distributed scaling or native OpenShell identity export.
+
+The broad source suite has **1,063 passes, 21 passing subtests, 4 skips, and five failures** on this host: four unavailable Unix socket operations and one unavailable namespace/backend attestation case. The unchanged experiment base reproduces the same five failures. Missing protections remain failures, not simulated passes. Four pre-existing checks are skipped. Codespaces must rerun the full suite on its actual host.
 
 ## Codespaces
 
@@ -39,6 +48,21 @@ bash "$BULL_TEST_WORKTREE/tools/run_codespace_openshell_operational.sh"
 If the script does not discover the already-built pinned NVIDIA/OpenShell source, rerun with `--os-src /absolute/path/to/OpenShell`. `--quick` skips the million-record scaling test while preserving the 10,000-request and fault tests. The runner needs Docker plus the four built binaries listed by its preflight, from NVIDIA/OpenShell v0.1.2 commit `6648bd0c290efbc41ba131ee9831ee45cd431f94`.
 
 The script writes a summary JSON, regression XML/log, loopback evidence, and native results when prerequisites exist. Its native runner uses a disposable gateway/database and deletes only sandboxes created by that gateway. Missing native prerequisites produce **BLOCKED** and exit code 2. The original composition experiment now returns nonzero when its cases fail.
+
+## Branch integration audit
+
+All **86 pre-existing remote branch snapshots** passed Python syntax checks (680 unique Python blobs). Ancestry alone undercounts integrated work because many older PRs were squash-merged. The read-only inventory records current tips, ancestry, patch identity, PR state, and files absent from the candidate.
+
+| Audit category | Branches |
+| --- | ---: |
+| Directly contained in main | 11 |
+| Historically merged; tip/tree drift needs consideration | 42 |
+| Contained in this consolidated release candidate | 7 |
+| Patch-equivalent to candidate | 1 |
+| Open distinct or superseded work | 10 |
+| Historical branch needing file-level disposition | 15 |
+
+This candidate contains the production-validation/MCP release proposal and the OpenShell experiment. Distinct Kaggle/harness, older UI, legal, honeypot and paper branches were not indiscriminately merged, deleted, or certified. Draft PR #90 targets main; default-branch release, native host checks, signatures and other required gates remain pending.
 
 ## Remaining qualification
 
