@@ -13,7 +13,7 @@ dependencies = []
 hardware = ["cryptography>=43,<51"]
 egress = ["cryptography>=43,<51"]
 mcp = ["mcp==2.2.0"]
-openshell = ["grpcio>=1.84,<2", "protobuf>=7,<8"]
+openshell = ["grpcio>=1.84,<2", "protobuf>=7.35.1,<8"]
 test = ["pytest>=8,<10", "cryptography>=43,<51", "build>=1,<2"]
 
 [project.urls]

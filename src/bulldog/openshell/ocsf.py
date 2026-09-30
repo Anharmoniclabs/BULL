@@ -17,6 +17,7 @@ decided, what BULL decided, and whether the effect happened.
 from __future__ import annotations
 
 from datetime import datetime
+from collections import defaultdict
 import re
 
 _SHORTHAND = re.compile(
@@ -130,3 +131,78 @@ def correlate(ledger_records: list[dict], events: list[dict], receipts: list[dic
     }
     return {"rows": rows, "summary": summary,
             "orphan_events": orphans, "unexplained_effects": unexplained}
+
+
+def correlate_exact(ledger_records, events, receipts):
+    """Join normalized JSONL evidence by identity, never by timing.
+
+    Each event/receipt must carry request_id, decision_id, action_digest and
+    sandbox_id. OpenShell events also carry engine and action. This schema
+    requires a native exporter that preserves middleware metadata; shorthand
+    logs do not satisfy it. Ledger authenticity must be verified by the caller.
+    """
+    fields = ("request_id", "decision_id", "action_digest", "sandbox_id")
+    def key(item):
+        values = tuple(item.get(field) for field in fields)
+        return values if all(isinstance(v, str) and v for v in values) else None
+
+    decisions = defaultdict(list)
+    layers = defaultdict(list)
+    effects = defaultdict(list)
+    missing = 0
+    for record in ledger_records:
+        if record.get("event_type") != "openshell_egress":
+            continue
+        data = record["data"]
+        identity = key(data)
+        if identity is None:
+            missing += 1
+        else:
+            decisions[identity].append(data)
+    for event in events:
+        identity = key(event)
+        if identity is None:
+            missing += 1
+        else:
+            layers[(identity, event.get("engine"))].append(event)
+    for receipt in receipts:
+        identity = key(receipt)
+        if identity is None:
+            missing += 1
+        else:
+            effects[identity].append(receipt)
+    duplicate = sum(max(0, len(v) - 1) for group in (decisions, layers, effects)
+                    for v in group.values())
+    # Reusing one request/decision ID with a different digest must not create
+    # two apparently unique identities.
+    for index in (0, 1):
+        identifiers = [identity[index] for identity in decisions]
+        duplicate += len(identifiers) - len(set(identifiers))
+    rows = []
+    for identity, candidates in decisions.items():
+        data = candidates[0]
+        l7 = layers.get((identity, "l7"), [])
+        middleware = layers.get((identity, "middleware"), [])
+        received = effects.get(identity, [])
+        consistent = (len(candidates) == len(l7) == len(middleware) == 1
+                      and (middleware[0].get("action") == "ALLOWED") == bool(data["allowed"])
+                      and (not received or l7[0].get("action") == "ALLOWED")
+                      and len(received) == int(bool(data["allowed"]) and l7[0].get("action") == "ALLOWED"))
+        rows.append(dict(zip(fields, identity), bull_allowed=data["allowed"],
+                         effects=len(received), consistent=consistent))
+    unexplained = [r for identity, group in effects.items() for r in group
+                   if len(decisions.get(identity, [])) != 1
+                   or not decisions[identity][0]["allowed"]
+                   or len(layers.get((identity, "l7"), [])) != 1
+                   or layers[(identity, "l7")][0].get("action") != "ALLOWED"
+                   or len(layers.get((identity, "middleware"), [])) != 1
+                   or layers[(identity, "middleware")][0].get("action") != "ALLOWED"]
+    orphans = sum(len(v) for (identity, _), v in layers.items() if identity not in decisions)
+    summary = {"bull_decisions": sum(map(len, decisions.values())),
+               "consistent": sum(r["consistent"] for r in rows),
+               "duplicate_identities": duplicate, "missing_identity": missing,
+               "effects_without_dual_allow": len(unexplained),
+               "orphan_events": orphans,
+               "exact": missing == duplicate == len(unexplained) == orphans == 0
+                        and all(r["consistent"] for r in rows)}
+    return {"rows": rows, "summary": summary, "unexplained_effects": unexplained}

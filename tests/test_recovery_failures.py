@@ -36,6 +36,10 @@ def test_storage_failure_refuses_success_and_preserves_evidence(
 
     with monkeypatch.context() as patch:
         patch.setattr(Path, "open", failing_open)
+        if stage == "head":
+            def failing_head(record_hash):
+                raise OSError(failure, os.strerror(failure))
+            patch.setattr(ledger, "_write_atomic_head", failing_head)
         with pytest.raises(OSError) as error:
             ledger.append_event("interrupted", {})
         assert error.value.errno == failure

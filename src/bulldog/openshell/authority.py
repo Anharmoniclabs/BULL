@@ -7,7 +7,7 @@ provenance, approvals and audit trail are shared between the data plane
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 import os
@@ -20,6 +20,7 @@ from urllib.parse import urlunsplit
 from ..models import ActionRequest, Capability, Decision, Provenance
 from ..policy import DeterministicPolicy
 from .grants import host_matches, validate_grants
+from .boundary import BoundaryDenied
 
 READ_METHODS = {"GET", "HEAD", "OPTIONS"}
 # Protobuf JSON renders the NetworkEnforcementMode enum by name; YAML-facing
@@ -99,7 +100,9 @@ class OpenShellAuthority:
                                           global_capability_ceiling=ceiling)
         self.ledger = ledger
         self.approvals = ApprovalStore()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        self._epochs = {name: 0 for name in self.grants["sandboxes"]}
+        self._removed = {name: set() for name in self.grants["sandboxes"]}
         self._tainted: dict[str, set[str]] = {}  # sandbox -> untrusted source hosts
         self._policy_hosts: dict[str, set[str]] = {}  # sandbox -> BULL-accepted hosts
         self.state_path = Path(state_path) if state_path else None
@@ -113,7 +116,10 @@ class OpenShellAuthority:
     # ------------------------------------------------------------ helpers
 
     def _grant(self, sandbox: str) -> dict:
-        return self.grants["sandboxes"].get(sandbox, {"capabilities": [], "trusted_sources": []})
+        with self._lock:
+            grant = dict(self.grants["sandboxes"].get(sandbox, {"capabilities": [], "trusted_sources": []}))
+            grant["capabilities"] = sorted(set(grant["capabilities"]) - self._removed.get(sandbox, set()))
+            return grant
 
     def _audit(self, event: str, **data) -> None:
         if self.ledger is not None:
@@ -133,10 +139,21 @@ class OpenShellAuthority:
             return
         state = {"tainted": {k: sorted(v) for k, v in self._tainted.items()},
                  "policy_hosts": {k: sorted(v) for k, v in self._policy_hosts.items()},
-                 "approvals": self.approvals.listing()}
+                 "approvals": self.approvals.listing(),
+                 "authority_epochs": self._epochs,
+                 "removed_capabilities": {k: sorted(v) for k, v in self._removed.items()}}
         temporary = self.state_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(state))
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        with temporary.open("w") as stream:
+            stream.write(json.dumps(state))
+            stream.flush()
+            os.fsync(stream.fileno())
         os.replace(temporary, self.state_path)
+        directory = os.open(self.state_path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
 
     def _load(self) -> None:
         if self.state_path is None or not self.state_path.exists():
@@ -145,6 +162,8 @@ class OpenShellAuthority:
         self._tainted = {k: set(v) for k, v in state.get("tainted", {}).items()}
         self._policy_hosts = {k: set(v) for k, v in state.get("policy_hosts", {}).items()}
         self.approvals.restore(state.get("approvals", {}))
+        self._epochs.update(state.get("authority_epochs", {}))
+        self._removed.update({k: set(v) for k, v in state.get("removed_capabilities", {}).items()})
 
     def _within_ceiling(self, host: str) -> bool:
         return any(host_matches(host, p) for p in self.grants["host_ceiling"])
@@ -158,7 +177,12 @@ class OpenShellAuthority:
 
     def evaluate_request(self, *, sandbox: str, sandbox_id: str, request_id: str,
                          method: str, scheme: str, host: str, port: int, path: str,
-                         query: str, body: bytes, binary: str) -> Verdict:
+                         query: str, body: bytes, binary: str, budget=None,
+                         identity=None) -> Verdict:
+        if budget is not None:
+            budget.check()
+        with self._lock:
+            epoch = self._epochs.get(sandbox, 0)
         method = method.upper()
         capability = (Capability.NETWORK_OUTBOUND if method in READ_METHODS
                       else Capability.NETWORK_POST)
@@ -179,7 +203,12 @@ class OpenShellAuthority:
         evaluation = self.policy.evaluate(action)
         decision = evaluation.decision
         body_digest = hashlib.sha256(body).hexdigest()
-        binding = json.dumps([sandbox, method, host, port, path, query, body_digest])
+        binding = json.dumps([sandbox, epoch, method, scheme, host, port, path, query, body_digest])
+        if budget is not None:
+            budget.check()
+        with self._lock:
+            if epoch != self._epochs.get(sandbox, 0):
+                raise BoundaryDenied("bull_authority_revoked")
         approval_id = None
         if decision == Decision.ESCALATE:
             consumed = self.approvals.consume(binding)
@@ -208,12 +237,52 @@ class OpenShellAuthority:
                 self._save()
         self._audit("openshell_egress", sandbox=sandbox, sandbox_id=sandbox_id,
                     request_id=request_id, method=method, resource=resource,
+                    authority_epoch=epoch,
+                    decision_id=identity.decision_id if identity else None,
+                    action_digest=identity.action_digest if identity else None,
+                    upstream_request_id=identity.upstream_request_id if identity else None,
                     body_sha256=body_digest, binary=binary,
                     provenance=[p.value for p in action.provenance],
                     bull_decision=decision.value, risk=evaluation.risk,
                     allowed=verdict.allowed, reason_code=verdict.reason_code,
                     approval_id=verdict.approval_id)
+        if budget is not None:
+            budget.check()
+        with self._lock:
+            if epoch != self._epochs.get(sandbox, 0):
+                raise BoundaryDenied("bull_authority_revoked")
         return verdict
+
+    def revoke(self, sandbox: str, capabilities, *, mode="REVOKE_NEXT_EFFECT", terminate=None):
+        """Remove capabilities from a signed parent and every signed descendant.
+
+        Propagation occurs once on revocation (O(subtree)); each subsequent
+        action checks its own grant and epoch in O(1). Emergency termination
+        requires a host hook; no process or credential cleanup is simulated.
+        """
+        removed = {Capability(c).value for c in capabilities}
+        if mode not in {"REVOKE_NEXT_EFFECT", "REVOKE_TERMINATE"}:
+            raise ValueError("unsupported revocation mode")
+        if mode == "REVOKE_TERMINATE" and not callable(terminate):
+            raise ValueError("REVOKE_TERMINATE requires a trusted host termination hook")
+        with self._lock:
+            if sandbox not in self.grants["sandboxes"]:
+                raise KeyError("unknown sandbox")
+            affected = [sandbox]
+            for name in affected:
+                affected.extend(child for child, grant in self.grants["sandboxes"].items()
+                                if grant.get("parent") == name)
+                self._epochs[name] = self._epochs.get(name, 0) + 1
+                self._removed.setdefault(name, set()).update(removed)
+                if mode == "REVOKE_TERMINATE":
+                    self._removed[name].update(self.grants["sandboxes"][name]["capabilities"])
+            self._save()
+            self._audit("openshell_revocation", sandbox=sandbox, affected=affected,
+                        capabilities=sorted(removed), mode=mode, epochs=self._epochs.copy())
+        if mode == "REVOKE_TERMINATE":
+            for name in affected:
+                terminate(name)
+        return affected
 
     # -------------------------------------------------------- control plane
 

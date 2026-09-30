@@ -61,7 +61,7 @@ def validate_grants(value: dict) -> dict:
     for name, grant in sandboxes.items():
         if not isinstance(name, str) or not _NAME.fullmatch(name):
             raise GrantError(f"invalid sandbox name {name!r}")
-        if not isinstance(grant, dict) or set(grant) - {"capabilities", "trusted_sources"}:
+        if not isinstance(grant, dict) or set(grant) - {"capabilities", "trusted_sources", "parent"}:
             raise GrantError(f"invalid grant for {name}")
         try:
             caps = sorted({Capability(c).value for c in grant.get("capabilities", [])})
@@ -72,6 +72,20 @@ def validate_grants(value: dict) -> dict:
             "trusted_sources": _hosts(grant.get("trusted_sources", []), "trusted_sources",
                                       ports=True),
         }
+        if "parent" in grant:
+            clean[name]["parent"] = grant["parent"]
+    for name, grant in clean.items():
+        parent = grant.get("parent")
+        visited = {name}
+        while parent is not None:
+            if parent not in clean or parent in visited:
+                raise GrantError("unknown or cyclic grant parent")
+            visited.add(parent)
+            if not set(grant["capabilities"]) <= set(clean[parent]["capabilities"]):
+                raise GrantError("child capabilities exceed parent authority")
+            if not set(grant["trusted_sources"]) <= set(clean[parent]["trusted_sources"]):
+                raise GrantError("child trusted sources exceed parent authority")
+            parent = clean[parent].get("parent")
     return {
         "format": "bull-openshell-grants-v1",
         "host_ceiling": _hosts(value.get("host_ceiling", []), "host_ceiling"),

@@ -19,6 +19,7 @@ import socket
 import threading
 
 from ..audit import AuditLedger
+from ..local_audit import private_key
 from ..policy_bundle import load_policy_bundle
 from .authority import OpenShellAuthority
 from .services import serve
@@ -46,9 +47,14 @@ def admin_loop(authority: OpenShellAuthority, path: Path) -> None:
                     authority._audit("openshell_approval", approval_id=request["id"],
                                      summary=entry["summary"])
                     reply = {"ok": True, "approved": request["id"]}
+                elif request.get("cmd") == "revoke":
+                    affected = authority.revoke(str(request["sandbox"]),
+                                                request["capabilities"],
+                                                mode=request.get("mode", "REVOKE_NEXT_EFFECT"))
+                    reply = {"ok": True, "affected": affected}
                 else:
                     reply = {"ok": False, "error": "unknown command"}
-            except (KeyError, ValueError) as exc:
+            except (KeyError, ValueError, OSError, RuntimeError) as exc:
                 reply = {"ok": False, "error": str(exc)}
             conn.sendall((json.dumps(reply) + "\n").encode())
 
@@ -58,6 +64,10 @@ def main(argv=None) -> int:
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--key-file", type=Path, required=True)
     parser.add_argument("--ledger", type=Path, required=True)
+    parser.add_argument("--audit-key-file", type=Path,
+                        help="private installation key for authenticated audit checkpoint")
+    parser.add_argument("--decision-timeout", type=float, default=0.25)
+    parser.add_argument("--decision-capacity", type=int, default=16)
     parser.add_argument("--middleware", required=True, help="host:port reachable by sandboxes")
     parser.add_argument("--interceptor", required=True, help="unix:///path or host:port")
     parser.add_argument("--admin", type=Path, required=True)
@@ -68,10 +78,18 @@ def main(argv=None) -> int:
     bundle = load_policy_bundle(args.bundle, args.key_file.read_bytes().strip())
     if "openshell" not in bundle.raw:
         parser.error("signed bundle has no openshell grants section")
+    ledger = AuditLedger(args.ledger,
+                         anchor_path=str(args.ledger) + ".anchor" if args.audit_key_file else None,
+                         anchor_key=private_key(args.audit_key_file) if args.audit_key_file else None)
+    verified = ledger.verify()
+    if not verified.valid:
+        parser.error("audit startup verification failed: " + str(verified.error))
     authority = OpenShellAuthority(bundle.raw["openshell"], bundle.capability_ceiling,
-                                   ledger=AuditLedger(args.ledger), state_path=args.state)
+                                   ledger=ledger, state_path=args.state)
     servers = serve(authority, middleware_bind=args.middleware,
-                    interceptor_bind=args.interceptor)
+                    interceptor_bind=args.interceptor,
+                    decision_timeout=args.decision_timeout,
+                    decision_capacity=args.decision_capacity)
     threading.Thread(target=admin_loop, args=(authority, args.admin), daemon=True).start()
     print(json.dumps({"status": "LISTENING", "middleware": args.middleware,
                       "interceptor": args.interceptor}), flush=True)

@@ -12,7 +12,7 @@ import json
 import logging
 
 import grpc
-from google.protobuf import json_format, struct_pb2
+from google.protobuf import json_format, struct_pb2, duration_pb2
 
 from . import INTERCEPTOR_NAME, MIDDLEWARE_NAME, OPENSHELL_PROTOCOL
 from ._proto import extension_pb2 as ext
@@ -21,6 +21,7 @@ from ._proto import gateway_interceptor_pb2_grpc as gi_grpc
 from ._proto import supervisor_middleware_pb2 as mw
 from ._proto import supervisor_middleware_pb2_grpc as mw_grpc
 from .authority import OpenShellAuthority
+from .boundary import BoundaryDenied, DecisionGate, RequestBoundary
 
 LOG = logging.getLogger("bull_openshell")
 MAX_PAYLOAD = 256 * 1024
@@ -44,8 +45,11 @@ def _struct(message) -> dict:
 
 
 class BullMiddleware(mw_grpc.SupervisorMiddlewareServicer):
-    def __init__(self, authority: OpenShellAuthority):
+    def __init__(self, authority: OpenShellAuthority, *, timeout=0.25, capacity=16):
         self.authority = authority
+        self.gate = DecisionGate(timeout=timeout, capacity=capacity)
+        replay_path = str(authority.state_path) + ".requests.sqlite" if authority.state_path else None
+        self.boundary = RequestBoundary(replay_path)
 
     def Describe(self, request, context):
         return mw.MiddlewareManifest(
@@ -55,6 +59,9 @@ class BullMiddleware(mw_grpc.SupervisorMiddlewareServicer):
                 operation=mw.SUPERVISOR_MIDDLEWARE_OPERATION_HTTP_REQUEST,
                 phase=mw.SUPERVISOR_MIDDLEWARE_PHASE_PRE_CREDENTIALS,
                 max_payload_bytes=MAX_PAYLOAD,
+                request_timeout=duration_pb2.Duration(
+                    seconds=int(self.gate.timeout),
+                    nanos=int((self.gate.timeout % 1) * 1_000_000_000)),
             )],
             extension=_metadata("supervisor-middleware"),
         )
@@ -66,20 +73,45 @@ class BullMiddleware(mw_grpc.SupervisorMiddlewareServicer):
         return mw.ValidateConfigResponse(valid=True)
 
     def EvaluateHttpRequest(self, request, context):
-        target, ctx = request.target, request.context
-        verdict = self.authority.evaluate_request(
-            sandbox=ctx.sandbox, sandbox_id=ctx.sandbox_id, request_id=ctx.request_id,
-            method=target.method, scheme=target.scheme, host=target.host, port=target.port,
-            path=target.path, query=target.query, body=bytes(request.body),
-            binary=ctx.originating_process.binary,
-        )
-        return mw.HttpRequestResult(
-            decision=mw.DECISION_ALLOW if verdict.allowed else mw.DECISION_DENY,
-            reason=verdict.reason[:500],
-            reason_code=verdict.reason_code,
-            metadata={"bull_decision": verdict.decision,
-                      **({"bull_approval_id": verdict.approval_id} if verdict.approval_id else {})},
-        )
+        def evaluate(budget):
+            budget.check()
+            identity = self.boundary.issue(request)
+            target, ctx = request.target, request.context
+            verdict = self.authority.evaluate_request(
+                sandbox=ctx.sandbox, sandbox_id=ctx.sandbox_id, request_id=identity.request_id,
+                method=target.method, scheme=target.scheme, host=target.host, port=target.port,
+                path=target.path, query=target.query, body=bytes(request.body),
+                binary=ctx.originating_process.binary, budget=budget, identity=identity,
+            )
+            budget.check()
+            metadata = {"bull_decision": verdict.decision,
+                        "bull_request_id": identity.request_id,
+                        "bull_decision_id": identity.decision_id,
+                        "bull_action_digest": identity.action_digest}
+            if verdict.approval_id:
+                metadata["bull_approval_id"] = verdict.approval_id
+            result = mw.HttpRequestResult(
+                decision=mw.DECISION_ALLOW if verdict.allowed else mw.DECISION_DENY,
+                reason=verdict.reason[:500], reason_code=verdict.reason_code, metadata=metadata)
+            # Remove all agent-supplied instances, then overwrite reserved identity
+            # headers at the authority boundary. Identity never comes from headers.
+            for name, value in (("X-BULL-Request-ID", identity.request_id),
+                                ("X-BULL-Decision-ID", identity.decision_id),
+                                ("X-BULL-Action-Digest", identity.action_digest)):
+                result.header_mutations.append(mw.HeaderMutation(remove=mw.RemoveHeader(name=name)))
+                result.header_mutations.append(mw.HeaderMutation(write=mw.WriteHeader(
+                    name=name, value=value, on_existing=mw.EXISTING_HEADER_ACTION_OVERWRITE)))
+            return result
+        try:
+            return self.gate.call(evaluate, context)
+        except BoundaryDenied as exc:
+            return mw.HttpRequestResult(decision=mw.DECISION_DENY,
+                                        reason=exc.code, reason_code=exc.code)
+        except Exception:
+            LOG.exception("BULL request decision failed closed")
+            return mw.HttpRequestResult(decision=mw.DECISION_DENY,
+                                        reason="BULL authority unavailable",
+                                        reason_code="bull_unavailable")
 
     def EvaluateWebSocketSession(self, request_iterator, context):
         # Not bound in the manifest; refuse if OpenShell ever sends one.
@@ -104,8 +136,9 @@ GOVERNED = {
 
 
 class BullInterceptor(gi_grpc.GatewayInterceptorServicer):
-    def __init__(self, authority: OpenShellAuthority):
+    def __init__(self, authority: OpenShellAuthority, *, timeout=0.25, capacity=16):
         self.authority = authority
+        self.gate = DecisionGate(timeout=timeout, capacity=capacity)
 
     def Describe(self, request, context):
         return gi.InterceptorManifest(
@@ -123,6 +156,23 @@ class BullInterceptor(gi_grpc.GatewayInterceptorServicer):
         context.abort(grpc.StatusCode.UNIMPLEMENTED, "BULL vends no provider profiles")
 
     def Evaluate(self, request, context):
+        def evaluate(budget):
+            budget.check()
+            result = self._evaluate(request, context)
+            budget.check()
+            return result
+        try:
+            return self.gate.call(evaluate, context)
+        except BoundaryDenied as exc:
+            return gi.InterceptorResult(allowed=False, reason=exc.code,
+                status_code="DEADLINE_EXCEEDED" if exc.code == "bull_timeout" else "UNAVAILABLE",
+                log_annotations={"bull_code": exc.code})
+        except Exception:
+            LOG.exception("BULL control decision failed closed")
+            return gi.InterceptorResult(allowed=False, reason="bull_unavailable",
+                status_code="UNAVAILABLE", log_annotations={"bull_code": "bull_unavailable"})
+
+    def _evaluate(self, request, context):
         method = request.method or request.binding_id
         phase = request.WhichOneof("phase")
         if phase == "modify_operation":
@@ -172,14 +222,15 @@ class BullInterceptor(gi_grpc.GatewayInterceptorServicer):
         return result
 
 
-def serve(authority: OpenShellAuthority, *, middleware_bind: str, interceptor_bind: str):
+def serve(authority: OpenShellAuthority, *, middleware_bind: str, interceptor_bind: str,
+          decision_timeout=0.25, decision_capacity=16):
     """Start both services; returns the two grpc.Server objects."""
     options = [("grpc.max_receive_message_length", 5 * 1024 * 1024)]
     servers = []
     for servicer, add, bind in (
-        (BullMiddleware(authority), mw_grpc.add_SupervisorMiddlewareServicer_to_server,
+        (BullMiddleware(authority, timeout=decision_timeout, capacity=decision_capacity), mw_grpc.add_SupervisorMiddlewareServicer_to_server,
          middleware_bind),
-        (BullInterceptor(authority), gi_grpc.add_GatewayInterceptorServicer_to_server,
+        (BullInterceptor(authority, timeout=decision_timeout, capacity=decision_capacity), gi_grpc.add_GatewayInterceptorServicer_to_server,
          interceptor_bind),
     ):
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=16), options=options)

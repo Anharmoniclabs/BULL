@@ -202,6 +202,7 @@ class Stack:
         self.args, self.work, self.up, self.images = args, work, up, images
         self.with_bull = with_bull
         self.procs = {}
+        self.created_sandboxes = set()
         self.gw_port, self.health_port = free_port(), free_port()
         self.mw_port = free_port()
         self.cli = [str(args.os_src / "target/release/openshell"),
@@ -233,13 +234,24 @@ class Stack:
         self.interceptor_sock = self.work / "interceptor.sock"
         for stale in (self.admin, self.interceptor_sock):  # restart after C9
             stale.unlink(missing_ok=True)
+        self.work.chmod(0o700)
+        audit_key = self.work / "audit.key"
+        if not audit_key.exists():
+            audit_key.write_bytes(os.urandom(32))
+            audit_key.chmod(0o600)
         log = open(self.work / "bull.log", "a")
+        fault_file = getattr(self.args, "fault_file", None)
+        authority_command = ([sys.executable, str(ROOT / "tools/openshell_fault_authority.py"),
+                              "--fault-file", str(fault_file)] if fault_file else
+                             [sys.executable, "-m", "bulldog.openshell.server"])
         self.procs["bull"] = subprocess.Popen(
-            [sys.executable, "-m", "bulldog.openshell.server",
+            authority_command + [
              "--bundle", str(self.work / "bundle.json"), "--key-file", str(self.work / "policy.key"),
              "--ledger", str(self.work / "bull-audit.jsonl"), "--state", str(self.work / "bull-state.json"),
              "--middleware", f"0.0.0.0:{self.mw_port}",
-             "--interceptor", f"unix://{self.interceptor_sock}", "--admin", str(self.admin)],
+             "--interceptor", f"unix://{self.interceptor_sock}", "--admin", str(self.admin),
+             "--decision-timeout", str(getattr(self.args, "decision_timeout", 0.25)),
+             "--audit-key-file", str(audit_key)],
             stdout=log, stderr=log, env={**os.environ, "PYTHONPATH": str(ROOT / "src")})
         for _ in range(100):
             if self.admin.exists() and self.interceptor_sock.exists():
@@ -334,6 +346,10 @@ phases = [{phases}]
         raise RuntimeError("gateway not healthy")
 
     def stop(self):
+        # Only delete sandboxes created through this disposable gateway.
+        # Never remove every OpenShell-labelled container on a shared Codespace.
+        for sandbox in self.created_sandboxes:
+            run(self.cli + ["sandbox", "delete", sandbox], timeout=60)
         for name in list(self.procs):
             proc = self.procs.pop(name)
             proc.terminate()
@@ -341,13 +357,15 @@ phases = [{phases}]
                 proc.wait(10)
             except subprocess.TimeoutExpired:
                 proc.kill()
-        run(["sh", "-c", "docker ps -aq --filter label=openshell.ai/managed-by | xargs -r docker rm -f"])
+
 
     # sandboxes ------------------------------------------------------------------
     def create(self, name, policy_path):
         done, elapsed = run(self.cli + ["sandbox", "create", "--name", name, "--from", BASE_IMAGE,
                                         "--policy", str(policy_path), "--no-tty", "--detach",
                                         "--", "sleep", "infinity"], timeout=300)
+        if done.returncode == 0:
+            self.created_sandboxes.add(name)
         return done, elapsed
 
     def exec(self, name, *command, timeout=120):
@@ -645,6 +663,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--os-src", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--decision-timeout", type=float, default=0.25)
     parser.add_argument("--latency-n", type=int, default=100)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -703,7 +722,7 @@ def main() -> int:
         for row in report["latency_summary"]:
             writer.writerow({k: row.get(k) for k in fields})
     print(json.dumps({"cases": [(r["phase"][0], r["case"], r["pass"]) for r in results]}))
-    return 0
+    return 0 if all(row["pass"] for row in results) else 1
 
 
 if __name__ == "__main__":
