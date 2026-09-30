@@ -1,5 +1,7 @@
 """Evidence acceptance and collector selection; these fixtures are not a live run."""
 
+import ctypes
+import ctypes.util
 import json
 import os
 from pathlib import Path
@@ -353,11 +355,38 @@ def test_failed_setup_never_deletes_an_existing_account(
     assert json.loads((run / "report.json").read_text())["status"] == "BLOCKED"
 
 
-@pytest.fixture
-def private_creation_mask():
-    """Use the CLI's private creation mask without leaking it to other tests."""
+@pytest.fixture(params=["plain", "default_acl"])
+def private_creation_mask(tmp_path, request):
+    """Exercise private creation with and without inherited POSIX ACLs.
+
+    A default ACL can cause mkdir(mode=710) to retain group traversal despite
+    umask 077. The worker must request and enforce 700 before socket binding.
+    """
+    if request.param == "default_acl":
+        library = ctypes.util.find_library("acl")
+        if not library:
+            pytest.skip("POSIX ACL library is unavailable on this host")
+        lib = ctypes.CDLL(library, use_errno=True)
+        lib.acl_from_text.argtypes = [ctypes.c_char_p]
+        lib.acl_from_text.restype = ctypes.c_void_p
+        lib.acl_set_file.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_void_p]
+        lib.acl_free.argtypes = [ctypes.c_void_p]
+        acl = lib.acl_from_text(b"u::rwx,g::r-x,m::rwx,o::---")
+        if not acl:
+            raise OSError(ctypes.get_errno(), "cannot construct default ACL fixture")
+        try:
+            rc = lib.acl_set_file(os.fsencode(tmp_path), 0x4000, acl)
+        finally:
+            lib.acl_free(acl)
+        if rc:
+            pytest.skip("Test filesystem does not support inherited POSIX ACLs")
     previous = os.umask(0o077)
     try:
+        if request.param == "default_acl":
+            probe = tmp_path / "acl-permission-probe"
+            probe.mkdir(mode=0o710)
+            assert probe.stat().st_mode & 0o777 == 0o710
+            probe.rmdir()
         yield
     finally:
         os.umask(previous)
@@ -463,6 +492,9 @@ def test_worker_keeps_audit_profile_through_provisioning_and_cleanup(
     monkeypatch.setattr(runner, "endpoint_ready", lambda *a: outcome != "gate_failure")
 
     def child_process(command, **kwargs):
+        # No group traversal before the real authority binds its socket.
+        assert (run / "endpoint").stat().st_mode & 0o777 == 0o700
+        assert (run / "agent").stat().st_mode & 0o777 == 0o700
         assert not any(name.startswith("BULL_") for name in kwargs["env"])
         assert command[1:3] == ["-I", "-B"]
         role = command[command.index("--_role") + 1]

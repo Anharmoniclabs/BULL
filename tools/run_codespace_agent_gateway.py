@@ -625,12 +625,16 @@ def root_worker(run):
         write_json(run / "agent-config.json", agent_cfg)
         (run / "agent-config.json").chmod(0o644)
         for name, uid, gid, directory_mode in (
-            ("endpoint", operator.pw_uid, agent.pw_gid, 0o710),
+            # GatewayServer grants group traversal only after binding the
+            # private socket. Default ACL inheritance can bypass the umask,
+            # so request the private mode here rather than relying on 077.
+            ("endpoint", operator.pw_uid, agent.pw_gid, 0o700),
             ("agent", agent.pw_uid, agent.pw_gid, 0o700),
         ):
             path = run / name
             path.mkdir(mode=directory_mode)
             os.chown(path, uid, gid)
+            path.chmod(directory_mode)
         python = str(run / "venv/bin/python")
         script = str(ROOT / "tools/run_codespace_agent_gateway.py")
         authority_log = (run / "private/authority.log").open("xb")

@@ -85,6 +85,23 @@ composition experiment returns nonzero when its cases fail. None of these runs
 claims native OCSF export, authenticated transport, distributed revocation,
 emergency credential cleanup, multi-process scaling or watchdog failover.
 
+## Codespaces permission regression
+
+A supplied Python 3.14 Codespaces log reports 1,078 passes, 21 passing subtests,
+and six failures in the MCP live-runner orchestration fixture: the endpoint
+directory retains mode `710` where pre-bind mode `700` is required. The supplied
+excerpt also reports all 11 gRPC fault cases passing; it ends during loopback
+work and does not establish final scaling, native results or publication.
+
+The six permission failures are reproduced on the unchanged candidate under an
+inherited POSIX default ACL. Such an ACL can preserve requested group traversal
+even with umask `077`. The root helper now creates and explicitly chmods both
+endpoint and agent directories to `700`; the real GatewayServer still grants
+endpoint group traversal (`710`) only after binding and restricting its socket.
+All 12 orchestration combinations (six original plus six inherited-ACL cases)
+pass after the fix. This preserves the privacy requirement rather than relaxing
+the assertion, and does not certify a live separate-UID MCP session.
+
 ## Branch integration audit
 
 All **86 pre-existing remote branch snapshots** passed Python syntax checks (680 unique Python blobs). Ancestry alone undercounts integrated work because many older PRs were squash-merged. The read-only inventory records current tips, ancestry, patch identity, PR state, and files absent from the candidate.
