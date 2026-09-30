@@ -1,0 +1,16 @@
+check,status,detail
+Python/dependencies,PASS,See setup-venv.log and setup-install.log
+Full regression,FAIL,"1078 passed, 6 failed, 0 skipped; regression.log"
+gRPC/HTTP fault cases,NOT_RUN,"0/0; loopback fixture, not native OpenShell"
+"10,000-request attribution",NOT_RUN,?/? effects; exact=False; contract fixture
+Million-record audit scaling,NOT_RUN,? verified records; persistent single writer
+Native prerequisites,NOT_RUN,See native-preflight.json
+Native faults/restart/revocation,NOT_RUN,0/0 native cases
+Native A/B composition,NOT_RUN,0/0 native A/B cases
+Native OCSF identity export,OPEN,"Native exporter and exact 10,000-request join not implemented"
+Transport/sandbox authentication,OPEN,Authenticated channel and sandbox identity binding not qualified
+Distributed revocation,OPEN,Only the adapter's local authority graph is covered
+Emergency termination/credentials,OPEN,Real process termination and credential invalidation not qualified
+Multi-process audit scaling,OPEN,Scaling harness covers a persistent single writer
+Crash/storage recovery campaign,OPEN,Regression coverage is not a full host fault campaign
+Hung-worker recovery/failover,OPEN,Deadlines/capacity are tested; automated recovery remains open

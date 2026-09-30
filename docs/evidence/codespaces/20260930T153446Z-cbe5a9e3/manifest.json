@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "path": "run-info.json",
+      "bytes": 434,
+      "sha256": "7672e611905c0b9c8cb3dc4b117f29c8efbb7095eb661e167fdc5d19d07b7b4a"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 3046,
+      "sha256": "226103c691d8a1081efc9a6eb51d91b969f73deb461a61fa347f6d75fbddbbc0"
+    },
+    {
+      "path": "summary.csv",
+      "bytes": 1235,
+      "sha256": "ac988ed1d8260a256b94f672fd0deb004daa55a7f9ace18cbec3aff06baf31c5"
+    },
+    {
+      "path": "SUMMARY.md",
+      "bytes": 1585,
+      "sha256": "4bb88afd1609f390248bdf6c512bd170bb866e3ceaf1c7798f865f458f5e5b1a"
+    },
+    {
+      "path": "stage-exit-codes.tsv",
+      "bytes": 42,
+      "sha256": "b09552bf13d2d8894ce944e3aac7f7e8a9f3e1a72c3c45b781a25ad758e14db1"
+    },
+    {
+      "path": "local-evidence-manifest.json",
+      "bytes": 1699,
+      "sha256": "084671aa88266ded9f4bad31a92d7e5122aaacb2c7332ae31a29b738a075db19"
+    },
+    {
+      "path": "loopback/exact-correlation.json",
+      "bytes": 324,
+      "sha256": "bd9876d3505d13d4694baa2bd9ae8102cbafc489afeb1c2eb59428033f334b9f"
+    }
+  ],
+  "scope": "Compact qualification reports; raw logs/keys/state excluded"
+}

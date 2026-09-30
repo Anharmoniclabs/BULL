@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "path": "regression.xml",
+      "bytes": 233099,
+      "sha256": "37cb03a362bc4a4658557cb63a9886c04b9f9da189dd5b8af510bf3593b1a607"
+    },
+    {
+      "path": "setup-venv.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "setup-install.log",
+      "bytes": 10787,
+      "sha256": "c96b6254fdb49d547dd839dfd11fa045cbbc0a8285a2dbd5c8713943a5d6febe"
+    },
+    {
+      "path": "regression.log",
+      "bytes": 53953,
+      "sha256": "9e953282d20e616ecf90f44b53d3af03bc16154f29dcbd63ee5aad613fb017fa"
+    },
+    {
+      "path": "loopback/fault-ledger.jsonl",
+      "bytes": 3504,
+      "sha256": "580739ca8be495d5cf631c284a26007396fe91c71c6fae94c8b3729c6ff8d9c1"
+    },
+    {
+      "path": "loopback/concurrency-ledger.jsonl",
+      "bytes": 8948828,
+      "sha256": "95a3943024bf174c0f37899a383694135f26510d3bdf1c280e9e9f0bfef15fba"
+    },
+    {
+      "path": "loopback/scaling-ledger.jsonl",
+      "bytes": 24603923,
+      "sha256": "4fbe4fb645f1662adf45bafd1b971afe662f6751b1d92b605891d06e31fcb668"
+    },
+    {
+      "path": "loopback/contract-layer-events.jsonl",
+      "bytes": 5180000,
+      "sha256": "d9f3f0f6aeef89396124dfa04ffe68bb3fb9d674635817ebf18a396a6a06396c"
+    },
+    {
+      "path": "loopback/destination-receipts.jsonl",
+      "bytes": 2390000,
+      "sha256": "a9147ea9a6050176eb3acf02f84f1302c8a1790ccb73b87664b5c14baaf190c6"
+    },
+    {
+      "path": "loopback/exact-correlation.json",
+      "bytes": 3270259,
+      "sha256": "61a34a6a5a9d23bbf1bc6f6c36699c291181eed5e03001a5095cf2178e0adcd3"
+    }
+  ],
+  "scope": "Hashes only; raw evidence retained on test host"
+}
