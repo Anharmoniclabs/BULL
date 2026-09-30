@@ -1,0 +1,12 @@
+{
+  "format": "bull-codespaces-qualification-v1",
+  "run_id": "20260930T154837Z-d904c3ce",
+  "started_utc": "2026-09-30T15:48:37.603170+00:00",
+  "source": "7e81d144f234ade4c9c0b9551f077cbb41ce3d8a",
+  "source_tree": "85a04026eaa5790561886dfed0178405f43d0e04",
+  "working_tree_modified": false,
+  "python": "3.14.2",
+  "kernel": "6.8.0-1064-azure",
+  "quick": true,
+  "pinned_openshell": "6648bd0c290efbc41ba131ee9831ee45cd431f94"
+}

@@ -1,0 +1,120 @@
+{
+  "source": "7e81d144f234ade4c9c0b9551f077cbb41ce3d8a",
+  "working_tree_modified": false,
+  "python": "3.14.2",
+  "native_openshell": {
+    "docker": "/usr/bin/docker",
+    "openshell": null,
+    "status": "NOT_RUN"
+  },
+  "faults": {
+    "cases": [
+      {
+        "case": "delay_10",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.025212722000105714,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_50",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.061976656000297226,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_100",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.1110701159996097,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "delay_250",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.2009992510002121,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "delay_1000",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.2013814160000038,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "delay_5000",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.20365213500008394,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "reset",
+        "reason_code": "bull_unavailable",
+        "elapsed_seconds": 0.007677294000131951,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "first_delivery",
+        "reason_code": "bull_allowed",
+        "elapsed_seconds": 0.0119716379995225,
+        "destination_effects": 1,
+        "pass": true
+      },
+      {
+        "case": "duplicate_delivery",
+        "reason_code": "bull_replayed_request",
+        "elapsed_seconds": 0.000970462000623229,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "short_client_deadline",
+        "reason_code": "bull_timeout",
+        "elapsed_seconds": 0.031066520999956992,
+        "destination_effects": 0,
+        "pass": true
+      },
+      {
+        "case": "authority_down",
+        "reason_code": "grpc_unavailable",
+        "elapsed_seconds": 0.0005842010004926124,
+        "destination_effects": 0,
+        "pass": true
+      }
+    ],
+    "passed": true,
+    "scope": "real BULL gRPC, injected policy faults, observed loopback HTTP destination"
+  },
+  "concurrency": {
+    "requests": 10000,
+    "concurrency": 32,
+    "effects": 10000,
+    "elapsed_seconds": 130.96929874099988,
+    "ledger_verification": {
+      "valid": true,
+      "records": 10000,
+      "error_index": null,
+      "error": null,
+      "head_hash": "653f8002413f79361e2260b926686c1a7ee0734c8eaad379dc1c252caa22a1d5"
+    },
+    "correlation": {
+      "bull_decisions": 10000,
+      "consistent": 10000,
+      "duplicate_identities": 0,
+      "missing_identity": 0,
+      "effects_without_dual_allow": 0,
+      "orphan_events": 0,
+      "exact": true
+    },
+    "reason_codes": {
+      "bull_allowed": 10000
+    },
+    "scope": "real BULL gRPC + real loopback HTTP effects; native OpenShell layer is a contract fixture"
+  },
+  "passed": true
+}

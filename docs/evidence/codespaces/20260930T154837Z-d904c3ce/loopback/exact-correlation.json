@@ -1,0 +1,13 @@
+{
+  "summary": {
+    "bull_decisions": 10000,
+    "consistent": 10000,
+    "duplicate_identities": 0,
+    "missing_identity": 0,
+    "effects_without_dual_allow": 0,
+    "orphan_events": 0,
+    "exact": true
+  },
+  "row_count": 10000,
+  "scope": "Compact summary; full join rows and their hash retained in local evidence"
+}

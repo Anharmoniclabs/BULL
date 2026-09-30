@@ -1,0 +1,50 @@
+{
+  "files": [
+    {
+      "path": "run-info.json",
+      "bytes": 433,
+      "sha256": "91edcf1a0304be58e4840e48b828ac9fa3d0e85a144fe9eafca5f5e4ce7c5608"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 3118,
+      "sha256": "77d72c5f3def3958e34a64a1a0f41b39634a8128f01ac573797b0f2b0ea823ee"
+    },
+    {
+      "path": "summary.csv",
+      "bytes": 1262,
+      "sha256": "c49dc15900f28eab9c27290c457a50ad1ab8460e0b8ecadb6315cffa58c37e63"
+    },
+    {
+      "path": "SUMMARY.md",
+      "bytes": 1615,
+      "sha256": "ae50ad7ae9abce696847ad095cf80656b8abc3230c0f9bf2c610d22d77224887"
+    },
+    {
+      "path": "stage-exit-codes.tsv",
+      "bytes": 72,
+      "sha256": "eeb974ea4a66fde7c2a333a9d36da875ac2d633a3c0fc797e411f9995492ab8b"
+    },
+    {
+      "path": "native-preflight.json",
+      "bytes": 311,
+      "sha256": "aa53898c466e31bea085677c2113ba48d0dbc25567a52f3ecff67e5ff0ff7643"
+    },
+    {
+      "path": "local-evidence-manifest.json",
+      "bytes": 1831,
+      "sha256": "559da8916dda9c5423f68a987a52d6c295b75c11be77bed30fde3b5a76e1fb5e"
+    },
+    {
+      "path": "loopback/report.json",
+      "bytes": 3252,
+      "sha256": "1130ce2aefa82894a8d9ce191e9ff24e23194a50633ed7b7808597dcc183d4fd"
+    },
+    {
+      "path": "loopback/exact-correlation.json",
+      "bytes": 324,
+      "sha256": "bd9876d3505d13d4694baa2bd9ae8102cbafc489afeb1c2eb59428033f334b9f"
+    }
+  ],
+  "scope": "Compact qualification reports; raw logs/keys/state excluded"
+}

@@ -1,0 +1,60 @@
+{
+  "files": [
+    {
+      "path": "regression.xml",
+      "bytes": 185051,
+      "sha256": "207ca4cff2072b897962382444e9696a74e7ed0f20ecf8bdbea5c52160385feb"
+    },
+    {
+      "path": "setup-venv.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "setup-install.log",
+      "bytes": 10483,
+      "sha256": "fdf92eaae8380778d78b86abe3bb55b5e9917ba5ba3605d667025e6282e67e8c"
+    },
+    {
+      "path": "regression.log",
+      "bytes": 7185,
+      "sha256": "486e0f5cde0655cb90f8ec67978aece3b829794a62940889436ce6fd9c63aa5e"
+    },
+    {
+      "path": "loopback.log",
+      "bytes": 4137,
+      "sha256": "3c84ba31bb813df76c2229d1d692e77f7597feb6649b5715832a51d77b4a447d"
+    },
+    {
+      "path": "native-preflight.log",
+      "bytes": 112,
+      "sha256": "0353ed74d70c775f6b8e0dd73c2180a5dc9908a7daf43badd9296116958b33e2"
+    },
+    {
+      "path": "loopback/fault-ledger.jsonl",
+      "bytes": 3504,
+      "sha256": "673cb19912f8506606cecd442ca0a3d76811e90fba30090e524a92d0409b1375"
+    },
+    {
+      "path": "loopback/concurrency-ledger.jsonl",
+      "bytes": 8948821,
+      "sha256": "53c3f18e3e7a226e13d32916341e8598405b62b110ccff42003d1388815422a4"
+    },
+    {
+      "path": "loopback/contract-layer-events.jsonl",
+      "bytes": 5180000,
+      "sha256": "5a64560af3836c6144945a26e3251ea311523f0716e7b77e02678580e3672281"
+    },
+    {
+      "path": "loopback/destination-receipts.jsonl",
+      "bytes": 2390000,
+      "sha256": "68c0e262b7eeabeeb65517590d423af09d6fd43a478c3df3d3146eb93dcf707b"
+    },
+    {
+      "path": "loopback/exact-correlation.json",
+      "bytes": 3270259,
+      "sha256": "25072405e72d80049d058ed6c7d856b202afe068ceeec33ba3805e770881d97a"
+    }
+  ],
+  "scope": "Hashes only; raw evidence retained on test host"
+}

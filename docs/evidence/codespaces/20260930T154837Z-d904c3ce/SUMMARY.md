@@ -1,0 +1,25 @@
+# BULL Codespaces qualification
+
+Source: `7e81d144f234ade4c9c0b9551f077cbb41ce3d8a`
+
+Overall: **BLOCKED**
+
+| Check | Status | Evidence / boundary |
+| --- | --- | --- |
+| Python/dependencies | PASS | See setup-venv.log and setup-install.log |
+| Full regression | PASS | 1090 passed, 0 failed, 0 skipped; regression.log |
+| gRPC/HTTP fault cases | PASS | 11/11; loopback fixture, not native OpenShell |
+| 10,000-request attribution | PASS | 10000/10000 effects; exact=True; contract fixture |
+| Million-record audit scaling | NOT_RUN | Explicitly skipped by --quick |
+| Native prerequisites | BLOCKED | built OpenShell source; use --os-src /absolute/path/to/OpenShell |
+| Native faults/restart/revocation | BLOCKED | 0/0 native cases |
+| Native A/B composition | BLOCKED | 0/0 native A/B cases |
+| Native OCSF identity export | OPEN | Native exporter and exact 10,000-request join not implemented |
+| Transport/sandbox authentication | OPEN | Authenticated channel and sandbox identity binding not qualified |
+| Distributed revocation | OPEN | Only the adapter's local authority graph is covered |
+| Emergency termination/credentials | OPEN | Real process termination and credential invalidation not qualified |
+| Multi-process audit scaling | OPEN | Scaling harness covers a persistent single writer |
+| Crash/storage recovery campaign | OPEN | Regression coverage is not a full host fault campaign |
+| Hung-worker recovery/failover | OPEN | Deadlines/capacity are tested; automated recovery remains open |
+
+PASS_TESTED_SCOPE leaves the OPEN boundaries unqualified. Raw logs and credentials remain on the test host.

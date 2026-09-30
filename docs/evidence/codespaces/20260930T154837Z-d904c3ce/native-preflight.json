@@ -1,0 +1,10 @@
+{
+  "status": "BLOCKED",
+  "missing": [
+    "built OpenShell source; use --os-src /absolute/path/to/OpenShell"
+  ],
+  "openshell_source": null,
+  "openshell_commit": null,
+  "expected_commit": "6648bd0c290efbc41ba131ee9831ee45cd431f94",
+  "scope": "Host prerequisites; does not attest binary reproducibility"
+}
