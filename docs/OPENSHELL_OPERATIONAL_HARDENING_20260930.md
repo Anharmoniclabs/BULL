@@ -58,7 +58,27 @@ skips the million-record scaling test while preserving the 10,000-request and fa
 tests. Native tests need a reachable Docker daemon plus the four built binaries
 listed by preflight, from NVIDIA/OpenShell v0.1.2 commit
 `6648bd0c290efbc41ba131ee9831ee45cd431f94`. The runner checks prerequisites but
-does not install Docker or build OpenShell. A CLI installation alone is insufficient.
+does not install Docker. A CLI installation alone is insufficient.
+
+Add `--prepare-openshell` to build missing native prerequisites before native
+preflight. On Linux x86-64 with a working Docker daemon and root or passwordless
+sudo, it installs Ubuntu/Debian compiler dependencies, Rust 1.95.0 and its musl
+target, then builds the exact pinned NVIDIA source with `Cargo.lock` enforced.
+The gateway enables only the Docker compute driver plus bundled Z3; the CLI and
+supervisor use their default features, and the sandbox is built for musl. The
+upstream static-binary check and each executable's `--help` must succeed before
+the build is recorded as complete. Cold Rust/Z3 builds take substantially longer
+than the BULL regression suite; build output and heartbeats remain visible.
+
+With no `--os-src`, the helper reuses
+`$HOME/bull-test-results/OpenShell-v0.1.2-6648bd0c` if it is clean and correctly
+pinned. It refuses to replace a foreign checkout or overwrite tracked edits.
+`native-build.json` records the commit, toolchain, features, binary hashes and
+build outcome; `setup-native.log` retains full build output locally. A failed
+requested build prevents native execution even if old binaries exist. Build
+success qualifies prerequisites only, and never certifies native behavior.
+Compact build reports are included in `--push-results` publication. This helper
+has setup/reporting failure tests; the real Rust build requires the Codespace.
 
 The script prints a Markdown terminal table with PASS, FAIL, BLOCKED, NOT_RUN and
 OPEN rows, and writes `SUMMARY.md`, `summary.csv`, `summary.json`, `terminal.log`,
@@ -101,6 +121,21 @@ endpoint group traversal (`710`) only after binding and restricting its socket.
 All 12 orchestration combinations (six original plus six inherited-ACL cases)
 pass after the fix. This preserves the privacy requirement rather than relaxing
 the assertion, and does not certify a live separate-UID MCP session.
+
+The completed Codespaces retest of `7e81d144f234ade4c9c0b9551f077cbb41ce3d8a`
+on Python 3.14.2 reports **1,090 passes, zero failures, zero skips and 21 passing
+subtests**. All 11 gRPC/HTTP fault cases pass. The 10,000-request, 32-worker test
+completed in 130.97 seconds with exactly 10,000 observed effects, a valid ledger,
+and zero missing identities, duplicate identities, effects without dual allow or
+orphan events. Its OpenShell layer is still a contract fixture. The injected reset
+traceback is expected fault evidence, not a failed test.
+
+[Published retest evidence](https://github.com/Anharmoniclabs/BULL/tree/results/openshell-20260930T154837Z-d904c3ce/docs/evidence/codespaces/20260930T154837Z-d904c3ce)
+records **BLOCKED**, exit 2: Docker is reachable, but built pinned OpenShell source
+was not supplied. Native fault and A/B tests therefore did not run. Million-record
+scaling was intentionally omitted by `--quick`; the seven OPEN boundaries remain
+unqualified. The native setup option above addresses this prerequisite blocker;
+it does not close those OPEN boundaries.
 
 ## Branch integration audit
 

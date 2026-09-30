@@ -78,6 +78,33 @@ def test_quick_does_not_claim_scaling_pass(tmp_path, checkout):
     assert checks(out)["Million-record audit scaling"]["status"] == "NOT_RUN"
 
 
+@pytest.mark.parametrize("status,code,expected", [("BUILT", 0, "PASS"), ("READY_TO_BUILD", 0, "FAIL"), ("BLOCKED", 2, "BLOCKED"), ("FAIL", 1, "FAIL")])
+def test_native_build_result_does_not_qualify_native_behavior(tmp_path, checkout, status, code, expected):
+    out = evidence(tmp_path, checkout)
+    with (out / "stage-exit-codes.tsv").open("a") as handle:
+        handle.write(f"setup-native\t{code}\n")
+    results.write_json(out / "native-build.json", {"status": status, "reason": "test build evidence"})
+    assert results.finalize(out, 0) == (1 if expected == "FAIL" else 2)
+    rows = checks(out)
+    assert rows["Pinned OpenShell build"]["status"] == expected
+    assert rows["Native faults/restart/revocation"]["status"] == "BLOCKED"
+    target = tmp_path / "export"
+    results.export_evidence(out, target)
+    assert results.read_json(target / "native-build.json")["status"] == status
+
+
+def test_blocked_requested_build_overrides_ready_stale_preflight(tmp_path, checkout):
+    out = evidence(tmp_path, checkout)
+    path = out / "stage-exit-codes.tsv"
+    path.write_text(path.read_text().replace("native-preflight\t2", "native-preflight\t0") + "setup-native\t2\n")
+    results.write_json(out / "native-preflight.json", {"status": "READY", "missing": []})
+    results.write_json(out / "native-build.json", {"status": "BLOCKED", "reason": "Tracked source edits preserved"})
+    assert results.finalize(out, 0) == 2
+    assert checks(out)["Native prerequisites"]["status"] == "BLOCKED"
+    assert "Tracked source edits" in checks(out)["Native prerequisites"]["detail"]
+    assert checks(out)["Native faults/restart/revocation"]["status"] == "BLOCKED"
+
+
 def test_setup_failure_is_reported_without_installation(tmp_path, checkout):
     out = evidence(tmp_path, checkout)
     (out / "stage-exit-codes.tsv").write_text("setup-venv\t0\nsetup-install\t1\n")

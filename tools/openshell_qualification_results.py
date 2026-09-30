@@ -152,9 +152,18 @@ def finalize(out, runner_exit):
         row("Million-record audit scaling", "PASS" if codes.get("loopback") == 0 and scale_ok else loop_status,
             f"{scale_verify.get('records', '?')} verified records; persistent single writer")
     native_preflight = read_json(out / "native-preflight.json")
-    native_blocked = native_preflight.get("status") == "BLOCKED" and codes.get("native-preflight") == 2
+    if "setup-native" in codes:
+        built = read_json(out / "native-build.json")
+        build_ok = codes["setup-native"] == 0 and built.get("status") == "BUILT"
+        row("Pinned OpenShell build", "PASS" if build_ok else ("BLOCKED" if codes["setup-native"] == 2 else "FAIL"),
+            "Build prerequisite only; native-build.json" if build_ok else built.get("reason", "Build report is missing or incomplete"))
+    build_blocked = codes.get("setup-native") == 2
+    native_blocked = (native_preflight.get("status") == "BLOCKED" and codes.get("native-preflight") == 2) or build_blocked
     if native_blocked:
-        row("Native prerequisites", "BLOCKED", "; ".join(native_preflight.get("missing", [])))
+        reasons = list(native_preflight.get("missing", []))
+        if build_blocked:
+            reasons.append(built.get("reason", "Requested OpenShell build is blocked"))
+        row("Native prerequisites", "BLOCKED", "; ".join(reasons))
     else:
         row("Native prerequisites", "PASS" if codes.get("native-preflight") == 0 else "NOT_RUN", "See native-preflight.json")
     native = read_json(out / "native/report.json")
@@ -211,7 +220,7 @@ def finalize(out, runner_exit):
 def export_evidence(out, target):
     """Explicit report allowlist: never recursively copy test output directories."""
     paths = ("run-info.json", "summary.json", "summary.csv", "SUMMARY.md", "stage-exit-codes.tsv",
-             "native-preflight.json", "local-evidence-manifest.json", "loopback/report.json",
+             "native-preflight.json", "native-build.json", "local-evidence-manifest.json", "loopback/report.json",
              "native/report.json", "composition/cases.csv", "composition/latency.csv")
     manifest = []
     for name in paths:

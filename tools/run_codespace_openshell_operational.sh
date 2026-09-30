@@ -6,6 +6,8 @@ TASK_OS_SRC="${BULL_OPENSHELL_SOURCE:-}"
 TASK_OUTPUT=""
 TASK_QUICK=0
 TASK_PUSH=0
+TASK_PREPARE=0
+TASK_NATIVE_BUILD_OK=1
 while (($#)); do
   case "$1" in
     --os-src|--output)
@@ -14,8 +16,9 @@ while (($#)); do
       shift 2 ;;
     --quick) TASK_QUICK=1; shift ;;
     --push-results) TASK_PUSH=1; shift ;;
+    --prepare-openshell) TASK_PREPARE=1; shift ;;
     --help)
-      echo 'Usage: bash tools/run_codespace_openshell_operational.sh [--quick] [--os-src PATH] [--output NEW_PATH] [--push-results]'
+      echo 'Usage: bash tools/run_codespace_openshell_operational.sh [--quick] [--os-src PATH] [--output NEW_PATH] [--push-results] [--prepare-openshell]'
       echo 'Full logs stay local; --push-results publishes compact reports to a new results branch.'
       exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
@@ -100,7 +103,17 @@ if [[ -z "$TASK_OS_SRC" ]]; then
     if [[ -f "$path/target/release/openshell" ]]; then TASK_OS_SRC="$path"; break; fi
   done
 fi
+if ((TASK_PREPARE)); then
+  if [[ -z "$TASK_OS_SRC" ]]; then TASK_OS_SRC="$HOME/bull-test-results/OpenShell-v0.1.2-6648bd0c"; fi
+  if ! task_run setup-native "$TASK_PYTHON" tools/prepare_codespace_openshell.py --source "$TASK_OS_SRC" --report "$TASK_OUTPUT/native-build.json"; then
+    TASK_NATIVE_BUILD_OK=0
+  fi
+fi
 if task_run native-preflight "$TASK_PYTHON" "$TASK_REPORTER" preflight --output "$TASK_OUTPUT" --os-src "$TASK_OS_SRC"; then
-  task_run native_faults "$TASK_PYTHON" tools/qualify_openshell_native_faults.py --os-src "$TASK_OS_SRC" --output "$TASK_OUTPUT/native" || true
-  task_run native_composition "$TASK_PYTHON" tools/openshell_experiment.py --os-src "$TASK_OS_SRC" --output "$TASK_OUTPUT/composition" --latency-n 100 || true
+  if ((TASK_NATIVE_BUILD_OK)); then
+    task_run native_faults "$TASK_PYTHON" tools/qualify_openshell_native_faults.py --os-src "$TASK_OS_SRC" --output "$TASK_OUTPUT/native" || true
+    task_run native_composition "$TASK_PYTHON" tools/openshell_experiment.py --os-src "$TASK_OS_SRC" --output "$TASK_OUTPUT/composition" --latency-n 100 || true
+  else
+    echo 'Native tests withheld because the requested OpenShell build did not complete.' | tee -a "$TASK_OUTPUT/terminal.log"
+  fi
 fi
