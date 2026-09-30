@@ -36,18 +36,54 @@ The broad source suite has **1,063 passes, 21 passing subtests, 4 skips, and fiv
 
 ## Codespaces
 
-Use an isolated worktree so existing running work and uncommitted changes are preserved:
+Run this from **any directory**, including `~/.local/share/bull/command-center`.
+That directory holds runtime data, not the Git checkout. The following command
+clones an isolated source tree and saves logs under your home directory:
 
 ```bash
-git fetch origin hardening/openshell-operational-20260930
-BULL_TEST_WORKTREE="$(mktemp -d /tmp/bull-operational-source-XXXXXX)"
-git worktree add --detach "$BULL_TEST_WORKTREE" FETCH_HEAD
-bash "$BULL_TEST_WORKTREE/tools/run_codespace_openshell_operational.sh"
+bash <<'BULL_QUALIFY'
+set -euo pipefail
+mkdir -p "$HOME/bull-test-results"
+BULL_RUN_DIR="$(mktemp -d "$HOME/bull-test-results/openshell-XXXXXX")"
+git clone --single-branch --branch hardening/openshell-operational-20260930 \
+  https://github.com/Anharmoniclabs/BULL.git "$BULL_RUN_DIR/source"
+bash "$BULL_RUN_DIR/source/tools/run_codespace_openshell_operational.sh" \
+  --output "$BULL_RUN_DIR/results" --push-results
+BULL_QUALIFY
 ```
 
-If the script does not discover the already-built pinned NVIDIA/OpenShell source, rerun with `--os-src /absolute/path/to/OpenShell`. `--quick` skips the million-record scaling test while preserving the 10,000-request and fault tests. The runner needs Docker plus the four built binaries listed by its preflight, from NVIDIA/OpenShell v0.1.2 commit `6648bd0c290efbc41ba131ee9831ee45cd431f94`.
+If the script does not discover the already-built pinned NVIDIA/OpenShell source,
+add `--os-src /absolute/path/to/OpenShell` to the runner invocation. `--quick`
+skips the million-record scaling test while preserving the 10,000-request and fault
+tests. Native tests need a reachable Docker daemon plus the four built binaries
+listed by preflight, from NVIDIA/OpenShell v0.1.2 commit
+`6648bd0c290efbc41ba131ee9831ee45cd431f94`. The runner checks prerequisites but
+does not install Docker or build OpenShell. A CLI installation alone is insufficient.
 
-The script writes a summary JSON, regression XML/log, loopback evidence, and native results when prerequisites exist. Its native runner uses a disposable gateway/database and deletes only sandboxes created by that gateway. Missing native prerequisites produce **BLOCKED** and exit code 2. The original composition experiment now returns nonzero when its cases fail.
+The script prints a Markdown terminal table with PASS, FAIL, BLOCKED, NOT_RUN and
+OPEN rows, and writes `SUMMARY.md`, `summary.csv`, `summary.json`, `terminal.log`,
+individual phase logs, regression XML, loopback evidence, and native results when
+prerequisites exist. Quiet phases emit a heartbeat every 15 seconds. Setup failures
+are finalized too; zero exit codes without required result files are failures.
+Existing output folders are rejected to prevent stale results being reused.
+
+`--push-results` commits compact reports and a SHA-256 manifest to a unique
+`results/openshell-<UTC timestamp>-<run id>` branch using a separate publishing
+worktree. Failures and BLOCKED results are published too. The terminal prints the
+GitHub results URL. The source branch, main, and the running checkout remain
+unchanged. Raw logs, large ledgers, private keys, gateway configuration and SQLite
+state remain local; publication uses an explicit file allowlist. A clean source
+checkout is required to bind evidence to the recorded tested commit. GitHub write
+authentication is required; a rejected push retains its evidence commit and prints
+the exact retry command. `publication.json` records push status locally.
+
+Its native runner uses a disposable gateway/database and deletes only sandboxes
+created by that gateway. Missing native prerequisites produce **BLOCKED** and exit
+code 2 unless another stage failed, in which case the run exits 1. A completed
+tested scope exits 0 while still listing unqualified OPEN boundaries. The original
+composition experiment returns nonzero when its cases fail. None of these runs
+claims native OCSF export, authenticated transport, distributed revocation,
+emergency credential cleanup, multi-process scaling or watchdog failover.
 
 ## Branch integration audit
 
