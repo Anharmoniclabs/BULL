@@ -185,7 +185,7 @@ def policy_yaml(up: Upstream, enforcement: str | None = "enforce") -> str:
       - host: {HOST}
         port: {up.port(role)}
         protocol: rest
-        allowed_ips: ["{BRIDGE_IP}/32"]{mode}
+        allowed_ips: ["{docker_host_gateway()}/32"]{mode}
         rules:
           - allow:
               method: {method}
@@ -196,6 +196,25 @@ def policy_yaml(up: Upstream, enforcement: str | None = "enforce") -> str:
 
 
 # ------------------------------------------------------------------- stack
+
+
+def docker_host_gateway():
+    import ipaddress
+    result = subprocess.run(
+        ["docker", "network", "inspect", "bridge"],
+        capture_output=True, text=True, check=True, timeout=15,
+    )
+    configs = json.loads(result.stdout)[0]["IPAM"]["Config"]
+    for config in configs:
+        value = config.get("Gateway")
+        if not value:
+            continue
+        address = ipaddress.ip_address(value)
+        if address.version == 4 and not (
+            address.is_loopback or address.is_unspecified
+        ):
+            return str(address)
+    raise RuntimeError("Docker bridge has no usable IPv4 gateway")
 
 class Stack:
     def __init__(self, args, work: Path, up: Upstream, images: dict, with_bull: bool):
@@ -300,7 +319,7 @@ image_pull_policy = "never"
             config += f"""
 [[openshell.supervisor.middleware]]
 name = "bull-governance"
-grpc_endpoint = "http://{HOST}:{self.mw_port}"
+grpc_endpoint = "http://{docker_host_gateway()}:{self.mw_port}"
 allow_insecure_transport = true
 max_payload_bytes = 262144
 timeout = "2s"
@@ -479,7 +498,7 @@ def run_cases(stack: Stack, results: list, phase: str):
       - host: {HOST}
         port: 9
         protocol: rest
-        allowed_ips: ["{BRIDGE_IP}/32"]
+        allowed_ips: ["{docker_host_gateway()}/32"]
         enforcement: enforce
         rules:
           - allow:
