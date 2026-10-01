@@ -1,0 +1,3929 @@
+{
+  "remote_branches": 86,
+  "status_counts": {
+    "historically_merged_check_tip_drift": 42,
+    "historical_branch_requires_file_review": 15,
+    "contained_in_release_candidate": 7,
+    "open_distinct_or_superseded_work": 10,
+    "patch_equivalent_to_candidate": 1,
+    "contained_in_main": 11
+  },
+  "branches": [
+    {
+      "branch": "brand/approved-b-logo-20260919",
+      "sha": "54cc2e0294cce84d5a21ce278c4934eafeedb03d",
+      "tip": "Document the approved B-shaped BULL identity system",
+      "contained_in_main": false,
+      "main_only_commits": 28,
+      "branch_only_vs_main": 8,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 108,
+      "branch_only_vs_candidate": 8,
+      "unique_subjects": [
+        "54cc2e0 Document the approved B-shaped BULL identity system",
+        "8c41135 Add approved BULL identity presentation board",
+        "c804c9b Apply approved B-shaped bulldog favicon",
+        "325595c Apply approved B-shaped bulldog one-color lockup",
+        "cb17ada Apply approved B-shaped bulldog stacked lockup",
+        "98310df Apply approved B-shaped bulldog dark lockup",
+        "97ddc42 Apply approved B-shaped bulldog primary lockup",
+        "4462241 Replace BULL mark with approved B-shaped bulldog"
+      ],
+      "patch_equivalent": [
+        "+ 44622410f4bb1c65afd6455daa91a8cc0b5d1a7c",
+        "+ 97ddc42e4918cd6bda4cad5820aba7f7e6759b8e",
+        "+ 98310df303770c174a673654479bd6c5ec5c8db0",
+        "+ cb17ada8734eadfb02c444d8dcba3e736fe9fa18",
+        "+ 325595c9e0031fc257b0bc79c569363a1432b9cc",
+        "+ c804c9b0e48e7163b9aaa5adfa638e3dc4c4bdf1",
+        "+ 8c4113514c661db696f61e624c638421c7a63d20",
+        "+ 54cc2e0294cce84d5a21ce278c4934eafeedb03d"
+      ],
+      "pull_requests": [
+        {
+          "number": 30,
+          "title": "Adopt approved B-shaped bulldog brand system",
+          "head": "brand/approved-b-logo-20260919",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T22:18:56Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/30",
+          "sha": "54cc2e0294cce84d5a21ce278c4934eafeedb03d"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 71,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 488,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "branding/approved-bulldog-b-20260919",
+      "sha": "99d244facba2f79e700cfa2a0e8f04ea1414e0aa",
+      "tip": "Remove completed one-time artwork importer before normal protected-branch review",
+      "contained_in_main": false,
+      "main_only_commits": 28,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 108,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "99d244f Remove completed one-time artwork importer before normal protected-branch review",
+        "63dc11e Import approved B-shaped bulldog source and self-contained logo pack",
+        "022ce82 Prepare approved B-shaped bulldog assets, provenance checks and brand guidance"
+      ],
+      "patch_equivalent": [
+        "+ 022ce82fcb9fd89ab0b42f5dcf1f4ec500648cd0",
+        "+ 63dc11e8d108d9445e912679c86041f21a1e0015",
+        "+ 99d244facba2f79e700cfa2a0e8f04ea1414e0aa"
+      ],
+      "pull_requests": [
+        {
+          "number": 29,
+          "title": "Use the approved B-shaped bulldog across the project and Pages",
+          "head": "branding/approved-bulldog-b-20260919",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/29",
+          "sha": "99d244facba2f79e700cfa2a0e8f04ea1414e0aa"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 73,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "claude/great-lamport-725s0i",
+      "sha": "6682adb47557ddac7cb588fd97ddd2dbdbb1b290",
+      "tip": "Fix five review findings on the release PR",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 73,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 7,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 87,
+          "title": "Add local operator console, MCP gateway, and lifecycle governance",
+          "head": "claude/great-lamport-725s0i",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/87",
+          "sha": "6682adb47557ddac7cb588fd97ddd2dbdbb1b290"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 221,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 86,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "claude/wizardly-newton-123x2q",
+      "sha": "aa7ef534cc0dba28d13c73640d0c1b994d92670f",
+      "tip": "Add Gemma 4 Developer Agent competition submission and Kaggle notebook cells",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "aa7ef53 Add Gemma 4 Developer Agent competition submission and Kaggle notebook cells",
+        "58d18ee Add agentharness: local coding agent harness with OCR/regex extraction",
+        "23ca562 Add Gemma 4 tool-calling coding agent for the Kaggle notebook"
+      ],
+      "patch_equivalent": [
+        "+ 23ca562ff3805a63c2c0ffadd93123798ff43a71",
+        "+ 58d18ee968b2c837da2d4ac9520921f9de3ff3fd",
+        "+ aa7ef534cc0dba28d13c73640d0c1b994d92670f"
+      ],
+      "pull_requests": [
+        {
+          "number": 88,
+          "title": "Claude/wizardly newton 123x2q",
+          "head": "claude/wizardly-newton-123x2q",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/88",
+          "sha": "aa7ef534cc0dba28d13c73640d0c1b994d92670f"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 174,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 376,
+      "files_on_branch_absent_from_candidate": [
+        "agentharness/README.md",
+        "agentharness/__init__.py",
+        "agentharness/__main__.py",
+        "agentharness/agent.py",
+        "agentharness/batch.py",
+        "agentharness/checks.py",
+        "agentharness/extract.py",
+        "agentharness/llm.py",
+        "agentharness/memory.py",
+        "agentharness/policy.py",
+        "agentharness/tests/test_agent.py",
+        "agentharness/tests/test_extract.py",
+        "agentharness/tests/test_http_cli.py",
+        "agentharness/tools.py",
+        "agentharness/workspace.py",
+        "kaggle/gemma4_submission/README.md",
+        "kaggle/gemma4_submission/build_cells.py",
+        "kaggle/gemma4_submission/notebook/cell1_start_server.py",
+        "kaggle/gemma4_submission/notebook/cell2_write_submission.py",
+        "kaggle/gemma4_submission/notebook/cell3_local_eval.py",
+        "kaggle/gemma4_submission/submission/agent.yaml",
+        "kaggle/gemma4_submission/submission/configs/sampling.yaml",
+        "kaggle/gemma4_submission/submission/eval_config.yaml",
+        "kaggle/gemma4_submission/submission/prompts/system.md",
+        "kaggle/gemma4_submission/test_gemma4_submission.py",
+        "kaggle/gemma4_submission/validate_submission.py"
+      ]
+    },
+    {
+      "branch": "copilot/fix-132678602-1369267866-7d0e9e56-a9e7-4335-b438-310d21e244cf",
+      "sha": "2778e7d62e265c84bd7c778be360f916538b4d25",
+      "tip": "Initial plan",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 11,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 11,
+      "unique_subjects": [
+        "2778e7d Initial plan",
+        "c562c9a console: reuse approved BULL brand mark",
+        "f05f378 console: wire dashboard to live BULL state",
+        "f0dd7ed console: style the command-control dashboard",
+        "12c891f console: add operator dashboard shell",
+        "7cb1ae6 console: add live BULL control plane",
+        "ad703b6 test: cover live control-plane semantics",
+        "b693310 docs: document live command-control console",
+        "571b810 docs: index command-control runtime assets",
+        "9364fda console: add bull console entrypoint",
+        "79e878e console: package local command-control assets"
+      ],
+      "patch_equivalent": [
+        "+ 79e878e99eac313c670c79e26ba9e39e1519474b",
+        "+ 9364fdaca7cacf862ca9bbce125a13f422b36ee0",
+        "+ 571b81042105f97f41c5d6a0addc2fe93c91771a",
+        "+ b693310414bbc3e3acb85d8e4cd09db34dd158f1",
+        "+ ad703b6ba2cf2b5a89b539ecc09ffdde0b2b1999",
+        "+ 7cb1ae6ee63c226d095cffd81b25dcc2984a7343",
+        "+ 12c891fd2d93f6c86ceaa071a49bc61f312c09af",
+        "+ f0dd7edffd9abb60f47eb13aea6ce221a6c008dc",
+        "+ f05f37888751536f4d66c18870902d228240cc05",
+        "+ c562c9a00f8d1c372ba112894b0d31334b36c06d",
+        "- 2778e7d62e265c84bd7c778be360f916538b4d25"
+      ],
+      "pull_requests": [
+        {
+          "number": 77,
+          "title": "[WIP] ui: complete live command-control investigation workflow",
+          "head": "copilot/fix-132678602-1369267866-7d0e9e56-a9e7-4335-b438-310d21e244cf",
+          "base": "feature/live-command-control",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/77",
+          "sha": "2778e7d62e265c84bd7c778be360f916538b4d25"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 155,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 349,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "copilot/fix-132678602-1369267866-fce47232-30a3-4c95-83fc-0e490010bab0",
+      "sha": "67c0ce8be4447fa5cbe49c28b88595c688517ecc",
+      "tip": "Initial plan",
+      "contained_in_main": false,
+      "main_only_commits": 23,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 103,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "67c0ce8 Initial plan"
+      ],
+      "patch_equivalent": [
+        "- 67c0ce8be4447fa5cbe49c28b88595c688517ecc"
+      ],
+      "pull_requests": [
+        {
+          "number": 33,
+          "title": "[WIP] branding: apply approved B-shaped bulldog on current main",
+          "head": "copilot/fix-132678602-1369267866-fce47232-30a3-4c95-83fc-0e490010bab0",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/33",
+          "sha": "67c0ce8be4447fa5cbe49c28b88595c688517ecc"
+        }
+      ],
+      "status": "patch_equivalent_to_candidate",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "copilot/fix-132678602-1369267866-ff3fa10d-2279-4bcc-8f1f-73739c25aa4d",
+      "sha": "b17de3819c1bc1c45c1c79f1112fda58239aafb7",
+      "tip": "Initial plan",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 41,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 41,
+      "unique_subjects": [
+        "b17de38 Initial plan",
+        "4cdb3a5 Document one-click KVM auto-pull behavior",
+        "11403f2 Make guest pre-cache optional in Runtime UI",
+        "53be151 Auto-pull published guest on KVM start",
+        "8cda44f Make KVM runner auto-pull published guest assets",
+        "fb84286 Document automatic published guest install in Codespaces",
+        "f747355 Wire published guest download button",
+        "d1f8b85 Add published guest install control to Runtime view",
+        "9306b5e Let Command Center install published guest assets in Codespaces",
+        "4e64aff Add verified Codespaces guest asset installer",
+        "8d41ae3 Document real KVM and deployment dashboard wiring",
+        "8adff7e Test Command Center KVM wiring without faking readiness"
+      ],
+      "patch_equivalent": [
+        "+ 7d9d22df30ff86ea8d082d6aa7b39bbbc718cca6",
+        "+ 232b41368669f318c00db0a09c21bebd8b6e9b2f",
+        "+ f4c95ddcc3674e6f830aeb824ebdc9533d1df23e",
+        "+ 8007cfc7c0ac45ac27569fd0b6dfb0329be17500",
+        "+ 60f8bbdb4e78df69bfc1eaca7fbcf21d32579740",
+        "+ 35e09cc5e53c890b5940ea8538ba569f5555ef3d",
+        "+ f50ad345793537c40dd2f12c1cbe876f2e5ed65e",
+        "+ 41c43d3ed37839dc3c361c18a228b8a054b62c6b",
+        "+ 74b2a1c7d69eea65b235ab505c00335080eb390d",
+        "+ 538272d883bb3f69584e8e425c1cf986ee4f8da8",
+        "+ 4dccffd23fd765e44328bba92a461c182fb29557",
+        "+ 6e203908ed6109f464862f454689537454bf114f",
+        "+ 87131b73ba913bf902ac412a9b1c2b0d369c3f7d",
+        "+ b1522293045f4a125edbe646d3263a0680003fcf",
+        "+ 2ee47649d90b6628d54a8f881778097af0b6ece7",
+        "+ 25c23d2bdfdbc11760f10b362796389b058439e2",
+        "+ 8bbcff1beba83a1d987028ccc8054baa89215a3a",
+        "+ ab2ba1639a4c1a9b50bacbb39c13100207288646",
+        "+ d61a81f58e0de4fa175fa9ed1073dd6dbe737f69",
+        "+ 84062e6653fe19010a636d1ebafa8c8bf931c06e",
+        "+ 93280031330a92579aea75ed10ef4f95b47414b5",
+        "+ e279e2fbfec819c1dbf21dcff9070fb370031a76",
+        "+ 7062944308412aba06a84f0a9c089a304ca451cd",
+        "+ da3dcd225121fc44cb0b287aae8282374c770d37",
+        "+ 75c2f975460ff98354a11a237270a7901074683d",
+        "+ 3ed01c083a534c45cf0b35bd99ba109455e17cd0",
+        "+ ab2f213b7073adbaabc9a77e4944084064b15e76",
+        "+ 0fa58e6d21a6435a2094389c413c39c80bc1e1f9",
+        "+ 1e5946e3799cca51d0b90a7dcc1a00e7303e2e8e",
+        "+ 8adff7ec4191289bf57041d2944ed10d0650d27f",
+        "+ 8d41ae3173f490852a899a1d646a040b719be552",
+        "+ 4e64aff3cb1921831e2f824d9239e94849f5a824",
+        "+ 9306b5eae34a3e8576cfee0eccc9e57a692b5bdf",
+        "+ d1f8b85c56d30dce846ff3c101c20994e995a408",
+        "+ f747355db7a52f61810a7a6b337a477b5a9d9c5e",
+        "+ fb842864bd877467bcdb854b570868610027162f",
+        "+ 8cda44f0942d2a246a63d7bfdb512e488634539f",
+        "+ 53be1514fc13bc7035ba10baad7917e8b338f649",
+        "+ 11403f24ba8f011ca971480d9e0fa7c2e6b5d29b",
+        "+ 4cdb3a5b529dee9275acda25f42de2231634375e",
+        "- b17de3819c1bc1c45c1c79f1112fda58239aafb7"
+      ],
+      "pull_requests": [
+        {
+          "number": 74,
+          "title": "[WIP] ui: build investigation-first BULL command center",
+          "head": "copilot/fix-132678602-1369267866-ff3fa10d-2279-4bcc-8f1f-73739c25aa4d",
+          "base": "ui/bull-command-center-v1",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/74",
+          "sha": "b17de3819c1bc1c45c1c79f1112fda58239aafb7"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 157,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 359,
+      "files_on_branch_absent_from_candidate": [
+        "scripts/launch-command-center.sh",
+        "tests/test_command_center.py",
+        "ui/bull-command-center/README.md",
+        "ui/bull-command-center/app.js",
+        "ui/bull-command-center/dashboard_server.py",
+        "ui/bull-command-center/index.html",
+        "ui/bull-command-center/install_guest_assets.py",
+        "ui/bull-command-center/run_release_kvm.py",
+        "ui/bull-command-center/styles.css"
+      ]
+    },
+    {
+      "branch": "design/bull-premium-site-v2",
+      "sha": "55f64d3c262f909231145a3fda822368c219753f",
+      "tip": "Redesign BULL engineering publication and integrate technical manuscript",
+      "contained_in_main": false,
+      "main_only_commits": 19,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 99,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "55f64d3 Redesign BULL engineering publication and integrate technical manuscript"
+      ],
+      "patch_equivalent": [
+        "- 55f64d3c262f909231145a3fda822368c219753f"
+      ],
+      "pull_requests": [
+        {
+          "number": 45,
+          "title": "Redesign BULL engineering site and publish technical manuscript",
+          "head": "design/bull-premium-site-v2",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T18:34:30Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/45",
+          "sha": "55f64d3c262f909231145a3fda822368c219753f"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 105,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 458,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/assurance-crosswalk-post-68",
+      "sha": "3e86eeb2231e6c70da6a581235816240ccba0e76",
+      "tip": "docs: update compliance crosswalk for assurance implementation",
+      "contained_in_main": false,
+      "main_only_commits": 1,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 81,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "3e86eeb docs: update compliance crosswalk for assurance implementation"
+      ],
+      "patch_equivalent": [
+        "- 3e86eeb2231e6c70da6a581235816240ccba0e76"
+      ],
+      "pull_requests": [
+        {
+          "number": 69,
+          "title": "docs: update compliance crosswalk for BULL Assurance v1",
+          "head": "docs/assurance-crosswalk-post-68",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-24T14:07:11Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/69",
+          "sha": "3e86eeb2231e6c70da6a581235816240ccba0e76"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 350,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/compliance-crosswalk-20260924",
+      "sha": "9a464848bf95d84b1f5f5588aec0a72ff5fb5c28",
+      "tip": "docs: fix compliance crosswalk formatting and evidence path",
+      "contained_in_main": false,
+      "main_only_commits": 3,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 83,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "9a46484 docs: fix compliance crosswalk formatting and evidence path",
+        "96711b0 docs: add standards and compliance crosswalk"
+      ],
+      "patch_equivalent": [
+        "+ 96711b06d359fa22aa3e916bbd730c83c44aa6f9",
+        "+ 9a464848bf95d84b1f5f5588aec0a72ff5fb5c28"
+      ],
+      "pull_requests": [
+        {
+          "number": 67,
+          "title": "docs: add standards and compliance crosswalk",
+          "head": "docs/compliance-crosswalk-20260924",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-24T13:35:26Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/67",
+          "sha": "9a464848bf95d84b1f5f5588aec0a72ff5fb5c28"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 148,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 351,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/main-presentation-20260923",
+      "sha": "1d8fd08a2c9ce95e9afff7081e8bf0cdea5df09c",
+      "tip": "Record separate audit branch deployment",
+      "contained_in_main": false,
+      "main_only_commits": 9,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 89,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "1d8fd08 Record separate audit branch deployment",
+        "1b01343 Present merged main and remove obsolete branch setup"
+      ],
+      "patch_equivalent": [
+        "+ 1b01343f8c40938339f0a19e44ddd9989c727f01",
+        "+ 1d8fd08a2c9ce95e9afff7081e8bf0cdea5df09c"
+      ],
+      "pull_requests": [
+        {
+          "number": 58,
+          "title": "Update presentation and setup for merged main",
+          "head": "docs/main-presentation-20260923",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T13:41:22Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/58",
+          "sha": "1d8fd08a2c9ce95e9afff7081e8bf0cdea5df09c"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 143,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 402,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/paper-ii-complete-evidence",
+      "sha": "11b1e0764f30a92efa67daa60f599557ee7e59f9",
+      "tip": "Publish revised BULL II LaTeX paper and complete scoped evidence",
+      "contained_in_main": false,
+      "main_only_commits": 5,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 85,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "11b1e07 Publish revised BULL II LaTeX paper and complete scoped evidence"
+      ],
+      "patch_equivalent": [
+        "- 11b1e0764f30a92efa67daa60f599557ee7e59f9"
+      ],
+      "pull_requests": [
+        {
+          "number": 65,
+          "title": "Publish revised BULL II paper with complete scoped evidence",
+          "head": "docs/paper-ii-complete-evidence",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T18:06:46Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/65",
+          "sha": "11b1e0764f30a92efa67daa60f599557ee7e59f9"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 147,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 363,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/paper-ii-zenodo-resubmission-r3",
+      "sha": "02999e3ef9c06d20f25e634371aa73278247644d",
+      "tip": "Archive hash-matched preceding Paper II for historical citation",
+      "contained_in_main": false,
+      "main_only_commits": 4,
+      "branch_only_vs_main": 4,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 84,
+      "branch_only_vs_candidate": 4,
+      "unique_subjects": [
+        "02999e3 Archive hash-matched preceding Paper II for historical citation",
+        "63c2db9 Point BULL publication and citation to Zenodo 22923455",
+        "41d1760 Restore author-supplied IEEE layout and full evidence plots for BULL II",
+        "63f597c Prepare BULL II revision 3 for Zenodo resubmission"
+      ],
+      "patch_equivalent": [
+        "+ 63f597c3455e86877464b85de2601d35eab43eb4",
+        "+ 41d17609566c3ac4692453ff54f5e37d97821ea5",
+        "+ 63c2db9441b55e0f66ab9d8c26e3e805e5bdf654",
+        "+ 02999e3ef9c06d20f25e634371aa73278247644d"
+      ],
+      "pull_requests": [
+        {
+          "number": 66,
+          "title": "Publish IEEE-layout BULL II and link verified Zenodo DOI",
+          "head": "docs/paper-ii-zenodo-resubmission-r3",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T18:36:57Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/66",
+          "sha": "02999e3ef9c06d20f25e634371aa73278247644d"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 148,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 351,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/site-repo-parity-20260920",
+      "sha": "b1ebd1777812ab6c9fe3001072ee722094b3c44b",
+      "tip": "Apply GPL-2.0-or-later license and preserve package configuration (#32)",
+      "contained_in_main": true,
+      "main_only_commits": 23,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 103,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 34,
+          "title": "Update BULL site to match current repository boundary",
+          "head": "docs/site-repo-parity-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/34",
+          "sha": "b1ebd1777812ab6c9fe3001072ee722094b3c44b"
+        },
+        {
+          "number": 35,
+          "title": "Stage signed squash for site parity",
+          "head": "docs/site-repo-parity-20260920",
+          "base": "docs/site-repo-parity-signed-stage-20260920",
+          "state": "closed",
+          "merged_at": "2026-09-20T14:59:16Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/35",
+          "sha": "e56fb882b6b8afa0bdf59caa465c47b53072f497"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/site-repo-parity-signed-stage-20260920",
+      "sha": "26eede4eac402d135f642113102bd7aeafdb64e2",
+      "tip": "docs(site): align homepage with current BULL implementation",
+      "contained_in_main": false,
+      "main_only_commits": 23,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 103,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "26eede4 docs(site): align homepage with current BULL implementation"
+      ],
+      "patch_equivalent": [
+        "- 26eede4eac402d135f642113102bd7aeafdb64e2"
+      ],
+      "pull_requests": [
+        {
+          "number": 36,
+          "title": "Update BULL site to match current repository boundary",
+          "head": "docs/site-repo-parity-signed-stage-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T15:13:15Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/36",
+          "sha": "26eede4eac402d135f642113102bd7aeafdb64e2"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "docs/zenodo-publication-22922278",
+      "sha": "f2f3e7c577368e7f6435ea28472b0dfe6b3c95de",
+      "tip": "docs: link Zenodo preprint and add publication citation",
+      "contained_in_main": false,
+      "main_only_commits": 7,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 87,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "f2f3e7c docs: link Zenodo preprint and add publication citation"
+      ],
+      "patch_equivalent": [
+        "+ f2f3e7c577368e7f6435ea28472b0dfe6b3c95de"
+      ],
+      "pull_requests": [
+        {
+          "number": 62,
+          "title": "docs: add Zenodo preprint link and citation",
+          "head": "docs/zenodo-publication-22922278",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/62",
+          "sha": "f2f3e7c577368e7f6435ea28472b0dfe6b3c95de"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 143,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 400,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "experiment/bull-openshell-20260928",
+      "sha": "20a42c807214f47c2b5d6521089485cee0898017",
+      "tip": "docs: IEEEtran edition of the BULL x OpenShell paper",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 80,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 0,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 253,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 0,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feat/codespace-deployment-checks-20260922",
+      "sha": "7c4d9da9f2e0509ee84b40041782a4620b1ed1df",
+      "tip": "Wire Codespaces deployment checks and external guest audit receipts",
+      "contained_in_main": false,
+      "main_only_commits": 16,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 96,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "7c4d9da Wire Codespaces deployment checks and external guest audit receipts"
+      ],
+      "patch_equivalent": [
+        "- 7c4d9da9f2e0509ee84b40041782a4620b1ed1df"
+      ],
+      "pull_requests": [
+        {
+          "number": 49,
+          "title": "Wire deployment validation for Codespaces and external guest audit",
+          "head": "feat/codespace-deployment-checks-20260922",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T14:25:00Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/49",
+          "sha": "7c4d9da9f2e0509ee84b40041782a4620b1ed1df"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 115,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 452,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feat/contained-http-honeypot",
+      "sha": "4a39a7bb66b8f4e0fe17f95eeb7d6ab35ef9e139",
+      "tip": "docs: record port-registration regression results",
+      "contained_in_main": false,
+      "main_only_commits": 7,
+      "branch_only_vs_main": 4,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 87,
+      "branch_only_vs_candidate": 4,
+      "unique_subjects": [
+        "4a39a7b docs: record port-registration regression results",
+        "6af9ef7 test: cover missing port registration and relay activation gates",
+        "1a3dcb0 fix: register Codespaces listeners before checking port visibility",
+        "a96d9cb feat: add bounded BULL-governed Codespaces HTTP honeypot"
+      ],
+      "patch_equivalent": [
+        "+ a96d9cb7c49e9f941e7788f01791927d146614b7",
+        "+ 1a3dcb0f1f4373a6cb03a1015461a9dfb3371086",
+        "+ 6af9ef7f8e133e22991588eafd961b7a17c50e92",
+        "+ 4a39a7bb66b8f4e0fe17f95eeb7d6ab35ef9e139"
+      ],
+      "pull_requests": [
+        {
+          "number": 64,
+          "title": "feat: contained BULL-governed HTTP honeypot for Codespaces",
+          "head": "feat/contained-http-honeypot",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/64",
+          "sha": "4a39a7bb66b8f4e0fe17f95eeb7d6ab35ef9e139"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 147,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 410,
+      "files_on_branch_absent_from_candidate": [
+        ".devcontainer/honeypot/devcontainer.json",
+        "tools/honeypot/Dockerfile",
+        "tools/honeypot/README.md",
+        "tools/honeypot/VALIDATION.json",
+        "tools/honeypot/dashboard.html",
+        "tools/honeypot/launch.py",
+        "tools/honeypot/sensor.py",
+        "tools/honeypot/test_launch.py",
+        "tools/honeypot/test_sensor.py"
+      ]
+    },
+    {
+      "branch": "feat/enterprise-agent-gateway-20260927",
+      "sha": "c65fef0e3e88ec40884b2a3bdd9ac9ebe0a29fa3",
+      "tip": "test: reproduce MCP Unicode response delivery failures",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 61,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 19,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 86,
+          "title": "Feat/enterprise agent gateway 20260927",
+          "head": "feat/enterprise-agent-gateway-20260927",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/86",
+          "sha": "c65fef0e3e88ec40884b2a3bdd9ac9ebe0a29fa3"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 210,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 125,
+      "files_on_branch_absent_from_candidate": [
+        "tests/test_gateway_pentest_repro.py"
+      ]
+    },
+    {
+      "branch": "feat/lifecycle-governance-lab-20260926",
+      "sha": "d45a306680d99cdcf8beb95492e982e02a9c20f3",
+      "tip": "Record scoped lifecycle test evidence and qualification gaps",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 104,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 104,
+      "unique_subjects": [
+        "d45a306 Record scoped lifecycle test evidence and qualification gaps",
+        "6bd3bd3 Add isolated lifecycle conformance CI without changing production gates",
+        "68ed56b Track all 40 owner concerns without overstating implementation coverage",
+        "fc4fb46 Document four-plane implementation, run path and production integration limits",
+        "233bce1 Verify real fixture effects and read-only evidence HTTP boundary",
+        "1e899c6 Add offline Chromium viewport and evidence replay checks",
+        "b9a0a10 Add readable four-plane evidence viewer with scoped recorded walkthrough",
+        "c3082bc Add real disposable lifecycle walkthrough and read-only evidence server",
+        "8ea1e74 Test lifecycle authority, taint, revocation, restart and failure boundaries",
+        "748e089 Add experimental four-plane lifecycle authority and revocation gate",
+        "808c8fe Clarify overlapping signal evidence semantics",
+        "59bfddb Fix agent evidence classification without changing attribution semantics"
+      ],
+      "patch_equivalent": [
+        "+ 7d9d22df30ff86ea8d082d6aa7b39bbbc718cca6",
+        "+ 232b41368669f318c00db0a09c21bebd8b6e9b2f",
+        "+ f4c95ddcc3674e6f830aeb824ebdc9533d1df23e",
+        "+ 8007cfc7c0ac45ac27569fd0b6dfb0329be17500",
+        "+ 60f8bbdb4e78df69bfc1eaca7fbcf21d32579740",
+        "+ 35e09cc5e53c890b5940ea8538ba569f5555ef3d",
+        "+ f50ad345793537c40dd2f12c1cbe876f2e5ed65e",
+        "+ 41c43d3ed37839dc3c361c18a228b8a054b62c6b",
+        "+ 74b2a1c7d69eea65b235ab505c00335080eb390d",
+        "+ 538272d883bb3f69584e8e425c1cf986ee4f8da8",
+        "+ 4dccffd23fd765e44328bba92a461c182fb29557",
+        "+ 6e203908ed6109f464862f454689537454bf114f",
+        "+ 87131b73ba913bf902ac412a9b1c2b0d369c3f7d",
+        "+ b1522293045f4a125edbe646d3263a0680003fcf",
+        "+ 2ee47649d90b6628d54a8f881778097af0b6ece7",
+        "+ 25c23d2bdfdbc11760f10b362796389b058439e2",
+        "+ 8bbcff1beba83a1d987028ccc8054baa89215a3a",
+        "+ ab2ba1639a4c1a9b50bacbb39c13100207288646",
+        "+ d61a81f58e0de4fa175fa9ed1073dd6dbe737f69",
+        "+ 84062e6653fe19010a636d1ebafa8c8bf931c06e",
+        "+ 93280031330a92579aea75ed10ef4f95b47414b5",
+        "+ e279e2fbfec819c1dbf21dcff9070fb370031a76",
+        "+ 7062944308412aba06a84f0a9c089a304ca451cd",
+        "+ da3dcd225121fc44cb0b287aae8282374c770d37",
+        "+ 75c2f975460ff98354a11a237270a7901074683d",
+        "+ 3ed01c083a534c45cf0b35bd99ba109455e17cd0",
+        "+ ab2f213b7073adbaabc9a77e4944084064b15e76",
+        "+ 0fa58e6d21a6435a2094389c413c39c80bc1e1f9",
+        "+ 1e5946e3799cca51d0b90a7dcc1a00e7303e2e8e",
+        "+ 8adff7ec4191289bf57041d2944ed10d0650d27f",
+        "+ 8d41ae3173f490852a899a1d646a040b719be552",
+        "+ 4e64aff3cb1921831e2f824d9239e94849f5a824",
+        "+ 9306b5eae34a3e8576cfee0eccc9e57a692b5bdf",
+        "+ d1f8b85c56d30dce846ff3c101c20994e995a408",
+        "+ f747355db7a52f61810a7a6b337a477b5a9d9c5e",
+        "+ fb842864bd877467bcdb854b570868610027162f",
+        "+ 8cda44f0942d2a246a63d7bfdb512e488634539f",
+        "+ 53be1514fc13bc7035ba10baad7917e8b338f649",
+        "+ 11403f24ba8f011ca971480d9e0fa7c2e6b5d29b",
+        "+ 4cdb3a5b529dee9275acda25f42de2231634375e",
+        "+ 2f7dd741f573f5fcec0f44601eeac6e7cf4b03c4",
+        "+ 72f04fc32cb2712a1a7904fddd1b11d39ac60f93",
+        "+ 3983c080feeebf196b665d49f6d917e420d517ed",
+        "+ da0a87765a18c9485241908ddce76ffc550af012",
+        "+ d5cc3b29bfb66785398647b4dccc759e5e8918d8",
+        "+ 4f45c5953b42c469008d44fb586857d97e2f0a53",
+        "+ ae54431dbc60087f50d3e955357eaa050057adb3",
+        "+ 5e6522cb014a9a42cbc6c3224995d8c7193b8b2b",
+        "+ 18c5c939d244fa967d6e8b02bbdf3fe8b0a69b15",
+        "+ 8aca7bf0b0c2ba4466dde1ed2afecb2da9e71051",
+        "+ da4751596f5fda1d45f894dbe0e1b556ae85178d",
+        "+ bab7aa1b9f629e2b971aee373e6638a0058a7f3a",
+        "+ 0fe8b0b69973f4b8072f70a2ff8984dd4738a945",
+        "+ e66181a3afa44501b654358bd4b76fa01ca9392c",
+        "+ 1d7dd326d976375d60a61c6ce85cd61aefc0218d",
+        "+ 31391d25919007f9ecad0a4b7a78c88675a1fda3",
+        "+ 3f55e11521f4a23469268582066b4c3a62fa0592",
+        "+ f3459a212815d15171904edde2399574512aa2af",
+        "+ 341dff4e1b56e4069bd68ce053a84ba0e26e0d1b",
+        "+ cf317e6cece16e07ed93841c6c1988e456444e2d",
+        "+ 2faa9efa7f28c44b650c859bfd1fc9a07f8a5d15",
+        "+ a1ef46d52d4314266d26043d81ed57fa92e38c96",
+        "+ 95bea3a9e3b28b1e1e81bb36295ed32282268823",
+        "+ 936cf33a121d9493f626f670080e95c3056764b0",
+        "+ 17db87fffa1a9f3b64fad0e1e3d2634d8b13a328",
+        "+ ba50285b368f55d9156d1e9e9fef15c998557bcc",
+        "+ af4a4ddac3b346acb3955368507b5d6743d2a53d",
+        "+ 985f759f4ba6c3b5429f48240c56aa9974b28dea",
+        "+ 970dd006f7d3021848843743d16ded759d08f1ce",
+        "+ a69dd2c73886c52096bcbf168de5460a5e75e6d9",
+        "+ 039fcff570570d8b498593bd0908f484da249c95",
+        "+ f7012d84dc14ac00a7fb688498d1b0c6dc9f9c96",
+        "+ f0165e99f7688ff9c5d2f134e083c49d8a769403",
+        "+ fa28a129ab90a4dafb58fb5cb078ee0f568031de",
+        "+ a1f3917b3892838db318fcd46747acadc6a0cbff",
+        "+ 994b19e7550f72bdeca9c8e006cbb25f1e5c75ce",
+        "+ e0826ebd1458374ac2e94a7829bb55ca2fb67265",
+        "+ 676cebd00a4dc23a4ed2c11374e7288919f8907c",
+        "+ 0c179dc8230b4f96cc79ecf8ee4d198e3c45ed2b",
+        "+ 3e4a31dd25102b98c5bd7b6b296683d3cab77d6f",
+        "+ d8e3edfede782b512b6633d0989c0f636a51c675",
+        "+ a15ad2febf8e23f5f77ca2e7efe4660a9762736f",
+        "+ 21f3f010eaa880bb5bb4b10c18aba91ab2169363",
+        "+ fdcf7cfc96f091ce1a19d09058a570b0757434b7",
+        "+ d4d401e2917631ab41a0d26b6d5d0bc498ce0b5c",
+        "+ 8c8b6499643d772970f61a5f5ecd07c8c10ea89f",
+        "+ 410c163e5591ba76ff9efe1e81b6c0c31705b655",
+        "+ 8326948c6fc43b7e3096426759fe9fc5b2450901",
+        "+ eb0af6d9ec8f92bf6edf1501dbaef8146cb551b3",
+        "+ 886d0624bb528ed69e1d256e843f868d8718cddc",
+        "+ fd114f907f797b78107e2d97d52674c9d2f6530b",
+        "+ fff0a4d7b697203fb3e0a7abe55b6db3c3218a32",
+        "+ 59bfddb50ce4349983bc0fdad2b8e87e196f1443",
+        "+ 808c8fe5de47b9da3ac5ee2583f6ab1c1c7cb895",
+        "+ 748e089c281bd7799b982a4a90e3b90f2f457fa7",
+        "+ 8ea1e74917caaf61f6fe05b6a40f439fac820d83",
+        "+ c3082bc5097a6dce9aefd8aebe27428e3f0cd0fe",
+        "+ b9a0a103157dc3633786bd30e102c2e6784c14e1",
+        "+ 1e899c60399cf212b7fea0ea9f58f56befc2858d",
+        "+ 233bce1309d5313494f356872b759955524b8576",
+        "+ fc4fb46155daca6299b371263db5543c59e6c238",
+        "+ 68ed56becc57671d4e15c8e56f9031df282b0522",
+        "+ 6bd3bd340d3ed83cf628c7a7fca478a88b02d6f6",
+        "+ d45a306680d99cdcf8beb95492e982e02a9c20f3"
+      ],
+      "pull_requests": [
+        {
+          "number": 80,
+          "title": "Add experimental four-plane lifecycle governance gate and evidence lab",
+          "head": "feat/lifecycle-governance-lab-20260926",
+          "base": "ui/bull-command-center-v1",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/80",
+          "sha": "d45a306680d99cdcf8beb95492e982e02a9c20f3"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 164,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 363,
+      "files_on_branch_absent_from_candidate": [
+        "scripts/install-runtime-deps.sh",
+        "scripts/launch-command-center.sh",
+        "tests/test_command_center.py",
+        "tests/test_command_center_frontend_contract.py",
+        "ui/bull-command-center/INTERPRETATION.md",
+        "ui/bull-command-center/README.md",
+        "ui/bull-command-center/app.js",
+        "ui/bull-command-center/dashboard_server.py",
+        "ui/bull-command-center/host_setup.py",
+        "ui/bull-command-center/index.html",
+        "ui/bull-command-center/install_guest_assets.py",
+        "ui/bull-command-center/run_release_kvm.py",
+        "ui/bull-command-center/styles.css"
+      ]
+    },
+    {
+      "branch": "feat/multiagent-system",
+      "sha": "85dccea506e0e4ab233a61924eab025dd7184b9a",
+      "tip": "Merge main into multi-agent integration; preserve guest and nested module documentation",
+      "contained_in_main": false,
+      "main_only_commits": 25,
+      "branch_only_vs_main": 27,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 105,
+      "branch_only_vs_candidate": 27,
+      "unique_subjects": [
+        "85dccea Merge main into multi-agent integration; preserve guest and nested module documentation",
+        "145cf20 Add regression coverage for nested documentation links and strict module-map validation",
+        "98c396c Index multi-agent and adversary packages by full relative path; retain strict module coverage",
+        "d0a2eea Merge branch 'main' into feat/multiagent-system",
+        "7d240e8 Move import smoke test to end of CI job to avoid add/add conflict with main's userns step",
+        "830ef7e Resolve merge conflicts with main: keep user-namespace CI step and add import smoke test; keep main pyproject with explicit setuptools packaging",
+        "1a9eb57 Test installed package imports outside pytest path",
+        "9ff3163 Fix src-layout packaging for real installs",
+        "1dfadbf test: adversary capture suite and swarm attack demo",
+        "2bc171c feat: adversary capture layer - tabulate, attribute, and contain agent swarms",
+        "e01dc71 Regress canary leakage through agent exceptions",
+        "172f4e6 Sanitize agent exceptions before logging"
+      ],
+      "patch_equivalent": [
+        "+ 01d15ac31f6230d1225afd1d674f86537e9fbf9a",
+        "+ c4ca78e491824186706951f712b2d233d67f3096",
+        "+ 2c5b8a107db86248d0926e5c24f81733b5af22dc",
+        "+ a407a51bd05dcd6f89c088f6b0e4e18771fdabb9",
+        "+ c0b478127b27b0a32187fce1ab9dfb703000a448",
+        "+ 5239cf2b9cc158487729e7995f1b6dc68b71e661",
+        "+ 6acface7392ebeb644f1626a2d24d9778ee7eab8",
+        "+ 09ee232df6f057b4335b3b50559b746826d35623",
+        "+ 5f4842ab29edaab7fd59db009e4b4d8640243e9f",
+        "+ 6f6d05e7858cb9112346e80ca6c7808e7921ae91",
+        "+ 5a56ee72b9977fc113ab15d1cea92f0959c7818e",
+        "+ a19f65441689f10b420d22fd109c8162a6198d10",
+        "+ 351a9cbed4fb09a2edb366e88a81d27b3e396c12",
+        "+ b6a2cf23500fa891ac2a4775f4e85cd49ae6c367",
+        "+ 13715edc5a25dbcd82bf9ae9e6b01a3812d9279e",
+        "+ 172f4e69eacd3afd93752266a4c492c0d890ac5b",
+        "+ e01dc71c72fc45800b220a1fff82661a25495c4d",
+        "+ 2bc171c1f60ba925286133b62df33caf83ba22d3",
+        "+ 1dfadbff180a53559f1891ba9e38103ca1b6e81e",
+        "+ 9ff316372c0e0a15c45d1e9e8ce497eb0db66952",
+        "+ 1a9eb57b353ddb94eb9b6a3fbb58ae5ed0ec4393",
+        "+ 830ef7e781914cbb8feb9ecc3e8bfe935e66d7ec",
+        "+ 7d240e88cfbca00f81d9224fb99057f5ebcec0a0",
+        "+ 98c396cb3f991bf4bb35c375947274c29c8f9535",
+        "+ 145cf207166dcc7c57708f3e13f768f56e9e0dbe"
+      ],
+      "pull_requests": [
+        {
+          "number": 15,
+          "title": "Add multi-agent orchestration with host-owned honeytoken boundary",
+          "head": "feat/multiagent-system",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T14:26:15Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/15",
+          "sha": "85dccea506e0e4ab233a61924eab025dd7184b9a"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 479,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feat/portable-deployment-authority",
+      "sha": "1d558e690c93401ca971ce47bfe24bb111f851a3",
+      "tip": "Record hosted portable deployment and kernel configuration evidence",
+      "contained_in_main": false,
+      "main_only_commits": 15,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 95,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "1d558e6 Record hosted portable deployment and kernel configuration evidence",
+        "1608c3a Add portable deployment authority and pinned public guest preparation"
+      ],
+      "patch_equivalent": [
+        "+ 1608c3ab8423259fc3ad7debd53ad646469b2a38",
+        "+ 1d558e690c93401ca971ce47bfe24bb111f851a3"
+      ],
+      "pull_requests": [
+        {
+          "number": 50,
+          "title": "Make deployment preparation portable with independent operator authority",
+          "head": "feat/portable-deployment-authority",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T15:40:46Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/50",
+          "sha": "1d558e690c93401ca971ce47bfe24bb111f851a3"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 120,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 444,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feat/publish-verified-guest-artifact",
+      "sha": "f62b8429a6265a308bd610d6504794560015fb7f",
+      "tip": "Publish reproducible guest image release workflow",
+      "contained_in_main": false,
+      "main_only_commits": 14,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 94,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "f62b842 Publish reproducible guest image release workflow"
+      ],
+      "patch_equivalent": [
+        "- f62b8429a6265a308bd610d6504794560015fb7f"
+      ],
+      "pull_requests": [
+        {
+          "number": 52,
+          "title": "Publish reproducible hash-verified guest image releases",
+          "head": "feat/publish-verified-guest-artifact",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T17:11:50Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/52",
+          "sha": "f62b8429a6265a308bd610d6504794560015fb7f"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 120,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 442,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feat/system-wide-interception",
+      "sha": "ffbcec8cc8f32067c7080f9e698927afceb65b29",
+      "tip": "feat: installer and docs for system-wide interception (completes the branch)",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 5,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 5,
+      "unique_subjects": [
+        "ffbcec8 feat: installer and docs for system-wide interception (completes the branch)",
+        "9712316 feat: nftables ruleset and systemd unit for system-wide interception (completes 40d69e1)",
+        "40d69e1 feat: test suites, deploy kit and docs for system-wide interception (completes 95272ca)",
+        "95272ca feat: egress gateway, runner, tests, deploy kit and docs for system-wide interception (completes ed14a49)",
+        "ed14a49 feat: system-wide egress interception \u2014 transparent SNI gateway, IAM proxy-token broker, deterministic semantic intent gate (40/40 tests)"
+      ],
+      "patch_equivalent": [
+        "+ ed14a492c8927e338707f8b5024fcde6e5676c18",
+        "+ 95272ca1dcfbfa4ee24740b506aa9d1dfbabcb02",
+        "+ 40d69e1b55ede3f1b2c77e04254fc0419ee34e1f",
+        "+ 97123167d60793b1371e3763c072109ad0e6f4cd",
+        "+ ffbcec8cc8f32067c7080f9e698927afceb65b29"
+      ],
+      "pull_requests": [
+        {
+          "number": 79,
+          "title": "feat: system-wide egress interception \u2014 transparent SNI gateway, IAM proxy-token broker, semantic intent gate",
+          "head": "feat/system-wide-interception",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/79",
+          "sha": "ffbcec8cc8f32067c7080f9e698927afceb65b29"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 160,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 350,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/assurance-evidence-v1",
+      "sha": "9880e22102122c32baf4d37605a67d34eba84dfc",
+      "tip": "docs: classify assurance runtime in source inventory",
+      "contained_in_main": false,
+      "main_only_commits": 2,
+      "branch_only_vs_main": 19,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 82,
+      "branch_only_vs_candidate": 19,
+      "unique_subjects": [
+        "9880e22 docs: classify assurance runtime in source inventory",
+        "ffde15f fix: include snapshot and backend gate evidence",
+        "08eeba6 fix: require all production gate prerequisites in assurance profile",
+        "d03593d test: lock release assurance workflow requirements",
+        "c725750 test: require assurance registry in installed wheel",
+        "15bce8d build: gate release checks on assurance registry integrity",
+        "cd53e84 fix: use CycloneDX Buildroot output basename",
+        "de2c5de build: require SBOM and signed provenance for guest releases",
+        "124999c test: verify assurance and release evidence fail closed",
+        "f31b2b5 test: verify assurance and release evidence fail closed",
+        "1e78d52 feat: add release evidence verification CLI",
+        "b6d8c27 fix: bind assurance registry to existing evidence paths"
+      ],
+      "patch_equivalent": [
+        "+ 48494cec3d70d7a3ae82fab2bc87cc5aca460d49",
+        "+ c11c7abcb2eaf7b8c7e14254656ebe47ae720a43",
+        "+ 855e6b17c0de870788b2ef1a6953486d41606e01",
+        "+ 9198ae043e4090f82d4b8ae42dfd1793cd8149e0",
+        "+ 6422ecf239b26e8aae402eb232af7e9c422f40ba",
+        "+ 84da3601ee663f64157b0cf732cd52675a1d5ba0",
+        "+ d4321f0934e552dcef6af953d7fa302df9b3b7d9",
+        "+ b6d8c27b7f63594585e3f2de11fca78e72c1b8c6",
+        "+ 1e78d523c843175cbccff403ebcc722fd83b82f1",
+        "+ f31b2b5e67953cda106e94f78e297e1ac3751d3b",
+        "+ 124999cc51aa08c5442075eba9872834405218a2",
+        "+ de2c5de27abcdceccd3d1f801262a103e41581ae",
+        "+ cd53e843899282609d67e0ff819b122a92fb4864",
+        "+ 15bce8d0b3b265036efc28bdddaf0f104e47bcaf",
+        "+ c7257509368b7c7e85a6ed19b3a1b86beea9293e",
+        "+ d03593d074f4ae4074c81e96cf697daa4f2a76e9",
+        "+ 08eeba6f5b1ddc4450ffcb6b34e8201e1200fed7",
+        "+ ffde15f14d25681fa5dd09750edf2df8bca18e3a",
+        "+ 9880e22102122c32baf4d37605a67d34eba84dfc"
+      ],
+      "pull_requests": [
+        {
+          "number": 68,
+          "title": "feat: wire machine-verifiable assurance into BULL",
+          "head": "feature/assurance-evidence-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-24T14:03:56Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/68",
+          "sha": "9880e22102122c32baf4d37605a67d34eba84dfc"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 351,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/benchmark-evidence-and-cloudflare-20260920",
+      "sha": "fc0378eb3c1e5b6d54f95fbaa443a5e70307a792",
+      "tip": "Publish benchmark and external audit evidence",
+      "contained_in_main": false,
+      "main_only_commits": 20,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 100,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "fc0378e Publish benchmark and external audit evidence"
+      ],
+      "patch_equivalent": [
+        "- fc0378eb3c1e5b6d54f95fbaa443a5e70307a792"
+      ],
+      "pull_requests": [
+        {
+          "number": 43,
+          "title": "Stage signed benchmark and audit evidence",
+          "head": "feature/benchmark-evidence-and-cloudflare-20260920",
+          "base": "feature/benchmark-evidence-and-cloudflare-signed-20260920",
+          "state": "closed",
+          "merged_at": "2026-09-20T17:20:25Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/43",
+          "sha": "fc0378eb3c1e5b6d54f95fbaa443a5e70307a792"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 105,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 462,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/benchmark-evidence-and-cloudflare-signed-20260920",
+      "sha": "9f4514671745d0b536deaa7451ab104afa01cdb9",
+      "tip": "Publish benchmark and external audit evidence",
+      "contained_in_main": false,
+      "main_only_commits": 20,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 100,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "9f45146 Publish benchmark and external audit evidence"
+      ],
+      "patch_equivalent": [
+        "- 9f4514671745d0b536deaa7451ab104afa01cdb9"
+      ],
+      "pull_requests": [
+        {
+          "number": 44,
+          "title": "Publish benchmark and external audit evidence",
+          "head": "feature/benchmark-evidence-and-cloudflare-signed-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T17:21:28Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/44",
+          "sha": "9f4514671745d0b536deaa7451ab104afa01cdb9"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 105,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 462,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/bull-brand-story-20260919",
+      "sha": "a2752efb79fcbc46dc03699dee7863baa34a3759",
+      "tip": "Initialize optional hosted-model controls after lazy module loading",
+      "contained_in_main": false,
+      "main_only_commits": 30,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 110,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "a2752ef Initialize optional hosted-model controls after lazy module loading",
+        "2b1bdec Apply approved bulldog branding and rewrite website around the project story"
+      ],
+      "patch_equivalent": [
+        "+ 2b1bdec6fc09c777007a69812ee230802d81b550",
+        "+ a2752efb79fcbc46dc03699dee7863baa34a3759"
+      ],
+      "pull_requests": [
+        {
+          "number": 27,
+          "title": "Bring the approved bulldog identity across BULL and make the website story-first",
+          "head": "feature/bull-brand-story-20260919",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T21:06:04Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/27",
+          "sha": "a2752efb79fcbc46dc03699dee7863baa34a3759"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 74,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 507,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py",
+        "site/story.js"
+      ]
+    },
+    {
+      "branch": "feature/bull-control-dashboard-rebased-20260918",
+      "sha": "b44b4eda808f4dda392e6d59fd02218bbbc2d025",
+      "tip": "refactor(pages): remove hand-written policy simulation",
+      "contained_in_main": false,
+      "main_only_commits": 39,
+      "branch_only_vs_main": 8,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 119,
+      "branch_only_vs_candidate": 8,
+      "unique_subjects": [
+        "b44b4ed refactor(pages): remove hand-written policy simulation",
+        "ab36825 refactor(pages): remove retired simulation stylesheet",
+        "95e15f5 docs(pages): document single real BULL console",
+        "781b467 refactor(pages): retire duplicate simulated control center",
+        "0accab7 ci(pages): restore verified fail-closed Pages pipeline",
+        "b651b65 design(pages): unify BULL around dashboard-first real policy console",
+        "902ea05 design(pages): unify BULL around dashboard-first real policy console",
+        "bc71f99 design(pages): unify BULL around dashboard-first real policy console"
+      ],
+      "patch_equivalent": [
+        "+ bc71f992c90d3834db43755a2b577151329eca00",
+        "+ 902ea054b9e4114c9a5ccd38f02a8b39b65afc0b",
+        "+ b651b65a475a4e94614fc5d319b285741b94b7ce",
+        "+ 0accab7d893876f5a5c54e7968187c4938060ace",
+        "+ 781b46767cf205073c7658a33ff3203180c89edc",
+        "+ 95e15f5498481972a043629d666835353e18236e",
+        "+ ab368255cf12a3ddac74e4112cf1e4dd2af38018",
+        "+ b44b4eda808f4dda392e6d59fd02218bbbc2d025"
+      ],
+      "pull_requests": [
+        {
+          "number": 18,
+          "title": "design: make BULL Pages one real dashboard console",
+          "head": "feature/bull-control-dashboard-rebased-20260918",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-18T15:04:21Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/18",
+          "sha": "b44b4eda808f4dda392e6d59fd02218bbbc2d025"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 63,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 509,
+      "files_on_branch_absent_from_candidate": [
+        "site/app.js",
+        "site/control-center.html",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "feature/bull-pages-live-lab-20260918",
+      "sha": "8a7454492b83f8116f011a0d30cb6853cb88318d",
+      "tip": "ci(pages): prove live namespace support before verification",
+      "contained_in_main": false,
+      "main_only_commits": 41,
+      "branch_only_vs_main": 9,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 121,
+      "branch_only_vs_candidate": 9,
+      "unique_subjects": [
+        "8a74544 ci(pages): prove live namespace support before verification",
+        "699bfd9 ci: enable namespace capabilities on Ubuntu sandbox runners",
+        "7c6699e ci: move formal workflow to current Actions runtimes",
+        "db2660a ci: move regression workflow to current Actions runtimes",
+        "cd08ffd ci(pages): verify and deploy BULL Lab from Actions",
+        "428b096 feat(pages): execute real BULL policy in Pyodide",
+        "951a69e feat(pages): style BULL security playground",
+        "91bdad3 feat(pages): add BULL Lab interface",
+        "91ff4dc feat(pages): add real BULL browser policy adapter"
+      ],
+      "patch_equivalent": [
+        "+ 91ff4dc0355d242777c6d6ab800c63c8616a1583",
+        "+ 91bdad34d8be174037ee964696c98362c21be3e8",
+        "+ 951a69ef49526f72516be366f9306c3fb2abbfc6",
+        "+ 428b096b9e9df37a57f6627201088fa6b2d13323",
+        "+ cd08ffdb9152ff940e0fe3eb831a43c96fe9150c",
+        "+ db2660a2bd45a8df68fbccded70bf4c0e779832b",
+        "+ 7c6699ee49fccfe21ea918023fdfeb372ff48490",
+        "+ 699bfd955901f4870065196dc3b4290f29108394",
+        "+ 8a7454492b83f8116f011a0d30cb6853cb88318d"
+      ],
+      "pull_requests": [
+        {
+          "number": 16,
+          "title": "feat: ship real BULL Lab on GitHub Pages",
+          "head": "feature/bull-pages-live-lab-20260918",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-18T14:47:49Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/16",
+          "sha": "8a7454492b83f8116f011a0d30cb6853cb88318d"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 63,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 508,
+      "files_on_branch_absent_from_candidate": [
+        "site/app.js",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "feature/cloudflare-audit-anchor-20260920",
+      "sha": "f58050702cb0673dac0b9e7e3c21967cf1d7c3ef",
+      "tip": "Add Cloudflare audit anchor deployment",
+      "contained_in_main": false,
+      "main_only_commits": 21,
+      "branch_only_vs_main": 6,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 101,
+      "branch_only_vs_candidate": 6,
+      "unique_subjects": [
+        "f580507 Add Cloudflare audit anchor deployment",
+        "266a4ad Add Cloudflare audit anchor deployment",
+        "185c6ef Add Cloudflare audit anchor deployment",
+        "258f850 Add Cloudflare audit anchor deployment",
+        "963fa0b Add Cloudflare audit anchor deployment",
+        "63a7791 Add Cloudflare audit anchor deployment"
+      ],
+      "patch_equivalent": [
+        "+ 63a779139fa3d3593d53c402f597f6a7ec08db2a",
+        "+ 963fa0b1d8298703f518eaa961b601003a1062cd",
+        "+ 258f85056b81ecc12d10947f77088a696002feef",
+        "+ 185c6ef9a1c03ca7ca89e02853fb6541c5fd4dcf",
+        "+ 266a4ad070c24e49ba6dfd8f2074de8e28008e6e",
+        "+ f58050702cb0673dac0b9e7e3c21967cf1d7c3ef"
+      ],
+      "pull_requests": [
+        {
+          "number": 39,
+          "title": "Stage signed Cloudflare audit anchor",
+          "head": "feature/cloudflare-audit-anchor-20260920",
+          "base": "feature/cloudflare-audit-anchor-signed-20260920",
+          "state": "closed",
+          "merged_at": "2026-09-20T15:44:33Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/39",
+          "sha": "f58050702cb0673dac0b9e7e3c21967cf1d7c3ef"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 104,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 475,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/cloudflare-audit-anchor-signed-20260920",
+      "sha": "b8a38e3f6abc0edcbb2624ba668d203630a237b8",
+      "tip": "Add Cloudflare external audit anchor",
+      "contained_in_main": false,
+      "main_only_commits": 21,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 101,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "b8a38e3 Add Cloudflare external audit anchor"
+      ],
+      "patch_equivalent": [
+        "+ b8a38e3f6abc0edcbb2624ba668d203630a237b8"
+      ],
+      "pull_requests": [
+        {
+          "number": 40,
+          "title": "Add Cloudflare external audit anchor",
+          "head": "feature/cloudflare-audit-anchor-signed-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/40",
+          "sha": "b8a38e3f6abc0edcbb2624ba668d203630a237b8"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 104,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 475,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/dashboard-console-ui-20260918",
+      "sha": "691c8603359de5c62d0e98395213effede3666ab",
+      "tip": "ci(pages): validate dashboard JS and DOM contract",
+      "contained_in_main": false,
+      "main_only_commits": 40,
+      "branch_only_vs_main": 4,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 120,
+      "branch_only_vs_candidate": 4,
+      "unique_subjects": [
+        "691c860 ci(pages): validate dashboard JS and DOM contract",
+        "3444e56 feat(pages): drive dashboard from real browser policy telemetry",
+        "2c39fe1 design(pages): add compact SOC-style BULL console layout",
+        "ae16314 design(pages): rebuild BULL as dashboard-first security console"
+      ],
+      "patch_equivalent": [
+        "+ ae16314d1c045143754397502889ea42bb054f76",
+        "+ 2c39fe1e7eae802b4cabf3aa45583d70fc1214ee",
+        "+ 3444e56e63646c1fb92fce39abb0efd520577401",
+        "+ 691c8603359de5c62d0e98395213effede3666ab"
+      ],
+      "pull_requests": [
+        {
+          "number": 17,
+          "title": "design: rebuild Pages as dashboard-first BULL Control",
+          "head": "feature/dashboard-console-ui-20260918",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/17",
+          "sha": "691c8603359de5c62d0e98395213effede3666ab"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 63,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 508,
+      "files_on_branch_absent_from_candidate": [
+        "site/app.js",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "feature/live-command-control",
+      "sha": "89ed355c2ceec1f400cef3ca3978aba0329725c5",
+      "tip": "Expose one-command launch and managed MicroVM controls in console",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 12,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 12,
+      "unique_subjects": [
+        "89ed355 Expose one-command launch and managed MicroVM controls in console",
+        "1fb8cf9 Add portable BULL command-center bootstrap and managed MicroVM control",
+        "c562c9a console: reuse approved BULL brand mark",
+        "f05f378 console: wire dashboard to live BULL state",
+        "f0dd7ed console: style the command-control dashboard",
+        "12c891f console: add operator dashboard shell",
+        "7cb1ae6 console: add live BULL control plane",
+        "ad703b6 test: cover live control-plane semantics",
+        "b693310 docs: document live command-control console",
+        "571b810 docs: index command-control runtime assets",
+        "9364fda console: add bull console entrypoint",
+        "79e878e console: package local command-control assets"
+      ],
+      "patch_equivalent": [
+        "+ 79e878e99eac313c670c79e26ba9e39e1519474b",
+        "+ 9364fdaca7cacf862ca9bbce125a13f422b36ee0",
+        "+ 571b81042105f97f41c5d6a0addc2fe93c91771a",
+        "+ b693310414bbc3e3acb85d8e4cd09db34dd158f1",
+        "+ ad703b6ba2cf2b5a89b539ecc09ffdde0b2b1999",
+        "+ 7cb1ae6ee63c226d095cffd81b25dcc2984a7343",
+        "+ 12c891fd2d93f6c86ceaa071a49bc61f312c09af",
+        "+ f0dd7edffd9abb60f47eb13aea6ce221a6c008dc",
+        "+ f05f37888751536f4d66c18870902d228240cc05",
+        "+ c562c9a00f8d1c372ba112894b0d31334b36c06d",
+        "+ 1fb8cf94ac4d4187e8c39f25e0f63020c1612f9c",
+        "+ 89ed355c2ceec1f400cef3ca3978aba0329725c5"
+      ],
+      "pull_requests": [
+        {
+          "number": 76,
+          "title": "Add live BULL command/control console",
+          "head": "feature/live-command-control",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/76",
+          "sha": "89ed355c2ceec1f400cef3ca3978aba0329725c5"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 157,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 349,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "feature/microvm-output-bridge",
+      "sha": "160b1b17d682473d37dc9101425a77f79de2a9f7",
+      "tip": "Add governed MicroVM output bridge",
+      "contained_in_main": false,
+      "main_only_commits": 31,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 111,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "160b1b1 Add governed MicroVM output bridge"
+      ],
+      "patch_equivalent": [
+        "+ 160b1b17d682473d37dc9101425a77f79de2a9f7"
+      ],
+      "pull_requests": [],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 74,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "microvm/rootfs/build-arch-rootfs.sh",
+        "microvm/setup-host-deps.sh",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py",
+        "src/bulldog/microvm_session.py",
+        "tests/test_microvm_session.py"
+      ]
+    },
+    {
+      "branch": "fix/architecture-film-no-public-lab-20260919",
+      "sha": "82157fc1666f8ce151bb593c6319fcdb0c461fee",
+      "tip": "Keep transcript attribution links within mobile viewport",
+      "contained_in_main": false,
+      "main_only_commits": 29,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 109,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "82157fc Keep transcript attribution links within mobile viewport",
+        "63bb094 Document brand use without a public logo gallery",
+        "f273500 Replace public test GUI with narrated architecture film and source-linked infrastructure publication"
+      ],
+      "patch_equivalent": [
+        "+ f273500e051c259606385daf3625d7717271660a",
+        "+ 63bb094e7786c3846c9a85904f69e2ec3c69c4e6",
+        "+ 82157fc1666f8ce151bb593c6319fcdb0c461fee"
+      ],
+      "pull_requests": [
+        {
+          "number": 28,
+          "title": "Replace public test console with narrated data-flow film and full infrastructure documentation",
+          "head": "fix/architecture-film-no-public-lab-20260919",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T21:40:34Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/28",
+          "sha": "82157fc1666f8ce151bb593c6319fcdb0c461fee"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 71,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 489,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/audit-anchor-user-agent",
+      "sha": "cdc7a640c86401f5b9f113541be27f9f5c380956",
+      "tip": "Fix production audit transport User-Agent",
+      "contained_in_main": false,
+      "main_only_commits": 22,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 102,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "cdc7a64 Fix production audit transport User-Agent"
+      ],
+      "patch_equivalent": [
+        "- cdc7a640c86401f5b9f113541be27f9f5c380956"
+      ],
+      "pull_requests": [
+        {
+          "number": 41,
+          "title": "Stage signed audit User-Agent fix",
+          "head": "fix/audit-anchor-user-agent",
+          "base": "fix/audit-anchor-user-agent-signed-20260920",
+          "state": "closed",
+          "merged_at": "2026-09-20T16:46:30Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/41",
+          "sha": "cdc7a640c86401f5b9f113541be27f9f5c380956"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/audit-anchor-user-agent-signed-20260920",
+      "sha": "a0d443cce3e1dbba00017fce6f8e843a3a4b3366",
+      "tip": "Fix production audit transport User-Agent",
+      "contained_in_main": false,
+      "main_only_commits": 21,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 101,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "a0d443c Fix production audit transport User-Agent"
+      ],
+      "patch_equivalent": [
+        "- a0d443cce3e1dbba00017fce6f8e843a3a4b3366"
+      ],
+      "pull_requests": [
+        {
+          "number": 42,
+          "title": "Fix production audit transport User-Agent",
+          "head": "fix/audit-anchor-user-agent-signed-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T16:47:15Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/42",
+          "sha": "a0d443cce3e1dbba00017fce6f8e843a3a4b3366"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/codespace-permission-fixtures-20260922",
+      "sha": "6dbcc03cb172aea2f090085769d242e8c3079c21",
+      "tip": "Make authority test fixtures independent of ambient permissions",
+      "contained_in_main": false,
+      "main_only_commits": 17,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 97,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "6dbcc03 Make authority test fixtures independent of ambient permissions"
+      ],
+      "patch_equivalent": [
+        "- 6dbcc03cb172aea2f090085769d242e8c3079c21"
+      ],
+      "pull_requests": [
+        {
+          "number": 48,
+          "title": "Fix Codespaces permission-dependent authority test fixtures",
+          "head": "fix/codespace-permission-fixtures-20260922",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T13:57:53Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/48",
+          "sha": "6dbcc03cb172aea2f090085769d242e8c3079c21"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 112,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 452,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/freshclam-permitted-paths",
+      "sha": "5a1f7eb460f5a1e4f4ef618a513258520f029fbe",
+      "tip": "Run real database integration when guest recipe changes",
+      "contained_in_main": false,
+      "main_only_commits": 12,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 92,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "5a1f7eb Run real database integration when guest recipe changes",
+        "130bdc9 Use sigtool CVD signature verification and test real corrupted payload rejection",
+        "50b190a Use packaged FreshClam paths and test actual signed database downloads"
+      ],
+      "patch_equivalent": [
+        "+ 50b190ac1444a4298efb5b9e28cf1b48dcc178a2",
+        "+ 130bdc99169f84ebac513f803efdaa9a5ffc7e42",
+        "+ 5a1f7eb460f5a1e4f4ef618a513258520f029fbe"
+      ],
+      "pull_requests": [
+        {
+          "number": 54,
+          "title": "Run FreshClam within Ubuntu policy and exercise real database downloads",
+          "head": "fix/freshclam-permitted-paths",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T17:35:58Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/54",
+          "sha": "5a1f7eb460f5a1e4f4ef618a513258520f029fbe"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 120,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 440,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/guest-release-freshclam",
+      "sha": "056b4a5427ff3e6a7c3c7ae786a1b4358606f6b8",
+      "tip": "Fix FreshClam configuration for guest release builds",
+      "contained_in_main": false,
+      "main_only_commits": 13,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 93,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "056b4a5 Fix FreshClam configuration for guest release builds"
+      ],
+      "patch_equivalent": [
+        "- 056b4a5427ff3e6a7c3c7ae786a1b4358606f6b8"
+      ],
+      "pull_requests": [
+        {
+          "number": 53,
+          "title": "Fix FreshClam setup for guest release build",
+          "head": "fix/guest-release-freshclam",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T17:19:55Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/53",
+          "sha": "056b4a5427ff3e6a7c3c7ae786a1b4358606f6b8"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 120,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 442,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/hardware-gesture-evidence-20260923",
+      "sha": "b4ea01a2f7f7ef82c432e02d9a52073969b12a50",
+      "tip": "Record exact manual preparation used in physical test provenance",
+      "contained_in_main": false,
+      "main_only_commits": 7,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 87,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "b4ea01a Record exact manual preparation used in physical test provenance",
+        "7b83a50 Record physical BOOT gestures and fix stale diagnostic replies"
+      ],
+      "patch_equivalent": [
+        "+ 7b83a50ef3ac0777625994c4f1ca210dc62558db",
+        "+ b4ea01a2f7f7ef82c432e02d9a52073969b12a50"
+      ],
+      "pull_requests": [
+        {
+          "number": 60,
+          "title": "Record physical BOOT gestures and fix stale diagnostic replies",
+          "head": "fix/hardware-gesture-evidence-20260923",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T17:29:34Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/60",
+          "sha": "b4ea01a2f7f7ef82c432e02d9a52073969b12a50"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 145,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 397,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/local-only-microvm-assets-20260919",
+      "sha": "52b71e68a74df0dc7fc4167f04ef1ce35cc425ff",
+      "tip": "Keep MicroVM deployment assets local and guard against tracked images",
+      "contained_in_main": false,
+      "main_only_commits": 31,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 111,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "52b71e6 Keep MicroVM deployment assets local and guard against tracked images"
+      ],
+      "patch_equivalent": [
+        "- 52b71e68a74df0dc7fc4167f04ef1ce35cc425ff"
+      ],
+      "pull_requests": [
+        {
+          "number": 26,
+          "title": "Keep MicroVM deployment assets local and prevent accidental tracking",
+          "head": "fix/local-only-microvm-assets-20260919",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T20:00:30Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/26",
+          "sha": "52b71e68a74df0dc7fc4167f04ef1ce35cc425ff"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 73,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 506,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "fix/microvm-guest-integration-r3",
+      "sha": "45b036e9441699b417a75bc9971498c453a94d12",
+      "tip": "Merge b369bf57c7e1c965c2b5dc47d2219dd584a30029 into 1672c7cc87b58d8a63e8913b8cd03f342c0a3e38",
+      "contained_in_main": false,
+      "main_only_commits": 26,
+      "branch_only_vs_main": 5,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 106,
+      "branch_only_vs_candidate": 5,
+      "unique_subjects": [
+        "45b036e Merge b369bf57c7e1c965c2b5dc47d2219dd584a30029 into 1672c7cc87b58d8a63e8913b8cd03f342c0a3e38",
+        "b369bf5 Fix publication contract for completed local KVM milestone without weakening release limits",
+        "e3adc03 Index guest modules in the public engineering documentation",
+        "2d56d3c Document verified KVM milestone and OSS release scope",
+        "f86da0e Implement production MicroVM guest execution path"
+      ],
+      "patch_equivalent": [
+        "+ f86da0eae78435d4c7637f18ceab8a2f3e411df4",
+        "+ 2d56d3c45139dc2bfd601540925c994b523b29cb",
+        "+ e3adc03c00e898c792e3a0ed8fdf5f4b39d524b4",
+        "+ b369bf57c7e1c965c2b5dc47d2219dd584a30029"
+      ],
+      "pull_requests": [
+        {
+          "number": 31,
+          "title": "Complete one-shot KVM guest execution and document OSS milestone",
+          "head": "fix/microvm-guest-integration-r3",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T14:21:00Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/31",
+          "sha": "45b036e9441699b417a75bc9971498c453a94d12"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 83,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 481,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/production-validation-20260922",
+      "sha": "6682adb47557ddac7cb588fd97ddd2dbdbb1b290",
+      "tip": "Fix five review findings on the release PR",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 73,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 7,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 89,
+          "title": "Release: production validation into main (MCP gateway, security fixes, managed agent sessions)",
+          "head": "fix/production-validation-20260922",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/89",
+          "sha": "6682adb47557ddac7cb588fd97ddd2dbdbb1b290"
+        },
+        {
+          "number": 55,
+          "title": "Prepare and validate BULL 0.2.0rc1 release artifacts",
+          "head": "fix/production-validation-20260922",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T13:15:02Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/55",
+          "sha": "5e0737b0a2a73861ee2c44ebe6b83d2bd2c0e905"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 221,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 86,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "fix/session-export-boundaries",
+      "sha": "955fb203d21e6fdbc92df6315c318477f205e58e",
+      "tip": "Reject one-shot control reuse and document session export trust requirements",
+      "contained_in_main": false,
+      "main_only_commits": 7,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 87,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "955fb20 Reject one-shot control reuse and document session export trust requirements"
+      ],
+      "patch_equivalent": [
+        "+ 955fb203d21e6fdbc92df6315c318477f205e58e"
+      ],
+      "pull_requests": [
+        {
+          "number": 61,
+          "title": "Reject control-channel reuse and specify session/export trust boundaries",
+          "head": "fix/session-export-boundaries",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/61",
+          "sha": "955fb203d21e6fdbc92df6315c318477f205e58e"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 143,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 399,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/authorization-binding-fix",
+      "sha": "940b3d0e506862b1f285ee79b21ba4efa63922e8",
+      "tip": "Document current BULL trust and authorization boundaries",
+      "contained_in_main": true,
+      "main_only_commits": 121,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 201,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 8,
+          "title": "Close command and broker authorization-binding bypasses",
+          "head": "hardening/authorization-binding-fix",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T14:02:15Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/8",
+          "sha": "940b3d0e506862b1f285ee79b21ba4efa63922e8"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 43,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/broker-argv-binding-v2",
+      "sha": "a95cb19542eabeb799d3f383e55ae8f1d76d1bb5",
+      "tip": "Update domain tests for exact command authorization",
+      "contained_in_main": false,
+      "main_only_commits": 101,
+      "branch_only_vs_main": 5,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 181,
+      "branch_only_vs_candidate": 5,
+      "unique_subjects": [
+        "a95cb19 Update domain tests for exact command authorization",
+        "a9e2956 Test runtime full-argv verification",
+        "70dcd36 Regression-test broker SANDBOX and full argv binding",
+        "2749ad1 Verify trusted full-argv binding in runtime",
+        "f10bf6d Fail closed on broker SANDBOX and bind full argv"
+      ],
+      "patch_equivalent": [
+        "+ f10bf6d27982ea277e8af5ba8cf245146fd8c203",
+        "+ 2749ad169c92272990da18027469defd1123c6de",
+        "+ 70dcd36be73ebbbc71e2835ffd40cbfd3527f5f0",
+        "+ a9e29565e7b00fb41f5f8b0ff9be3cfabfde37bd",
+        "+ a95cb19542eabeb799d3f383e55ae8f1d76d1bb5"
+      ],
+      "pull_requests": [
+        {
+          "number": 12,
+          "title": "Fail closed on broker SANDBOX and bind exact process argv",
+          "head": "hardening/broker-argv-binding-v2",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/12",
+          "sha": "a95cb19542eabeb799d3f383e55ae8f1d76d1bb5"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 44,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/ci-main-gate",
+      "sha": "292918ae42ed1c5e31e26341442c3bbc7b4aad9a",
+      "tip": "Run Python security regression on main pushes",
+      "contained_in_main": true,
+      "main_only_commits": 138,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 218,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 6,
+          "title": "Run BULL security regression on main pushes",
+          "head": "hardening/ci-main-gate",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T13:10:28Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/6",
+          "sha": "292918ae42ed1c5e31e26341442c3bbc7b4aad9a"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 42,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/fail-closed-broker-argv-v2",
+      "sha": "131ea75f35603d18afc6c399e995d2e4209e6a6c",
+      "tip": "Keep broker policy fail-closed without breaking nonproduction domain tests",
+      "contained_in_main": true,
+      "main_only_commits": 95,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 175,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 11,
+          "title": "Fail closed on broker SANDBOX and bind full argv",
+          "head": "hardening/fail-closed-broker-argv-v2",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T15:38:56Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/11",
+          "sha": "131ea75f35603d18afc6c399e995d2e4209e6a6c"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 45,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/human-auditable-adversarial-flags",
+      "sha": "5e949c97b717858b0a0a191376f970f9631a9716",
+      "tip": "Document hardened trust boundary and human-auditable flags",
+      "contained_in_main": false,
+      "main_only_commits": 155,
+      "branch_only_vs_main": 8,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 235,
+      "branch_only_vs_candidate": 8,
+      "unique_subjects": [
+        "5e949c9 Document hardened trust boundary and human-auditable flags",
+        "506df7d Export hardened security types",
+        "0ecb388 Add adversarial regression tests for authority, paths, execution, and exfiltration",
+        "f581bf4 Record human-auditable security flags in audit ledger",
+        "b030a9f Preserve deterministic security flags through engine evaluation",
+        "2fb4b5c Fail closed on adversarial authority, path, execution, and exfiltration patterns",
+        "1611cfd Require host-verified security context and expose audit flags",
+        "aca76ee Add human-auditable adversarial security flags"
+      ],
+      "patch_equivalent": [
+        "+ aca76ee2b08dfad69d55d0d1829db2801fa5395f",
+        "+ 1611cfd4450cf962a9cb4611bcc98b13a9414fc9",
+        "+ 2fb4b5c3daae80d11066664e9604bcdbf222d2aa",
+        "+ b030a9f9b908733f24c259cc576570b42a212375",
+        "+ f581bf4aa71d89bddb5636165801e288710d1e9b",
+        "+ 0ecb38830f23a1587f1ff099335eb6b307f3afcc",
+        "+ 506df7dbce491aab482097c2d9bf5a781770cf51",
+        "+ 5e949c97b717858b0a0a191376f970f9631a9716"
+      ],
+      "pull_requests": [
+        {
+          "number": 1,
+          "title": "Harden BULL with human-auditable adversarial flags",
+          "head": "hardening/human-auditable-adversarial-flags",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/1",
+          "sha": "5e949c97b717858b0a0a191376f970f9631a9716"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 9,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 522,
+      "files_on_branch_absent_from_candidate": [
+        "src/bulldog/security_flags.py"
+      ]
+    },
+    {
+      "branch": "hardening/microvm-audit",
+      "sha": "1f8e600650b45d4da0f6f7512ac0bed2be3c7986",
+      "tip": "Reject oversized audit records before committing local evidence",
+      "contained_in_main": false,
+      "main_only_commits": 33,
+      "branch_only_vs_main": 4,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 113,
+      "branch_only_vs_candidate": 4,
+      "unique_subjects": [
+        "1f8e600 Reject oversized audit records before committing local evidence",
+        "f59aac0 Merge remote-tracking branch 'origin/main' into hardening/microvm-audit",
+        "06241f0 Add durable authenticated audit service and production HTTPS transport",
+        "4d31eb4 Harden MicroVM roots, configuration, immutable images and supervision"
+      ],
+      "patch_equivalent": [
+        "+ 4d31eb433bd8e027f8531024412681e65701a9e4",
+        "+ 06241f08a7e1dfa2acf58deb08e0020cf18b0c33",
+        "+ 1f8e600650b45d4da0f6f7512ac0bed2be3c7986"
+      ],
+      "pull_requests": [
+        {
+          "number": 22,
+          "title": "Add durable audit anchor service and authenticated production transport",
+          "head": "hardening/microvm-audit",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/22",
+          "sha": "1f8e600650b45d4da0f6f7512ac0bed2be3c7986"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 72,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 511,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "hardening/microvm-audit-signed",
+      "sha": "7d4a0bf6b756b84244072935b4fab68209f7f8df",
+      "tip": "Document explicit shell invocation for local TLS fixture",
+      "contained_in_main": false,
+      "main_only_commits": 33,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 113,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "7d4a0bf Document explicit shell invocation for local TLS fixture",
+        "f65abc0 Add durable audit anchor service and authenticated production transport"
+      ],
+      "patch_equivalent": [
+        "+ f65abc09b4851bedc8252ce4697d120dacdc7fdf",
+        "+ 7d4a0bf6b756b84244072935b4fab68209f7f8df"
+      ],
+      "pull_requests": [
+        {
+          "number": 24,
+          "title": "Add durable audit anchor service and authenticated production transport",
+          "head": "hardening/microvm-audit-signed",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T17:31:34Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/24",
+          "sha": "7d4a0bf6b756b84244072935b4fab68209f7f8df"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 72,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 509,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "hardening/microvm-ci",
+      "sha": "96be3f19167f868f8a5a4d18bb72c33a2b691229",
+      "tip": "Pin CI dependencies and add MicroVM regression and audit model gates",
+      "contained_in_main": false,
+      "main_only_commits": 34,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 114,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "96be3f1 Pin CI dependencies and add MicroVM regression and audit model gates",
+        "06241f0 Add durable authenticated audit service and production HTTPS transport",
+        "4d31eb4 Harden MicroVM roots, configuration, immutable images and supervision"
+      ],
+      "patch_equivalent": [
+        "- 4d31eb433bd8e027f8531024412681e65701a9e4",
+        "+ 06241f08a7e1dfa2acf58deb08e0020cf18b0c33",
+        "+ 96be3f19167f868f8a5a4d18bb72c33a2b691229"
+      ],
+      "pull_requests": [
+        {
+          "number": 23,
+          "title": "Pin CI dependencies and add MicroVM host regression gates",
+          "head": "hardening/microvm-ci",
+          "base": "hardening/microvm-audit",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/23",
+          "sha": "96be3f19167f868f8a5a4d18bb72c33a2b691229"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 72,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 509,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "hardening/microvm-ci-signed",
+      "sha": "07c14641ffcf1f1c5c58747e94640a557a49c024",
+      "tip": "Pin CI dependencies and add MicroVM host regression gates",
+      "contained_in_main": false,
+      "main_only_commits": 32,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 112,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "07c1464 Pin CI dependencies and add MicroVM host regression gates"
+      ],
+      "patch_equivalent": [
+        "- 07c14641ffcf1f1c5c58747e94640a557a49c024"
+      ],
+      "pull_requests": [
+        {
+          "number": 25,
+          "title": "Pin CI dependencies and add MicroVM host regression gates",
+          "head": "hardening/microvm-ci-signed",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T17:37:58Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/25",
+          "sha": "07c14641ffcf1f1c5c58747e94640a557a49c024"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 72,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 506,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "hardening/microvm-launcher",
+      "sha": "4d31eb433bd8e027f8531024412681e65701a9e4",
+      "tip": "Harden MicroVM roots, configuration, immutable images and supervision",
+      "contained_in_main": false,
+      "main_only_commits": 34,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 114,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "4d31eb4 Harden MicroVM roots, configuration, immutable images and supervision"
+      ],
+      "patch_equivalent": [
+        "- 4d31eb433bd8e027f8531024412681e65701a9e4"
+      ],
+      "pull_requests": [
+        {
+          "number": 21,
+          "title": "Harden MicroVM launcher and immutable image construction",
+          "head": "hardening/microvm-launcher",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-19T17:09:07Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/21",
+          "sha": "4d31eb433bd8e027f8531024412681e65701a9e4"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 69,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "hardening/multi-agent-isolation-v1",
+      "sha": "87463232d2fd109e998e4d769f3220add6eb01d8",
+      "tip": "Export multi-agent isolation primitives",
+      "contained_in_main": false,
+      "main_only_commits": 150,
+      "branch_only_vs_main": 14,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 230,
+      "branch_only_vs_candidate": 14,
+      "unique_subjects": [
+        "8746323 Export multi-agent isolation primitives",
+        "6e47064 Document intent-bound multi-agent isolation",
+        "1414b07 Test scoped broker boundaries and sandbox identity propagation",
+        "2bdac9e Propagate trusted agent envelope into isolated workload environment",
+        "8139cc5 Fail closed on unscoped broker access in multi-agent mode",
+        "dd5d43d Audit agent-scoped runtime activity",
+        "e3cc9bb Treat terminal TLA states as intentional during CI model checking",
+        "552ed8c Add multi-agent isolation and canonicalization regressions",
+        "55374fd Include agent isolation in trusted computing base",
+        "4c306cf Enforce TLA+ model checking in CI",
+        "faab6d2 Bind dispatcher operations to trusted multi-agent envelopes",
+        "7b51506 Add intent-bound multi-agent isolation registry"
+      ],
+      "patch_equivalent": [
+        "+ a1ee14f215526bd677b61953c79fb4a2314cec5e",
+        "- b7f2f3a2bbf4f4944ba61fba5d04a05aeda7f9a8",
+        "+ 7b51506b8217eed725173327546c637221499a7f",
+        "+ faab6d2f78551b0cbebe75356f989b907d7578df",
+        "+ 4c306cf4d108316670dd314aa2b742d366361d4a",
+        "+ 55374fdd611b374512cc0588ec26ccb711f9d614",
+        "+ 552ed8c897b07855362c64edc443cc5508b26b41",
+        "+ e3cc9bbbf70622e169b77c71e8248dcba4fe7da2",
+        "+ dd5d43db1451c9199ac2302494a2b15c4760ef21",
+        "+ 8139cc54ac026a113348e75f86aeaafa15cb9f68",
+        "+ 2bdac9ef5fd3d525bb4cb1f24eb8b5716bc048a4",
+        "+ 1414b07eed21bd2337eaf5827fd75246a3663b4b",
+        "+ 6e47064fffd759812b63c526c1ab20854fca7594",
+        "+ 87463232d2fd109e998e4d769f3220add6eb01d8"
+      ],
+      "pull_requests": [
+        {
+          "number": 4,
+          "title": "Harden canonical paths and add intent-bound multi-agent isolation",
+          "head": "hardening/multi-agent-isolation-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/4",
+          "sha": "87463232d2fd109e998e4d769f3220add6eb01d8"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 41,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 515,
+      "files_on_branch_absent_from_candidate": [
+        "src/bulldog/agent_isolation.py",
+        "tests/test_multi_agent_brokers.py",
+        "tests/test_multi_agent_isolation.py"
+      ]
+    },
+    {
+      "branch": "hardening/ollama-redteam-20260918-182423",
+      "sha": "19f16ed72fd2c5bbcad09b8def686100eec2c073",
+      "tip": "hardening: close Ollama red-team filesystem and session gaps",
+      "contained_in_main": false,
+      "main_only_commits": 35,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 115,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "19f16ed hardening: close Ollama red-team filesystem and session gaps"
+      ],
+      "patch_equivalent": [
+        "+ 19f16ed72fd2c5bbcad09b8def686100eec2c073"
+      ],
+      "pull_requests": [
+        {
+          "number": 20,
+          "title": "hardening: close Ollama red-team filesystem and session gaps",
+          "head": "hardening/ollama-redteam-20260918-182423",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/20",
+          "sha": "19f16ed72fd2c5bbcad09b8def686100eec2c073"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 67,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 516,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py",
+        "tests/test_ollama_redteam_hardening.py"
+      ]
+    },
+    {
+      "branch": "hardening/production-assurance-20260927",
+      "sha": "e6df4de481900262bb322e5c26d65967df8bf9bb",
+      "tip": "Add human-first production assurance gates",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 27,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 53,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 84,
+          "title": "Add human-first production assurance gates",
+          "head": "hardening/production-assurance-20260927",
+          "base": "integration/lifecycle-egress-console-20260927",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/84",
+          "sha": "e6df4de481900262bb322e5c26d65967df8bf9bb"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 188,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 338,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/production-boundary-v1",
+      "sha": "6628b8796e536dadac9558a92b96c9cc930115f6",
+      "tip": "Exclude all workspace paths from security bootstrap imports",
+      "contained_in_main": true,
+      "main_only_commits": 102,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 182,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 10,
+          "title": "Harden BULL production security boundary",
+          "head": "hardening/production-boundary-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T15:29:02Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/10",
+          "sha": "6628b8796e536dadac9558a92b96c9cc930115f6"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 44,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/production-boundary-v3",
+      "sha": "d55760d20e9722986efcaf0c1aaf74e7c2486634",
+      "tip": "Update production argv regression to explicit ProductionDispatcher",
+      "contained_in_main": true,
+      "main_only_commits": 50,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 130,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 14,
+          "title": "Harden production boundary, admission path, and trusted runtime split",
+          "head": "hardening/production-boundary-v3",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T17:27:33Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/14",
+          "sha": "d55760d20e9722986efcaf0c1aaf74e7c2486634"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 56,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 508,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/research-assurance-20260927",
+      "sha": "f6a0cb935a3c89173a2d074cc00e53f8f5bc90e1",
+      "tip": "Harden release assurance trust and record research qualification gaps",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 79,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 81,
+          "title": "Harden release assurance verification and checkpoint research qualification",
+          "head": "hardening/research-assurance-20260927",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/81",
+          "sha": "f6a0cb935a3c89173a2d074cc00e53f8f5bc90e1"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 347,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/runtime-enforcement-fix",
+      "sha": "bfe799393723267ab4407491a9637d063a64ad64",
+      "tip": "Fix FIFO regression test portability",
+      "contained_in_main": false,
+      "main_only_commits": 151,
+      "branch_only_vs_main": 10,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 231,
+      "branch_only_vs_candidate": 10,
+      "unique_subjects": [
+        "bfe7993 Fix FIFO regression test portability",
+        "455e98a Add CI regression suite for BULL hardening",
+        "522d2b0 Add regression tests for snapshot binding and hardened runtime gates",
+        "dfd0329 Make dispatcher enforce production gates and broker access",
+        "160bd53 Make production gate verify host and integrity state",
+        "c3817ce Extend integrity manifest to all security-critical runtime modules",
+        "6565e97 Pin validated DNS destinations for broker egress",
+        "52f20e2 Harden secret grants against replay and cross-sandbox use",
+        "494b333 Apply child resource budgets to namespace workloads",
+        "1a32726 Fix snapshot execution binding and enforce runtime gates"
+      ],
+      "patch_equivalent": [
+        "+ 1a327265818439a1a58ded472e3e2b05b3cdead5",
+        "+ 494b33323a98842a736b85920eba2ee4a4701bda",
+        "+ 52f20e201a7ec30c174c1dc5534d7150d90236f2",
+        "+ 6565e9754610703ad4fff748d0c7f7cc48060af5",
+        "+ c3817ce77045a75c8de591cc18c5b93bac88741d",
+        "+ 160bd53d71c0658229e97209a8ba85bbf1cc9a0e",
+        "+ dfd0329cf50637c87c82be63f23555a3bb196b01",
+        "+ 522d2b02e5f52aca40f741f959342407a0e6a3e1",
+        "+ 455e98aefc8b8524d9925b4dcf2d7ba548fef352",
+        "+ bfe799393723267ab4407491a9637d063a64ad64"
+      ],
+      "pull_requests": [
+        {
+          "number": 2,
+          "title": "Wire hardening controls into the mandatory runtime path",
+          "head": "hardening/runtime-enforcement-fix",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-16T18:49:07Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/2",
+          "sha": "bfe799393723267ab4407491a9637d063a64ad64"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 38,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/security-domain-audit-v2",
+      "sha": "b90bb6c8acfa5151a35f7eb85cf84a9a6ced7e60",
+      "tip": "Update security-domain tests for explicit spawn authority",
+      "contained_in_main": true,
+      "main_only_commits": 133,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 213,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 7,
+          "title": "Close remaining multi-agent authority and audit gaps",
+          "head": "hardening/security-domain-audit-v2",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T13:42:43Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/7",
+          "sha": "b90bb6c8acfa5151a35f7eb85cf84a9a6ced7e60"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 42,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/security-domains-v1",
+      "sha": "55bc3da464d141e4958f05a830cb5f2654ee4829",
+      "tip": "Allow intentional terminal states in TLC CI",
+      "contained_in_main": true,
+      "main_only_commits": 140,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 220,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 5,
+          "title": "Harden BULL with multi-agent security domains and formal CI",
+          "head": "hardening/security-domains-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T13:08:13Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/5",
+          "sha": "55bc3da464d141e4958f05a830cb5f2654ee4829"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 42,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "hardening/strict-no-sockets-20260921T011646Z",
+      "sha": "f01871e4287b8b1586cfb0fd79c51aab9b83e10e",
+      "tip": "Harden path canonicalization, strict sockets, and pre-exec attestation",
+      "contained_in_main": false,
+      "main_only_commits": 27,
+      "branch_only_vs_main": 4,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 107,
+      "branch_only_vs_candidate": 4,
+      "unique_subjects": [
+        "f01871e Harden path canonicalization, strict sockets, and pre-exec attestation",
+        "e3adc03 Index guest modules in the public engineering documentation",
+        "2d56d3c Document verified KVM milestone and OSS release scope",
+        "f86da0e Implement production MicroVM guest execution path"
+      ],
+      "patch_equivalent": [
+        "+ f86da0eae78435d4c7637f18ceab8a2f3e411df4",
+        "+ 2d56d3c45139dc2bfd601540925c994b523b29cb",
+        "+ e3adc03c00e898c792e3a0ed8fdf5f4b39d524b4",
+        "+ f01871e4287b8b1586cfb0fd79c51aab9b83e10e"
+      ],
+      "pull_requests": [
+        {
+          "number": 46,
+          "title": "Harden path canonicalization, strict sockets, and pre-exec attestation",
+          "head": "hardening/strict-no-sockets-20260921T011646Z",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/46",
+          "sha": "f01871e4287b8b1586cfb0fd79c51aab9b83e10e"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 82,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 481,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "integrate/latest-session-and-publication-20260923",
+      "sha": "71b708c60392dda76df5d72e1ded9bea400045cf",
+      "tip": "Account for subsequent branch snapshots in the integration record",
+      "contained_in_main": false,
+      "main_only_commits": 6,
+      "branch_only_vs_main": 6,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 86,
+      "branch_only_vs_candidate": 6,
+      "unique_subjects": [
+        "71b708c Account for subsequent branch snapshots in the integration record",
+        "48981fa Complete session integration checks and link published preprint",
+        "6b0f79b Integrate Zenodo publication citation from PR 62",
+        "41382d0 Integrate reviewed one-shot session hardening from PR 61",
+        "f2f3e7c docs: link Zenodo preprint and add publication citation",
+        "955fb20 Reject one-shot control reuse and document session export trust requirements"
+      ],
+      "patch_equivalent": [
+        "+ 955fb203d21e6fdbc92df6315c318477f205e58e",
+        "+ f2f3e7c577368e7f6435ea28472b0dfe6b3c95de",
+        "+ 48981fabb50837fb866ac2a2ce761d59a8c07168",
+        "+ 71b708c60392dda76df5d72e1ded9bea400045cf"
+      ],
+      "pull_requests": [
+        {
+          "number": 63,
+          "title": "Integrate latest session hardening and publication updates",
+          "head": "integrate/latest-session-and-publication-20260923",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T17:35:51Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/63",
+          "sha": "71b708c60392dda76df5d72e1ded9bea400045cf"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 145,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 394,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "integrate/main-and-hardware-20260923",
+      "sha": "637b5f093e56b2191b2e57ee9529979ece44c566",
+      "tip": "Link Pico unique ID dependency explicitly",
+      "contained_in_main": false,
+      "main_only_commits": 10,
+      "branch_only_vs_main": 8,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 90,
+      "branch_only_vs_candidate": 8,
+      "unique_subjects": [
+        "637b5f0 Link Pico unique ID dependency explicitly",
+        "89b83c7 Merge cryptography dependency update and confirm KB2040-only hardware",
+        "d5cf874 Integrate hardware assertion gate, diagnostic firmware and branch updates",
+        "9ef9a49 Update cryptography requirement from <47,>=43 to >=43,<51",
+        "f9f7e96 Merge approved branding assets from PR 29",
+        "99d244f Remove completed one-time artwork importer before normal protected-branch review",
+        "63dc11e Import approved B-shaped bulldog source and self-contained logo pack",
+        "022ce82 Prepare approved B-shaped bulldog assets, provenance checks and brand guidance"
+      ],
+      "patch_equivalent": [
+        "+ 022ce82fcb9fd89ab0b42f5dcf1f4ec500648cd0",
+        "+ 63dc11e8d108d9445e912679c86041f21a1e0015",
+        "+ 99d244facba2f79e700cfa2a0e8f04ea1414e0aa",
+        "+ 9ef9a49fb3d8b99499e8994d0e61628bd31b0d6d",
+        "+ d5cf8748199384b6b71bb2149e67ec4cc540fc37",
+        "+ 637b5f093e56b2191b2e57ee9529979ece44c566"
+      ],
+      "pull_requests": [
+        {
+          "number": 57,
+          "title": "Integrate remaining branch updates and hardware approval host path",
+          "head": "integrate/main-and-hardware-20260923",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T13:35:56Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/57",
+          "sha": "637b5f093e56b2191b2e57ee9529979ece44c566"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 143,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 403,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "integration/lifecycle-egress-console-20260927",
+      "sha": "acd37ad591bf3d65de9cfd1b2d041c86b5a46bf0",
+      "tip": "Keep systemd qualification running across gateway stop and support private resume",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 26,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 54,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 82,
+          "title": "Integrate lifecycle governance, egress gateway and console qualification",
+          "head": "integration/lifecycle-egress-console-20260927",
+          "base": "hardening/research-assurance-20260927",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/82",
+          "sha": "acd37ad591bf3d65de9cfd1b2d041c86b5a46bf0"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 179,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 341,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "legal/backed-copyright-provenance-20260924",
+      "sha": "ea507b7d7d975d9b3854b947ab198340809576f4",
+      "tip": "docs: state BULL human-directed AI-assisted authorship",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 8,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 8,
+      "unique_subjects": [
+        "ea507b7 docs: state BULL human-directed AI-assisted authorship",
+        "dbec81a docs: document human-in-the-loop AI-assisted development",
+        "ca58c05 docs: clarify human-directed AI-assisted BULL authorship",
+        "c7f7970 build: carry copyright notice in distributions",
+        "65a1d8d docs: link copyright and authorship provenance",
+        "a760f82 docs: clarify bundled third-party provenance",
+        "f74b9ef docs: record backed BULL authorship provenance",
+        "413d3d4 docs: add evidence-backed BULL copyright notice"
+      ],
+      "patch_equivalent": [
+        "+ 413d3d4d8cbf23d2df5f5e8a82e20a57b7f1ed0a",
+        "+ f74b9ef271ee50af9c288094fd2c51599acf56cd",
+        "+ a760f82814763dcb520a46490b75455daa9698bd",
+        "+ 65a1d8df066efa9439f4786d593a071bfee898b8",
+        "+ c7f7970787230daee7e716ccb70de7f108619bd1",
+        "+ ca58c0554b18beec39d6ae686a754d86c2042939",
+        "+ dbec81a20f07e84cf0b70a06c858409636eda6c7",
+        "+ ea507b7d7d975d9b3854b947ab198340809576f4"
+      ],
+      "pull_requests": [
+        {
+          "number": 71,
+          "title": "Legal/backed copyright provenance 20260924",
+          "head": "legal/backed-copyright-provenance-20260924",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/71",
+          "sha": "ea507b7d7d975d9b3854b947ab198340809576f4"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 352,
+      "files_on_branch_absent_from_candidate": [
+        "COPYRIGHT",
+        "docs/AUTHORSHIP_PROVENANCE.md"
+      ]
+    },
+    {
+      "branch": "legal/copyright-provenance-20260924",
+      "sha": "ef0cb03e1edbefe9cac2cd4802238998a9aeb1f4",
+      "tip": "docs: update compliance crosswalk for BULL Assurance v1",
+      "contained_in_main": true,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 70,
+          "title": "Document BULL copyright ownership and IP provenance",
+          "head": "legal/copyright-provenance-20260924",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/70",
+          "sha": "8bc8cd12660199c55919cbce183173a54748abf2"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 350,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "license/gpl-2-or-later-20260920",
+      "sha": "616d876e58d32cbe43ac753673e19f01931a0c71",
+      "tip": "Merge integrated main into GPL change without losing package discovery",
+      "contained_in_main": false,
+      "main_only_commits": 24,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 104,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "616d876 Merge integrated main into GPL change without losing package discovery",
+        "0131566 Update package license metadata to GPL-2.0-or-later",
+        "119d8dc Switch license to GPL-2.0-or-later"
+      ],
+      "patch_equivalent": [
+        "+ 119d8dc813a1617768531448fc3602d90a99fd86",
+        "+ 0131566946cb1a3cbd08d73594271608770505b8"
+      ],
+      "pull_requests": [
+        {
+          "number": 32,
+          "title": "Switch license to GPL-2.0-or-later",
+          "head": "license/gpl-2-or-later-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T14:27:58Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/32",
+          "sha": "616d876e58d32cbe43ac753673e19f01931a0c71"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "main",
+      "sha": "ef0cb03e1edbefe9cac2cd4802238998a9aeb1f4",
+      "tip": "docs: update compliance crosswalk for BULL Assurance v1",
+      "contained_in_main": true,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 153,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 350,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "redteam/authorization-binding-v1",
+      "sha": "e1d8d274dc6fe709cc45ecef9c1c397a99c600f0",
+      "tip": "Add adversarial authorization-binding probes",
+      "contained_in_main": true,
+      "main_only_commits": 149,
+      "branch_only_vs_main": 0,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 229,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 3,
+          "title": "Red-team: authorization binding probes",
+          "head": "redteam/authorization-binding-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-17T13:46:40Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/3",
+          "sha": "e1d8d274dc6fe709cc45ecef9c1c397a99c600f0"
+        }
+      ],
+      "status": "contained_in_main",
+      "syntax_check": {
+        "files": 39,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 512,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "redteam/sandbox-decision-bypass-v1",
+      "sha": "bd0ebf170c145396e24f591367dd84ea921d3f3a",
+      "tip": "Merge branch 'main' into redteam/sandbox-decision-bypass-v1",
+      "contained_in_main": false,
+      "main_only_commits": 27,
+      "branch_only_vs_main": 3,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 107,
+      "branch_only_vs_candidate": 3,
+      "unique_subjects": [
+        "bd0ebf1 Merge branch 'main' into redteam/sandbox-decision-bypass-v1",
+        "84bf519 Fix red-team SANDBOX broker regression assertions",
+        "c272b56 Red-team: Decision.SANDBOX must not pass legacy broker authorization gate"
+      ],
+      "patch_equivalent": [
+        "+ c272b567956153de7367956220aa84fb6e11ccfa",
+        "+ 84bf519893b35424dba705067db003ffa599aff6"
+      ],
+      "pull_requests": [
+        {
+          "number": 13,
+          "title": "Red-team: probe SANDBOX decision passing legacy broker authorization gate",
+          "head": "redteam/sandbox-decision-bypass-v1",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T12:54:34Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/13",
+          "sha": "bd0ebf170c145396e24f591367dd84ea921d3f3a"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 72,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 488,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "redteam/test-harness",
+      "sha": "769928609c6b68aee8e051cedde474efc31183e0",
+      "tip": "Override defaulted recipient fields in bus envelopes so the hop-limit chain delivers",
+      "contained_in_main": false,
+      "main_only_commits": 15,
+      "branch_only_vs_main": 5,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 95,
+      "branch_only_vs_candidate": 5,
+      "unique_subjects": [
+        "7699286 Override defaulted recipient fields in bus envelopes so the hop-limit chain delivers",
+        "f55bc01 Auto-fill execute() kwargs via signature introspection; register sender identities so the bus hop chain runs",
+        "8e3b99f Fix dispatcher probes to call execute(request, command) with strict denial checking; build real AgentIdentity/Envelope objects",
+        "04d5a8f Fix dispatcher and multi-agent probes to use the real DispatchRequest/MessageBus APIs",
+        "a99d308 Add single-file adversarial test harness (anchor MAC forgery, canonicalizer, dispatcher, multi-agent probes)"
+      ],
+      "patch_equivalent": [
+        "+ a99d3084e5b6eeec1ef4f548b885206dee7f037b",
+        "+ 04d5a8f347655319ea0d6922fdb2356a64d11a1f",
+        "+ 8e3b99f4846f9c366b4a09db43febfc6f0ee6e38",
+        "+ f55bc0126aaafd7b1874ecae8cb2ad55dd1cc839",
+        "+ 769928609c6b68aee8e051cedde474efc31183e0"
+      ],
+      "pull_requests": [],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 116,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 452,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "refactor/human-readable-20260927",
+      "sha": "a7bac497be041e71a1ab17b6e15c5e393dffd49f",
+      "tip": "Document every tracked file and retain bounded validation results",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 33,
+      "contained_in_candidate": true,
+      "candidate_only_commits": 47,
+      "branch_only_vs_candidate": 0,
+      "pull_requests": [
+        {
+          "number": 85,
+          "title": "Clarify the whole BULL repository and verify behavior across the cleanup",
+          "head": "refactor/human-readable-20260927",
+          "base": "hardening/production-assurance-20260927",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/85",
+          "sha": "a7bac497be041e71a1ab17b6e15c5e393dffd49f"
+        }
+      ],
+      "status": "contained_in_release_candidate",
+      "syntax_check": {
+        "files": 188,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 153,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "release/human-approval-20260922",
+      "sha": "77a348526ec206ff17e87adf41857a4536725a21",
+      "tip": "Record passing candidate CI while retaining deployment evidence gaps",
+      "contained_in_main": false,
+      "main_only_commits": 18,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 98,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "77a3485 Record passing candidate CI while retaining deployment evidence gaps",
+        "377ef3c Prepare 0.2.0rc1: scoped human approval, runtime hardening, and evidence gates"
+      ],
+      "patch_equivalent": [
+        "+ 377ef3c4b9e8ac3a5d2777888711aecdf8018e2d",
+        "+ 77a348526ec206ff17e87adf41857a4536725a21"
+      ],
+      "pull_requests": [
+        {
+          "number": 47,
+          "title": "Prepare BULL 0.2.0rc1: credentialed approval and honest release evidence",
+          "head": "release/human-approval-20260922",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-22T13:22:44Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/47",
+          "sha": "77a348526ec206ff17e87adf41857a4536725a21"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 112,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 453,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "research/bull-iii-20260927",
+      "sha": "7a09a9bddc068dc7e7d4be76ada96c86c69669a8",
+      "tip": "Add BULL III scoped KVM and egress research paper",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 27,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 54,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "7a09a9b Add BULL III scoped KVM and egress research paper"
+      ],
+      "patch_equivalent": [
+        "+ 7a09a9bddc068dc7e7d4be76ada96c86c69669a8"
+      ],
+      "pull_requests": [
+        {
+          "number": 83,
+          "title": "BULL III: scoped KVM gateway and egress evidence paper",
+          "head": "research/bull-iii-20260927",
+          "base": "integration/lifecycle-egress-console-20260927",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/83",
+          "sha": "7a09a9bddc068dc7e7d4be76ada96c86c69669a8"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 180,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 349,
+      "files_on_branch_absent_from_candidate": [
+        "docs/papers/bull-iii/README.md",
+        "docs/papers/bull-iii/evidence.json",
+        "docs/papers/bull-iii/figures/authority_boundary.png",
+        "docs/papers/bull-iii/figures/scoped_results.png",
+        "docs/papers/bull-iii/figures/two_guest_paths.png",
+        "docs/papers/bull-iii/make_figures.py",
+        "docs/papers/bull-iii/paper.md",
+        "output/pdf/BULL-III-20260927.pdf"
+      ]
+    },
+    {
+      "branch": "site/current-evidence-no-video-20260923",
+      "sha": "a396d1e03c11e0984399d2561a1f7b92402ed697",
+      "tip": "Remove site video and publish current deployment evidence",
+      "contained_in_main": false,
+      "main_only_commits": 8,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 88,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "a396d1e Remove site video and publish current deployment evidence"
+      ],
+      "patch_equivalent": [
+        "- a396d1e03c11e0984399d2561a1f7b92402ed697"
+      ],
+      "pull_requests": [
+        {
+          "number": 59,
+          "title": "Remove video and update site with validated main evidence",
+          "head": "site/current-evidence-no-video-20260923",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-23T13:51:34Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/59",
+          "sha": "a396d1e03c11e0984399d2561a1f7b92402ed697"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 143,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 400,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "site/longform-technical-20260918",
+      "sha": "1d5313c4769b13f8e3d73f1d5ace17832320f58f",
+      "tip": "docs: describe long-form Pages surface",
+      "contained_in_main": false,
+      "main_only_commits": 36,
+      "branch_only_vs_main": 5,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 116,
+      "branch_only_vs_candidate": 5,
+      "unique_subjects": [
+        "1d5313c docs: describe long-form Pages surface",
+        "e7716a2 site: keep long-form navigation usable on mobile",
+        "6a20d7d site: preserve browser runtime status hook",
+        "3dcb8a5 site: add long-form technical layout",
+        "24d2c51 site: replace dashboard tabs with long-form BULL explainer"
+      ],
+      "patch_equivalent": [
+        "+ 24d2c517cd2746497f9ee6ba5e6481d75f0b5144",
+        "+ 3dcb8a5f3b3b16b27c30c86cfaae6313fd5bde52",
+        "+ 6a20d7ded4748666c585e52b3819d35141a4240c",
+        "+ e7716a2868423666973400562835b01252600301",
+        "+ 1d5313c4769b13f8e3d73f1d5ace17832320f58f"
+      ],
+      "pull_requests": [
+        {
+          "number": 19,
+          "title": "Redesign BULL Pages as long-form technical explainer",
+          "head": "site/longform-technical-20260918",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-18T17:19:55Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/19",
+          "sha": "1d5313c4769b13f8e3d73f1d5ace17832320f58f"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 66,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 515,
+      "files_on_branch_absent_from_candidate": [
+        "docs/HOSTED_OPEN_MODEL_CONNECTOR.md",
+        "site/app.js",
+        "site/control-center.html",
+        "site/model-connector.css",
+        "site/model-connector.js",
+        "site/runtime/bull_core/__init__.py",
+        "site/runtime/bull_core/lab_api.py",
+        "site/runtime/bull_core/models.py",
+        "site/runtime/lab_api.py"
+      ]
+    },
+    {
+      "branch": "tools/production-provision-20260920",
+      "sha": "7f660b3c960a5020002698a10fce8487ec67a47d",
+      "tip": "docs: document production provisioner",
+      "contained_in_main": false,
+      "main_only_commits": 22,
+      "branch_only_vs_main": 2,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 102,
+      "branch_only_vs_candidate": 2,
+      "unique_subjects": [
+        "7f660b3 docs: document production provisioner",
+        "ea77c59 feat(provision): add production host setup script"
+      ],
+      "patch_equivalent": [
+        "+ ea77c59f738b0fd2f379232e97f4a1557338d32b",
+        "+ 7f660b3c960a5020002698a10fce8487ec67a47d"
+      ],
+      "pull_requests": [
+        {
+          "number": 37,
+          "title": "Stage signed production provisioner",
+          "head": "tools/production-provision-20260920",
+          "base": "tools/production-provision-signed-stage-20260920",
+          "state": "closed",
+          "merged_at": "2026-09-20T15:34:55Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/37",
+          "sha": "7f660b3c960a5020002698a10fce8487ec67a47d"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "tools/production-provision-signed-stage-20260920",
+      "sha": "a79a8fbb92ad906b969ccd90a224a8879de57cb0",
+      "tip": "Add BULL production host provisioner",
+      "contained_in_main": false,
+      "main_only_commits": 22,
+      "branch_only_vs_main": 1,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 102,
+      "branch_only_vs_candidate": 1,
+      "unique_subjects": [
+        "a79a8fb Add BULL production host provisioner"
+      ],
+      "patch_equivalent": [
+        "- a79a8fbb92ad906b969ccd90a224a8879de57cb0"
+      ],
+      "pull_requests": [
+        {
+          "number": 38,
+          "title": "Add production provisioning script",
+          "head": "tools/production-provision-signed-stage-20260920",
+          "base": "main",
+          "state": "closed",
+          "merged_at": "2026-09-20T15:35:51Z",
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/38",
+          "sha": "a79a8fbb92ad906b969ccd90a224a8879de57cb0"
+        }
+      ],
+      "status": "historically_merged_check_tip_drift",
+      "syntax_check": {
+        "files": 103,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 478,
+      "files_on_branch_absent_from_candidate": []
+    },
+    {
+      "branch": "ui/agent-scan-command-center",
+      "sha": "538272d883bb3f69584e8e425c1cf986ee4f8da8",
+      "tip": "Reframe prototype as full BULL command center",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 10,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 10,
+      "unique_subjects": [
+        "538272d Reframe prototype as full BULL command center",
+        "74b2a1c Style live BULL control states",
+        "41c43d3 Bind dashboard widgets to live BULL APIs",
+        "f50ad34 Expose live BULL system panels in dashboard",
+        "35e09cc Wire dashboard to BULL runtime status APIs",
+        "60f8bbd Document Codespaces agent scan prototype",
+        "8007cfc Add constrained passive web fetch helper",
+        "f4c95dd Add agent swarm and botnet signal parser",
+        "232b413 Style BULL agent scan command center",
+        "7d9d22d Add BULL agent scan command center prototype"
+      ],
+      "patch_equivalent": [
+        "+ 7d9d22df30ff86ea8d082d6aa7b39bbbc718cca6",
+        "+ 232b41368669f318c00db0a09c21bebd8b6e9b2f",
+        "+ f4c95ddcc3674e6f830aeb824ebdc9533d1df23e",
+        "+ 8007cfc7c0ac45ac27569fd0b6dfb0329be17500",
+        "+ 60f8bbdb4e78df69bfc1eaca7fbcf21d32579740",
+        "+ 35e09cc5e53c890b5940ea8538ba569f5555ef3d",
+        "+ f50ad345793537c40dd2f12c1cbe876f2e5ed65e",
+        "+ 41c43d3ed37839dc3c361c18a228b8a054b62c6b",
+        "+ 74b2a1c7d69eea65b235ab505c00335080eb390d",
+        "+ 538272d883bb3f69584e8e425c1cf986ee4f8da8"
+      ],
+      "pull_requests": [
+        {
+          "number": 72,
+          "title": "Prototype full BULL command center interface",
+          "head": "ui/agent-scan-command-center",
+          "base": "main",
+          "state": "closed",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/72",
+          "sha": "538272d883bb3f69584e8e425c1cf986ee4f8da8"
+        }
+      ],
+      "status": "historical_branch_requires_file_review",
+      "syntax_check": {
+        "files": 155,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 356,
+      "files_on_branch_absent_from_candidate": [
+        "ui/agent-scan/README.md",
+        "ui/agent-scan/app.js",
+        "ui/agent-scan/dashboard_server.py",
+        "ui/agent-scan/index.html",
+        "ui/agent-scan/scan_proxy.py",
+        "ui/agent-scan/styles.css"
+      ]
+    },
+    {
+      "branch": "ui/bull-command-center-v1",
+      "sha": "808c8fe5de47b9da3ac5ee2583f6ab1c1c7cb895",
+      "tip": "Clarify overlapping signal evidence semantics",
+      "contained_in_main": false,
+      "main_only_commits": 0,
+      "branch_only_vs_main": 94,
+      "contained_in_candidate": false,
+      "candidate_only_commits": 80,
+      "branch_only_vs_candidate": 94,
+      "unique_subjects": [
+        "808c8fe Clarify overlapping signal evidence semantics",
+        "59bfddb Fix agent evidence classification without changing attribution semantics",
+        "fff0a4d Document Command Center interpretation and presentation model",
+        "fd114f9 Add Command Center frontend contract regression tests",
+        "886d062 Document Command Center component baseline",
+        "eb0af6d Add stable route aliases for the rebuilt BULL frontend",
+        "8326948 Bust caches for the rebuilt BULL frontend",
+        "410c163 Finish BULL component styling coverage",
+        "8c8b649 Rebuild BULL frontend behavior around clear firewall workflows",
+        "d4d401e Replace BULL frontend styling with a coherent brand-faithful system",
+        "fdcf7cf Rebuild BULL command center information architecture from scratch",
+        "21f3f01 Bust caches for clean BULL frontend reset"
+      ],
+      "patch_equivalent": [
+        "+ 7d9d22df30ff86ea8d082d6aa7b39bbbc718cca6",
+        "+ 232b41368669f318c00db0a09c21bebd8b6e9b2f",
+        "+ f4c95ddcc3674e6f830aeb824ebdc9533d1df23e",
+        "+ 8007cfc7c0ac45ac27569fd0b6dfb0329be17500",
+        "+ 60f8bbdb4e78df69bfc1eaca7fbcf21d32579740",
+        "+ 35e09cc5e53c890b5940ea8538ba569f5555ef3d",
+        "+ f50ad345793537c40dd2f12c1cbe876f2e5ed65e",
+        "+ 41c43d3ed37839dc3c361c18a228b8a054b62c6b",
+        "+ 74b2a1c7d69eea65b235ab505c00335080eb390d",
+        "+ 538272d883bb3f69584e8e425c1cf986ee4f8da8",
+        "+ 4dccffd23fd765e44328bba92a461c182fb29557",
+        "+ 6e203908ed6109f464862f454689537454bf114f",
+        "+ 87131b73ba913bf902ac412a9b1c2b0d369c3f7d",
+        "+ b1522293045f4a125edbe646d3263a0680003fcf",
+        "+ 2ee47649d90b6628d54a8f881778097af0b6ece7",
+        "+ 25c23d2bdfdbc11760f10b362796389b058439e2",
+        "+ 8bbcff1beba83a1d987028ccc8054baa89215a3a",
+        "+ ab2ba1639a4c1a9b50bacbb39c13100207288646",
+        "+ d61a81f58e0de4fa175fa9ed1073dd6dbe737f69",
+        "+ 84062e6653fe19010a636d1ebafa8c8bf931c06e",
+        "+ 93280031330a92579aea75ed10ef4f95b47414b5",
+        "+ e279e2fbfec819c1dbf21dcff9070fb370031a76",
+        "+ 7062944308412aba06a84f0a9c089a304ca451cd",
+        "+ da3dcd225121fc44cb0b287aae8282374c770d37",
+        "+ 75c2f975460ff98354a11a237270a7901074683d",
+        "+ 3ed01c083a534c45cf0b35bd99ba109455e17cd0",
+        "+ ab2f213b7073adbaabc9a77e4944084064b15e76",
+        "+ 0fa58e6d21a6435a2094389c413c39c80bc1e1f9",
+        "+ 1e5946e3799cca51d0b90a7dcc1a00e7303e2e8e",
+        "+ 8adff7ec4191289bf57041d2944ed10d0650d27f",
+        "+ 8d41ae3173f490852a899a1d646a040b719be552",
+        "+ 4e64aff3cb1921831e2f824d9239e94849f5a824",
+        "+ 9306b5eae34a3e8576cfee0eccc9e57a692b5bdf",
+        "+ d1f8b85c56d30dce846ff3c101c20994e995a408",
+        "+ f747355db7a52f61810a7a6b337a477b5a9d9c5e",
+        "+ fb842864bd877467bcdb854b570868610027162f",
+        "+ 8cda44f0942d2a246a63d7bfdb512e488634539f",
+        "+ 53be1514fc13bc7035ba10baad7917e8b338f649",
+        "+ 11403f24ba8f011ca971480d9e0fa7c2e6b5d29b",
+        "+ 4cdb3a5b529dee9275acda25f42de2231634375e",
+        "+ 2f7dd741f573f5fcec0f44601eeac6e7cf4b03c4",
+        "+ 72f04fc32cb2712a1a7904fddd1b11d39ac60f93",
+        "+ 3983c080feeebf196b665d49f6d917e420d517ed",
+        "+ da0a87765a18c9485241908ddce76ffc550af012",
+        "+ d5cc3b29bfb66785398647b4dccc759e5e8918d8",
+        "+ 4f45c5953b42c469008d44fb586857d97e2f0a53",
+        "+ ae54431dbc60087f50d3e955357eaa050057adb3",
+        "+ 5e6522cb014a9a42cbc6c3224995d8c7193b8b2b",
+        "+ 18c5c939d244fa967d6e8b02bbdf3fe8b0a69b15",
+        "+ 8aca7bf0b0c2ba4466dde1ed2afecb2da9e71051",
+        "+ da4751596f5fda1d45f894dbe0e1b556ae85178d",
+        "+ bab7aa1b9f629e2b971aee373e6638a0058a7f3a",
+        "+ 0fe8b0b69973f4b8072f70a2ff8984dd4738a945",
+        "+ e66181a3afa44501b654358bd4b76fa01ca9392c",
+        "+ 1d7dd326d976375d60a61c6ce85cd61aefc0218d",
+        "+ 31391d25919007f9ecad0a4b7a78c88675a1fda3",
+        "+ 3f55e11521f4a23469268582066b4c3a62fa0592",
+        "+ f3459a212815d15171904edde2399574512aa2af",
+        "+ 341dff4e1b56e4069bd68ce053a84ba0e26e0d1b",
+        "+ cf317e6cece16e07ed93841c6c1988e456444e2d",
+        "+ 2faa9efa7f28c44b650c859bfd1fc9a07f8a5d15",
+        "+ a1ef46d52d4314266d26043d81ed57fa92e38c96",
+        "+ 95bea3a9e3b28b1e1e81bb36295ed32282268823",
+        "+ 936cf33a121d9493f626f670080e95c3056764b0",
+        "+ 17db87fffa1a9f3b64fad0e1e3d2634d8b13a328",
+        "+ ba50285b368f55d9156d1e9e9fef15c998557bcc",
+        "+ af4a4ddac3b346acb3955368507b5d6743d2a53d",
+        "+ 985f759f4ba6c3b5429f48240c56aa9974b28dea",
+        "+ 970dd006f7d3021848843743d16ded759d08f1ce",
+        "+ a69dd2c73886c52096bcbf168de5460a5e75e6d9",
+        "+ 039fcff570570d8b498593bd0908f484da249c95",
+        "+ f7012d84dc14ac00a7fb688498d1b0c6dc9f9c96",
+        "+ f0165e99f7688ff9c5d2f134e083c49d8a769403",
+        "+ fa28a129ab90a4dafb58fb5cb078ee0f568031de",
+        "+ a1f3917b3892838db318fcd46747acadc6a0cbff",
+        "+ 994b19e7550f72bdeca9c8e006cbb25f1e5c75ce",
+        "+ e0826ebd1458374ac2e94a7829bb55ca2fb67265",
+        "+ 676cebd00a4dc23a4ed2c11374e7288919f8907c",
+        "+ 0c179dc8230b4f96cc79ecf8ee4d198e3c45ed2b",
+        "+ 3e4a31dd25102b98c5bd7b6b296683d3cab77d6f",
+        "+ d8e3edfede782b512b6633d0989c0f636a51c675",
+        "+ a15ad2febf8e23f5f77ca2e7efe4660a9762736f",
+        "+ 21f3f010eaa880bb5bb4b10c18aba91ab2169363",
+        "+ fdcf7cfc96f091ce1a19d09058a570b0757434b7",
+        "+ d4d401e2917631ab41a0d26b6d5d0bc498ce0b5c",
+        "+ 8c8b6499643d772970f61a5f5ecd07c8c10ea89f",
+        "+ 410c163e5591ba76ff9efe1e81b6c0c31705b655",
+        "+ 8326948c6fc43b7e3096426759fe9fc5b2450901",
+        "+ eb0af6d9ec8f92bf6edf1501dbaef8146cb551b3",
+        "+ 886d0624bb528ed69e1d256e843f868d8718cddc",
+        "+ fd114f907f797b78107e2d97d52674c9d2f6530b",
+        "+ fff0a4d7b697203fb3e0a7abe55b6db3c3218a32",
+        "+ 59bfddb50ce4349983bc0fdad2b8e87e196f1443",
+        "+ 808c8fe5de47b9da3ac5ee2583f6ab1c1c7cb895"
+      ],
+      "pull_requests": [
+        {
+          "number": 73,
+          "title": "BULL Command Center: full wired interface + Codespaces KVM boot",
+          "head": "ui/bull-command-center-v1",
+          "base": "main",
+          "state": "open",
+          "merged_at": null,
+          "url": "https://github.com/Anharmoniclabs/BULL/pull/73",
+          "sha": "808c8fe5de47b9da3ac5ee2583f6ab1c1c7cb895"
+        }
+      ],
+      "status": "open_distinct_or_superseded_work",
+      "syntax_check": {
+        "files": 159,
+        "failures": [],
+        "passed": true
+      },
+      "candidate_tree_difference_files": 364,
+      "files_on_branch_absent_from_candidate": [
+        "scripts/install-runtime-deps.sh",
+        "scripts/launch-command-center.sh",
+        "tests/test_command_center.py",
+        "tests/test_command_center_frontend_contract.py",
+        "ui/bull-command-center/INTERPRETATION.md",
+        "ui/bull-command-center/README.md",
+        "ui/bull-command-center/app.js",
+        "ui/bull-command-center/dashboard_server.py",
+        "ui/bull-command-center/host_setup.py",
+        "ui/bull-command-center/index.html",
+        "ui/bull-command-center/install_guest_assets.py",
+        "ui/bull-command-center/run_release_kvm.py",
+        "ui/bull-command-center/styles.css"
+      ]
+    }
+  ],
+  "scope": "read-only ancestry, patch identity, and PR-state audit; does not certify every historical branch tip",
+  "syntax_summary": {
+    "branches_checked": 86,
+    "branches_passed": 86,
+    "unique_python_blobs": 680,
+    "scope": "Python syntax only across each remote snapshot; full regression is on the consolidated candidate"
+  }
+}

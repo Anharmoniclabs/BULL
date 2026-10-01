@@ -344,7 +344,9 @@ def test_redteam_secret_dispatch_requires_authorized_request(monkeypatch, tmp_pa
     assert calls[0]["name"] == "API_KEY"
 
 
-def test_redteam_sandbox_secret_verdict_never_reaches_host_broker(monkeypatch, tmp_path):
+def test_redteam_sandbox_secret_verdict_never_reaches_host_broker(
+    monkeypatch, tmp_path
+):
     class FakeSecretBroker:
         socket_path = tmp_path / "secret.sock"
 
@@ -377,7 +379,9 @@ def test_redteam_sandbox_secret_verdict_never_reaches_host_broker(monkeypatch, t
         )
 
 
-def test_redteam_external_content_cannot_authorize_credential_broker(monkeypatch, tmp_path):
+def test_redteam_external_content_cannot_authorize_credential_broker(
+    monkeypatch, tmp_path
+):
     class FakeSecretBroker:
         socket_path = tmp_path / "secret.sock"
 

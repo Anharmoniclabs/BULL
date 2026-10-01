@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Prepare a local Wrangler build config; never provision, upload, or deploy."""
+
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,9 @@ def prepare(database_id, root=ROOT):
     try:
         parsed = uuid.UUID(database_id)
     except (ValueError, TypeError, AttributeError) as exc:
-        raise ValueError("set BULL_D1_DATABASE_ID to the existing D1 database UUID") from exc
+        raise ValueError(
+            "set BULL_D1_DATABASE_ID to the existing D1 database UUID"
+        ) from exc
     if str(parsed) != database_id or parsed.int == 0:
         raise ValueError("BULL_D1_DATABASE_ID must be a canonical nonzero UUID")
     config = json.loads((root / "wrangler.jsonc").read_text())
@@ -27,7 +30,9 @@ def prepare(database_id, root=ROOT):
         fd = os.open(output, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
         if output.is_symlink() or not output.is_file() or output.read_text() != data:
-            raise ValueError("generated config differs; review and remove it before preparing new configuration")
+            raise ValueError(
+                "generated config differs; review and remove it before preparing new configuration"
+            )
     else:
         with os.fdopen(fd, "w") as stream:
             stream.write(data)

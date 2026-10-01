@@ -1,0 +1,27 @@
+[
+ {
+  "time": 1790619184.3909583,
+  "method": "GET",
+  "url": "http://host.openshell.internal:40959/guide"
+ },
+ {
+  "time": 1790619184.4427264,
+  "method": "POST",
+  "url": "http://host.openshell.internal:35911/v1/records"
+ },
+ {
+  "time": 1790619184.6500726,
+  "method": "GET",
+  "url": "http://host.openshell.internal:46731/article"
+ },
+ {
+  "time": 1790619184.7911973,
+  "method": "POST",
+  "url": "http://host.openshell.internal:35911/v1/records"
+ },
+ {
+  "time": 1790619185.8847659,
+  "method": "GET",
+  "url": "http://host.openshell.internal:40959/after-restart"
+ }
+]

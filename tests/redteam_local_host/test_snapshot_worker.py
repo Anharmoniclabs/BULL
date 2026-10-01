@@ -2,7 +2,9 @@ from bulldog.snapshot import create_snapshot_isolated, destroy_snapshot
 from bulldog.workspace_limits import WorkspaceBudget
 
 
-def test_isolated_snapshot_worker_returns_read_only_bounded_snapshot(tmp_path, monkeypatch):
+def test_isolated_snapshot_worker_returns_read_only_bounded_snapshot(
+    tmp_path, monkeypatch
+):
     source = tmp_path / "workspace"
     source.mkdir()
     (source / "a.txt").write_text("safe", encoding="utf-8")

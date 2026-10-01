@@ -1,0 +1,23 @@
+[1790619184.109] [sandbox] [INFO ] [openshell_supervisor] Starting sandbox supervision command=["sleep", "infinity"]
+[1790619184.232] [sandbox] [INFO ] [openshell_supervisor] Fetching sandbox policy via gRPC endpoint=http://127.0.0.1:59465 sandbox=reader sandbox_id=d5cdc999-da03-4a08-a040-a08da2b776ef
+[1790619184.249] [sandbox] [OCSF ] [ocsf] CONFIG:ENRICHED [INFO] Enriched policy with baseline filesystem paths for proxy mode
+[1790619184.270] [sandbox] [INFO ] [openshell_supervisor_network::opa] Configured OPA runtime binary identity mode require_binary_identity=true source=proto
+[1790619184.271] [sandbox] [OCSF ] [ocsf] CONFIG:CONFIGURED [INFO] OPA runtime binary identity mode configured [source:proto require_binary_identity:true] [source:proto]
+[1790619184.289] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary attached backend=openshell-sandbox
+[1790619184.291] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary enforcement confirmed backend=openshell-sandbox
+[1790619184.294] [sandbox] [OCSF ] [ocsf] CONFIG:ENABLED [INFO] TLS termination enabled: ephemeral CA generated
+[1790619184.294] [sandbox] [OCSF ] [ocsf] CONFIG:READY [INFO] Policy DNS connected to isolation boundary
+[1790619184.294] [sandbox] [OCSF ] [ocsf] NET:LISTEN [INFO] 127.0.0.1:3128
+[1790619184.294] [sandbox] [WARN ] [openshell_supervisor_network::proxy] host.openshell.internal maps to a non-link-local IP; trusted-gateway SSRF exemption disabled ip=127.0.0.1
+[1790619184.318] [sandbox] [INFO ] [openshell_supervisor] Isolation boundary agent started backend=openshell-sandbox
+[1790619184.321] [sandbox] [OCSF ] [ocsf] SSH:LISTEN [INFO]
+[1790619184.331] [sandbox] [OCSF ] [ocsf] CONFIG:LOADED [INFO] Acknowledged initial policy revision as loaded [version:2] [hash:c87a895f50bfc865c4d92e682661c432fa212c412e59cb02730c9e78f46aa2dd]
+[1790619184.333] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] 127.0.0.1:59465
+[1790619184.333] [sandbox] [INFO ] [openshell_supervisor] Control-mode access plane started backend=openshell-sandbox
+[1790619184.460] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay open (channel_id=30e0f7e1-8cdb-4992-8f78-d99470c562b1, target=unix:/run/openshell/ssh.sock)
+[1790619184.460] [sandbox] [OCSF ] [ocsf] SSH:OPEN [INFO] ALLOWED
+[1790619184.495] [sandbox] [OCSF ] [ocsf] CONFIG:PUBLISHED [INFO] Policy DNS mapped host.openshell.internal resolved=127.0.0.1 synthetic=198.18.0.2 ports=35911,40959,46731 mapping_id=ab0ab92c-4295-4138-9994-93962e0a722d
+[1790619184.502] [sandbox] [OCSF ] [ocsf] NET:OPEN [INFO] ALLOWED /usr/bin/curl(0) -> host.openshell.internal:35911 [policy:api engine:opa]
+[1790619184.504] [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED POST http://host.openshell.internal:35911/v1/records [policy:api engine:l7]
+[1790619184.509] [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED POST http://host.openshell.internal:35911/v1/records [policy:api engine:middleware] [failed:false transformed:false reason:middleware_denied:bull-governance:bull_denied]
+[1790619184.516] [sandbox] [OCSF ] [ocsf] EVENT [INFO] ssh relay closed (channel_id=30e0f7e1-8cdb-4992-8f78-d99470c562b1, target=unix:/run/openshell/ssh.sock)

@@ -1,0 +1,3183 @@
+{
+  "format": "bull-readability-review-v1",
+  "baseline": "b6b69d47e6da06f328e719db9f0c2cb85d46ce9f",
+  "scope": "All 393 files tracked at baseline; a readability/consistency pass, not independent security review",
+  "files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Documentation template",
+      "before_sha256": "59e8ac757f449e1e71c5e1732e291e9d84b802db8c24e49c7781420c1305066c",
+      "after_sha256": "59e8ac757f449e1e71c5e1732e291e9d84b802db8c24e49c7781420c1305066c"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "f9c25e87b2315dc845c200c44e6e04ef56ff1a8876c1d75679bd7023a4b71f37",
+      "after_sha256": "f9c25e87b2315dc845c200c44e6e04ef56ff1a8876c1d75679bd7023a4b71f37"
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Change",
+      "before_sha256": "e7cd31a0afcdc94467181fd91400f22488567bec822cf6d9b8d42c22f1201bad",
+      "after_sha256": "e7cd31a0afcdc94467181fd91400f22488567bec822cf6d9b8d42c22f1201bad"
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "7c540b176225c6fef4c7fd27d8113f253a0a254b3f26d06bb26819a27d7b3933",
+      "after_sha256": "7c540b176225c6fef4c7fd27d8113f253a0a254b3f26d06bb26819a27d7b3933"
+    },
+    {
+      "path": ".github/workflows/formal.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "43f2b7cfaaefe6b086eace9c9a8832e3c9f014901e2a6184869afbe38afbcbd8",
+      "after_sha256": "43f2b7cfaaefe6b086eace9c9a8832e3c9f014901e2a6184869afbe38afbcbd8"
+    },
+    {
+      "path": ".github/workflows/freshclam.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "a1960fb2b761896526893fe3fd586b3ab183c83e9dbba341d609194b9cd85d4c",
+      "after_sha256": "a1960fb2b761896526893fe3fd586b3ab183c83e9dbba341d609194b9cd85d4c"
+    },
+    {
+      "path": ".github/workflows/guest-recipe.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "0119198f1aa4a1eabe0b74d5ffb5b132778cedaf35f0cbd9c505d356b77ac0ea",
+      "after_sha256": "0119198f1aa4a1eabe0b74d5ffb5b132778cedaf35f0cbd9c505d356b77ac0ea"
+    },
+    {
+      "path": ".github/workflows/guest-release.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "f2a70def36931ff1da5c6f4b6ca88af463c3642decb17c2173d86f36305432db",
+      "after_sha256": "f2a70def36931ff1da5c6f4b6ca88af463c3642decb17c2173d86f36305432db"
+    },
+    {
+      "path": ".github/workflows/lifecycle-governance-lab.yml",
+      "handling": "Formatted",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "bcec9caa2daa8757875f1d0d1af49a0cc4bf07acb1ccdd12517d4e7648c1dd6e",
+      "after_sha256": "b8827d9ad7f4bf792f0e4deed4af6578b916464578470ddb2410dbd2d97d27e2"
+    },
+    {
+      "path": ".github/workflows/microvm.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "df279610b46103ba1ba2e0cf7cf57e6116876e63c29eb6824d94966b33138c1f",
+      "after_sha256": "df279610b46103ba1ba2e0cf7cf57e6116876e63c29eb6824d94966b33138c1f"
+    },
+    {
+      "path": ".github/workflows/pages.yml",
+      "handling": "Formatted",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "a76d02e8ac00828a94cb877ff44754795e0fe52b8663f6e277e0e0abb98c1b56",
+      "after_sha256": "7527c450fcc53631066c06d888bd63fd198d5bafcd6d73cba05df1029d04b5c9"
+    },
+    {
+      "path": ".github/workflows/pytest.yml",
+      "handling": "Retained",
+      "check": "Parsed YAML values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "b41c23b0d2fd701eb7c8ace133a948460375b7ea1474fcb75c353939833a57da",
+      "after_sha256": "b41c23b0d2fd701eb7c8ace133a948460375b7ea1474fcb75c353939833a57da"
+    },
+    {
+      "path": ".gitignore",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "703133445559c510260ec81e8d81f6d248a5e1ec853634403f654b4e8487f548",
+      "after_sha256": "703133445559c510260ec81e8d81f6d248a5e1ec853634403f654b4e8487f548"
+    },
+    {
+      "path": "COMPLIANCE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL standards and compliance crosswalk",
+      "before_sha256": "546a75d54e604bcde7310533abad0957edfc87f225075f21c30cd993403fcaaf",
+      "after_sha256": "546a75d54e604bcde7310533abad0957edfc87f225075f21c30cd993403fcaaf"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Contributing to BULL",
+      "before_sha256": "f8f28abf91720bd8a22141bc2294107c87d9d6cff87f3900f7855bb43f76885c",
+      "after_sha256": "30d51192f90111444ce3ac9d79ddbdce69c8c03fca0164ebc722ece89171d246"
+    },
+    {
+      "path": "LICENSE",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+      "after_sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6"
+    },
+    {
+      "path": "README.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL",
+      "before_sha256": "f988763c1cbfc390b63ea92d6f9ba92f1a6845a4e1ba80db417aeaf65823be24",
+      "after_sha256": "8903cb099a194144ccf9103c4c2ea10e6bdea32e7ae0b26a2df52fdcf47c8801"
+    },
+    {
+      "path": "SECURITY.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Security policy",
+      "before_sha256": "852520c231cb368abf99db65315a193e3c0488e0260ac6936621ff6e18ae4229",
+      "after_sha256": "852520c231cb368abf99db65315a193e3c0488e0260ac6936621ff6e18ae4229"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Third-party materials",
+      "before_sha256": "c00c6c1f8c136a07384fe224db73a05f00ff0987e8ed8eb3e89f002e988476e9",
+      "after_sha256": "c00c6c1f8c136a07384fe224db73a05f00ff0987e8ed8eb3e89f002e988476e9"
+    },
+    {
+      "path": "benchmarks/20260920/attack-summary.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d",
+      "after_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d"
+    },
+    {
+      "path": "benchmarks/20260920/benchmark.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48",
+      "after_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48"
+    },
+    {
+      "path": "benchmarks/20260920/host.txt",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "11211f7dd339504fc41b9a32d06bdd6c4b291e437ce34493be6443e26c80d3b8",
+      "after_sha256": "11211f7dd339504fc41b9a32d06bdd6c4b291e437ce34493be6443e26c80d3b8"
+    },
+    {
+      "path": "benchmarks/20260920/hotpath.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f",
+      "after_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f"
+    },
+    {
+      "path": "certification/open_model_certification.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "b1e94b1de14f7b1c4da5ad93486e072bdc8486b2f509304a2f8f7d23ba19d9d3",
+      "after_sha256": "b1e94b1de14f7b1c4da5ad93486e072bdc8486b2f509304a2f8f7d23ba19d9d3"
+    },
+    {
+      "path": "certification/verification.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "e5aefdc32c0e0c9255b7dc7cbbe520b16671844673b00faf242a69590f913a99",
+      "after_sha256": "e5aefdc32c0e0c9255b7dc7cbbe520b16671844673b00faf242a69590f913a99"
+    },
+    {
+      "path": "compliance/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL assurance control registry",
+      "before_sha256": "cc40aa2134aeffe71f224c831f0e547a18beea8ba8fea2ec144dd383d897a84a",
+      "after_sha256": "cc40aa2134aeffe71f224c831f0e547a18beea8ba8fea2ec144dd383d897a84a"
+    },
+    {
+      "path": "deploy/bull-egress-gateway.service",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "4caee7b0f6ab4d0a36d313253e7bb68557aebbbde3ea631ef461f60da366aa46",
+      "after_sha256": "4caee7b0f6ab4d0a36d313253e7bb68557aebbbde3ea631ef461f60da366aa46"
+    },
+    {
+      "path": "deploy/cloudflare-audit/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL Cloudflare audit anchor",
+      "before_sha256": "b85cf36fbae2e90418ae701c276cfd9232ad9dd52b05992082f0817c093dccdd",
+      "after_sha256": "b85cf36fbae2e90418ae701c276cfd9232ad9dd52b05992082f0817c093dccdd"
+    },
+    {
+      "path": "deploy/cloudflare-audit/package.json",
+      "handling": "Retained",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "f8b883c02d8a9d0f73dc5ab6885859fd6f99ec5112317dd0428c383d8b771eab",
+      "after_sha256": "f8b883c02d8a9d0f73dc5ab6885859fd6f99ec5112317dd0428c383d8b771eab"
+    },
+    {
+      "path": "deploy/cloudflare-audit/prepare_build.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prepare a local Wrangler build config; never provision, upload, or deploy.",
+      "before_sha256": "d640e0acad1e9f6c0e64227f94666479681a711a0e7ab9f053a452dff5c65048",
+      "after_sha256": "adde08ca5752c93b15ce44ca2b55fdc2a1fdd7814549b76fe827e5f96c54dc3c"
+    },
+    {
+      "path": "deploy/cloudflare-audit/schema.sql",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "410ebc537633de02ff1975dd20ed651fa0e2c30174c8d6f0215cdcf435397f22",
+      "after_sha256": "410ebc537633de02ff1975dd20ed651fa0e2c30174c8d6f0215cdcf435397f22"
+    },
+    {
+      "path": "deploy/cloudflare-audit/src/index.ts",
+      "handling": "Formatted",
+      "check": "Parsed TypeScript AST compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "46cba1722c7e36bd2c163863030bd7180b46573ca3d1cd2fe85131dfc1a27751",
+      "after_sha256": "2fbde2e8c850d5a208f9f587471835c15af764d1ad27693ad390e66971361fe6"
+    },
+    {
+      "path": "deploy/cloudflare-audit/wrangler.jsonc",
+      "handling": "Retained",
+      "check": "Strict JSON compatibility and values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "e7e81fc62fa24ad423ddbee037d8b0b3e640938ebd5d79bf2da0077806bad403",
+      "after_sha256": "e7e81fc62fa24ad423ddbee037d8b0b3e640938ebd5d79bf2da0077806bad403"
+    },
+    {
+      "path": "deploy/egress_redirect.nft",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "c26c31872cc52e9a53855bd43102903bc8e8f8fd85a6b8fac1eff90dbb1f00c5",
+      "after_sha256": "c26c31872cc52e9a53855bd43102903bc8e8f8fd85a6b8fac1eff90dbb1f00c5"
+    },
+    {
+      "path": "deploy/install_egress_gateway.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "1700fdcf75aa9c2b061231af4427e93b9fba6e02939f68e72ae814d23e8cbfca",
+      "after_sha256": "1700fdcf75aa9c2b061231af4427e93b9fba6e02939f68e72ae814d23e8cbfca"
+    },
+    {
+      "path": "deploy/production-effect-coverage.json",
+      "handling": "Retained",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "1cb358a9d54ca3fe8c9fdab5f42cce10aba4757a5e59838250ded68ddb539f3c",
+      "after_sha256": "1cb358a9d54ca3fe8c9fdab5f42cce10aba4757a5e59838250ded68ddb539f3c"
+    },
+    {
+      "path": "docs/ADAPTER_VALIDATION.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Supported execution paths and recovery evidence",
+      "before_sha256": "517219eeeb8cad114bf78a774823b5b898b57c709e0444042c0f08db4da80190",
+      "after_sha256": "9207400e8f05f092ed48153112bb0186a3b6bfafaf675ef30e1bf100986c3a60"
+    },
+    {
+      "path": "docs/BENCHMARK_20260920.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL red-team benchmark \u2014 2026-09-20",
+      "before_sha256": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613",
+      "after_sha256": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613"
+    },
+    {
+      "path": "docs/BRANCH_AUDIT_20260922.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Branch inventory and claim scope",
+      "before_sha256": "aaf5ac8155245c3cbad3a6f848b6ad205df90154f40cfcb52c506cbc79d4bd50",
+      "after_sha256": "aaf5ac8155245c3cbad3a6f848b6ad205df90154f40cfcb52c506cbc79d4bd50"
+    },
+    {
+      "path": "docs/BRANCH_INTEGRATION.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "September 23 branch integration",
+      "before_sha256": "dfe433ff239c49641d86f7772c8cf6a3fe7abfe1a35c1158e2ae00cf007d9fec",
+      "after_sha256": "dfe433ff239c49641d86f7772c8cf6a3fe7abfe1a35c1158e2ae00cf007d9fec"
+    },
+    {
+      "path": "docs/BRAND.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL brand assets",
+      "before_sha256": "180c1e6fae2d000400b0828b1968c583c4f99fd8af0d12381a0aa66869534afe",
+      "after_sha256": "180c1e6fae2d000400b0828b1968c583c4f99fd8af0d12381a0aa66869534afe"
+    },
+    {
+      "path": "docs/CODESPACES_DEPLOYMENT_CHECKS.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Deployment checks from Codespaces",
+      "before_sha256": "77973f29433941cb4d6f493bbba799e7778e22069d3d10ece8ae6ba8f704b9ba",
+      "after_sha256": "77973f29433941cb4d6f493bbba799e7778e22069d3d10ece8ae6ba8f704b9ba"
+    },
+    {
+      "path": "docs/CODESPACES_VM_AND_KEY_CHECKS.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Run the remaining checks from Codespaces",
+      "before_sha256": "e38eec113af0b5e223a9b4ca44788a80f0efcc24741d58ca9eb13e19136f0f83",
+      "after_sha256": "e38eec113af0b5e223a9b4ca44788a80f0efcc24741d58ca9eb13e19136f0f83"
+    },
+    {
+      "path": "docs/CODE_READING_GUIDE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Reading BULL's code",
+      "before_sha256": "71f250b5e4176783fd5ed8cfcd9e3a0193d80c67bbff29b7a1b317555b97d1fd",
+      "after_sha256": "71f250b5e4176783fd5ed8cfcd9e3a0193d80c67bbff29b7a1b317555b97d1fd"
+    },
+    {
+      "path": "docs/CONTROL_CONSOLE.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL Command / Control Console",
+      "before_sha256": "0edaedca0aef40ce92d206c22afe26e393307ceec3334afd549c0d3962e42e80",
+      "after_sha256": "12b75405254d0d4a998972c6bb555864c2d77ec2f8346d2ab3da3e2ff6ebd142"
+    },
+    {
+      "path": "docs/CROSS_PLATFORM_SECURITY.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Cross-platform security architecture",
+      "before_sha256": "b1dcb70cb10a620a81e2da8f0f6ed21f75a31267ee3e42a83ad6e674fa87f1cd",
+      "after_sha256": "b1dcb70cb10a620a81e2da8f0f6ed21f75a31267ee3e42a83ad6e674fa87f1cd"
+    },
+    {
+      "path": "docs/DISTRIBUTION.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Source and binary distribution",
+      "before_sha256": "ee8702ce0252e2481fd329589e3c422d5f8b5ed68c39616eced1f085e9df2c95",
+      "after_sha256": "ee8702ce0252e2481fd329589e3c422d5f8b5ed68c39616eced1f085e9df2c95"
+    },
+    {
+      "path": "docs/GOVERNED_AGENT_RUN.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Local-model agent, sustained operation, and recovery",
+      "before_sha256": "0f3cc8ec41003442cedd85e7d14a0f965991134ba43913dbb2a3b7ac3c970541",
+      "after_sha256": "0f3cc8ec41003442cedd85e7d14a0f965991134ba43913dbb2a3b7ac3c970541"
+    },
+    {
+      "path": "docs/HARDENING.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Hardening components and their boundaries",
+      "before_sha256": "f5fcc9b9f89afbd03808320c1fcd650835cdbfb86dd00767f0e63d9c2b149c4b",
+      "after_sha256": "c5c78d1929c7b7ce493b01114c9bb5755bf47006c4053d8140b19d65aec5e5cb"
+    },
+    {
+      "path": "docs/HARDWARE_AUTHORITY.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL Hardware Authority",
+      "before_sha256": "d83df112ee598baacbbac4dcc0e78280f59019a8c3de0230b3b6326858977fa5",
+      "after_sha256": "d83df112ee598baacbbac4dcc0e78280f59019a8c3de0230b3b6326858977fa5"
+    },
+    {
+      "path": "docs/HUMAN_APPROVAL.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Credentialed approval for consequential operations",
+      "before_sha256": "8fa5b37781100a41f514c0660f4d28a0f79c0d4f7084d796035beebedaa5310c",
+      "after_sha256": "8fa5b37781100a41f514c0660f4d28a0f79c0d4f7084d796035beebedaa5310c"
+    },
+    {
+      "path": "docs/HUMAN_FIRST_PRODUCTION_ASSURANCE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Human-first production assurance",
+      "before_sha256": "bb7584062c1ad09a4329e9911d1d078ca242ab1658b3a2fc7495597dafbfbfcd",
+      "after_sha256": "bb7584062c1ad09a4329e9911d1d078ca242ab1658b3a2fc7495597dafbfbfcd"
+    },
+    {
+      "path": "docs/INTEGRATION_QUALIFICATION_20260927.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL integration candidate and live KVM status \u2014 2026-09-27 UTC",
+      "before_sha256": "082122c713644763b7b888465b43fb0d604ffa3f86a0e9485ec3a4c95d901f87",
+      "after_sha256": "082122c713644763b7b888465b43fb0d604ffa3f86a0e9485ec3a4c95d901f87"
+    },
+    {
+      "path": "docs/LIFECYCLE_CONCERN_COVERAGE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Owner concern register and implementation coverage",
+      "before_sha256": "4038403a974313db34e9b0d9a407d234e189505bad01d811167339eca30eaedb",
+      "after_sha256": "4038403a974313db34e9b0d9a407d234e189505bad01d811167339eca30eaedb"
+    },
+    {
+      "path": "docs/LIFECYCLE_GOVERNANCE.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL lifecycle governance \u2014 experimental implementation v0.1",
+      "before_sha256": "853d8d7c20dea72ac4eed0cac10557c535fc3087199bad8b3e7df529fc2c5ffe",
+      "after_sha256": "853d8d7c20dea72ac4eed0cac10557c535fc3087199bad8b3e7df529fc2c5ffe"
+    },
+    {
+      "path": "docs/LIFECYCLE_VALIDATION_20260926.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Lifecycle lab validation \u2014 2026-09-26",
+      "before_sha256": "f7d9942cc45bdf9984ee3aeb1c1a60c51c825c7d9f6889d284836c9c2c07d502",
+      "after_sha256": "f7d9942cc45bdf9984ee3aeb1c1a60c51c825c7d9f6889d284836c9c2c07d502"
+    },
+    {
+      "path": "docs/MICROVM_INTEGRATION_REPORT.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Local MicroVM integration result \u2014 2026-09-20",
+      "before_sha256": "47aa39bfa0f9c5eee0dd7a30b783a89cddd3d08a64b9400b4be084c8c4dc1d92",
+      "after_sha256": "47aa39bfa0f9c5eee0dd7a30b783a89cddd3d08a64b9400b4be084c8c4dc1d92"
+    },
+    {
+      "path": "docs/MICROVM_R3_FOLLOWUP.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Historical R3 follow-up: partial implementation",
+      "before_sha256": "6074165ba0ebd01f2d808d0427c9a2360c4c47acbf9f710bcb9da45e8b24d211",
+      "after_sha256": "6074165ba0ebd01f2d808d0427c9a2360c4c47acbf9f710bcb9da45e8b24d211"
+    },
+    {
+      "path": "docs/MICROVM_RELEASE_STATUS.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "MicroVM release notes and status",
+      "before_sha256": "cf3f2e75a6a79668eed0572e797df267cd183c5f77644aed44e43dc1d526a2c1",
+      "after_sha256": "cf3f2e75a6a79668eed0572e797df267cd183c5f77644aed44e43dc1d526a2c1"
+    },
+    {
+      "path": "docs/OCTOBER_REVIEW.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Technical presentation Q&A",
+      "before_sha256": "56af383110728ab21599dfa915794d591860f44815ed7b110a5bc3c40f0dc8b8",
+      "after_sha256": "209b2a15787d399d3b91a323992930ab0c3fc9f29c7ea9bf9fee15ab79b237cf"
+    },
+    {
+      "path": "docs/PRESENTATION.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL in five minutes",
+      "before_sha256": "441c911e5d1ced4be7d2f1f79248a4d8d00997c922413f8f8967fe1cd6d655a9",
+      "after_sha256": "b66d9ad77fc4aa3a3c066ed207465934fd48b52686d644c3daecb357734fdcd3"
+    },
+    {
+      "path": "docs/PRODUCTION_EXTERNAL_AUDIT_EVIDENCE_20260920.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "External production audit-anchor evidence \u2014 2026-09-20",
+      "before_sha256": "175210f907f4ee9c6edc61e3a1f383be2a8687f214cbf6ee3104b090d4f864bd",
+      "after_sha256": "175210f907f4ee9c6edc61e3a1f383be2a8687f214cbf6ee3104b090d4f864bd"
+    },
+    {
+      "path": "docs/PRODUCTION_SECURITY.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL production security boundary",
+      "before_sha256": "f03bf9c91de8183cc648d787767b38d76dc9716af7c39cb8d9bb0512dee3fc73",
+      "after_sha256": "f03bf9c91de8183cc648d787767b38d76dc9716af7c39cb8d9bb0512dee3fc73"
+    },
+    {
+      "path": "docs/PUBLICATION.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL publication",
+      "before_sha256": "ca52f55da63ca3affd2cf5ee256a16ffb3051a0077775d9836521cbb105b1825",
+      "after_sha256": "ca52f55da63ca3affd2cf5ee256a16ffb3051a0077775d9836521cbb105b1825"
+    },
+    {
+      "path": "docs/README.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Documentation",
+      "before_sha256": "f285c445ee9e289a2c360ca3fdbb38511075f5b81cbb974adb9a3a44d02b1615",
+      "after_sha256": "293f68d9f4ae9bc15d1a8adcbb00ebd10dabb9d01ab5749cac22d61bfaebd022"
+    },
+    {
+      "path": "docs/RELEASE_0.2.0rc1.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL 0.2.0rc1 release candidate",
+      "before_sha256": "0eb6677c8cc6499997d18bb87cb96bf32bdce9151e7cdc2832922d5388836d27",
+      "after_sha256": "0eb6677c8cc6499997d18bb87cb96bf32bdce9151e7cdc2832922d5388836d27"
+    },
+    {
+      "path": "docs/REPRODUCIBLE_DEPLOYMENT.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Reproduce a BULL deployment with your own authority",
+      "before_sha256": "a64943b4b6cc0a1bd191c1cb4d4cd5ffd8989d0af1610c6f0e7fc507f9922559",
+      "after_sha256": "a64943b4b6cc0a1bd191c1cb4d4cd5ffd8989d0af1610c6f0e7fc507f9922559"
+    },
+    {
+      "path": "docs/RESEARCH_STATUS_20260927.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL research qualification checkpoint \u2014 2026-09-27 UTC",
+      "before_sha256": "3c236f986c63b530bb99332695b1c41137dd19c5f1c6591c27383a9c7bca096b",
+      "after_sha256": "3c236f986c63b530bb99332695b1c41137dd19c5f1c6591c27383a9c7bca096b"
+    },
+    {
+      "path": "docs/SECURITY_CLAIMS.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Security claims and evidence requirements",
+      "before_sha256": "38b58a06c54641ecc02daac0497e5742f3e8d07ee48b26a5a32c9c099085b64e",
+      "after_sha256": "38b58a06c54641ecc02daac0497e5742f3e8d07ee48b26a5a32c9c099085b64e"
+    },
+    {
+      "path": "docs/SESSION_EXPORT_TRUST_BOUNDARIES.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Session reuse, output publication, and host trust",
+      "before_sha256": "be9a43b46e41d361e91cf78da34396e3df102d230db4f1de667817d11fd5afce",
+      "after_sha256": "be9a43b46e41d361e91cf78da34396e3df102d230db4f1de667817d11fd5afce"
+    },
+    {
+      "path": "docs/SYSTEM_WIDE_EGRESS.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Guest egress: gateway and network rules",
+      "before_sha256": "b1f59c3db4ff410d6acc0c05fdb0c3cb3c7f52e6e8c1e205a9136ba08dbf3fb5",
+      "after_sha256": "b1f59c3db4ff410d6acc0c05fdb0c3cb3c7f52e6e8c1e205a9136ba08dbf3fb5"
+    },
+    {
+      "path": "docs/VALIDATION_20260922.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Candidate validation \u2014 2026-09-22",
+      "before_sha256": "7bb09aaa2ac2924721707b23b1aa55b1563cd5fa31bf90271d50abc741bf8618",
+      "after_sha256": "7bb09aaa2ac2924721707b23b1aa55b1563cd5fa31bf90271d50abc741bf8618"
+    },
+    {
+      "path": "docs/VALIDATION_20260923.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Validation recorded 2026-09-23",
+      "before_sha256": "9c35786c4f6ab9b580a44757ba364aa42d49b83e1b0cd254666aa1e98924ab31",
+      "after_sha256": "9c35786c4f6ab9b580a44757ba364aa42d49b83e1b0cd254666aa1e98924ab31"
+    },
+    {
+      "path": "docs/WEBSITE_REDESIGN_MAP.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL website redesign map",
+      "before_sha256": "be859ad56263191fed0310f51b25e510e7c70317f2512e48b07af2d626b7286e",
+      "after_sha256": "be859ad56263191fed0310f51b25e510e7c70317f2512e48b07af2d626b7286e"
+    },
+    {
+      "path": "docs/WEBSITE_REDESIGN_VALIDATION.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Website redesign validation",
+      "before_sha256": "93bef55323e98caae709e51cd82fd975956adc246827c9bf5604d525aa190686",
+      "after_sha256": "93bef55323e98caae709e51cd82fd975956adc246827c9bf5604d525aa190686"
+    },
+    {
+      "path": "docs/evidence/branch-integration-20260923.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "c6f762c6abd1d156e5fb3469eaa29502faaba32d1d48b62ea80afdee01cfc923",
+      "after_sha256": "c6f762c6abd1d156e5fb3469eaa29502faaba32d1d48b62ea80afdee01cfc923"
+    },
+    {
+      "path": "docs/evidence/candidate-428db9c.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "d567a7f0fe053b9321ce26a12a120b7d58557fe59f191d6e8bcca1d8cd2a6a88",
+      "after_sha256": "d567a7f0fe053b9321ce26a12a120b7d58557fe59f191d6e8bcca1d8cd2a6a88"
+    },
+    {
+      "path": "docs/evidence/governed-agent-20260922/README.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5999a0758f9b0bfee5c312c737678b19ec7d1fb00c2177665627df809a53b956",
+      "after_sha256": "5999a0758f9b0bfee5c312c737678b19ec7d1fb00c2177665627df809a53b956"
+    },
+    {
+      "path": "docs/evidence/governed-agent-20260922/source-manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c",
+      "after_sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c"
+    },
+    {
+      "path": "docs/evidence/governed-agent-20260922/summary.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5c686edd74b2f2410ba8047988e2b8313d9dbed906e6b2e76c7be9221e1e194c",
+      "after_sha256": "5c686edd74b2f2410ba8047988e2b8313d9dbed906e6b2e76c7be9221e1e194c"
+    },
+    {
+      "path": "docs/evidence/hardware-20260923/manual-drain.py",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f",
+      "after_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f"
+    },
+    {
+      "path": "docs/multiagent.md",
+      "handling": "Clarified",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL Multi-Agent System",
+      "before_sha256": "32cf206545c8248e704156d8a7868f95403080520195758b0b099cd5b3c32a41",
+      "after_sha256": "4ea8dc1fbe66f172c9f396f6655fc7727ad74f8c87c7fbe76c29046e8064fe55"
+    },
+    {
+      "path": "docs/papers/bull-ii/IEEEtran.cls",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "da751920a317ed318b7b5cd7fa585a6cc7d28502d457856382e9be24b10a3bd7",
+      "after_sha256": "da751920a317ed318b7b5cd7fa585a6cc7d28502d457856382e9be24b10a3bd7"
+    },
+    {
+      "path": "docs/papers/bull-ii/LICENSE",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+      "after_sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6"
+    },
+    {
+      "path": "docs/papers/bull-ii/README.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "c3358ef295f7e275246e72dd2cf3c439a21207863b85e4df654672534714744c",
+      "after_sha256": "c3358ef295f7e275246e72dd2cf3c439a21207863b85e4df654672534714744c"
+    },
+    {
+      "path": "docs/papers/bull-ii/SUBMISSION.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "940ab7489839ed673e37ffa9c5c6d572f0a88b4d4a7a449034905d422e620a62",
+      "after_sha256": "940ab7489839ed673e37ffa9c5c6d572f0a88b4d4a7a449034905d422e620a62"
+    },
+    {
+      "path": "docs/papers/bull-ii/build.py",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "adb8aad5a8d04f823161b369520c54769a660dbbdfff96ee324e750462791f59",
+      "after_sha256": "adb8aad5a8d04f823161b369520c54769a660dbbdfff96ee324e750462791f59"
+    },
+    {
+      "path": "docs/papers/bull-ii/coverage.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "e6854062070650bd47abfbf70ee3e8cbe303d20972d84496be8d56eff4eca893",
+      "after_sha256": "e6854062070650bd47abfbf70ee3e8cbe303d20972d84496be8d56eff4eca893"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence-manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "9e1d16132afd59b3ff6be06fbf80bd5ea1719e04c87481602a6b52a6a309084b",
+      "after_sha256": "9e1d16132afd59b3ff6be06fbf80bd5ea1719e04c87481602a6b52a6a309084b"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/ADAPTER_VALIDATION.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "517219eeeb8cad114bf78a774823b5b898b57c709e0444042c0f08db4da80190",
+      "after_sha256": "517219eeeb8cad114bf78a774823b5b898b57c709e0444042c0f08db4da80190"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/BENCHMARK_20260920.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613",
+      "after_sha256": "f32470510e2a6438088e3eacdb4a7869049a49f1e7726f1c74aefc23ebb9d613"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/DISTRIBUTION.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "ee8702ce0252e2481fd329589e3c422d5f8b5ed68c39616eced1f085e9df2c95",
+      "after_sha256": "ee8702ce0252e2481fd329589e3c422d5f8b5ed68c39616eced1f085e9df2c95"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/GOVERNED_AGENT_RUN.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "0f3cc8ec41003442cedd85e7d14a0f965991134ba43913dbb2a3b7ac3c970541",
+      "after_sha256": "0f3cc8ec41003442cedd85e7d14a0f965991134ba43913dbb2a3b7ac3c970541"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/HARDWARE_AUTHORITY.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "d83df112ee598baacbbac4dcc0e78280f59019a8c3de0230b3b6326858977fa5",
+      "after_sha256": "d83df112ee598baacbbac4dcc0e78280f59019a8c3de0230b3b6326858977fa5"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/HUMAN_APPROVAL.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "8fa5b37781100a41f514c0660f4d28a0f79c0d4f7084d796035beebedaa5310c",
+      "after_sha256": "8fa5b37781100a41f514c0660f4d28a0f79c0d4f7084d796035beebedaa5310c"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/MICROVM_INTEGRATION_REPORT.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "47aa39bfa0f9c5eee0dd7a30b783a89cddd3d08a64b9400b4be084c8c4dc1d92",
+      "after_sha256": "47aa39bfa0f9c5eee0dd7a30b783a89cddd3d08a64b9400b4be084c8c4dc1d92"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/PRODUCTION_EXTERNAL_AUDIT_EVIDENCE_20260920.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "175210f907f4ee9c6edc61e3a1f383be2a8687f214cbf6ee3104b090d4f864bd",
+      "after_sha256": "175210f907f4ee9c6edc61e3a1f383be2a8687f214cbf6ee3104b090d4f864bd"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/SESSION_EXPORT_TRUST_BOUNDARIES.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "be9a43b46e41d361e91cf78da34396e3df102d230db4f1de667817d11fd5afce",
+      "after_sha256": "be9a43b46e41d361e91cf78da34396e3df102d230db4f1de667817d11fd5afce"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/VALIDATION_20260922.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "7bb09aaa2ac2924721707b23b1aa55b1563cd5fa31bf90271d50abc741bf8618",
+      "after_sha256": "7bb09aaa2ac2924721707b23b1aa55b1563cd5fa31bf90271d50abc741bf8618"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/VALIDATION_20260923.md",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "18d4d539ac1a844bf67eb4da40ffbd5223c59c2d3deda09b7661a0e39d743094",
+      "after_sha256": "18d4d539ac1a844bf67eb4da40ffbd5223c59c2d3deda09b7661a0e39d743094"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/evidence/candidate-428db9c.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "d567a7f0fe053b9321ce26a12a120b7d58557fe59f191d6e8bcca1d8cd2a6a88",
+      "after_sha256": "d567a7f0fe053b9321ce26a12a120b7d58557fe59f191d6e8bcca1d8cd2a6a88"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/evidence/governed-agent-20260922/source-manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c",
+      "after_sha256": "586bbe6857f317354b8f14bd031f3109bbba3ee8c54702d8471972d68b616f8c"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/evidence/governed-agent-20260922/summary.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5c686edd74b2f2410ba8047988e2b8313d9dbed906e6b2e76c7be9221e1e194c",
+      "after_sha256": "5c686edd74b2f2410ba8047988e2b8313d9dbed906e6b2e76c7be9221e1e194c"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/docs/evidence/hardware-20260923/manual-drain.py",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f",
+      "after_sha256": "3069bd9420814efd8e373bf75bd9a506da360cbe2c5687df8669358cef09d93f"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/site/data/benchmarks/20260920/attack-summary.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d",
+      "after_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/site/data/benchmarks/20260920/benchmark.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48",
+      "after_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/site/data/benchmarks/20260920/hotpath.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f",
+      "after_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/site/data/hardware/20260923-gestures.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "57cf5da9164d4a8a5bd4e4146608ba3861499f0b8c3753063208bee96b3d8f69",
+      "after_sha256": "57cf5da9164d4a8a5bd4e4146608ba3861499f0b8c3753063208bee96b3d8f69"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/site/data/validation/603365e.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5228bfa04b4ed94a3d15252189f1ec1005f1cf4cb087738bd7999a1ea0919017",
+      "after_sha256": "5228bfa04b4ed94a3d15252189f1ec1005f1cf4cb087738bd7999a1ea0919017"
+    },
+    {
+      "path": "docs/papers/bull-ii/evidence/validation-ab53f56.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3c8f1f9111b47cf44cd1f0bb53d365980d3601ec39815b128ab8f67da2bf37ff",
+      "after_sha256": "3c8f1f9111b47cf44cd1f0bb53d365980d3601ec39815b128ab8f67da2bf37ff"
+    },
+    {
+      "path": "docs/papers/bull-ii/figures/audit-flow.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "415b0c3a66ca64b7115fdb6843910462f6e9d2c99803294148b425c25ed3a8eb",
+      "after_sha256": "415b0c3a66ca64b7115fdb6843910462f6e9d2c99803294148b425c25ed3a8eb"
+    },
+    {
+      "path": "docs/papers/bull-ii/figures/data-flow.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8",
+      "after_sha256": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8"
+    },
+    {
+      "path": "docs/papers/bull-ii/figures/kernel-layers.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e",
+      "after_sha256": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e"
+    },
+    {
+      "path": "docs/papers/bull-ii/figures/microvm-io.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a",
+      "after_sha256": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a"
+    },
+    {
+      "path": "docs/papers/bull-ii/layout-reference.tex",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "928e8ce8c59f290600d8c91fca14becb997fa3f08a2afe1a9b5fa04c27ffbc22",
+      "after_sha256": "928e8ce8c59f290600d8c91fca14becb997fa3f08a2afe1a9b5fa04c27ffbc22"
+    },
+    {
+      "path": "docs/papers/bull-ii/paper.tex",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3f62ebc21c26efc9f3d76e6257f02ef619f18f15e0fcd5ecb09552dbd3511d24",
+      "after_sha256": "3f62ebc21c26efc9f3d76e6257f02ef619f18f15e0fcd5ecb09552dbd3511d24"
+    },
+    {
+      "path": "docs/papers/bull-ii/plot_evidence.py",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3dfa1ef275efaa795fa27b6d494bf33a9c9fda4162e440d42599efe873da9ecc",
+      "after_sha256": "3dfa1ef275efaa795fa27b6d494bf33a9c9fda4162e440d42599efe873da9ecc"
+    },
+    {
+      "path": "docs/papers/bull-ii/requirements.txt",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "ceeca15379876a295c8f8ff0ae6d6585608f274a3c174ce6d3d35e0f0bd11458",
+      "after_sha256": "ceeca15379876a295c8f8ff0ae6d6585608f274a3c174ce6d3d35e0f0bd11458"
+    },
+    {
+      "path": "examples/adversary_capture_example.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Demo of the BULL adversary capture layer.",
+      "before_sha256": "16f8dedb97c70426fbf1982b2c6093024b5d3e7d70456519c3478c5be804e65b",
+      "after_sha256": "ece4e68d429b6fc33cbe21790925f6442e867fa153a521165aa4548e8dc315a3"
+    },
+    {
+      "path": "examples/blocked_action.json",
+      "handling": "Retained",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "afcc4c7d2880fa27703026fc0689309ca79d29fcf63f961e04368a9631f1c18f",
+      "after_sha256": "afcc4c7d2880fa27703026fc0689309ca79d29fcf63f961e04368a9631f1c18f"
+    },
+    {
+      "path": "examples/governed-agent/input.txt",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "2d1beb5649bc17e76179c00a1a1384064d24f1d826cdc6c91e381b4986986c7f",
+      "after_sha256": "2d1beb5649bc17e76179c00a1a1384064d24f1d826cdc6c91e381b4986986c7f"
+    },
+    {
+      "path": "examples/multiagent_example.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Demo of the BULL multi-agent system.",
+      "before_sha256": "fddb8749871acd30c8ff8d39ccd469a3a8c341db1935220d34ab51b77f5dc281",
+      "after_sha256": "40a0fe05d2d74f366bd847cc7d613faf808736924d7b19c7ae04f3c24f5cc5f7"
+    },
+    {
+      "path": "examples/safe_action.json",
+      "handling": "Retained",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "b525405c847e03efee1d6d0577dea89a47e299e42c9bfdcf668d546c90fcf287",
+      "after_sha256": "b525405c847e03efee1d6d0577dea89a47e299e42c9bfdcf668d546c90fcf287"
+    },
+    {
+      "path": "experiments/lifecycle_governance/core.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Compatibility import for the standalone lifecycle evidence lab.",
+      "before_sha256": "f4b9d75ab317f092fa60a3564117fd4fd2a94d738940dae7ff2fc419ff6e6d14",
+      "after_sha256": "e0d7479de6440a9083051101afcb7e7c8020d7b784abfad40d723db0464bdb2b"
+    },
+    {
+      "path": "experiments/lifecycle_governance/viewer.html",
+      "handling": "Formatted",
+      "check": "Parsed DOM and text compared; source tests",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "48f14edf23161fb2a84e5c77151c4e3ac017a2d2385d9d4ab234a7a400bd2888",
+      "after_sha256": "29a5cbeabecfd09b0876989655bef0d46206048c443ea4a7fcb2d5b0475058e0"
+    },
+    {
+      "path": "firmware/CMakeLists.txt",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "e1a9797c3efc2a9383f3c9c42633ef5a4896ff86a54091a952358234671169a0",
+      "after_sha256": "e1a9797c3efc2a9383f3c9c42633ef5a4896ff86a54091a952358234671169a0"
+    },
+    {
+      "path": "firmware/PICO_EXAMPLES_LICENSE.txt",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "483f865953435b66c443dee7558debe3cc3cf8fcbb6a112fd9fc6a795d53f1f6",
+      "after_sha256": "483f865953435b66c443dee7558debe3cc3cf8fcbb6a112fd9fc6a795d53f1f6"
+    },
+    {
+      "path": "firmware/src/boot_button.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "257c52bcdcaabf984b4491908e6ac518b1488e4234ba8c5acbcbfbf0e97a2714",
+      "after_sha256": "bd726d390684c4dfa7db8092b61add62199cae44b89b1b87c99008a14c4d47a7"
+    },
+    {
+      "path": "firmware/src/boot_clicks.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "eca6e2ea2b07a647f935a8b1babe00697f8de3206eafeab6d214613ce7fc1566",
+      "after_sha256": "501edf767020c2c4b203284576d953f852b1130279f250c4098300831d6b6235"
+    },
+    {
+      "path": "firmware/src/boot_clicks.h",
+      "handling": "Retained",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "b619a2a0f3f7d8bb6ed5a22234e9dc1c4982a7e952612a2a44e74ef1c13d1c2d",
+      "after_sha256": "b619a2a0f3f7d8bb6ed5a22234e9dc1c4982a7e952612a2a44e74ef1c13d1c2d"
+    },
+    {
+      "path": "firmware/src/main.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "97b863bcec9b8b93657a7d2b663a8d7d5284621f0aff57861e2e53d144ef5674",
+      "after_sha256": "f9a23d2ddc2bcb44d91317f3fdf6e2ae389dcd98a2a45e5b0e4bbbd8c5800804"
+    },
+    {
+      "path": "firmware/src/state_machine.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "5bb7362bc42350b5b9360cafa446c7b54a98205a5a0311caddcac1b44e0af72f",
+      "after_sha256": "1d0140fc693f3153a0a48218b25311fec14cac91f6a5fde12319c1da36a3a3b0"
+    },
+    {
+      "path": "firmware/src/state_machine.h",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "cc24e85536514deef5d8e101c531255211b280b701367dc19f17137b24798e85",
+      "after_sha256": "97e075c7ce1e7ed9d7a725f0f19ed656c1d0e12a57b363f654c5bbfdc2ce5b78"
+    },
+    {
+      "path": "firmware/src/status_pixel.pio",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "0d8f3230edcfafe41f0cd2e648451d0d0776f1cc8dc5f1195e00219e8ae6575e",
+      "after_sha256": "0d8f3230edcfafe41f0cd2e648451d0d0776f1cc8dc5f1195e00219e8ae6575e"
+    },
+    {
+      "path": "firmware/src/tusb_config.h",
+      "handling": "Retained",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "b469eabfa674580e8a50ba86593f25c8f403abdbcfc9934b7923dabe739b5aa5",
+      "after_sha256": "b469eabfa674580e8a50ba86593f25c8f403abdbcfc9934b7923dabe739b5aa5"
+    },
+    {
+      "path": "firmware/src/usb_descriptors.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "5a493c60db8ac99a11488f25c4affbd0293f089355595e9d4c3c6ef4dbbce240",
+      "after_sha256": "832956ee75197519c6a411f67942d555831e4525588bdd9a6c778001b617c857"
+    },
+    {
+      "path": "firmware/tests/boot_clicks_test.c",
+      "handling": "Formatted",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "4dd5754bf0cd76c6cb447e65a08ec3c1d78570a2c331c54a879acc4976ff5c13",
+      "after_sha256": "34d21aafad45ff2927faf684b32007e178c25d99796c8203308480005a402a29"
+    },
+    {
+      "path": "firmware/tests/state_machine_test.c",
+      "handling": "Retained",
+      "check": "C tokens and include order compared; host simulations",
+      "purpose": "Firmware source",
+      "before_sha256": "972f06c05e22718184bd4246aca0cb08e4d431adad2bf55dba49659bf1516515",
+      "after_sha256": "972f06c05e22718184bd4246aca0cb08e4d431adad2bf55dba49659bf1516515"
+    },
+    {
+      "path": "formal/refinement-map.json",
+      "handling": "Retained",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "d9e375da47ab36934533ae9890663766efad36ec2d5a7dcab3f3a03a6ce06f36",
+      "after_sha256": "d9e375da47ab36934533ae9890663766efad36ec2d5a7dcab3f3a03a6ce06f36"
+    },
+    {
+      "path": "formal/tla/BullApproval.cfg",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "d2ace5532e001d2636660807e60c9b7e7408c9a7b7ac5c0529a7b1b540a93e18",
+      "after_sha256": "d2ace5532e001d2636660807e60c9b7e7408c9a7b7ac5c0529a7b1b540a93e18"
+    },
+    {
+      "path": "formal/tla/BullApproval.tla",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "435fc11ef91c4a40f8c388e68278a66bdb340bd3e4c043cfb056e865f3dc5a97",
+      "after_sha256": "435fc11ef91c4a40f8c388e68278a66bdb340bd3e4c043cfb056e865f3dc5a97"
+    },
+    {
+      "path": "formal/tla/BullRuntime.cfg",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "569fa37a2c3b4d1f9cf8b845fc87889a877794c67849abbaf03c44895c556017",
+      "after_sha256": "569fa37a2c3b4d1f9cf8b845fc87889a877794c67849abbaf03c44895c556017"
+    },
+    {
+      "path": "formal/tla/BullRuntime.tla",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "69a5848520acefc142e72b1c174961275bd630ad933aa241bf67bdb8c955dede",
+      "after_sha256": "69a5848520acefc142e72b1c174961275bd630ad933aa241bf67bdb8c955dede"
+    },
+    {
+      "path": "formal/tla/BullSessionAudit.cfg",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "42c16248a98f9f047258909c143186923019f84e9c870b7c4adac9a47286a60a",
+      "after_sha256": "42c16248a98f9f047258909c143186923019f84e9c870b7c4adac9a47286a60a"
+    },
+    {
+      "path": "formal/tla/BullSessionAudit.tla",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "42090565761eff7233ec574855fbebb1ae827da57fd09dc228d95bc468b424e8",
+      "after_sha256": "42090565761eff7233ec574855fbebb1ae827da57fd09dc228d95bc468b424e8"
+    },
+    {
+      "path": "microvm/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL MicroVM launcher",
+      "before_sha256": "c12b935479352db31aa9c724fa05c9015e71e96faff0b154094de1e251b72e09",
+      "after_sha256": "c12b935479352db31aa9c724fa05c9015e71e96faff0b154094de1e251b72e09"
+    },
+    {
+      "path": "microvm/audit/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Audit anchor service",
+      "before_sha256": "2510e2121b9cfbf102bb2bbe41578b7485eec7d9743ca1570fab24d9f704bb47",
+      "after_sha256": "2510e2121b9cfbf102bb2bbe41578b7485eec7d9743ca1570fab24d9f704bb47"
+    },
+    {
+      "path": "microvm/audit/local-test.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "74fa12c6a844f60bc7f942c91dd0f0209fcc17584d30d883ed770fed6cfe5dda",
+      "after_sha256": "74fa12c6a844f60bc7f942c91dd0f0209fcc17584d30d883ed770fed6cfe5dda"
+    },
+    {
+      "path": "microvm/config/defaults.env",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "e6aa3174b07739c836ae667a281a489be90e722cdcc99ad9f89484967f37c8d8",
+      "after_sha256": "e6aa3174b07739c836ae667a281a489be90e722cdcc99ad9f89484967f37c8d8"
+    },
+    {
+      "path": "microvm/config/deployment.env.example",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "e35445723a06ed4634bb2b8c737fe9fae9d6834e116dda37b1f44b3c0dc2f8d9",
+      "after_sha256": "e35445723a06ed4634bb2b8c737fe9fae9d6834e116dda37b1f44b3c0dc2f8d9"
+    },
+    {
+      "path": "microvm/evidence.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Host-side audit evidence helpers for deployment tests, not guest authority.",
+      "before_sha256": "7c1872022d803a98abbd9318144031c6a36380ac228d8e955f7e3dbb8a0c41c5",
+      "after_sha256": "32e417f034b57cdcea79fe732f523bfec3a331959e5e7cb84c5b666e3f61fe8b"
+    },
+    {
+      "path": "microvm/governance/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Protected merge rollout",
+      "before_sha256": "a9cd63ead59f2ec3afe1320885ad54d8b3216ddf1f4ef3f892b74b66b5ef8f4e",
+      "after_sha256": "a9cd63ead59f2ec3afe1320885ad54d8b3216ddf1f4ef3f892b74b66b5ef8f4e"
+    },
+    {
+      "path": "microvm/governance/main-ruleset.json",
+      "handling": "Formatted",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "ce526801a2c80ef77af453e0991143989596bf833c1216712a5f1967c9ab1ea1",
+      "after_sha256": "c22d52c7941694bd9de354279392c19c19bc6ad2d025d95089ca100ece2cd19d"
+    },
+    {
+      "path": "microvm/guest/DEPENDENCIES.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "Production guest dependency contract",
+      "before_sha256": "33ec418675e91cc703584c7d2de314d009050fae398063a09a0fb91c2a5a478c",
+      "after_sha256": "33ec418675e91cc703584c7d2de314d009050fae398063a09a0fb91c2a5a478c"
+    },
+    {
+      "path": "microvm/guest/build_public.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Public, pinned guest recipe. No private baseline, service key, or founder path.",
+      "before_sha256": "21b9b5916c0d39fe28b93ae03f36b31f1700fabc072a79d50fa730ad55fc9109",
+      "after_sha256": "12a29a3eae482cb177e1acd40618573d55cecc88b418f2c85c79e8b77fb96a23"
+    },
+    {
+      "path": "microvm/guest/bull-engine",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "d3ce6accd01abd7f788fc4a75d10134be9f28a4037ba50929979d40930a8de55",
+      "after_sha256": "d3ce6accd01abd7f788fc4a75d10134be9f28a4037ba50929979d40930a8de55"
+    },
+    {
+      "path": "microvm/guest/derive_database_layout.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Apply the recipe's database alias to a new image without altering its input.",
+      "before_sha256": "9c1596c8e3ae2ce0967a49e1c3a5610fea3363778266e85d6b719d55ca26f63b",
+      "after_sha256": "62239bde139e50d48ae100bc9f7d5d93a04b8f58db7a4e694a25d65bf0880878"
+    },
+    {
+      "path": "microvm/guest/engine-adapter.example.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "675e8faf9f601cc65ad21580914e90af6f20297c8aa6739df6a555349a5a7e35",
+      "after_sha256": "675e8faf9f601cc65ad21580914e90af6f20297c8aa6739df6a555349a5a7e35"
+    },
+    {
+      "path": "microvm/guest/finalize_build.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Record a completed local guest build and verify original assets remain intact.",
+      "before_sha256": "de459dfac054982be83b35bc4e14c39dcfb65d5718253595f48fc40e78684f8b",
+      "after_sha256": "2d7591a6d63271914cc8a92cda3cfc33782d9e89fd80a3d7bf6c9025645b02a1"
+    },
+    {
+      "path": "microvm/guest/init",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "750795ff2dd04bc372648485362f46309ee704764591ab8f74c00e1c78319a7a",
+      "after_sha256": "750795ff2dd04bc372648485362f46309ee704764591ab8f74c00e1c78319a7a"
+    },
+    {
+      "path": "microvm/guest/prepare_build.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prepare an isolated Buildroot build from the pinned R3 inputs (no downloads).",
+      "before_sha256": "0985ba740d9dee52fcf74beee602042da62235bd879891284c2edbe7c16762ae",
+      "after_sha256": "9492960c7f5aadea9eda228b459aa9a06c1ccb240dd75c1b84dc7d144a1a4f35"
+    },
+    {
+      "path": "microvm/guest/production.fragment",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "b06005401d61b5a0be370877c1255eae7b84414a6fb3639b47bb6e04173f27f6",
+      "after_sha256": "b06005401d61b5a0be370877c1255eae7b84414a6fb3639b47bb6e04173f27f6"
+    },
+    {
+      "path": "microvm/guest/public/bull_defconfig",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "dd7074e57d1377b964cb3f324c6955c36a43c95abfde241c9b0045215d84832d",
+      "after_sha256": "dd7074e57d1377b964cb3f324c6955c36a43c95abfde241c9b0045215d84832d"
+    },
+    {
+      "path": "microvm/guest/public/linux.config",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "dd66cea991fc28380e50b6f0656bf5712b2b42a59ccaf810c86a43fcf6437cf8",
+      "after_sha256": "dd66cea991fc28380e50b6f0656bf5712b2b42a59ccaf810c86a43fcf6437cf8"
+    },
+    {
+      "path": "microvm/guest/public/patches/linux/linux.hash",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "3c903747404d462704d525099c5a4dfbc51b05a5a4aaf5abff5e6f733d57c55b",
+      "after_sha256": "3c903747404d462704d525099c5a4dfbc51b05a5a4aaf5abff5e6f733d57c55b"
+    },
+    {
+      "path": "microvm/integration.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "KVM integration fixture with disposable TLS or an operator-selected collector.",
+      "before_sha256": "b5be5a630c3905178023f5d07cd8dd8086d33e7770ff37b516178ad1bdefc4e1",
+      "after_sha256": "90c60acec7e8e77982125c850fc2b74676123a5d419999bbfa01da5027289f66"
+    },
+    {
+      "path": "microvm/rootfs/build-ext4.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "62280aaa02bd4a73a67756c6b1b16dfbd42c85b38df335660f498ae0468faaef",
+      "after_sha256": "62280aaa02bd4a73a67756c6b1b16dfbd42c85b38df335660f498ae0468faaef"
+    },
+    {
+      "path": "microvm/run-bull-microvm.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "d2d5d57632578af49e900f9ffe51b0b5368c645201038c11a58a3a0ec4f48211",
+      "after_sha256": "d2d5d57632578af49e900f9ffe51b0b5368c645201038c11a58a3a0ec4f48211"
+    },
+    {
+      "path": "namespace_certification.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Defines: ",
+      "before_sha256": "26dbd044d60b2ccb0fae75efb03f16c1471c3e03ab60eb97d98f10c9220c56c2",
+      "after_sha256": "775ccfc6d52be22e0d9fc5f4b786c417db2c11e4e981900f6fb116ac49b35a87"
+    },
+    {
+      "path": "pyproject.toml",
+      "handling": "Clarified",
+      "check": "Only formatter settings added; package configuration retained",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "01bc29b67fdaabadae0a250c049f541bd6dfabc100926b2550c56416cbcab230",
+      "after_sha256": "b710a61f4d3d95cb363be8a0aff3342d518e4120af66ca0859f81bae52105a30"
+    },
+    {
+      "path": "site/README.md",
+      "handling": "Retained",
+      "check": "Local-link, structure and claim scan; historical scope retained",
+      "purpose": "BULL engineering website",
+      "before_sha256": "c02d2b6170550fee565eef97afb9a2bbdb6203ff5055b1c2dd20ca48da821c59",
+      "after_sha256": "c02d2b6170550fee565eef97afb9a2bbdb6203ff5055b1c2dd20ca48da821c59"
+    },
+    {
+      "path": "site/assets/architecture/audit-flow.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "415b0c3a66ca64b7115fdb6843910462f6e9d2c99803294148b425c25ed3a8eb",
+      "after_sha256": "415b0c3a66ca64b7115fdb6843910462f6e9d2c99803294148b425c25ed3a8eb"
+    },
+    {
+      "path": "site/assets/architecture/data-flow.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8",
+      "after_sha256": "ca2df6083773879f5a67608f549d79840f7616f901f9c62e781e163bdf873aa8"
+    },
+    {
+      "path": "site/assets/architecture/kernel-layers.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e",
+      "after_sha256": "cc726f42fd390b086653050baa4274f039193f85f8b0e931725c55a10c58081e"
+    },
+    {
+      "path": "site/assets/architecture/microvm-io.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a",
+      "after_sha256": "434060b48d70c820f38c4c0a38f8d98e61c8d96e3e64128053608ed864ac594a"
+    },
+    {
+      "path": "site/assets/architecture/overview.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "fcb1db07f2e63f5bfb9a8d04f226478d5fa7ef2c1581332f4753b368caa709d5",
+      "after_sha256": "fcb1db07f2e63f5bfb9a8d04f226478d5fa7ef2c1581332f4753b368caa709d5"
+    },
+    {
+      "path": "site/assets/benchmarks/attack-latency.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "76908f830a13ea73bf373b332a9fb3a920bd5aa909f2e65f805f5679797ed4f1",
+      "after_sha256": "76908f830a13ea73bf373b332a9fb3a920bd5aa909f2e65f805f5679797ed4f1"
+    },
+    {
+      "path": "site/assets/benchmarks/attack-memory.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "a63174136c5be42e186dbca91749cc4dbc9866a7503352cffda983942a7360fa",
+      "after_sha256": "a63174136c5be42e186dbca91749cc4dbc9866a7503352cffda983942a7360fa"
+    },
+    {
+      "path": "site/assets/benchmarks/attack-pass-rate.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "50938a9cfd2d55fdc48b2073b15b58eac34e909f325eb92358c1b0477c751eb5",
+      "after_sha256": "50938a9cfd2d55fdc48b2073b15b58eac34e909f325eb92358c1b0477c751eb5"
+    },
+    {
+      "path": "site/assets/benchmarks/hotpath-throughput.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "19713282e848ac8b650e1e6f80f9c3e9f0690d08197f860dbd1bb0ba78c6e514",
+      "after_sha256": "19713282e848ac8b650e1e6f80f9c3e9f0690d08197f860dbd1bb0ba78c6e514"
+    },
+    {
+      "path": "site/assets/brand/bull-approved-sheet.png",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "79a75d93e09f2b0a460c7ae3feb854c601803adc922bf9a54346955bfd7d803a",
+      "after_sha256": "79a75d93e09f2b0a460c7ae3feb854c601803adc922bf9a54346955bfd7d803a"
+    },
+    {
+      "path": "site/assets/brand/bull-brand-board.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "e6c038093f97cae2d3404b4bb6cc8c40226e496e9f711f2c8e0c376955ff3fc7",
+      "after_sha256": "e6c038093f97cae2d3404b4bb6cc8c40226e496e9f711f2c8e0c376955ff3fc7"
+    },
+    {
+      "path": "site/assets/brand/bull-favicon.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "55cca5e62162d978c8610f036f1bad0dd290e2209db8c0857139797d2dc87538",
+      "after_sha256": "55cca5e62162d978c8610f036f1bad0dd290e2209db8c0857139797d2dc87538"
+    },
+    {
+      "path": "site/assets/brand/bull-mark.png",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5925b6ad5a5332bd50f6fbe4784f06904768ee4b1dd2caabac1107060a968f2f",
+      "after_sha256": "5925b6ad5a5332bd50f6fbe4784f06904768ee4b1dd2caabac1107060a968f2f"
+    },
+    {
+      "path": "site/assets/brand/bull-mark.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "be41e454a941737df240bbbeb9da25ad755b296037d6d8739b510321b0d84571",
+      "after_sha256": "be41e454a941737df240bbbeb9da25ad755b296037d6d8739b510321b0d84571"
+    },
+    {
+      "path": "site/assets/brand/bull-one-color.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "819a984bfb35d5894d839bcfb8f96c1e159ef15d31222e29396e669fe04d335f",
+      "after_sha256": "819a984bfb35d5894d839bcfb8f96c1e159ef15d31222e29396e669fe04d335f"
+    },
+    {
+      "path": "site/assets/brand/bull-primary-dark.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "771639b6aa1e1eea3cde30ad84495498dd1dc756764955852ea3309f2b8237a4",
+      "after_sha256": "771639b6aa1e1eea3cde30ad84495498dd1dc756764955852ea3309f2b8237a4"
+    },
+    {
+      "path": "site/assets/brand/bull-primary.png",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "90b53eb8dd9ee8c28a340e2bda2e970e95b4fc29a5debc101f39c5ba9b51753f",
+      "after_sha256": "90b53eb8dd9ee8c28a340e2bda2e970e95b4fc29a5debc101f39c5ba9b51753f"
+    },
+    {
+      "path": "site/assets/brand/bull-primary.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3a654b97a46175d940004834c727e995ffcc85ca3b960a7e99145ef483bc9530",
+      "after_sha256": "3a654b97a46175d940004834c727e995ffcc85ca3b960a7e99145ef483bc9530"
+    },
+    {
+      "path": "site/assets/brand/bull-stacked.svg",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "ccd94cb4c17d4cd208141bae2c2ac60b4a1500048ca71f14c2263dc64a148fcc",
+      "after_sha256": "ccd94cb4c17d4cd208141bae2c2ac60b4a1500048ca71f14c2263dc64a148fcc"
+    },
+    {
+      "path": "site/assets/brand/manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "2cbc0983604b53e2c88b31c1693db3bb3364175c4a737ec2b884760d69c12c3d",
+      "after_sha256": "2cbc0983604b53e2c88b31c1693db3bb3364175c4a737ec2b884760d69c12c3d"
+    },
+    {
+      "path": "site/assets/explainer/captions.vtt",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "e0712a5401f3f1cb1e1eb20ef35b87db609ad5449f0c71a2c26ebea3f961c7dd",
+      "after_sha256": "e0712a5401f3f1cb1e1eb20ef35b87db609ad5449f0c71a2c26ebea3f961c7dd"
+    },
+    {
+      "path": "site/assets/explainer/chapters.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "2c33daab5b8dee36627605101b1b6dea36e84ca22c6a293829cc8e15b5dcaa90",
+      "after_sha256": "2c33daab5b8dee36627605101b1b6dea36e84ca22c6a293829cc8e15b5dcaa90"
+    },
+    {
+      "path": "site/assets/explainer/manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "4e5501aa7ae044594b5f123ed961fa602336100bdbde0906d2b56e76d23587af",
+      "after_sha256": "4e5501aa7ae044594b5f123ed961fa602336100bdbde0906d2b56e76d23587af"
+    },
+    {
+      "path": "site/assets/papers/archive/bull-ii-prior.pdf",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "f319c1cc61632209ed499e4ef2713cbfbcffeddd4ec9d5ad49668b5738f5db66",
+      "after_sha256": "f319c1cc61632209ed499e4ef2713cbfbcffeddd4ec9d5ad49668b5738f5db66"
+    },
+    {
+      "path": "site/assets/papers/bull-ii-companion.zip",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "8bccc1efc158978f54fedbb1d57b3da34cb498806674f3d4bada86a1bfcf0883",
+      "after_sha256": "8bccc1efc158978f54fedbb1d57b3da34cb498806674f3d4bada86a1bfcf0883"
+    },
+    {
+      "path": "site/assets/papers/bull-ii-manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "343dbc4fbfd525a4c87f61ab394617e6d0bde56316d1aae9180134f652959695",
+      "after_sha256": "343dbc4fbfd525a4c87f61ab394617e6d0bde56316d1aae9180134f652959695"
+    },
+    {
+      "path": "site/assets/papers/bull-ii.pdf",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "de797d70f04088ca8bec0d432832c8079957a2871371aaeba7eb511538542ac4",
+      "after_sha256": "de797d70f04088ca8bec0d432832c8079957a2871371aaeba7eb511538542ac4"
+    },
+    {
+      "path": "site/assets/papers/bull.pdf",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "6afb294db0c23e71aaeabfaca850b2d9a1d7c590cb65912957c96c84f24007a2",
+      "after_sha256": "6afb294db0c23e71aaeabfaca850b2d9a1d7c590cb65912957c96c84f24007a2"
+    },
+    {
+      "path": "site/assets/papers/manifest.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "015f6875bb193874ac7d0eac0744c481ae9c2c1ab5984989f4be0579e51168e9",
+      "after_sha256": "015f6875bb193874ac7d0eac0744c481ae9c2c1ab5984989f4be0579e51168e9"
+    },
+    {
+      "path": "site/data/benchmarks/20260920/attack-summary.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d",
+      "after_sha256": "b0215873ed316f1b0194ded325bf3bd2d9ca9399d20cee07c0139369dda4b32d"
+    },
+    {
+      "path": "site/data/benchmarks/20260920/benchmark.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48",
+      "after_sha256": "4e1355da2cb9bc87251ff6769da3c1eed679c41ef68a92a8ef5c595c1ce17b48"
+    },
+    {
+      "path": "site/data/benchmarks/20260920/hotpath.csv",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f",
+      "after_sha256": "1970c57b26a29e6b3af27c731211626c03ce214ce33f6cd3dd1b92c6c08d6f9f"
+    },
+    {
+      "path": "site/data/hardware/20260923-gestures.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "57cf5da9164d4a8a5bd4e4146608ba3861499f0b8c3753063208bee96b3d8f69",
+      "after_sha256": "57cf5da9164d4a8a5bd4e4146608ba3861499f0b8c3753063208bee96b3d8f69"
+    },
+    {
+      "path": "site/data/validation/603365e.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "5228bfa04b4ed94a3d15252189f1ec1005f1cf4cb087738bd7999a1ea0919017",
+      "after_sha256": "5228bfa04b4ed94a3d15252189f1ec1005f1cf4cb087738bd7999a1ea0919017"
+    },
+    {
+      "path": "site/data/validation/ab53f56.json",
+      "handling": "Preserved",
+      "check": "Exact bytes match baseline",
+      "purpose": "Retained evidence, publication or design asset",
+      "before_sha256": "3c8f1f9111b47cf44cd1f0bb53d365980d3601ec39815b128ab8f67da2bf37ff",
+      "after_sha256": "3c8f1f9111b47cf44cd1f0bb53d365980d3601ec39815b128ab8f67da2bf37ff"
+    },
+    {
+      "path": "site/index.html",
+      "handling": "Formatted",
+      "check": "Parsed DOM and text compared; source tests",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "e9173d86af4f00b5454318a13635908942f6c3a419a7255b77580ec2711203b5",
+      "after_sha256": "b320a79c60ee18f28339c76c0eee34692519866c7684f5e6acccfef426c68eb3"
+    },
+    {
+      "path": "site/infrastructure.js",
+      "handling": "Formatted",
+      "check": "Parsed JavaScript AST compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "a6e2da2d832a018389482c14393702a9832103740050063f9b9ee528caf13826",
+      "after_sha256": "6f6903a6a0aea13c4cd602050e63fcc0dd7d4d30db9cb8f38c622d73f9a9cf64"
+    },
+    {
+      "path": "site/styles.css",
+      "handling": "Formatted",
+      "check": "CSS selectors, values and ordering compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "f160091d959b8f00145548b5d0db1aa3dc6a95d1fd327d9c87c4f44c00dbca19",
+      "after_sha256": "6f3b13919b8b024474dc95e7258743c401fe3a19861aa791597a668e83b976f6"
+    },
+    {
+      "path": "src/bulldog/__init__.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "BULL model-agnostic AI execution-governance runtime.",
+      "before_sha256": "7dfa7c24fc94a855e7b88474305961de42f1e4e9efd88ba639a687dc2726881c",
+      "after_sha256": "7dfa7c24fc94a855e7b88474305961de42f1e4e9efd88ba639a687dc2726881c"
+    },
+    {
+      "path": "src/bulldog/_namespace_launcher.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "af6ec95ada6fdee2398b9c8bacfb66793a62f5c9854dfa3876bbf7fc1332bf8e",
+      "after_sha256": "af6ec95ada6fdee2398b9c8bacfb66793a62f5c9854dfa3876bbf7fc1332bf8e"
+    },
+    {
+      "path": "src/bulldog/adversary/__init__.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Experimental observation records and heuristic grouping of agent responses.",
+      "before_sha256": "c72c65a62beefca916bca538015519af43f001b936250afa924192c4e623bef3",
+      "after_sha256": "422a52a48c5f1e4abc7efb4825b4b07bd162e501c06a387e688956a29711aba8"
+    },
+    {
+      "path": "src/bulldog/adversary/contracts.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Shared contracts for the BULL adversary-capture layer.",
+      "before_sha256": "d4b5718e7989816f7bbb90ae49a2a47a34af9a44cee653cc911987b1b9a10b10",
+      "after_sha256": "7ba11900b63fc5b43f3a81ddbdac4facdf1da83f3f9843b204c2fbee06ac0873"
+    },
+    {
+      "path": "src/bulldog/adversary/fingerprint.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Score response phrases against a small model-family signature corpus.",
+      "before_sha256": "78869dc98daad7ee732ea9a3a40fc3ff4d9f7c9bbfcdea1ac558fda2943d9f4c",
+      "after_sha256": "534ce53acbf1c818487627929f547cc49573ec71dbae4181fdde0afb0281bd56"
+    },
+    {
+      "path": "src/bulldog/adversary/lure.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Send diagnostic prompts through a supplied callback and parse claimed tasks.",
+      "before_sha256": "13b9c7185dc8c971c8ef162672fac27b8569f3f16c99ba3b21bf6592e4113210",
+      "after_sha256": "793d1e03f126e7d994613312df29cdff8b68a8e9d46db65467d8e1aab287da6a"
+    },
+    {
+      "path": "src/bulldog/adversary/quarantine.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Record a proposed isolation profile for each observed finding.",
+      "before_sha256": "f8003291de568f63b5262771a983d127ca2eadd873a9307ff0cba439481d7b87",
+      "after_sha256": "6ee45322e6ab03ce3f15dc27a59aa9371be222114ba9452519dd531d667ce0a6"
+    },
+    {
+      "path": "src/bulldog/adversary/registry.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Store observations and group similar claimed task text.",
+      "before_sha256": "bd845c38a2a3912197b17a3c7ce31dc7b5aa28eb4f6d0d09a542755b26177a3d",
+      "after_sha256": "42b4d5ae9dbb5293983115651d1ba7cfaf1a3255ac3fd9d5fb5b74c9f3879b99"
+    },
+    {
+      "path": "src/bulldog/adversary/system.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Combine callback probes, phrase scoring, task parsing and observation records.",
+      "before_sha256": "0c7d456236befb42fcf8cfd7eb67111659896cde28d4f7d8c05e2ce12ff71a41",
+      "after_sha256": "6881624a1a5fbbfbfb3a6f64d765248c412483af658e6e4e182ce43535393fdb"
+    },
+    {
+      "path": "src/bulldog/advisory.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Advisory recommendations derived from a policy result; no execution authority.",
+      "before_sha256": "525dc26ccc2825f06ef3bea0d07bcda62ddc7cb0fff2929b2c671880094472ae",
+      "after_sha256": "ea5760c1b16cd8d740a746ab6ac974cbcacef28b2ed81afac96d436d50b76da2"
+    },
+    {
+      "path": "src/bulldog/agent_sentinel.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Score environment, process, input-timing and I/O observations for operator review.",
+      "before_sha256": "ed82f2fd5d4f2e929e133cfdb04f6f15a4713a760b30309c93039eec6e0f8268",
+      "after_sha256": "1b779ed05cab8574f1fa4a14eb28d832328258ad10ef7aeffbb8ea14baab83d2"
+    },
+    {
+      "path": "src/bulldog/anchor_service.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Durable authenticated audit checkpoints; serve behind a trusted TLS proxy.",
+      "before_sha256": "25fa50cb6c86f70ea9e1e79c5eda36324b9556c2631a42b785af090da243dd41",
+      "after_sha256": "5587de9ada30735b9c321b1b48d4b176d8f6a9ca1c9e665cd3795d34de305370"
+    },
+    {
+      "path": "src/bulldog/approval.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Durable one-use consequential-action approval, owned by the trusted host.",
+      "before_sha256": "de5b513f6396b520180cd424e3c1e0053e33f2674ec719141a796f755135ddb1",
+      "after_sha256": "9120b8788b37a76652a2c63981edd55fe37f45f1090b003b9162d24f8707c20d"
+    },
+    {
+      "path": "src/bulldog/approval_cli.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Operator CLI: export/cancel a pending request; signing is a separate ceremony.",
+      "before_sha256": "5365872be396f25380fc48c615955518782e9676f9108d0de4f16bcda98600f2",
+      "after_sha256": "324bbd6fd42739f2b959e0de4ce37dc57073e09273729ebcce234986f3da2d79"
+    },
+    {
+      "path": "src/bulldog/approval_crypto.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "OpenSSH security-key signature verification; no software-key fallback.",
+      "before_sha256": "cb381c3e6e1a601c7ee251b58dde6a52a492e340b16a0f069fcdbb03a1e90701",
+      "after_sha256": "1b9ac09506bad8f9ab69ab3be6f49e123b4f44149f2b48f53a636b8d4fce5b56"
+    },
+    {
+      "path": "src/bulldog/assurance.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Evaluate the control registry against source and deployment evidence.",
+      "before_sha256": "a46bd672b9ee68fe3067064f447f0fcba517127bf9e977bc90adfdab007ca4c1",
+      "after_sha256": "d6f5412904291decf57cd1bad02691dafb715ae0861102ebad708651b5bbded2"
+    },
+    {
+      "path": "src/bulldog/audit.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Append and verify audit records, checkpoint their heads, and retain failures.",
+      "before_sha256": "3b3fc27e9f03018770f6a4fe0e118fd4ba28e15daf6982f26c22701a35ed9aa3",
+      "after_sha256": "5f1f560055f5ec634444cf324396a49ef7640c155e84470a3d46bf4a3dd1b529"
+    },
+    {
+      "path": "src/bulldog/audit_transport.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Versioned production anchor transports with authenticated acknowledgements.",
+      "before_sha256": "6f1a02f3eef5649d5f9140e41e462dede3a0439705cefb87e5735ae569c20080",
+      "after_sha256": "caa65cdd055303b89bffdfca7998523f7f68a6c760dd77c58ab2e39647f4b89e"
+    },
+    {
+      "path": "src/bulldog/bootstrap.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prepare private operator state and launch the local console.",
+      "before_sha256": "d3a22738f40d419f3996c8b6265862808e4c7e27c5daeb56c7a93cf65feb5837",
+      "after_sha256": "72fc2d7864a69e25c85d1a04cf889c106fbbe4e55334db14f66190a6148ad357"
+    },
+    {
+      "path": "src/bulldog/broker_hardening.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Additional broker socket and peer checks for explicitly integrated callers.",
+      "before_sha256": "dd6a5da97063cc52666760b9cc0c9dc00c2834f5341dbf86503a89a40085f347",
+      "after_sha256": "cacba39190cd2b5939bc602ccf80faf12e56ec76e81cbaeea386f93c163fb7d3"
+    },
+    {
+      "path": "src/bulldog/canonicalizer.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Normalize requested resources before policy evaluation and command binding.",
+      "before_sha256": "1c06ffabc04768c36ffa275e8abd8fc45850686130ac0b8c150746ebb0c83601",
+      "after_sha256": "70c1f8e0ae4d47bf192ec4314c9cd83f845c4343b1fd7c82c3b67e8b8d7d6df9"
+    },
+    {
+      "path": "src/bulldog/cgroup_scope.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Place workloads in delegated cgroups and manage their resource limits.",
+      "before_sha256": "3c08eb9a6c8b496fda7c0728b588d9917ba22fd8f243a58c3e8b04160de7b23b",
+      "after_sha256": "9967ec898e68bd7eba009ee7d1d4bc1f1e30713769c95c8bf13efcbe236fd5d9"
+    },
+    {
+      "path": "src/bulldog/cli.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Parse operator commands and call the corresponding BULL entry points.",
+      "before_sha256": "d3b043b349be1a49ffb0a3528653e82733f1da9823f59f6113c598e188611200",
+      "after_sha256": "7376ecb56349705bf79b655c1a2b2463d99c69125db983bae889f1ed507143fe"
+    },
+    {
+      "path": "src/bulldog/console_static/app.js",
+      "handling": "Formatted",
+      "check": "Parsed JavaScript AST compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "a0f8e379fdf08c1bbd0226c97ea11278164e19accc98fc41761134f695b1c1a3",
+      "after_sha256": "76e75b0c3416240d9bd55dd610663210b7857de51bbccbac83519e760d930691"
+    },
+    {
+      "path": "src/bulldog/console_static/bull-mark.svg",
+      "handling": "Retained",
+      "check": "Exact bytes match baseline; category and text/format scan",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "be41e454a941737df240bbbeb9da25ad755b296037d6d8739b510321b0d84571",
+      "after_sha256": "be41e454a941737df240bbbeb9da25ad755b296037d6d8739b510321b0d84571"
+    },
+    {
+      "path": "src/bulldog/console_static/index.html",
+      "handling": "Formatted",
+      "check": "Parsed DOM and text compared; source tests",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "decaa53326a12804c842724db4bdcd05a1156ce98f846684a5184be49cecdec3",
+      "after_sha256": "ff8d3713fbb1e78675a9bfeda6f536d6560a72c932784c0402e3aee545fb174c"
+    },
+    {
+      "path": "src/bulldog/console_static/styles.css",
+      "handling": "Formatted",
+      "check": "CSS selectors, values and ordering compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "a708696fe908751da9cc2b215bdf98a0b2143ccf9b56cd677dd29c8e93fdff1e",
+      "after_sha256": "25f82e9f3dc34b0f108bf35b4bc0d7593c88a4ca9cd26cbc259ae9031159377e"
+    },
+    {
+      "path": "src/bulldog/container_hardening.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Check selected launcher text and Linux namespace state.",
+      "before_sha256": "0f66756a6f069eec859c994ed18c021fe0e2a21524d076fdb004e9f56f5aee5d",
+      "after_sha256": "1622fafa709a1b538910b1f5e7ac187e483cb90eac97e33f8b407b4709210edc"
+    },
+    {
+      "path": "src/bulldog/control_plane.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Serve the operator console and its bounded local control API.",
+      "before_sha256": "4d6f40996fc6a27a9d7ecfe05177ee2ccb58a2ae705aa85fff851214afea7e99",
+      "after_sha256": "a4af0feaf9db4f78f3f122bcdd69711697d161946088219a4d9bdd1319874e1a"
+    },
+    {
+      "path": "src/bulldog/data/assurance_controls.json",
+      "handling": "Formatted",
+      "check": "Parsed JSON values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "88ef24b359f24901e67ad4decdb9d61ff30fd9656cb64b8d242e02ee499916f5",
+      "after_sha256": "9c18c25abe5c85c988b0b2386a6e2eb4703d61c01e740260d01f0e25a3c24f30"
+    },
+    {
+      "path": "src/bulldog/dispatcher.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Bind requests to operations before calling runtime or broker methods.",
+      "before_sha256": "68a97911af39577061b6628ee98e1b04eb19eada531226bf3655227c3b573920",
+      "after_sha256": "81a8fd5907b290bca522f4ab06a12e22217fac99a3da97f094289cac5472c525"
+    },
+    {
+      "path": "src/bulldog/effect_journal.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Durable host-owned journal for consequential external effects.",
+      "before_sha256": "8d6de767eaf2ea77e66469817847351243e2ecf4a98e5b0415785e417379eb89",
+      "after_sha256": "8d6de767eaf2ea77e66469817847351243e2ecf4a98e5b0415785e417379eb89"
+    },
+    {
+      "path": "src/bulldog/egress_gateway.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Handle HTTP, TLS server-name and DNS requests in a configured guest.",
+      "before_sha256": "f26dd5157f161df2b0b88f59fe4738f907d902588704cf9578909b8296040e6e",
+      "after_sha256": "50b8840a4841fcd16e13e01ba2b7dce8c95bccb245c6f95b27c26f4bd088014c"
+    },
+    {
+      "path": "src/bulldog/egress_proxy.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Authorize outbound broker requests over a local socket.",
+      "before_sha256": "c4389e1b72c2f76ee85c741f563e9f105ceb9b87f0db2610de6c816749981f06",
+      "after_sha256": "446b29da7f112da3887317e4a7b2599fe66d0e5aab53e439d11e51d7d7dbea8d"
+    },
+    {
+      "path": "src/bulldog/engine.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Evaluate actions against policy and retained session history.",
+      "before_sha256": "df9a3a3e396825727f8aca568d749450187acf5d456a94e19279b788b13329c2",
+      "after_sha256": "f76aacd59137f6ff3496fe3ae1a0efecfd929686f3275564e479ea501ccc235b"
+    },
+    {
+      "path": "src/bulldog/filesystem_manifest.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Describe bounded project contents for workspace admission.",
+      "before_sha256": "f7233c07909f91c6d3a6f1046f985d53085d177b108f3c7ffd084a67300253e1",
+      "after_sha256": "0c656740d6986e86f6b4c0f094747eba6fe41df931f25e5890370db1dcbecf31"
+    },
+    {
+      "path": "src/bulldog/guest_engine.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "One-shot trusted guest supervisor; workload authority is deployment-owned.",
+      "before_sha256": "67ae01a41b7d9f10eb6d96cd873024c35f917236980f520f9f6a92ebad3f0f4f",
+      "after_sha256": "01e70b6aa7c1d7b421a76ce23a255ef4faf8fef7df3f0c0eec86fd8a3c50f36f"
+    },
+    {
+      "path": "src/bulldog/guest_preflight.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Fail-closed guest dependency check, before admitting any workload.",
+      "before_sha256": "4a16271ce3846a225f7d02ab52e19f99b710f709430d6ba54b90a4749a691c52",
+      "after_sha256": "0cbd4b31c8f6650c0e2ca867b00e721c1e6ae843493d3b49b88425f6ed59347a"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/__init__.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "BULL Hardware Authority protocol (prototype; not a FIDO authenticator).",
+      "before_sha256": "94c9968af0d6ab2703bea5e5bbe8c60cc78aba97c3de0703abe13a5aeeb492e0",
+      "after_sha256": "94c9968af0d6ab2703bea5e5bbe8c60cc78aba97c3de0703abe13a5aeeb492e0"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/cli.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Operator diagnostics and disabled public enrollment records; no software YES.",
+      "before_sha256": "d23e1acc001463b8d59db3d6583b29140f7aaa1393c7b915274867f02f3b23f4",
+      "after_sha256": "6fc59031cb60bcb02cf011f3bf54646da5280820ac92952522370e1a60cd9501"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/diagnostic.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Read the KB2040 diagnostic HID; never constructs approval proofs.",
+      "before_sha256": "ccd4ac6e608f02f217852dcea8f7bde48721c7431046989514276af02a9e4840",
+      "after_sha256": "5627ca51a031c835b2fd0acb5c42530ed01d808c0dba9e2de10bfd3b4a27ba41"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/protocol.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Bounded, fixed-width network-byte-order BULL-AUTH-1 encoding.",
+      "before_sha256": "d65b47693c3ac4e9d1b35d6e3ac7f9cb74c179c82f290e77c5d32032ca130ad5",
+      "after_sha256": "3108e4d2f9cc561ce1a8d53570ffc3f6826e4ad1fd9c162ca4ce44d61c9d5246"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/provider.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Custom secure-element assertions for the existing durable ApprovalGate.",
+      "before_sha256": "9834123257a6427f56bab552e3f539c41fb02d915d7d3c5274102fe3c2865e44",
+      "after_sha256": "c70ef67d67e96fdb527251cf818507cbbfb0ac2973d71fb234fbf6cc7daabd59"
+    },
+    {
+      "path": "src/bulldog/hardware_approval/verifier.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Stateless assertion verification. Durable consumption belongs in ApprovalGate.",
+      "before_sha256": "335be94fe9575cb8bf7c0b1f000daf3b501929f813b93639ea6493c69f341062",
+      "after_sha256": "1aef482a15ea93a544722d29513cb674dd1115d86f13a6c9877fd67227f9dccb"
+    },
+    {
+      "path": "src/bulldog/host_certify.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Probe host prerequisites and collect live sandbox attestation.",
+      "before_sha256": "79f693e155f28e11d81facab64c37972643527abdbc431462f502bb76dae4577",
+      "after_sha256": "551c775b928ee21d2c87f11c6873f1340892f884c3b8b6ab6e2614126cdba2b5"
+    },
+    {
+      "path": "src/bulldog/integrity.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Sign and verify the trusted runtime file manifest.",
+      "before_sha256": "8415ec8319b681a57d7771fb19ca93c978a84d240807a614da0e98809d7587b9",
+      "after_sha256": "3fd5d1fdda59fd9cb2041b5aa66bcd0101cee6a7d9f3fc1efaa91dd277a0dd3a"
+    },
+    {
+      "path": "src/bulldog/landlock_policy.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Install the Linux Landlock filesystem restrictions used by the sandbox.",
+      "before_sha256": "a4d39bc5fe9834ed684f7681c34ab24aa98f36b5ebe48552390737bb342628f0",
+      "after_sha256": "81840494cd9a73cd04e21692d983bc6791345723957abbe45c26eb814c9612eb"
+    },
+    {
+      "path": "src/bulldog/lifecycle_bridge.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Host-owned, single-command bridge from lifecycle admission to production dispatch.",
+      "before_sha256": "25f9073192adc1d32cf3f196c0b38a9bd9680dfd4da046b53acb64a1bd168756",
+      "after_sha256": "bc45fd05f024da5f29ff1c7caeeeb6ab05216437f168137496916aecf12d00cf"
+    },
+    {
+      "path": "src/bulldog/lifecycle_governance.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Experimental, host-side lifecycle gate. Not a production runtime replacement.",
+      "before_sha256": "2819820a63e54ad768efad1f871e64994c1ffc11cd840d7f9e65081c3d06aba9",
+      "after_sha256": "67bdb344c345d61636ae8be7b0a978237d3bc361b547080136d72be9ed717649"
+    },
+    {
+      "path": "src/bulldog/linux_sandbox.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Linux isolation helpers for mounts, privileges and syscall restrictions.",
+      "before_sha256": "85eee6675636ce0d266563fdc6f77f7bd913113fc94908e0381838969282c337",
+      "after_sha256": "c4832fe6829f77fe072805abcbd69e32985aa9932bd583ebb275d8243e0ad189"
+    },
+    {
+      "path": "src/bulldog/malware_scanner.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run bounded ClamAV scans and report missing or failed scanning requirements.",
+      "before_sha256": "af9b74fa2029735bd28717fd02c414d5f6a6f2cf02234d74407948abc53a8ab3",
+      "after_sha256": "db54e33dae08de06dd70f26097911a7294a0ca5d18c5c76e6556d4961824c4af"
+    },
+    {
+      "path": "src/bulldog/microvm.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Hardware-only MicroVM launcher. Deployment configuration is data, never code.",
+      "before_sha256": "5288ca4641520f1c2abf7b2348a7f8a1aa2e73a79af9e2f1f523baead7abd8b4",
+      "after_sha256": "284a719f0e6ddb8e4eb07b130ce07626a595e27b29e8e137fcaeacb70627bc2a"
+    },
+    {
+      "path": "src/bulldog/microvm_image.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Build a no-clobber root filesystem from a bounded admitted tree.",
+      "before_sha256": "5a4ac21d36ae70d79b03b014c2d939240ce579a6f63a2dca4ee4a802cbbf17d0",
+      "after_sha256": "5bfe4844225d85cefc8390427e4c4fe1e1b156727296a6aa21934035768044f1"
+    },
+    {
+      "path": "src/bulldog/microvm_protocol.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Bounded, authenticated, ordered messages for one trusted MicroVM session.",
+      "before_sha256": "0deae3cb0493dbe5abfb7e606a68e8410ea4784a4040569c2cb9442ed9e67760",
+      "after_sha256": "104561653ef76c69ab81d53f7b928b2f0e365e50aef1e05ac813a8391187e729"
+    },
+    {
+      "path": "src/bulldog/models.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Shared action, capability, provenance and decision data structures.",
+      "before_sha256": "159ddcaad8821efd4d021fcd4869d79b17162b03ad7a59cc8351d537659dc2da",
+      "after_sha256": "bfb6891173e5f98f0cb3de34ecffad0a58c827f23aab5d9b03f47702c49bca71"
+    },
+    {
+      "path": "src/bulldog/multiagent/__init__.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Development orchestration with registered host callables and policy checks.",
+      "before_sha256": "a7782fa66f464faeaf6e60938b3d4de71887bc06f744a43eb1e8315710ee67c8",
+      "after_sha256": "73e3d0330079215b5935693796330d4084e1409045a4219607a27aac54ff1b1c"
+    },
+    {
+      "path": "src/bulldog/multiagent/agents.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Coordinator, policy, executor and output-checking roles for development runs.",
+      "before_sha256": "2816e04e3c3f0d1ca8e5fe0e6b5ff73c4465004ae1e8b754af9a22366ba62422",
+      "after_sha256": "d203c0f53ba434c27eb417b43fe0a45eda4dc1674da110a89f8a39aeca375c5e"
+    },
+    {
+      "path": "src/bulldog/multiagent/bus.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Capability-checked message bus for the BULL multi-agent system.",
+      "before_sha256": "47e4b7662e0bf299eedf6fb1595700e2023f50a41257612fe16779f1ca03431a",
+      "after_sha256": "94f155f8f7bbb12c696b23904d274142cbe0eeb15e7b1456df89fbccddccc1c7"
+    },
+    {
+      "path": "src/bulldog/multiagent/contracts.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Shared contracts for the BULL multi-agent system.",
+      "before_sha256": "fc2df0525f145ddf4d8df852ca4ebcfcc5e9bd4daa7c4420760aa233ed5f2cd1",
+      "after_sha256": "fc2df0525f145ddf4d8df852ca4ebcfcc5e9bd4daa7c4420760aa233ed5f2cd1"
+    },
+    {
+      "path": "src/bulldog/multiagent/honeytoken.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Host-owned canary monitoring for the BULL multi-agent layer.",
+      "before_sha256": "949c06c677069487c4e839b6e04bd76f7ef33975b52332431437051a1320ce37",
+      "after_sha256": "a7930f0cdfe05de9f83712aaa01759c67499bbd8adbdc166edcad7c5fda44489"
+    },
+    {
+      "path": "src/bulldog/multiagent/system.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Top-level orchestrator for the BULL multi-agent system.",
+      "before_sha256": "1413242c6367da0de18b4ed49d2c4d88af685c1884f57e703545208c704b2df5",
+      "after_sha256": "c9b39424136d136c15ce9c07c8c4321440a6f2990b6b800e99b825daf590096b"
+    },
+    {
+      "path": "src/bulldog/namespace_sandbox.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Launch a bounded Linux namespace workload and verify its startup attestation.",
+      "before_sha256": "071ed7324f529e2535ff816b4f2ba25dc634eba32839e1dea029928060352c82",
+      "after_sha256": "9e59b52bf71817159741c13fd2a39795d8f3c72650093aec989111d478467af1"
+    },
+    {
+      "path": "src/bulldog/pinned_egress.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Validate and pin outbound destinations before connecting.",
+      "before_sha256": "e7ce36c730a6c276045775a74432084ab788687097e6089e114b0356b49bfa52",
+      "after_sha256": "ce5417e780cadd86cf07ac4d6481b43a08b5882514856fb591b722a586bcac0f"
+    },
+    {
+      "path": "src/bulldog/policy.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Evaluate capabilities and provenance to produce a policy decision.",
+      "before_sha256": "086f2028e1c2b2c9a9f85dc2348a4468353c84516eb623325621bb3b86da7de8",
+      "after_sha256": "7b5a0e3bac446bcf0ec5940d07f6fb6ac4d7c53ee639373d38754ffcf79c268f"
+    },
+    {
+      "path": "src/bulldog/policy_bundle.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Load signed policy bundles and validate their capability ceilings.",
+      "before_sha256": "bc80c3c6b51338fe15182d83a03783b5f18c9a4574fd500dc7445b5e655831ed",
+      "after_sha256": "3d07782b97734712996d6f818c20a943fdcffeb4895e1334658f93b0e0d08ca1"
+    },
+    {
+      "path": "src/bulldog/production_gate.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Reject production startup when required deployment protections are absent.",
+      "before_sha256": "ca9528091fb6fb12d9f0dd3c502b7f57bf107da46bcf6751644b098c387c90f7",
+      "after_sha256": "26f5a1aab3710712555dda24ec8fd300f0333503442628d4f865f343604ffb2a"
+    },
+    {
+      "path": "src/bulldog/production_router.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Single fail-closed entrypoint for agent-facing production effects.",
+      "before_sha256": "7b6cb182d621f3a0553c084c9542944f1b376e78ec39f1455d633dea4f24cc8e",
+      "after_sha256": "7b6cb182d621f3a0553c084c9542944f1b376e78ec39f1455d633dea4f24cc8e"
+    },
+    {
+      "path": "src/bulldog/profiles.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Assemble production runtime checks and mediate execution and broker effects.",
+      "before_sha256": "15525356f7524802ed4d33408b6a6bf338ba934b93f0d33709223433e2e38fb1",
+      "after_sha256": "70effb1b600584f8dc16b1887e94a96de425fe8c2b86d61bcb24af13ce0aeff9"
+    },
+    {
+      "path": "src/bulldog/qualification.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Validate private KVM reports and return bounded summaries for the console.",
+      "before_sha256": "79b52a11214b1c28b9f806889e006091d0686318fac2f86fd751c0be225c8032",
+      "after_sha256": "79b52a11214b1c28b9f806889e006091d0686318fac2f86fd751c0be225c8032"
+    },
+    {
+      "path": "src/bulldog/release_evidence.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Validate release inventories, digests and provenance verification evidence.",
+      "before_sha256": "7fca72d1d2a36fd36ffb75544ad148ab2f2fbf4e5b1d72a4fc23e59a5722cd81",
+      "after_sha256": "ed35f562a2d43511a745955a72b3185ed27150a388282b03acdf7706c0a2c0a1"
+    },
+    {
+      "path": "src/bulldog/resource_limits.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Describe and apply bounded workload resource settings.",
+      "before_sha256": "b9646d408a26355b80fdec554925fad213918597882d888fda51837af19ac1ff",
+      "after_sha256": "cbcb272582cd0131213ee7c01c7998707fe55ef02d058d6fea5dabd065d621aa"
+    },
+    {
+      "path": "src/bulldog/run_egress_gateway.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Guest entrypoint for the transparent egress gateway.",
+      "before_sha256": "ffd1bf80585c682c7fb17c01be5598a8d7c1e94eae94589ed8c2b635da3cf499",
+      "after_sha256": "425a34e21e1a331bbe2456a5502ffd8c6a097d74d1633a7c38f55a4cf653f691"
+    },
+    {
+      "path": "src/bulldog/runtime.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Execute admitted operations and record their runtime results.",
+      "before_sha256": "3094dde40681af272d8aeb7d3b371b339030c40e4fe40afce880609ad8d752f5",
+      "after_sha256": "8b8a986793560ad151fee11c06754bc42b57e62d6e645c19f53c01d00b8bb1f7"
+    },
+    {
+      "path": "src/bulldog/sandbox_backends.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Cross-platform sandbox backend contract.",
+      "before_sha256": "acf651f18108d7729476e73b9929a2db4f0897ff29ce13a11f69bff288cf21c5",
+      "after_sha256": "2ebdccf53ea4a6f09a76711781b6f80d6f7b703a9563aa349e6ed921ab20f32e"
+    },
+    {
+      "path": "src/bulldog/seccomp_policy.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Build and install syscall filters for the supported sandbox profiles.",
+      "before_sha256": "66e9d5996bcec03e4d03fa472960196e0c74d1ae4cf2ae00393eb456d6c2ae6a",
+      "after_sha256": "8a40be37f357299992cf04c58a1974a800cc71a0a1dd3507dcca33e2e82abc78"
+    },
+    {
+      "path": "src/bulldog/secret_broker.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Authorize named secret retrieval through a local broker protocol.",
+      "before_sha256": "fff6fbc220a10cf34dd0a54cf5b812a4cbf3cd3dda23fda57e8fa803f3aba335",
+      "after_sha256": "f0f22f8fbbd779beaa281253d8fb047a5b32df097aa8477b5379df1ebc813c92"
+    },
+    {
+      "path": "src/bulldog/secure_fs.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Open paths with containment and symlink checks for trusted filesystem access.",
+      "before_sha256": "6bedd9a12fd26c20c01f9d8158d794792864a428133404a31a454e38e19a4376",
+      "after_sha256": "7d065842adc48883fc1fff279d324f04903de69f0bdab31cc23f247028499b92"
+    },
+    {
+      "path": "src/bulldog/security_domain.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Track host-owned security domains, delegation, grants and revocation.",
+      "before_sha256": "3f704a2710021dbf1497bb55f3d735ef1c199e56a352945b4b0d674193e537e7",
+      "after_sha256": "8c904cc4181b46590564fdd279fd8bb6265cac952a6775e2f5e22a6b2d8817ad"
+    },
+    {
+      "path": "src/bulldog/semantic_intent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Deterministic semantic intent gate for BULL.",
+      "before_sha256": "c6f437c492bf31b2c8694e1575ffb9aa6d54080cbc8d275ebd29d3f3b3f5c9ac",
+      "after_sha256": "0a3a1c6c81895ac261e78275a4e0c9ba6859b03a7fba4faf7694e6748ab717c3"
+    },
+    {
+      "path": "src/bulldog/session_guard.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Retain session behavior used when evaluating subsequent action requests.",
+      "before_sha256": "134c366bf97029b123a72a70259c73e7bbed691f1ce48b40cadbc761790fca29",
+      "after_sha256": "d2e0d282890ddbd7de72d53ece3c3035fa80701b245130ec9dc852d4d0b74155"
+    },
+    {
+      "path": "src/bulldog/snapshot.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Create admitted workspace snapshots before workload execution.",
+      "before_sha256": "d5276b930fea84fe6baad3f75b50211f4fcf570f24d7acbb67c9c76b92a932d8",
+      "after_sha256": "5396cfea5eea4096b9f5e135f5a0e14a6871ac2bf1470263db694713e55f26bc"
+    },
+    {
+      "path": "src/bulldog/snapshot_worker.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run snapshot admission work in a separate constrained process.",
+      "before_sha256": "9aa3c0e9c7fc1d406485c34a54b374bd866e68bb80277b4a94b8c733ca989d70",
+      "after_sha256": "3f4adb42c7251ffaacc85e9fce1c8ea8abb37734306bfb78ebd003552e523eef"
+    },
+    {
+      "path": "src/bulldog/socket_hardening.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Bind private Unix sockets and check the credentials of connecting peers.",
+      "before_sha256": "624f6f3d6e6c2559f6df89b26f9e027406ba4144b22422364c9b8f29e77ad331",
+      "after_sha256": "85f859732237d33533f9fe1c5123e857dd2dd31c3b30ae4093c20aa46070dc4c"
+    },
+    {
+      "path": "src/bulldog/token_broker.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prototype in-memory secret vault and scoped, expiring proxy tokens.",
+      "before_sha256": "0ccd2965fb8a0fca07fd6a14fd8528d621a5dae9933bcf5fcc5c168cde510812",
+      "after_sha256": "1b0eef23af40f129ca5fc4132963778ccd7de79d4af4d16e892fa8c4b91965cc"
+    },
+    {
+      "path": "src/bulldog/trace_model.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Executable state-machine abstraction for runtime trace checks.",
+      "before_sha256": "b55551309ec738e6a3e7a9b629ccf1496c48fc806ce2a5bac0c872ca661e9c4c",
+      "after_sha256": "1f3442f5d5aedb6cfed86a8caa3840009551d06b5a34a22917cee44e03363fe3"
+    },
+    {
+      "path": "src/bulldog/trace_runtime.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Convert runtime events into the trace model used by bounded checks.",
+      "before_sha256": "cd7d000285b34947abdc61859f29c6af84308aaeabe129b735d313a0174f234f",
+      "after_sha256": "bd98f88cfaffed5f415e3b0d71d05dac9b8d5aa906282447872145e0c806d25a"
+    },
+    {
+      "path": "src/bulldog/verify.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Check retained audit evidence and report consistency failures.",
+      "before_sha256": "3e31b11510fa0a69ddaf83cd975bfc4ed2dbcc4f71adc606673516f9e81b911a",
+      "after_sha256": "f9ca46ce2ae9c49511f39b0b7d5a6bab3bb950402dff53544a637bc132c23d48"
+    },
+    {
+      "path": "src/bulldog/workspace_limits.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Define bounded file, byte and path limits for workspace admission.",
+      "before_sha256": "d4a2c43198f9aacbf2d57cdc4c6cd735b3464096537b675588e6b7cebc562dba",
+      "after_sha256": "85bc6b1a8b04bcbc4c43a970fea24b1705e39aa8cbc0b588a036321c884657ec"
+    },
+    {
+      "path": "tests/redteam_local_host/test_brokers_and_environment.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _PeerSocket, test_secret_broker_rejects_wrong_unix_peer_uid, test_egress_broker_rejects_wrong_unix_peer_uid",
+      "before_sha256": "153e6590427f7f98536a2a2106b9159c66a3278280e19fbf2c58c74854055795",
+      "after_sha256": "153e6590427f7f98536a2a2106b9159c66a3278280e19fbf2c58c74854055795"
+    },
+    {
+      "path": "tests/redteam_local_host/test_production_entrypoints.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _exec_action, test_legacy_production_boolean_is_rejected, test_development_runtime_is_loudly_marked_unsafe",
+      "before_sha256": "3cfad5b9e9e00568351334f96bcc4200b2950483c3e29004aac29d855e05a2ad",
+      "after_sha256": "3cfad5b9e9e00568351334f96bcc4200b2950483c3e29004aac29d855e05a2ad"
+    },
+    {
+      "path": "tests/redteam_local_host/test_snapshot_worker.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_isolated_snapshot_worker_returns_read_only_bounded_snapshot",
+      "before_sha256": "9ee2947f8ad4613c883daf42ff4caa5755f794d22921cdb52d05111d312568ba",
+      "after_sha256": "4b2e0f9e96e5575f16790b9c36e04adf726c4197fcfe613d54f73f92933ba279"
+    },
+    {
+      "path": "tests/redteam_local_host/test_workspace_admission.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _budget, test_file_count_budget_fails_closed, test_total_byte_budget_fails_closed",
+      "before_sha256": "af4f39b7f8a8f69ed43f3461bb87fb433aab199106fa36f07f9709a175a2f5d8",
+      "after_sha256": "af4f39b7f8a8f69ed43f3461bb87fb433aab199106fa36f07f9709a175a2f5d8"
+    },
+    {
+      "path": "tests/redteam_multiagent/test_honeytoken_canary.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Safe red-team regressions for the multi-agent honeytoken boundary.",
+      "before_sha256": "5b2eabb9e3d5e6cde635eddf3dcd6650f6685a73a6cc5fa043ca812e2ef3bdf7",
+      "after_sha256": "cdc47d30fbe02328474670d130b43a1daac13568e8864af462579ce657dfa270"
+    },
+    {
+      "path": "tests/redteam_multiagent/test_redteam_bypass.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Red-team regression tests for the bulldog multi-agent system.",
+      "before_sha256": "f04593e8c77583ddcb366f880063afe1529e7faf0be203ba8381aec60518b6ec",
+      "after_sha256": "b3a26f3768005fe5b51246e87914df0aad59805ec3ad93e1e405baf08cbd0c7f"
+    },
+    {
+      "path": "tests/test_adversary_capture.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Tests for the bulldog adversary capture layer.",
+      "before_sha256": "e91c4566b02eefc555609bd97f05ee480d72f8923686d065daa52f03712c20b9",
+      "after_sha256": "9caa0e5e90aecad5658db602e3c59d154b5420c0f0809bed871c6f829c147b4c"
+    },
+    {
+      "path": "tests/test_advisory_monotonicity.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: FixedAdvisory, _action, test_advisory_allow_cannot_lower_sandbox_policy",
+      "before_sha256": "52e78788d77607b240eef438aecea6d085e806eb9663a7ded468d549e163104f",
+      "after_sha256": "5bc112a541cbb543dadb6ce2bda6fd987e7ca7c763b2dcd7f5991d9dd820cc67"
+    },
+    {
+      "path": "tests/test_anchor_service.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: record, setup_store, test_durable_restart_exact_retry_and_conflict",
+      "before_sha256": "d62dc0896605d9d18087fb6a835b6ef43c861f9bb2beeb360ceda79d1d0a4dfd",
+      "after_sha256": "3a4685f3ceae46e6b4f16a11f684abfa14f4ded7d1ad77035fe4657482111ccb"
+    },
+    {
+      "path": "tests/test_approved_brand.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Verify the approved B-shaped bulldog, not a substitute logo or external image.",
+      "before_sha256": "2cfaa950065d056a9790ffd65dcde8a149cf5db8fa4f92b33ba1078fe68c0be3",
+      "after_sha256": "d8e1b2ced535821af59ee880a1bbfaa98aad71002e2d29507f80fa0f64c4bf43"
+    },
+    {
+      "path": "tests/test_assurance.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_registry_is_unique_and_profile_references_are_valid, test_missing_deployment_evidence_never_becomes_pass, test_dynamic_attestation_maps_to_required_sandbox_controls",
+      "before_sha256": "d3b3e4f12377a2d96efd3b54394ca092c0ff3132d203b3973c203b4875692ea7",
+      "after_sha256": "36bb5f8dd159518e492d89d4def99faa7236099cf1b001c76d5f531bf37aafd5"
+    },
+    {
+      "path": "tests/test_audit_fail_closed.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: action, build, AuditFailClosedTests",
+      "before_sha256": "053fbc72352f86ae3bb400d915aa71f5f28116daa8d9c9f766edf8fbb19fc873",
+      "after_sha256": "053fbc72352f86ae3bb400d915aa71f5f28116daa8d9c9f766edf8fbb19fc873"
+    },
+    {
+      "path": "tests/test_audit_integrity.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: action, build, AuditIntegrityTests",
+      "before_sha256": "680eaab8ad1ddb077e1d3aa6bf3b80f0d541276327bba64c7659a2a6e0db95c8",
+      "after_sha256": "680eaab8ad1ddb077e1d3aa6bf3b80f0d541276327bba64c7659a2a6e0db95c8"
+    },
+    {
+      "path": "tests/test_benchmark_site.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_benchmark_publication_contract",
+      "before_sha256": "444d5cdaa7c34457143cb0ebe25b3c28faa6ca4926178569c08666250b5cacee",
+      "after_sha256": "bca02fbdfcebd27ced14830411cfeaa60eaa5ef1368413527ddfe6a8f49cf6f5"
+    },
+    {
+      "path": "tests/test_bootstrap.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: BootstrapTests",
+      "before_sha256": "a1090d672bbb209b5fa34305cb303e77b2c92812d1dc3cc8390fdc58a99103e4",
+      "after_sha256": "25bb0c413cc64bc157e941938b6fb570cc405cd757fb5b6506f1c6ae5fb6b783"
+    },
+    {
+      "path": "tests/test_brand_site.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Read-only publication contracts. These checks do not run or certify a VM.",
+      "before_sha256": "3dd279fccb2c1b6ccc3ba3fa874b389060336f9ef3fc0fc4bb5725a8467333bd",
+      "after_sha256": "0796a3e17165788a4a25aee5246f065f747ec0920028a6fa73b55f8324856563"
+    },
+    {
+      "path": "tests/test_canonicalizer_paths_v2.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _canonicalize, test_traversal_never_classifies_as_project, test_project_path_is_canonicalized_before_classification",
+      "before_sha256": "cf1e1009332d59ce9a9878722c04656bc8a9c2facbbd315c7fff36ddc17d9f2e",
+      "after_sha256": "5e3aca7c3ebc1173601b402f0510f77cc31af6b42ded65435d551cbf767f805f"
+    },
+    {
+      "path": "tests/test_cgroup_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Validation logic under real optimized interpreters; no isolation claims from mocks.",
+      "before_sha256": "9ff4a10f497b46bf3796ef5464283ffad5c1cdc3f895dad6edf31cd784e2f3a8",
+      "after_sha256": "6dce2c4b253bc013e2adcefa2e459bc92a986c61d2104736b24d1206d9b3aea5"
+    },
+    {
+      "path": "tests/test_cloudflare_audit_anchor_contract.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_cloudflare_anchor_files_and_route_contract, test_build_config_uses_explicit_existing_database_without_changing_template, test_build_config_refuses_missing_or_placeholder_d",
+      "before_sha256": "ba74040bd8ddc39a008330ae8e677c781319ff1a53763e81e25000f58977b15d",
+      "after_sha256": "027ae649779c73b0fb6d2c964a1ed94696b97c7080ed1a71e7b7d040719259ff"
+    },
+    {
+      "path": "tests/test_control_plane.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: ControlPlaneTests",
+      "before_sha256": "fb8f5edc1cece860d87ef28c0a9bbed017c2947ba17fbf1e7822be80909af935",
+      "after_sha256": "17a8c9646aad03137259664e011f40d3c78c1b685e5a5a0a4634c42b839d5a12"
+    },
+    {
+      "path": "tests/test_deployment_checks.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Validation-runner contracts. Fixtures here do not qualify hardware or KVM.",
+      "before_sha256": "cab885eb4c9a70b0665540e939c1bf8e477ea8621bcd0e0cf8b65d8ab7f30a14",
+      "after_sha256": "2bb60f343b39cceb753bb2c24cdf3ce067d69b56c86f9edb9b21a064bfaae609"
+    },
+    {
+      "path": "tests/test_deployment_setup.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Independent installation evidence, with no founder/service credentials.",
+      "before_sha256": "891bf83c6b228d164da38127dc064359beb66bdc2464b3fa92a7e594ec517009",
+      "after_sha256": "07294c77966f31481d5da05843359ca22b3864611222904edaaa16eb1da4f200"
+    },
+    {
+      "path": "tests/test_effect_journal.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: journal, test_effect_is_dispatched_at_most_once_and_exact_bytes_are_bound, test_uncertain_effect_requires_observation_and_never_retries",
+      "before_sha256": "73b2649242be3c02af08122f5a3bac11151e20b85831ce626a9c199f7860f6e3",
+      "after_sha256": "0c8d65d2f2ae67d0ea73b066c2d259e11834a718e70c0e5c98a8e5898358e635"
+    },
+    {
+      "path": "tests/test_egress_gateway.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "End-to-end tests for bulldog.egress_gateway (real sockets, real TLS).",
+      "before_sha256": "af681925b13c0f8f5eedeabe3517986f9e0e01808a3fd1f4829b396380d7480f",
+      "after_sha256": "299c1c6e7b956936147a94bb666f3a1fffebff436244f62737836246d5af00e3"
+    },
+    {
+      "path": "tests/test_egress_lifecycle.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Repeat benign broker requests through a controlled transport fixture.",
+      "before_sha256": "8b573188525f4a9827c1126908f178d1a088e1a351a44a95a37787f168e0cfe1",
+      "after_sha256": "9b06f1273b6764874e180f67c142a0209b6c3639dfc2554a85ae37c864663e66"
+    },
+    {
+      "path": "tests/test_egress_trace.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_egress_broker_emits_single_grant, test_empty_egress_broker_has_no_grant, test_duplicate_broker_grant_remains_illegal",
+      "before_sha256": "5a1814efdd411f7a8da1000fd4926f59a81c7048d9722f93b71770c031e1212d",
+      "after_sha256": "c2eb35ede3823defb7c943873a5fcc3e89f709765933e2b4905d5da6f78e1d57"
+    },
+    {
+      "path": "tests/test_full_argv_and_production_wiring.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: CleanScanner, RecordingSandbox, test_namespace_backend_defaults_to_read_only",
+      "before_sha256": "f464b932a8d1d232409696a42e406188d47a31e1049f51e7868b7b01d1f3ec54",
+      "after_sha256": "77ef4644449f619a20b335257729a690cff2e0b9ef63b613abf31cc84f3540b8"
+    },
+    {
+      "path": "tests/test_fuzz_boundaries.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _random_text, test_random_model_metadata_cannot_override_trusted_identity, test_random_illegal_trace_transitions_fail_closed",
+      "before_sha256": "eef11f69bdc9cfcadb097716d39a1ba897c6d4f4890e01429187e2c825da03ea",
+      "after_sha256": "25ad36413d780526a57d888b45c3691e35caa55736e7ab00a5ddfff051b400d1"
+    },
+    {
+      "path": "tests/test_governed_agent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_untrusted_proposal_cannot_add_authority, test_complete_read_only_tool_surface, event",
+      "before_sha256": "45fc4b56fbc118349fe9e781235031f22980be269a14d0600bb40b0e1d22aa63",
+      "after_sha256": "772963d913cb248298b7c9c6d147e39ef889bd38594bbd80d53a081afd368fe1"
+    },
+    {
+      "path": "tests/test_guest_engine.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: authority, test_authority_rejects_tampering_and_expiry, test_expired_authority_is_not_admitted",
+      "before_sha256": "e30d0563ecd99d133083a6be82e58c21a8472313ce6441df8b4f67330e639455",
+      "after_sha256": "457b605d155506841f7482f7161b99205d65e5b8f2f4882db0d8c663d6ed5c62"
+    },
+    {
+      "path": "tests/test_guest_preflight.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Dependency failure tests; never reported as guest/KVM execution evidence.",
+      "before_sha256": "1ccad1da0fd97ba868b6926257b6d92fa59d374cc83cbdd9c85263ba598e1375",
+      "after_sha256": "cb55056172643e32ed300c51a565ce01ff19ce291f7a489d2d319bfbb3f56a14"
+    },
+    {
+      "path": "tests/test_hardening_additions.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Regression tests for the hardening additions commit.",
+      "before_sha256": "6f401129b119f67259c866f09f5a8635aa1e6f7758658d322f5b58ce95b5b3a4",
+      "after_sha256": "7f234fa9b3c1b47ac36666d8ed30afbfaefd81722952379aee7510bc8cf56541"
+    },
+    {
+      "path": "tests/test_hardware_authority.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Software-generated keys are confined to tests; these do not attest hardware.",
+      "before_sha256": "6c36a977d685a2da8387876ffba9f63c3f462c10fb6aa7b5b57de091c143341e",
+      "after_sha256": "bd76c00519f7f562bb9ea187a811ae1005a1d58ccb4732c43183535e8799c95d"
+    },
+    {
+      "path": "tests/test_hardware_diagnostic.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "USB transport simulations, not physical presence or signing evidence.",
+      "before_sha256": "8a27fc6fcb5020b3dd947780b3189e3d77df5991ee793560ff65989669ea8c9e",
+      "after_sha256": "2a332d50c6a3625395565488da91450ea444698c11101f82d463a07f5d0177b5"
+    },
+    {
+      "path": "tests/test_hardware_gate.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Real P-256 signatures and durable gate/dispatcher checks; synthetic test keys only.",
+      "before_sha256": "b7bf25d3755ee1f8df62654c27c51670b0bdd2018ec2202c286a19bb188d116f",
+      "after_sha256": "a54a2c48e4e10d319bbe4462959840919162a6096d81a34c69d291af825a0bc8"
+    },
+    {
+      "path": "tests/test_human_approval.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Deterministic approval conformance tests with real OpenSSH verification.",
+      "before_sha256": "45e64b8b5c3d75c7b9f611a235a5f87c14a90ffd02e34644457c2f8cdd31c051",
+      "after_sha256": "76e85646eacfe95f49b0076f16edeed945b51051235904b189366f037ac654b2"
+    },
+    {
+      "path": "tests/test_lifecycle_bridge.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "A real lifecycle admission reaches only the host-bound production adapter.",
+      "before_sha256": "11963e1b5e5d42b5216078a97a64154630679627595184c39eba0bc685ef64ac",
+      "after_sha256": "fa0dbd343d28a09c885562c1f0e2bc3d7a935f9993830b0f15cc2a15808da181"
+    },
+    {
+      "path": "tests/test_lifecycle_governance.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Tests execute the new module directly; no production backend is substituted.",
+      "before_sha256": "f17f9c67346b5c78b82be66ca55e5907ad83955a63a9ef30e1ab1cf983656f6c",
+      "after_sha256": "6e51f0147ddb9f84811c293b2fccd57624152de2ff73c4f722c4f042c006c99e"
+    },
+    {
+      "path": "tests/test_lifecycle_lab.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_real_fixture_and_read_only_report, test_evidence_fields_cannot_inject_html",
+      "before_sha256": "edae3db9191e5fba5d9ce87be47b24be763c61e2dd8ad017b28f1404f8ce9c2a",
+      "after_sha256": "bafbad827a89d0644c0f217c35fc2ab2a29f9b712de350043a57376a513cda57"
+    },
+    {
+      "path": "tests/test_microvm.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Host-only regressions; these tests do not claim a hardware boot.",
+      "before_sha256": "489a01f4cbee56628de330f7388fe2bc530d1f6728ddd25376a8df8a78b4b718",
+      "after_sha256": "65e454d6e785abf862b8116a899213a125947591ae7525c194763966e2cca341"
+    },
+    {
+      "path": "tests/test_microvm_protocol.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: channels, test_roundtrip_workload_text_is_only_payload, test_authenticated_wrong_session_sequence_or_operation_rejected",
+      "before_sha256": "4524424d18a8d40a8e372e56e401e9adda9a1f41cbb2b5ab1a446fe9a77b58f5",
+      "after_sha256": "b55bce58cb902428b638ce70451a10e6a759b0a6d81d6064c39d47cd9e38487b"
+    },
+    {
+      "path": "tests/test_multiagent.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Tests for the bulldog multi-agent system.",
+      "before_sha256": "623c5c54e58230873debd966df16b3768af2e624c92a3bcd82f80d936c5bc7ed",
+      "after_sha256": "623c5c54e58230873debd966df16b3768af2e624c92a3bcd82f80d936c5bc7ed"
+    },
+    {
+      "path": "tests/test_policy.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: BulldogPolicyTests",
+      "before_sha256": "5c9f36341e088393e6af864e9d3c75805ee3edfb5c5aee42933962443b0d84a5",
+      "after_sha256": "5c9f36341e088393e6af864e9d3c75805ee3edfb5c5aee42933962443b0d84a5"
+    },
+    {
+      "path": "tests/test_policy_hardening.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: BulldogHardeningTests",
+      "before_sha256": "11a3763a0ba06dc8dce14970c5f3ef2da2c12843945062fa62cfd08cc7d419b2",
+      "after_sha256": "11a3763a0ba06dc8dce14970c5f3ef2da2c12843945062fa62cfd08cc7d419b2"
+    },
+    {
+      "path": "tests/test_policy_hardening_v2.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: request, HardenedPolicyTests",
+      "before_sha256": "8ba4943b56ebf54717209cd347798aaf88c5ce186250ee60cf7c6af3f8113fc8",
+      "after_sha256": "8ba4943b56ebf54717209cd347798aaf88c5ce186250ee60cf7c6af3f8113fc8"
+    },
+    {
+      "path": "tests/test_production_boundary.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _attestation, test_security_bootstrap_never_imports_from_agent_workspace, test_backend_attestation_is_nonce_bound_and_strict",
+      "before_sha256": "a93dba93c4ed1d39ad1534f6d608618de38ef69e726818b0947b958c983d7e57",
+      "after_sha256": "a93dba93c4ed1d39ad1534f6d608618de38ef69e726818b0947b958c983d7e57"
+    },
+    {
+      "path": "tests/test_production_router.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: router, request, test_unknown_effect_is_unreachable",
+      "before_sha256": "7abbb99e802002d181d63d885769d8de4c5601916d907ac31662ee1676628253",
+      "after_sha256": "6e6c01c0c7ee3a38bbf56baf272c5a3762e8546e65d9673b8c571cb1d8859643"
+    },
+    {
+      "path": "tests/test_public_guest_recipe.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Recipe rejection tests; actual upstream Kconfig configuration is a CI job.",
+      "before_sha256": "2ae7c1f36d98f3a214ec3d5e7838cc6bc65a93cb6fe43c0b0c7e2d1c46dea068",
+      "after_sha256": "e62e16bc29f01b0b695f0a60ac610bed324cab44d7a219637ddea63c55d497c3"
+    },
+    {
+      "path": "tests/test_qualification.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_private_kvm_reports_are_bound_and_sanitized, test_offline_guest_report_is_source_bound_and_gateway_unclaimed, test_networked_gateway_lab_is_source_bound_and_separate_from_",
+      "before_sha256": "84dbc1925a68eabbd6e1a7cf849759177dab24302f0fa8220ef4ac6388b0b5c7",
+      "after_sha256": "07ee2edc678fab21c57ddfd376b5d3ad5c2ae5279ec953b472a8f353b1efc1ca"
+    },
+    {
+      "path": "tests/test_recovery_failures.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Controlled storage faults and disposable collector restart; no host reboot.",
+      "before_sha256": "8d3ecd084188d234d2afd9fba7525e88fbbb1a8cbf8b900f14e3926eae44a274",
+      "after_sha256": "156506004b5e01200135676549ff98beb10096d92eadd3739daa369cc37fc480"
+    },
+    {
+      "path": "tests/test_redteam_authorization_binding.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: CleanScanner, RecordingSandbox, FixedDecisionEngine",
+      "before_sha256": "f81d429b7b12b1d9d63e84f3b5647651a9f20248e85318fbfa99f4e4292007e8",
+      "after_sha256": "dbbcca9cb10978d359d7961d265510e78642438ac6f5248d8231d6b121cb6f97"
+    },
+    {
+      "path": "tests/test_redteam_sandbox_decision_bypass.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Regression: Decision.SANDBOX must not pass the legacy broker gate.",
+      "before_sha256": "0cd44bd1d73b6ccc0113de07914a598e18f969b8ad4d4fb8bafc6fcddbf143e7",
+      "after_sha256": "d4c1f99bacd0077fa6f94eb5052a9a84dc79e4d48197800447f7c515bd50fa7d"
+    },
+    {
+      "path": "tests/test_refinement_map.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_refinement_map_covers_python_and_tla_names",
+      "before_sha256": "2b6b52d93ce8fc29633633769c6bb5db7981e86d06af471502325e3163b848c0",
+      "after_sha256": "4b7b429da1cbe583625f7b365167ff1de93e07ec24b8ebfe97ca757a2f79058c"
+    },
+    {
+      "path": "tests/test_release_evidence.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _bundle, _release_fixture, test_release_evidence_inventory_and_attestation_structure",
+      "before_sha256": "712c63fb5cd19aad63641e3e5ba61a4ac02d390994490cc510a6dab64c196c8e",
+      "after_sha256": "7e45a7a65f97dec89a14ec19ad7f0a167c3fba2c562e8695697f5aec25426af2"
+    },
+    {
+      "path": "tests/test_release_workflow_assurance.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_guest_release_requires_sbom_provenance_and_verification, test_guest_release_final_inventory_is_verified_before_release, test_release_verifies_supplied_bundles_and_pins_sou",
+      "before_sha256": "065f62c4bb8a0daef0d701701c8492c8b49bc134766f8c6459a4f6abadc3ac70",
+      "after_sha256": "342de663b2fc5a4698af96c69f78f5730227c294646e6fee8a327923de8b8a67"
+    },
+    {
+      "path": "tests/test_repository_artifacts.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Keep locally built VM assets out of the Git index (no VM boot required).",
+      "before_sha256": "86ba1093cd6f53ab78bfa0abd3292c9c7fbcf7da9bc171f3fbcf40366bf55db7",
+      "after_sha256": "50fca01ed38690a60a262f84f187ae1970aceb8b0d2e8bc6327b749d95bf6390"
+    },
+    {
+      "path": "tests/test_runtime_enforcement_v2.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: AllowEngine, MutatingCleanScanner, CapturingSandbox",
+      "before_sha256": "b7aa8db2c928f8c107e163abe4a7981ea096893ce9c931cf35b34bbe3ab62f26",
+      "after_sha256": "030832deb439e336eb82e0c12ef041e9cb8dc444a9282a836878b8c48d600fff"
+    },
+    {
+      "path": "tests/test_sandbox_backends.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_policy_rejects_invalid_network_mode, test_policy_rejects_direct_secret_grant, test_policy_rejects_nonpositive_output_limit",
+      "before_sha256": "542a3bcd847285798ac29aeca2d1b64f124637c1ead74dab23d3523ab1c28543",
+      "after_sha256": "542a3bcd847285798ac29aeca2d1b64f124637c1ead74dab23d3523ab1c28543"
+    },
+    {
+      "path": "tests/test_security_domains.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: _FakeRuntime, _FakeEgress, _AllowEngine",
+      "before_sha256": "b776be58046c92f0aea68dd5ac64835c53db8fa8ae4d1fdd4f42976b98b17c7a",
+      "after_sha256": "a30743b75afdb012393642e1b7cfe721d46f02d251879ce4ed0bea5d6c22e4eb"
+    },
+    {
+      "path": "tests/test_semantic_intent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Tests for bulldog.semantic_intent (deterministic, fail-closed).",
+      "before_sha256": "475923670a87404d2501f24c88aec35ecdd12ae24b4786b6477e47a084daadae",
+      "after_sha256": "112e5d08e6eb97a92826ff387625476f3754c0c641de12ecf368b4136841f287"
+    },
+    {
+      "path": "tests/test_session_guard.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: action, SessionEnforcementTests",
+      "before_sha256": "d4ab44ed863276e4fe142b4910fc42b1a89ff7d35cd807f6054607938287528d",
+      "after_sha256": "4758fb06f73814fa2591008c2da3b555e65229bcc066c29c02a4c0b84d1dd890"
+    },
+    {
+      "path": "tests/test_site_module_map.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Publication module identities must retain package paths and fail on drift.",
+      "before_sha256": "8ce184fd845536e1691a07f912ea55370461611c288c70d13437e4c4d0c400c2",
+      "after_sha256": "fa30246e6aaa7e3d365e00170150ae8631210803967908261cb27a546e5acd9e"
+    },
+    {
+      "path": "tests/test_snapshot_content.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Test fixture: test_directory_storage_size_is_not_content_but_file_size_is",
+      "before_sha256": "4657e7656b96989a0c5b614a825352808451cdde5bc393e88064c2e66d06df9c",
+      "after_sha256": "123edd9271b2a21e56134ab60fc7a43fbd087249b19cc5bc4115c3e7bbf4520d"
+    },
+    {
+      "path": "tests/test_token_broker.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Tests for bulldog.token_broker (real crypto paths, fail-closed).",
+      "before_sha256": "0fb3b7419164d64231bc65138ae873536b1de3e2680d6012a3815b2d26f64f07",
+      "after_sha256": "81fa870f4ab4f9f99bbcb31bfe72f94d7189a142bc9b3974b387a1872b89f790"
+    },
+    {
+      "path": "tools/adversarial_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "BULL adversarial test \u2014 single-file command-line tool.",
+      "before_sha256": "33ac0322f9143202a61785d07746d8cb947149da6f9a8f6bf228ca7d1d9f95be",
+      "after_sha256": "cc77f243dc2080f6ce1c19e0aca1cbb2d7d7cce1aeb590b37c0763e7ac8fa23e"
+    },
+    {
+      "path": "tools/audit_governed_agent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Offline evidence validation. Chain consistency is not independent anchoring proof.",
+      "before_sha256": "45e718ab2eb1928abdad47367128f3154d72ba5c03da51f68d29576eeaaf229b",
+      "after_sha256": "4006ab4c65e7339b5a4ef71483fc3b9ed3312071cc89450ff382ad3893f6597a"
+    },
+    {
+      "path": "tools/build_brand_assets.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Rebuild BULL artwork from the exact owner-approved PNG, without network access.",
+      "before_sha256": "314a45e9b4c958fe29f9b44ae9a9b13dd58fdd419b29606a62bb67f5c32581ca",
+      "after_sha256": "fa0a7f36775ea9bcf015d5ecc6e1b0050eb531968bfd2354b3080fd573562134"
+    },
+    {
+      "path": "tools/build_external_review_manifest.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Create a public, hash-only handoff manifest for an independent BULL review.",
+      "before_sha256": "1f341ac1c6a867a60b97e83b9803bb9a2a8fa67a40f57345004eda19fc563e0a",
+      "after_sha256": "f5072bb1042c1aae5197ad6d801e23544cf502cbfaf1e3e3a1d7a91ec12f0606"
+    },
+    {
+      "path": "tools/build_site.py",
+      "handling": "Clarified",
+      "check": "AST comparison with two declared site fixes; site tests",
+      "purpose": "Build BULL's read-only engineering publication from tracked source files.",
+      "before_sha256": "eba3a0290d87b4a2b87458979d23130bced9a499d728960c12a132f8bbd11340",
+      "after_sha256": "3fa8b17f52bed89ffbd2bb6edf81a5eeeb9e0d38dfe8e1735800b71f8db36382"
+    },
+    {
+      "path": "tools/bull-production-provision.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "278ce912a5184b9f87e151c223ce06fc939280a10ec856ede700b5a7ca4f76c9",
+      "after_sha256": "278ce912a5184b9f87e151c223ce06fc939280a10ec856ede700b5a7ca4f76c9"
+    },
+    {
+      "path": "tools/cgroup_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Small real-kernel resource probes; never run workloads as root.",
+      "before_sha256": "144f5b539ba0a717de0d6071c1882e1a576740f09f6e6c2c995cebc25c4cd77b",
+      "after_sha256": "645a17711829c468b75f793215eb3aeed138a23b421c75cc105f64681dc58323"
+    },
+    {
+      "path": "tools/check_agent_cgroup.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Harmless live check that a dedicated cgroup refuses a fork at its process limit.",
+      "before_sha256": "7630e9c3b6c5a9f9d8227a0a0b32b6ca0dbb5bfa5bcd28a14d12944e233e6df1",
+      "after_sha256": "0899b91eb6382a3faf552bae3b696f2263477accf0e03f7359c89f73ab3c9c04"
+    },
+    {
+      "path": "tools/check_agent_dispatch.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Exercise both fixed agent tools and an empty-grant denial on a real deployment.",
+      "before_sha256": "b08491db3318e08e60e75780249e97f4e1019e32ddb029c010c2583aabec2a5a",
+      "after_sha256": "d67b89e24424cb7eb5e23978d45a03538fbdad383566471bfc4bc438d0c61133"
+    },
+    {
+      "path": "tools/check_governed_agent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run dedicated worker crash/recovery cases and a measured local-model soak.",
+      "before_sha256": "fd2897aae1435300d85eee2444b277f60b26be2cfec6b4af6dd38f07dacdfdcb",
+      "after_sha256": "d6533c1d3bcf85e910efb78b9619b626103cf48cbda94d9f830ef9c01a657491"
+    },
+    {
+      "path": "tools/check_lifecycle_browser.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Offline Chromium render checks; HTTP endpoint behavior is tested separately.",
+      "before_sha256": "41c8fa94f71c384874f9a0ad32b363b03ee1e3bb8baed1f3f4f892a72ae68a05",
+      "after_sha256": "e204ffad10584035d9670278b2f61de2f73e3a293b24e4b129e2d3f226d7f086"
+    },
+    {
+      "path": "tools/check_package.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Build the committed source distribution and exercise its wheel in a fresh venv.",
+      "before_sha256": "6b5cb0d2ca97970eedddbbfa42eac4f83e0fa8937ddabb1bd56ae9addc569998",
+      "after_sha256": "7a66c4fb62d3ee2daba2ef2a339775b5415f1e3ed3e1df27a2760d86dedbc1b2"
+    },
+    {
+      "path": "tools/check_tla_refinement_map.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Fail when the TLA/Python transition traceability map drifts.",
+      "before_sha256": "d5de4bdce70be9379792642d636ef413cf67250701865c005486caecf4830eb9",
+      "after_sha256": "ade57e37b8e3d4dcfc76119ba32b01b4511afd815a78a766eab4ab54c3503e24"
+    },
+    {
+      "path": "tools/deployment_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run BULL deployment checks where invoked, including inside a Codespace.",
+      "before_sha256": "2ae0a18c6ef21e7c923786003be252a323b675a19cb3342da9e5c748d4381b87",
+      "after_sha256": "84c0a6e81e718c592e38c7806effbbbf383fd04e290ae03cf7549b3314f1fd8a"
+    },
+    {
+      "path": "tools/deployment_setup.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prepare operator-owned BULL deployments without shared keys or machine paths.",
+      "before_sha256": "ca0c86d1f5d4e35780a31c3bebc2c5b28ff4584d95ff1e7df9f5247a3ae2dcf8",
+      "after_sha256": "d661b91fcdaca1a34cebe90338058b858e05b342700b4daa2c47db907159e39e"
+    },
+    {
+      "path": "tools/egress_namespace_lab.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Disposable network-namespace probe for BULL's nftables egress recipe.",
+      "before_sha256": "91fec8a99176e3d44e3a0561f5241c24dc548989f5bf4a2c426efeecab5db98d",
+      "after_sha256": "b0dc3351cbe821e80112345203909df472548b33e079ba9650626e2e2eb4ee17"
+    },
+    {
+      "path": "tools/fetch_guest_databases.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "427a727ce72421d3a8142c424d36f4152259ebfc9967839e9973fe78e5837ba8",
+      "after_sha256": "427a727ce72421d3a8142c424d36f4152259ebfc9967839e9973fe78e5837ba8"
+    },
+    {
+      "path": "tools/gateway_guest_init.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "cdb27528bda86baea56584aa2c0cdd0ca648faefa290ff0c6cca7e47562327af",
+      "after_sha256": "cdb27528bda86baea56584aa2c0cdd0ca648faefa290ff0c6cca7e47562327af"
+    },
+    {
+      "path": "tools/gateway_guest_probe.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run only inside the disposable KVM gateway lab guest.",
+      "before_sha256": "c59e70f420cfeda66334bd5cf4e2fa175a5233c962d24051f60f71d6026656ad",
+      "after_sha256": "c59e70f420cfeda66334bd5cf4e2fa175a5233c962d24051f60f71d6026656ad"
+    },
+    {
+      "path": "tools/gateway_systemd_network.sh",
+      "handling": "Retained",
+      "check": "Shell syntax checked; bytes unchanged",
+      "purpose": "Build, runtime configuration or support file",
+      "before_sha256": "c1fb724c867dd4ee1b388b7fdf297720d19a2008cde7f2405171e841e1265c25",
+      "after_sha256": "c1fb724c867dd4ee1b388b7fdf297720d19a2008cde7f2405171e841e1265c25"
+    },
+    {
+      "path": "tools/governed_agent.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Bounded local-model agent, real production dispatch, durable audit recovery.",
+      "before_sha256": "cafeb825a7047c3dfdb70e930ddbcd64978b3cb8c5b30f34e669179a1e4a4b63",
+      "after_sha256": "71deb84a8363722b3da1922957440041bbdc72f798a41f6f0b92477862bb1560"
+    },
+    {
+      "path": "tools/hardware_approval_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Interactive harmless approval ceremony on an operator's enrolled device.",
+      "before_sha256": "19c23332606ce089044edfdbae74c04cd9b4e7ff5b6d493ee02333784b4720dc",
+      "after_sha256": "7828f275b0e7f183ceb6ecc61eb3777c0698f745b78a96543effd3395f0209cc"
+    },
+    {
+      "path": "tools/hardware_diagnostic.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Compatibility entrypoint for the packaged diagnostic; never grants approval.",
+      "before_sha256": "476a5863bb55409610bab6fe15887ff9cce5316de870587ed3a8f214b84493dd",
+      "after_sha256": "b7b5bdcf5d7d393277cde229f3ba0efff637cd252a9edda614fc1bfaa4d20615"
+    },
+    {
+      "path": "tools/host_setup.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Administrator provisioning of a BULL cgroup and optional KVM group access.",
+      "before_sha256": "f1fce93c33ec543f00865ac136f2b3a727aec7c04054df8083151b23919837e7",
+      "after_sha256": "56aa2ebc3850deab1b9269b250be5b531c5b2cc3021e4b3bf457ba3f3169b6e7"
+    },
+    {
+      "path": "tools/release_check.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Collect source validation evidence; never equate it with certification.",
+      "before_sha256": "0d1b8b56d8b3a814521b06568afe87f913d3276d240d0dfd0ceb6dae25269e60",
+      "after_sha256": "b518ed0bf25520211bf2998780f7400635ce836b35ba4a963794b1674b579136"
+    },
+    {
+      "path": "tools/run_assurance_campaign.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run a source-bound long-duration qualification probe and checkpoint evidence.",
+      "before_sha256": "7485a3438294cc520e3e98306a7b9be48ff5c3342ac5c7150b280bd7b8a796d8",
+      "after_sha256": "7485a3438294cc520e3e98306a7b9be48ff5c3342ac5c7150b280bd7b8a796d8"
+    },
+    {
+      "path": "tools/run_codespace_combined_candidate_kvm.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run the networked bullagent + bullgw + nftables + systemd KVM candidate.",
+      "before_sha256": "e7d4010fdae92c88f0a4bd2cee03ca1814de2bade938f3e1f08e866f6a830dbc",
+      "after_sha256": "e7d4010fdae92c88f0a4bd2cee03ca1814de2bade938f3e1f08e866f6a830dbc"
+    },
+    {
+      "path": "tools/run_codespace_gateway_kvm.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Build and boot a disposable networked KVM guest for the actual BULL gateway.",
+      "before_sha256": "e1b0f821c4f6c0b146822fc6754dfbe558bc55904fff1f5c44d6b77de16d7160",
+      "after_sha256": "e1b0f821c4f6c0b146822fc6754dfbe558bc55904fff1f5c44d6b77de16d7160"
+    },
+    {
+      "path": "tools/run_codespace_gateway_systemd_kvm.py",
+      "handling": "Retained",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Qualify actual BULL systemd gateway units in a separate networked KVM candidate.",
+      "before_sha256": "3a1bbc88c10a5fc734b0f95751db2cc865cbeb2f39cad6f5ca11cb8eaaaf343a",
+      "after_sha256": "3a1bbc88c10a5fc734b0f95751db2cc865cbeb2f39cad6f5ca11cb8eaaaf343a"
+    },
+    {
+      "path": "tools/run_codespace_kvm.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Prepare a pinned guest and run BULL's five real-KVM cases, or report why blocked.",
+      "before_sha256": "fe06b6db5cd5f9f5ab3c68601d7477797e62f23d855f837fe769c61aee320f7f",
+      "after_sha256": "6703aee40d03a5868c08624073f3f73a59a861480b0d9a4574985448b199fb71"
+    },
+    {
+      "path": "tools/run_lifecycle_lab.py",
+      "handling": "Clarified",
+      "check": "AST comparison; docstrings excluded",
+      "purpose": "Run actual disposable lifecycle fixtures; serve only a read-only evidence page.",
+      "before_sha256": "09150a6036c0850c76cc14574d97549979c8e2c83a316f5e998893be7ade0174",
+      "after_sha256": "0663a8f8d89b6cbb8eda1f4598a17961a76328a4a6fb5d38c3d1f9cd0aad11c7"
+    },
+    {
+      "path": "wrangler.jsonc",
+      "handling": "Retained",
+      "check": "Strict JSON compatibility and values compared",
+      "purpose": "UI, service or workflow configuration",
+      "before_sha256": "f534fd3db4a40da005da21ae06dd2885c667f6d64088cbe571e9644ec06497f5",
+      "after_sha256": "f534fd3db4a40da005da21ae06dd2885c667f6d64088cbe571e9644ec06497f5"
+    }
+  ],
+  "counts": {
+    "Retained": 116,
+    "Formatted": 19,
+    "Clarified": 172,
+    "Preserved": 86
+  },
+  "validation": {
+    "full_suite": {
+      "passed": 656,
+      "subtests_passed": 21,
+      "failed": 4,
+      "skipped": 0,
+      "note": "Four host-restricted failures also present at baseline; no all-green claim"
+    },
+    "baseline_suite": {
+      "passed": 646,
+      "subtests_passed": 21,
+      "failed": 5,
+      "errors": 9
+    },
+    "source_api_probes": {
+      "passed": 49,
+      "failed": 0
+    },
+    "firmware": "Two host C state-machine simulations passed; no board flash or SDK build",
+    "deployment": "No KVM or physical approval rerun; /dev/kvm absent"
+  },
+  "limits": [
+    "AST/token equality excludes documentation and the two stated build-site fixes; it is not a formal equivalence proof",
+    "No independent human line-by-line security review is claimed",
+    "This record covers the baseline inventory; the two new review documents are report artifacts and do not hash themselves"
+  ]
+}

@@ -1,0 +1,41 @@
+[Unit]
+Description=BULL transparent egress gateway
+Documentation=https://github.com/Anharmoniclabs/BULL
+After=network.target
+# Apply guest rules before starting the gateway. Web and UDP DNS traffic
+# is redirected to local listeners; other output follows the filter rules.
+# Stopping the gateway leaves those rules installed.
+Requires=bull-egress-redirect.service
+After=bull-egress-redirect.service
+
+[Service]
+Type=simple
+User=bullgw
+Group=bullgw
+ExecStart=/usr/bin/python3 -m bulldog.run_egress_gateway \
+    --policy /etc/bull/egress_policy.json
+Restart=always
+RestartSec=2
+
+# The gateway identity is trusted to make upstream connections.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+ReadWritePaths=/var/lib/bull
+
+[Install]
+WantedBy=multi-user.target

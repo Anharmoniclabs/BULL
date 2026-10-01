@@ -1,0 +1,55 @@
+[openshell]
+version = 2
+
+[openshell.gateway.auth]
+allow_unauthenticated_users = true
+
+[openshell.gateway.gateway_jwt]
+signing_key_path = "/tmp/bull-os-B-5wegmb06/jwt/signing.pem"
+public_key_path = "/tmp/bull-os-B-5wegmb06/jwt/public.pem"
+kid_path = "/tmp/bull-os-B-5wegmb06/jwt/kid"
+gateway_id = "bull-experiment"
+
+[openshell.drivers.docker]
+supervisor_image = "bull-local/openshell-supervisor:bull-exp"
+sandbox_runtime_image = "bull-local/openshell-sandbox:bull-exp"
+image_pull_policy = "never"
+
+[[openshell.supervisor.middleware]]
+name = "bull-governance"
+grpc_endpoint = "http://host.openshell.internal:47635"
+allow_insecure_transport = true
+max_payload_bytes = 262144
+timeout = "2s"
+
+[[openshell.gateway.interceptors]]
+name = "bull-governance"
+grpc_endpoint = "unix:///tmp/bull-os-B-5wegmb06/interceptor.sock"
+order = 10
+failure_policy = "fail_closed"
+binding_policy = "exact"
+timeout = "2s"
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/CreateSandbox"
+phases = ["modify_operation", "validate"]
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/UpdateConfig"
+phases = ["modify_operation", "validate"]
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/AttachSandboxProvider"
+phases = ["validate"]
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/ApproveDraftChunk"
+phases = ["validate"]
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/ApproveAllDraftChunks"
+phases = ["validate"]
+
+[[openshell.gateway.interceptors.bindings]]
+rpc = "openshell.v1.OpenShell/EditDraftChunk"
+phases = ["validate"]

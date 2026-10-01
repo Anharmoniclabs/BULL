@@ -18,7 +18,7 @@ as separate integrations.
 
 ## 3. Evidence — 90 seconds
 
-Open [the validation record](VALIDATION_20260923.md), pinned to `ab53f56`:
+For the historical one-shot path, open [the validation record](VALIDATION_20260923.md), pinned to `ab53f56`:
 501 tests + 21 subtests; six GitHub validation workflows; five real KVM cases; authenticated
 external host/guest receipts; allowed and denied fixed-tool requests.
 Explain the controlled worker, collector and storage-failure tests.
@@ -35,6 +35,12 @@ versions rather than combining these revision-specific results.
 The older Qwen demonstration ran 40 actions in 11m 47s with two recoveries.
 It used two fixed read-only tools on the host, not the MicroVM. Do not combine
 its source revision or test counts with the newer candidate.
+
+The later [combined guest candidate](HUMAN_FIRST_PRODUCTION_ASSURANCE.md)
+reported 13 checks at `e6df4de`: separate agent/gateway users, traffic rules,
+stop/restart behavior and actual systemd units in a disposable Debian KVM guest.
+This is operator-reported evidence and does not yet cover the complete production
+dispatcher workload path in a pinned released networked image.
 
 ## 4. Demonstration — 60 seconds
 

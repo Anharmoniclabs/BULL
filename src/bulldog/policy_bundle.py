@@ -1,3 +1,5 @@
+"""Load signed policy bundles and validate their capability ceilings."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,16 +40,15 @@ def sign_policy_bundle(
     key: bytes | str,
     key_id: str = "deployment-policy",
     human_approval: dict | None = None,
+    agent_gateway: dict | None = None,
+    openshell: dict | None = None,
 ) -> dict:
     if isinstance(key, str):
         key = key.encode("utf-8")
     if not key:
         raise PolicyBundleError("policy signing key cannot be empty")
 
-    capabilities = sorted(
-        Capability(value).value
-        for value in allowed_capabilities
-    )
+    capabilities = sorted(Capability(value).value for value in allowed_capabilities)
     payload = {
         "format": "bull-policy-v1",
         "project_root": str(project_root),
@@ -60,7 +61,16 @@ def sign_policy_bundle(
     }
     if human_approval is not None:
         from .approval import validate_config
+
         payload["human_approval"] = validate_config(human_approval)
+    if agent_gateway is not None:
+        from .agent_tool_registry import validate_gateway_config
+
+        payload["agent_gateway"] = validate_gateway_config(agent_gateway)
+    if openshell is not None:
+        from .openshell.grants import validate_grants
+
+        payload["openshell"] = validate_grants(openshell)
     payload["signature"]["value"] = hmac.new(
         key,
         _canonical_bytes(payload),
@@ -98,8 +108,7 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
     try:
         capabilities = frozenset(
-            Capability(value)
-            for value in payload.get("allowed_capabilities", ())
+            Capability(value) for value in payload.get("allowed_capabilities", ())
         )
     except Exception as exc:
         raise PolicyBundleError("policy bundle contains invalid capability") from exc
@@ -108,7 +117,16 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
     if "human_approval" in payload:
         from .approval import validate_config
+
         validate_config(payload["human_approval"])
+    if "agent_gateway" in payload:
+        from .agent_tool_registry import validate_gateway_config
+
+        validate_gateway_config(payload["agent_gateway"])
+    if "openshell" in payload:
+        from .openshell.grants import validate_grants
+
+        validate_grants(payload["openshell"])
 
     return PolicyBundle(
         project_root=project_root,
@@ -120,7 +138,9 @@ def verify_policy_bundle(payload: dict, key: bytes | str) -> PolicyBundle:
 
 def load_policy_bundle(path: str | Path, key: bytes | str) -> PolicyBundle:
     try:
-        payload = json.loads(Path(path).resolve(strict=True).read_text(encoding="utf-8"))
+        payload = json.loads(
+            Path(path).resolve(strict=True).read_text(encoding="utf-8")
+        )
     except Exception as exc:
         raise PolicyBundleError(f"unable to read policy bundle: {exc}") from exc
     return verify_policy_bundle(payload, key)

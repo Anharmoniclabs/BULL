@@ -5,10 +5,7 @@ from bulldog.namespace_sandbox import (
     NamespaceSandbox,
 )
 
-
-BASE = Path(
-    "/tmp/bull_namespace_backend_cert"
-)
+BASE = Path("/tmp/bull_namespace_backend_cert")
 
 PROJECT = BASE / "project"
 
@@ -189,9 +186,7 @@ print(
 
 
 if result.returncode != 0:
-    raise SystemExit(
-        result.returncode
-    )
+    raise SystemExit(result.returncode)
 
 
 required = (
@@ -212,13 +207,9 @@ for marker in required:
     assert marker in result.stdout, marker
 
 
-assert (
-    PROJECT / "created.txt"
-).read_text() == "created-inside\n"
+assert (PROJECT / "created.txt").read_text() == "created-inside\n"
 
-print(
-    "PROJECT_BIND_PERSISTENCE=PASS"
-)
+print("PROJECT_BIND_PERSISTENCE=PASS")
 
 
 # =========================================================================
@@ -283,20 +274,12 @@ if readonly.stderr:
 
 
 if readonly.returncode != 0:
-    raise SystemExit(
-        readonly.returncode
-    )
+    raise SystemExit(readonly.returncode)
 
 
-assert (
-    "READONLY_PROJECT_READ=PASS"
-    in readonly.stdout
-)
+assert "READONLY_PROJECT_READ=PASS" in readonly.stdout
 
-assert (
-    "READONLY_PROJECT_WRITE_BLOCK=PASS"
-    in readonly.stdout
-)
+assert "READONLY_PROJECT_WRITE_BLOCK=PASS" in readonly.stdout
 
 
 print()

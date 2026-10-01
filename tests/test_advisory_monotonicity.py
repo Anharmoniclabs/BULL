@@ -33,9 +33,7 @@ def _action(
         operation=(
             "execute"
             if capability == Capability.PROCESS_EXEC
-            else "agent.create"
-            if capability == Capability.AGENT_SPAWN
-            else "read"
+            else "agent.create" if capability == Capability.AGENT_SPAWN else "read"
         ),
         resource=resource,
         capability=capability,

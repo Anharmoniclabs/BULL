@@ -11,6 +11,9 @@ dependencies = []
 
 [project.optional-dependencies]
 hardware = ["cryptography>=43,<51"]
+egress = ["cryptography>=43,<51"]
+mcp = ["mcp==2.2.0"]
+openshell = ["grpcio>=1.84,<2", "protobuf>=7.35.1,<8"]
 test = ["pytest>=8,<10", "cryptography>=43,<51", "build>=1,<2"]
 
 [project.urls]
@@ -20,6 +23,7 @@ Security = "https://github.com/Anharmoniclabs/BULL/security/policy"
 
 [project.scripts]
 bull = "bulldog.cli:main"
+bull-mcp = "bulldog.mcp_gateway:main"
 
 [build-system]
 requires = ["setuptools>=77"]
@@ -37,7 +41,12 @@ where = ["src"]
 include = ["bulldog*"]
 
 [tool.setuptools.package-data]
-bulldog = ["_namespace_launcher.sh", "data/*.json"]
+bulldog = ["_namespace_launcher.sh", "data/*.json", "console_static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+# Format maintained Python only. Published papers and evidence keep their bytes.
+[tool.black]
+target-version = ["py311"]
+extend-exclude = 'docs/(evidence|papers)/'

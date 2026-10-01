@@ -3,6 +3,7 @@
 At most 64 MiB of charged memory, eight fork attempts, and one second of
 wall-clock CPU work. Every probe stays inside its own disposable scope.
 """
+
 import os
 from pathlib import Path
 import subprocess
@@ -14,7 +15,9 @@ from bulldog.cgroup_scope import CgroupV2Scope, CgroupUnavailable
 
 
 def counters(path):
-    return {k: int(v) for k, v in (line.split() for line in path.read_text().splitlines())}
+    return {
+        k: int(v) for k, v in (line.split() for line in path.read_text().splitlines())
+    }
 
 
 def check_limits(parent):
@@ -47,19 +50,24 @@ finally:
         os.waitpid(pid, 0)
 """,
     }.items():
-        with CgroupV2Scope(parent, memory_bytes=64*1024*1024, processes=4,
-                           cpu_quota_us=25000) as scope:
+        with CgroupV2Scope(
+            parent, memory_bytes=64 * 1024 * 1024, processes=4, cpu_quota_us=25000
+        ) as scope:
             # No swap pressure on the operator's laptop.
             scope._write("memory.swap.max", "0")
-            result = subprocess.run([sys.executable, "-I", "-c", code],
-                                    preexec_fn=scope.attach_current, timeout=10,
-                                    capture_output=True)
+            result = subprocess.run(
+                [sys.executable, "-I", "-c", code],
+                preexec_fn=scope.attach_current,
+                timeout=10,
+                capture_output=True,
+            )
             if name == "memory":
                 observed = counters(scope.path / "memory.events")
                 if result.returncode != -9 or observed.get("oom_kill", 0) < 1:
                     raise RuntimeError(
                         f"memory limit evidence mismatch: returncode={result.returncode}, counters={observed}, "
-                        f"probe_error={result.stderr.decode(errors='replace')[:512]}")
+                        f"probe_error={result.stderr.decode(errors='replace')[:512]}"
+                    )
             elif name == "cpu":
                 observed = counters(scope.path / "cpu.stat")
                 if result.returncode != 0 or observed.get("nr_throttled", 0) < 1:
@@ -71,7 +79,11 @@ finally:
             path = scope.path
         if path.exists():
             raise RuntimeError("resource probe scope was not removed")
-        results[name] = {"status": "PASS", "returncode": result.returncode, "counters": observed}
+        results[name] = {
+            "status": "PASS",
+            "returncode": result.returncode,
+            "counters": observed,
+        }
 
     # Both an interrupted coordinator and a timeout must reap an owned process
     # tree. These fixture processes never execute user-supplied commands.
@@ -79,16 +91,25 @@ finally:
         child = None
         path = None
         try:
-            with CgroupV2Scope(parent, memory_bytes=64*1024*1024, processes=4,
-                               cpu_quota_us=25000) as scope:
+            with CgroupV2Scope(
+                parent, memory_bytes=64 * 1024 * 1024, processes=4, cpu_quota_us=25000
+            ) as scope:
                 path = scope.path
-                child = subprocess.Popen([sys.executable, "-I", "-c",
-                    "import os,time; os.fork(); time.sleep(10)"],
-                    preexec_fn=scope.attach_current)
+                child = subprocess.Popen(
+                    [
+                        sys.executable,
+                        "-I",
+                        "-c",
+                        "import os,time; os.fork(); time.sleep(10)",
+                    ],
+                    preexec_fn=scope.attach_current,
+                )
                 deadline = time.monotonic() + 2
                 while len((path / "cgroup.procs").read_text().split()) < 2:
                     if time.monotonic() >= deadline:
-                        raise RuntimeError("cleanup fixture did not create its descendant")
+                        raise RuntimeError(
+                            "cleanup fixture did not create its descendant"
+                        )
                     time.sleep(0.01)
                 try:
                     child.wait(timeout=0.2)
@@ -110,8 +131,12 @@ finally:
     undelegated = Path(tempfile.mkdtemp(prefix="bull-undelegated-", dir=parent))
     try:
         try:
-            with CgroupV2Scope(undelegated, memory_bytes=64*1024*1024,
-                               processes=4, cpu_quota_us=25000):
+            with CgroupV2Scope(
+                undelegated,
+                memory_bytes=64 * 1024 * 1024,
+                processes=4,
+                cpu_quota_us=25000,
+            ):
                 raise RuntimeError("missing controllers admitted a scope")
         except CgroupUnavailable as exc:
             if "unable to configure cgroup" not in str(exc):

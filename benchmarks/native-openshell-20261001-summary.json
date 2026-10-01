@@ -1,0 +1,316 @@
+{
+  "run": "native-security-20261001T150151646951962Z",
+  "scope": "Native integration validation under tested conditions",
+  "composition_count_includes_setup": true,
+  "fault_status": "PASS",
+  "fault_cases": [
+    {
+      "case": "delay-10",
+      "fault": {
+        "delay_ms": 10
+      },
+      "http": "200",
+      "effects": 1,
+      "elapsed_seconds": 0.11157715100125642,
+      "pass": true
+    },
+    {
+      "case": "delay-50",
+      "fault": {
+        "delay_ms": 50
+      },
+      "http": "200",
+      "effects": 1,
+      "elapsed_seconds": 0.15635145000123885,
+      "pass": true
+    },
+    {
+      "case": "delay-100",
+      "fault": {
+        "delay_ms": 100
+      },
+      "http": "200",
+      "effects": 1,
+      "elapsed_seconds": 0.15736303300036525,
+      "pass": true
+    },
+    {
+      "case": "delay-250",
+      "fault": {
+        "delay_ms": 250
+      },
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.2392125419992226,
+      "pass": true
+    },
+    {
+      "case": "delay-1000",
+      "fault": {
+        "delay_ms": 1000
+      },
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.2395490199996857,
+      "pass": true
+    },
+    {
+      "case": "delay-5000",
+      "fault": {
+        "delay_ms": 5000
+      },
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.24387461500009522,
+      "pass": true
+    },
+    {
+      "case": "reset",
+      "fault": {
+        "disconnect": true
+      },
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.046312824999404256,
+      "pass": true
+    },
+    {
+      "case": "unavailable",
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.04279187300016929,
+      "pass": true
+    },
+    {
+      "case": "restart",
+      "fault": {},
+      "http": "200",
+      "effects": 1,
+      "elapsed_seconds": 0.04245264800010773,
+      "pass": true
+    },
+    {
+      "case": "revoked",
+      "fault": {},
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.05214253900157928,
+      "pass": true
+    },
+    {
+      "case": "revoked-after-restart",
+      "fault": {},
+      "http": "403",
+      "effects": 0,
+      "elapsed_seconds": 0.07787641999857442,
+      "pass": true
+    }
+  ],
+  "composition_cases": [
+    {
+      "phase": "A-openshell-only",
+      "case": "setup",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "setup",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C1",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C2",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C3",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C3b",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C4",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C7",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C5",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C8",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C6",
+      "pass": true
+    },
+    {
+      "phase": "A-openshell-only",
+      "case": "C10",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "setup",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "setup",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C1",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C2",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C3",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C3b",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C4",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C7",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C5",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C5b",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C8",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C6",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C9",
+      "pass": true
+    },
+    {
+      "phase": "B-openshell+bull",
+      "case": "C10",
+      "pass": true
+    }
+  ],
+  "latency_summary": [
+    {
+      "phase": "A-openshell-only",
+      "metric": "sandbox_create_seconds",
+      "n": 6,
+      "mean": 1.302,
+      "median": 1.277,
+      "p95": 1.35,
+      "min": 1.191,
+      "max": 1.506,
+      "stdev": 0.105
+    },
+    {
+      "phase": "A-openshell-only",
+      "metric": "get_trusted_ms",
+      "n": 20,
+      "mean": 10.914,
+      "median": 10.14,
+      "p95": 18.731,
+      "min": 5.203,
+      "max": 19.621,
+      "stdev": 4.263
+    },
+    {
+      "phase": "A-openshell-only",
+      "metric": "post_api_ms",
+      "n": 20,
+      "mean": 12.963,
+      "median": 12.521,
+      "p95": 20.883,
+      "min": 7.417,
+      "max": 26.408,
+      "stdev": 4.561
+    },
+    {
+      "phase": "B-openshell+bull",
+      "metric": "sandbox_create_seconds",
+      "n": 6,
+      "mean": 1.213,
+      "median": 1.207,
+      "p95": 1.323,
+      "min": 1.053,
+      "max": 1.379,
+      "stdev": 0.116
+    },
+    {
+      "phase": "B-openshell+bull",
+      "metric": "get_trusted_ms",
+      "n": 20,
+      "mean": 16.991,
+      "median": 14.36,
+      "p95": 30.354,
+      "min": 9.391,
+      "max": 34.584,
+      "stdev": 7.263
+    },
+    {
+      "phase": "B-openshell+bull",
+      "metric": "post_api_ms",
+      "n": 20,
+      "mean": 18.519,
+      "median": 17.216,
+      "p95": 38.126,
+      "min": 9.32,
+      "max": 48.548,
+      "stdev": 9.363
+    }
+  ],
+  "packaging_checkout_commit": "73451b025e6458475f279bcd9eb37e469bc762bd",
+  "packaging_harness_sha256": "a020b7c591fd31d96320337a476dc888e3874370614b9dff284d677674c73e7a",
+  "provenance_note": "Packaging source metadata is not a run-time source attestation.",
+  "source_report_sha256": {
+    "faults/report.json": "f4d94c49eeb6e53a838b2ec080bc9cfd5771d86bf14d68b7f28008e506821274",
+    "composition/results.json": "58bfdd52a6f31933053d6e68b0c3250fe31cdc574b8176c6a3ed33b150a416e4"
+  }
+}

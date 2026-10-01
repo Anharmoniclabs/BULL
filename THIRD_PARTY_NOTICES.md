@@ -17,6 +17,9 @@ Installed development metadata reviewed on 2026-09-23 records:
 | setuptools | 84.0.0 | MIT | Packaging |
 | wheel | 0.48.0 | MIT | Packaging |
 | build | 1.6.1 | MIT | Source distribution and wheel validation |
+| mcp | 2.2.0 | MIT | Optional local MCP connector; metadata reviewed 2026-09-27 |
+| grpcio | 1.84.0 | Apache-2.0 | Optional OpenShell extension services; reviewed 2026-09-28 |
+| protobuf | 7.36.2 | BSD-3-Clause | Optional OpenShell extension services; reviewed 2026-09-28 |
 
 Version ranges in pyproject.toml permit other versions. These are direct tools,
 not an exhaustive dependency SBOM. Redistributors must retain the notices for
@@ -25,6 +28,10 @@ does not add those packages to BULL's source license.
 
 The collector's Wrangler tool is an external Cloudflare development dependency;
 consult [its source and license](https://github.com/cloudflare/workers-sdk).
+`src/bulldog/openshell/_proto/` holds stubs generated from NVIDIA OpenShell's
+Apache-2.0 protocol definitions (tag v0.1.2); see its README for provenance.
+OpenShell itself is an external dependency with its own notices.
+
 TLA+ tools, OpenSSH, OpenSSL, libseccomp, util-linux, QEMU, ClamAV and the system
 build toolchain are external dependencies with their own notices.
 

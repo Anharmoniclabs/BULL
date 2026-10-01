@@ -1,0 +1,19 @@
+{
+  "format": "bull-production-effect-coverage-v1",
+  "default": "DENY",
+  "agent_facing_entrypoint": "bulldog.production_router.ProductionEffectRouter",
+  "implemented": {
+    "process.execute": "ProductionDispatcher.execute",
+    "network.request": "ProductionDispatcher.fetch_egress + ApprovalGate + DurableEffectJournal",
+    "secret.read": "ProductionDispatcher.get_secret + ApprovalGate + DurableEffectJournal"
+  },
+  "blocked_until_adapter_exists": [
+    "message.send",
+    "publish",
+    "persist",
+    "replicate",
+    "access.change",
+    "security.change"
+  ],
+  "rule": "An effect absent from implemented is unreachable from the production router. Agent text cannot register adapters or alter this manifest."
+}

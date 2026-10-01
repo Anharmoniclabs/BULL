@@ -56,7 +56,9 @@ class AttackerRecord:
             "label": self.label,
             "swarm_id": self.swarm_id,
             "model_family": self.fingerprint.family if self.fingerprint else "unknown",
-            "model_confidence": round(self.fingerprint.confidence, 3) if self.fingerprint else 0.0,
+            "model_confidence": (
+                round(self.fingerprint.confidence, 3) if self.fingerprint else 0.0
+            ),
             "initial_task": self.initial_task,
             "findings": list(self.findings),
             "quarantined": self.quarantined,

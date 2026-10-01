@@ -1,9 +1,10 @@
+"""Retain session behavior used when evaluating subsequent action requests."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 from .models import ActionRequest, Capability, Decision, Evaluation
-
 
 _DECISION_ORDER = {
     Decision.ALLOW: 0,
@@ -53,20 +54,12 @@ class SessionGuard:
         Otherwise history is anchored to actor identity.
         """
 
-        trusted_context = action.metadata.get(
-            "security_context_id"
-        )
+        trusted_context = action.metadata.get("security_context_id")
 
         if trusted_context:
-            return (
-                "security-context:"
-                + str(trusted_context)
-            )
+            return "security-context:" + str(trusted_context)
 
-        return (
-            "actor:"
-            + str(action.actor)
-        )
+        return "actor:" + str(action.actor)
 
     def enforce(
         self,
@@ -89,8 +82,7 @@ class SessionGuard:
             action.capability == Capability.CREDENTIAL_READ
             and any(a.capability in PROJECT_CAPABILITIES for a in previous_actions)
             and not any(
-                a.capability == Capability.CREDENTIAL_READ
-                for a in previous_actions
+                a.capability == Capability.CREDENTIAL_READ for a in previous_actions
             )
         ):
             flags.append("GOAL_DRIFT")
@@ -110,7 +102,8 @@ class SessionGuard:
             previous_action = previous_actions[-1]
 
             if (
-                previous.decision in {
+                previous.decision
+                in {
                     Decision.SANDBOX,
                     Decision.ESCALATE,
                     Decision.DENY,
@@ -119,10 +112,9 @@ class SessionGuard:
             ):
                 flags.append("ALTERNATE_PATH_AFTER_RESTRICTION")
 
-        recent_caps = [
-            a.capability
-            for a in previous_actions[-3:]
-        ] + [action.capability]
+        recent_caps = [a.capability for a in previous_actions[-3:]] + [
+            action.capability
+        ]
 
         if len(recent_caps) >= 4 and len(set(recent_caps)) >= 4:
             flags.append("TOOL_SHOPPING")
@@ -141,8 +133,7 @@ class SessionGuard:
             risk = max(evaluation.risk, 0.90)
 
             reasons = evaluation.reasons + tuple(
-                f"session behavior: {flag}"
-                for flag in flags
+                f"session behavior: {flag}" for flag in flags
             )
 
             result = Evaluation(
@@ -164,7 +155,7 @@ class SessionGuard:
         events.append(SessionEvent(action, evaluation))
 
         if len(events) > self.max_history:
-            del events[:-self.max_history]
+            del events[: -self.max_history]
 
     def clear(self, session_id: str | None = None) -> None:
         if session_id is None:

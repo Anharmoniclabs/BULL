@@ -36,9 +36,7 @@ class _FakeRuntime:
             evaluation=self.evaluation,
             executed=False,
             sandboxed=False,
-            review_required=(
-                self.evaluation.decision == Decision.ESCALATE
-            ),
+            review_required=(self.evaluation.decision == Decision.ESCALATE),
             returncode=None,
             stdout="",
             stderr="",
@@ -115,9 +113,7 @@ def test_child_authority_and_egress_are_strict_subsets():
         egress_hosts={"docs.python.org"},
     )
 
-    assert child.capability_ceiling == frozenset({
-        Capability.FS_READ_PROJECT
-    })
+    assert child.capability_ceiling == frozenset({Capability.FS_READ_PROJECT})
     assert child.egress_hosts == frozenset({"docs.python.org"})
 
     with pytest.raises(SecurityDomainError):
@@ -359,11 +355,14 @@ def test_domain_secret_grant_cannot_cross_domain_or_replay(tmp_path):
             sandbox_id=sibling.domain_id,
         )
 
-    assert broker._authorize_and_get(
-        grant.token,
-        "TOKEN",
-        sandbox_id=root.domain_id,
-    ) == "VALUE"
+    assert (
+        broker._authorize_and_get(
+            grant.token,
+            "TOKEN",
+            sandbox_id=root.domain_id,
+        )
+        == "VALUE"
+    )
 
     with pytest.raises(SecretBrokerError):
         broker._authorize_and_get(

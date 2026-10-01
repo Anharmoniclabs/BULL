@@ -1,3 +1,5 @@
+"""Append and verify audit records, checkpoint their heads, and retain failures."""
+
 from __future__ import annotations
 
 import fcntl
@@ -6,6 +8,7 @@ import hmac
 import json
 import os
 import tempfile
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,6 +56,10 @@ class AuditLedger:
         max_ledger_bytes: int = 256 * 1024 * 1024,
     ):
         self.path = Path(path)
+        self._append_lock = threading.RLock()
+        self._validated_head = None
+        self._validated_files = None
+        self.full_verifications = 0
         self.transport = transport
         if type(max_ledger_bytes) is not int or max_ledger_bytes < 1:
             raise ValueError("audit storage budget must be a positive integer")
@@ -118,9 +125,7 @@ class AuditLedger:
     @staticmethod
     def _calculate_hash(payload: dict) -> str:
         canonical = {
-            key: value
-            for key, value in payload.items()
-            if key != "record_hash"
+            key: value for key, value in payload.items() if key != "record_hash"
         }
         encoded = json.dumps(
             canonical,
@@ -210,18 +215,29 @@ class AuditLedger:
 
     @property
     def production_anchor_ready(self) -> bool:
-        return isinstance(self.transport, (HTTPSAnchorTransport, RelayAnchorTransport)) and self.transport.production_ready
+        return (
+            isinstance(self.transport, (HTTPSAnchorTransport, RelayAnchorTransport))
+            and self.transport.production_ready
+        )
 
-    def _write_remote_anchor(self, *, sequence: int, head_hash: str, record: dict | None = None) -> None:
+    def _write_remote_anchor(
+        self, *, sequence: int, head_hash: str, record: dict | None = None
+    ) -> None:
         if self.transport is not None:
             try:
                 if record is None:
-                    raise AuditIntegrityError("transport requires the complete audit record")
+                    raise AuditIntegrityError(
+                        "transport requires the complete audit record"
+                    )
                 ack = self.transport.submit(sequence, record)
                 self.transport.identity.check_ack(ack, sequence, head_hash)
-                self._write_atomic_json(self.remote_checkpoint_path, ack, ".bull-remote-anchor-")
+                self._write_atomic_json(
+                    self.remote_checkpoint_path, ack, ".bull-remote-anchor-"
+                )
             except Exception as exc:
-                raise AuditIntegrityError("remote audit anchor delivery failed: " + str(exc)) from exc
+                raise AuditIntegrityError(
+                    "remote audit anchor delivery failed: " + str(exc)
+                ) from exc
             return
         if self.remote_anchor_url is None:
             return
@@ -294,9 +310,7 @@ class AuditLedger:
             return "remote audit checkpoint missing"
 
         try:
-            data = json.loads(
-                self.remote_checkpoint_path.read_text(encoding="utf-8")
-            )
+            data = json.loads(self.remote_checkpoint_path.read_text(encoding="utf-8"))
             sequence = int(data["sequence"])
             remote_head = str(data["head_hash"])
             supplied = str(data["mac"])
@@ -321,6 +335,7 @@ class AuditLedger:
         verify_head: bool = True,
         verify_anchor: bool = True,
     ) -> AuditVerification:
+        self.full_verifications += 1
         if not self.path.exists():
             if (
                 verify_head
@@ -396,6 +411,9 @@ class AuditLedger:
                 return AuditVerification(
                     False, records, error=str(exc), head_hash=previous_hash
                 )
+            if anchor is None and records:
+                return AuditVerification(False, records, error="external audit anchor missing",
+                                         head_hash=previous_hash)
             if anchor is not None:
                 if int(anchor["sequence"]) != records:
                     return AuditVerification(
@@ -444,15 +462,43 @@ class AuditLedger:
             finally:
                 fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
 
+    @staticmethod
+    def _stat_identity(st):
+        return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+
+    def _file_identity(self):
+        # ctime detects same-size rewrites even if an attacker restores mtime.
+        # Requires an authority-owned local filesystem and cooperative writers;
+        # this is not a defense against a compromised kernel/host administrator.
+        paths = [self.path, self.head_path, self.remote_checkpoint_path]
+        if self.anchor_path is not None:
+            paths.append(self.anchor_path)
+        identities = []
+        for path in paths:
+            try:
+                st = path.stat()
+                identities.append(self._stat_identity(st))
+            except FileNotFoundError:
+                identities.append(None)
+        return tuple(identities)
+
     def _append_payload(self, payload: dict) -> str:
+        # flock coordinates processes; the mutex coordinates threads sharing
+        # this instance and its validated head.
+        with self._append_lock:
+            return self._append_payload_locked(payload)
+
+    def _append_payload_locked(self, payload: dict) -> str:
         self.lock_path.touch(exist_ok=True)
         with self.lock_path.open("r+") as lock_fh:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
             try:
-                existing = self._verify_unlocked(
-                    verify_head=True,
-                    verify_anchor=True,
-                )
+                identity = self._file_identity()
+                if self._validated_head is not None and identity == self._validated_files:
+                    existing = self._validated_head
+                else:
+                    self._validated_head = None
+                    existing = self._verify_unlocked(verify_head=True, verify_anchor=True)
                 if not existing.valid:
                     raise AuditIntegrityError(
                         "refusing append to invalid ledger: " + str(existing.error)
@@ -463,28 +509,68 @@ class AuditLedger:
                 record_hash = self._calculate_hash(record)
                 record["record_hash"] = record_hash
                 encoded_record = json.dumps(record, sort_keys=True) + "\n"
-                if self.transport is not None and len(encoded_record.encode()) > 60 * 1024:
-                    raise AuditIntegrityError("audit record exceeds transport framing budget")
+                if (
+                    self.transport is not None
+                    and len(encoded_record.encode()) > 60 * 1024
+                ):
+                    raise AuditIntegrityError(
+                        "audit record exceeds transport framing budget"
+                    )
                 existing_bytes = self.path.stat().st_size if self.path.exists() else 0
-                if existing_bytes + len(encoded_record.encode()) > self.max_ledger_bytes:
+                if (
+                    existing_bytes + len(encoded_record.encode())
+                    > self.max_ledger_bytes
+                ):
                     raise AuditIntegrityError("audit storage budget exhausted")
 
+                self._validated_head = None
                 with self.path.open("a", encoding="utf-8") as fh:
-                    fh.write(encoded_record)
+                    opened = self._stat_identity(os.fstat(fh.fileno()))
+                    if opened[2] != existing_bytes or (identity[0] is not None and opened != identity[0]):
+                        raise AuditIntegrityError("ledger changed before append")
+                    if fh.write(encoded_record) != len(encoded_record):
+                        raise AuditIntegrityError("short audit record write")
                     fh.flush()
                     os.fsync(fh.fileno())
+                    written = self._stat_identity(os.fstat(fh.fileno()))
+                    if written[2] != existing_bytes + len(encoded_record.encode()):
+                        raise AuditIntegrityError("audit append size mismatch")
 
-                self.head_path.write_text(record_hash + "\n", encoding="utf-8")
-                with self.head_path.open("r+") as head_fh:
-                    head_fh.flush()
-                    os.fsync(head_fh.fileno())
+                # Invalidate before any write: a failed checkpoint/anchor must
+                # never leave the old cache usable by the next request.
+                self._validated_head = None
+                self._write_atomic_head(record_hash)
 
                 sequence = existing.records + 1
                 self._write_anchor(sequence=sequence, head_hash=record_hash)
-                self._write_remote_anchor(sequence=sequence, head_hash=record_hash, record=record)
+                self._write_remote_anchor(
+                    sequence=sequence, head_hash=record_hash, record=record
+                )
+                committed_files = self._file_identity()
+                if committed_files[0] != written:
+                    raise AuditIntegrityError("ledger changed while committing checkpoint")
+                self._validated_head = AuditVerification(True, sequence, head_hash=record_hash)
+                self._validated_files = committed_files
                 return record_hash
             finally:
                 fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
+
+    def _write_atomic_head(self, record_hash: str) -> None:
+        fd, temporary = tempfile.mkstemp(prefix=".bull-head-", dir=self.head_path.parent)
+        try:
+            with os.fdopen(fd, "w") as stream:
+                stream.write(record_hash + "\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, self.head_path)
+            directory = os.open(self.head_path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
 
     def reconcile_remote(self) -> None:
         """Explicitly retry the latest audit checkpoint; never replay execution."""
@@ -496,14 +582,20 @@ class AuditLedger:
             try:
                 result = self._verify_unlocked(verify_anchor=False)
                 if not result.valid or result.records == 0:
-                    raise AuditIntegrityError("cannot recover an empty or invalid local ledger")
+                    raise AuditIntegrityError(
+                        "cannot recover an empty or invalid local ledger"
+                    )
                 last = None
                 with self.path.open() as stream:
                     for line in stream:
                         if line.strip():
                             last = json.loads(line)
                 assert last is not None
-                self._write_remote_anchor(sequence=result.records, head_hash=result.head_hash or "", record=last)
+                self._write_remote_anchor(
+                    sequence=result.records,
+                    head_hash=result.head_hash or "",
+                    record=last,
+                )
             finally:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 

@@ -1,0 +1,196 @@
+{
+  "rows": [
+    {
+      "ledger_hash": "f0fdd9b52d0c1f2bb427864e83f8ef45a5d30d979a9164847426b56d293bc1e4",
+      "sandbox": "coder",
+      "request_id": "702146e6-7a1b-42b5-98f9-d6d6f7901a73",
+      "method": "GET",
+      "resource": "https://host.openshell.internal:40959/guide",
+      "provenance": [
+        "local_trusted"
+      ],
+      "bull_decision": "ALLOW",
+      "bull_allowed": true,
+      "bull_reason_code": "bull_allowed",
+      "approval_id": null,
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "ALLOWED",
+      "openshell_reason": "",
+      "effect_observed": true,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "00c66c941d0d2e2491a0ef64ede612238597fac6b778d3f35895b746ccf56b30",
+      "sandbox": "coder",
+      "request_id": "07bcdd22-e09d-412b-9ddf-6d261d995ae6",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/records",
+      "provenance": [
+        "local_trusted"
+      ],
+      "bull_decision": "ALLOW",
+      "bull_allowed": true,
+      "bull_reason_code": "bull_allowed",
+      "approval_id": null,
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "ALLOWED",
+      "openshell_reason": "",
+      "effect_observed": true,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "bfbdacde84242d5d1714ee668fc628dbd14b20f63aafd669368819e0242953e7",
+      "sandbox": "reader",
+      "request_id": "1cf881ad-2a45-484b-af8e-b56f5fe671ed",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/records",
+      "provenance": [
+        "local_trusted"
+      ],
+      "bull_decision": "DENY",
+      "bull_allowed": false,
+      "bull_reason_code": "bull_denied",
+      "approval_id": null,
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "DENIED",
+      "openshell_reason": "middleware_denied:bull-governance:bull_denied",
+      "effect_observed": false,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "f50244dca304d016c204a7087b0b4c05f837a23dcdd6ad9e366f0f0e47fb329e",
+      "sandbox": "coder",
+      "request_id": "d547abc9-5d00-4e92-b370-b223d249b6ec",
+      "method": "GET",
+      "resource": "https://host.openshell.internal:46731/article",
+      "provenance": [
+        "local_trusted"
+      ],
+      "bull_decision": "ALLOW",
+      "bull_allowed": true,
+      "bull_reason_code": "bull_allowed",
+      "approval_id": null,
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "ALLOWED",
+      "openshell_reason": "",
+      "effect_observed": true,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "bb0324f5168571b13330332450baeedaf7f9f10b2f0aa7c0daf558483eb9294f",
+      "sandbox": "coder",
+      "request_id": "428eac83-7eb1-4665-a296-a3be32b4baa5",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/records",
+      "provenance": [
+        "internet"
+      ],
+      "bull_decision": "ESCALATE",
+      "bull_allowed": false,
+      "bull_reason_code": "bull_approval_required",
+      "approval_id": "36b9cbbcf4819059",
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "DENIED",
+      "openshell_reason": "middleware_denied:bull-governance:bull_approval_required",
+      "effect_observed": false,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "804e34a6b6c0f4a5db94289ca3644209fa70fd1d70520c0133c4cab525517d7c",
+      "sandbox": "coder",
+      "request_id": "7d720138-9b7d-4f73-b023-b423348ab64d",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/records",
+      "provenance": [
+        "internet"
+      ],
+      "bull_decision": "ESCALATE",
+      "bull_allowed": true,
+      "bull_reason_code": "bull_approved",
+      "approval_id": "36b9cbbcf4819059",
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "ALLOWED",
+      "openshell_reason": "",
+      "effect_observed": true,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "c9ef970549c50fca963d0d3ea5a9c269354835168b5ff74e5ce2ad2f0c18a86c",
+      "sandbox": "coder",
+      "request_id": "fca5ea8d-f7fd-49e8-ae6f-66c0236853a7",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/records",
+      "provenance": [
+        "internet"
+      ],
+      "bull_decision": "ESCALATE",
+      "bull_allowed": false,
+      "bull_reason_code": "bull_approval_required",
+      "approval_id": "6452be302b3d2906",
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "DENIED",
+      "openshell_reason": "middleware_denied:bull-governance:bull_approval_required",
+      "effect_observed": false,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "8f9238c1744bd7d242fc8b8183d3df6be94e5d5936a443389b841d5d692ecb56",
+      "sandbox": "coder",
+      "request_id": "833523d9-fd45-40b6-88e3-4ec605fc7528",
+      "method": "POST",
+      "resource": "https://host.openshell.internal:35911/v1/x",
+      "provenance": [
+        "internet"
+      ],
+      "bull_decision": "ESCALATE",
+      "bull_allowed": false,
+      "bull_reason_code": "bull_approval_required",
+      "approval_id": "fe51d8900f4821ec",
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "DENIED",
+      "openshell_reason": "middleware_denied:bull-governance:bull_approval_required",
+      "effect_observed": false,
+      "consistent": true
+    },
+    {
+      "ledger_hash": "82b54aba3d8d430ab3beac31206c27bccc0f56339505371f5ce3494609e76919",
+      "sandbox": "coder",
+      "request_id": "c81931b5-ab34-4df6-8967-b579cfff360f",
+      "method": "GET",
+      "resource": "https://host.openshell.internal:40959/after-restart",
+      "provenance": [
+        "internet"
+      ],
+      "bull_decision": "ALLOW",
+      "bull_allowed": true,
+      "bull_reason_code": "bull_allowed",
+      "approval_id": null,
+      "openshell_l7": "ALLOWED",
+      "openshell_middleware": "ALLOWED",
+      "openshell_reason": "",
+      "effect_observed": true,
+      "consistent": true
+    }
+  ],
+  "summary": {
+    "bull_decisions": 9,
+    "matched_openshell_event": 9,
+    "consistent": 9,
+    "effects_without_bull_allow": 0,
+    "openshell_events_without_bull_decision": 1,
+    "orphans_fail_closed": true
+  },
+  "orphan_events": [
+    {
+      "sandbox": "coder",
+      "time": 1790619185.513,
+      "method": "POST",
+      "url": "http://host.openshell.internal:35911/v1/records",
+      "action": "DENIED",
+      "engine": "middleware",
+      "policy": "api",
+      "reason": "middleware_failed: external_service_error"
+    }
+  ],
+  "unexplained_effects": []
+}

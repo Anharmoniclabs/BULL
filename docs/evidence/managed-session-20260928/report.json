@@ -1,0 +1,596 @@
+{
+  "format": "bull-managed-session-qualification-v1",
+  "host": {
+    "kernel": "6.18.44-fc-v37",
+    "machine": "x86_64",
+    "python": "3.11.15"
+  },
+  "authority": "FIXTURE (transport only; not a production deployment)",
+  "resource_mode": "rlimit-only",
+  "results": [
+    {
+      "suite": "containment",
+      "probe": "absent:/root",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/var",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/etc/bull",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/etc/shadow",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/etc/sudoers",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/run/docker.sock",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/var/run/docker.sock",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/run/user",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/sys",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/dev/kvm",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/dev/mem",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/dev/sda",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/dev/nvme0n1",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "absent:/proc/kcore",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "absent"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/usr/sbin",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/bin",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/dev",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/bin",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/usr/games",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "host-home:/bin",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "no credential entries"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EROFS"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/etc/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EACCES"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/usr/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EROFS"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/run/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EACCES"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/dev/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EACCES"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/tmp/../etc/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EACCES"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:$SCRATCH/venv2/escape",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EROFS"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/etc/claude-code/managed-settings.json",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EACCES"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/workspace/.bull-probe",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "writable work area"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/home/agent/.bull-probe",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "writable work area"
+    },
+    {
+      "suite": "containment",
+      "probe": "write:/tmp/.bull-probe",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "writable work area"
+    },
+    {
+      "suite": "containment",
+      "probe": "tcp:1.1.1.1:443",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ENETUNREACH"
+    },
+    {
+      "suite": "containment",
+      "probe": "tcp:169.254.169.254:80",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ENETUNREACH"
+    },
+    {
+      "suite": "containment",
+      "probe": "tcp:2606:4700:4700::1111:443",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EAFNOSUPPORT"
+    },
+    {
+      "suite": "containment",
+      "probe": "udp:dns",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ENETUNREACH"
+    },
+    {
+      "suite": "containment",
+      "probe": "udp:quic",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ENETUNREACH"
+    },
+    {
+      "suite": "containment",
+      "probe": "dns:resolve",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "-3"
+    },
+    {
+      "suite": "containment",
+      "probe": "socket:packet",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "ipc:host-abstract-socket",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ECONNREFUSED"
+    },
+    {
+      "suite": "containment",
+      "probe": "relay:non-provider-host",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "HTTP/1.1 403 Forbidden"
+    },
+    {
+      "suite": "containment",
+      "probe": "relay:metadata-ip",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "HTTP/1.1 403 Forbidden"
+    },
+    {
+      "suite": "containment",
+      "probe": "relay:provider-other-port",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "HTTP/1.1 403 Forbidden"
+    },
+    {
+      "suite": "containment",
+      "probe": "relay:plain-http",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "HTTP/1.1 403 Forbidden"
+    },
+    {
+      "suite": "containment",
+      "probe": "relay:provider",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "HTTP/1.1 200 Connection Established"
+    },
+    {
+      "suite": "containment",
+      "probe": "authority:reachable",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "peer uid 996"
+    },
+    {
+      "suite": "containment",
+      "probe": "caps:effective",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "0000000000000000"
+    },
+    {
+      "suite": "containment",
+      "probe": "caps:permitted",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "0000000000000000"
+    },
+    {
+      "suite": "containment",
+      "probe": "no_new_privs",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "1"
+    },
+    {
+      "suite": "containment",
+      "probe": "seccomp",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "2"
+    },
+    {
+      "suite": "containment",
+      "probe": "groups:none",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "[]"
+    },
+    {
+      "suite": "containment",
+      "probe": "setuid:0",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "unshare:user",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "clone:user",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "unshare:mount",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "clone:mount",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "unshare:net",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "clone:net",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "mount",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "ptrace:pid1",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "chroot",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "sethostname",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "tty:TIOCSTI",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "EPERM"
+    },
+    {
+      "suite": "containment",
+      "probe": "signal:host-process",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "ESRCH"
+    },
+    {
+      "suite": "containment",
+      "probe": "pid-namespace",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "3 visible processes"
+    },
+    {
+      "suite": "containment",
+      "probe": "environment:no-host-secrets",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "clean"
+    },
+    {
+      "suite": "containment",
+      "probe": "runs-as-agent",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "uid 1001"
+    },
+    {
+      "suite": "workspace",
+      "probe": "secret-excluded",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": ".env not copied"
+    },
+    {
+      "suite": "claude",
+      "probe": "starts-contained",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "2.1.283 (Claude Code)"
+    },
+    {
+      "suite": "claude",
+      "probe": "mcp:only-bull",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "Checking MCP server health\u2026\n\nbull: $SCRATCH/venv2/bin/bull-mcp --socket /run/bull-qualify-3020/agent.sock --server-uid 996 - \u221a Connected"
+    },
+    {
+      "suite": "claude",
+      "probe": "mcp:bull-listed",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "Checking MCP server health\u2026\n\nbull: $SCRATCH/venv2/bin/bull-mcp --socket /run/bull-qualify-3020/agent.sock --server-uid 996 - \u221a Connected"
+    },
+    {
+      "suite": "claude",
+      "probe": "model-driven-task",
+      "kind": "positive",
+      "status": "BLOCKED",
+      "detail": "needs provider credentials: rerun with --api-key-file"
+    },
+    {
+      "suite": "codex",
+      "probe": "starts-contained",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "codex-cli 0.158.0"
+    },
+    {
+      "suite": "codex",
+      "probe": "mcp:only-bull",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "Name  Command                                                                                           Args                                                         Env  Cwd  Status   Auth       \nbull  $SCRATCH/venv2/bin/bull-mcp  --socket /run/bull-qualify-3020/agent.sock --server-uid 996  -    -    enabled  Unsupported"
+    },
+    {
+      "suite": "codex",
+      "probe": "mcp:bull-listed",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": "Name  Command                                                                                           Args                                                         Env  Cwd  Status   Auth       \nbull  $SCRATCH/venv2/bin/bull-mcp  --socket /run/bull-qualify-3020/agent.sock --server-uid 996  -    -    enabled  Unsupported"
+    },
+    {
+      "suite": "codex",
+      "probe": "model-driven-task",
+      "kind": "positive",
+      "status": "BLOCKED",
+      "detail": "needs provider credentials: rerun with --api-key-file"
+    },
+    {
+      "suite": "export",
+      "probe": "git-internals-ignored",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": [
+        ".github/workflows/x.yml",
+        "NEW.md",
+        "link",
+        "src/app.py"
+      ]
+    },
+    {
+      "suite": "export",
+      "probe": "workflow-protected",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": {
+        "path": ".github/workflows/x.yml",
+        "change": "added",
+        "sha256": "b602f7ad4316adfd9f3e5ca998773702a5db1a1f1599a14516f40101665fb6d2",
+        "size": 9,
+        "protected": true
+      }
+    },
+    {
+      "suite": "export",
+      "probe": "symlink-refused",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": {
+        "path": "link",
+        "change": "refused",
+        "reason": "not a regular file"
+      }
+    },
+    {
+      "suite": "export",
+      "probe": "hostile-export-refused",
+      "kind": "escape",
+      "status": "PASS",
+      "detail": "whole export refused"
+    },
+    {
+      "suite": "export",
+      "probe": "ordinary-edit-applied",
+      "kind": "positive",
+      "status": "PASS",
+      "detail": [
+        "NEW.md",
+        "src/app.py"
+      ]
+    }
+  ],
+  "summary": {
+    "PASS": 78,
+    "BLOCKED": 2
+  },
+  "verdict": "PASS_WITH_BLOCKED",
+  "finished": "2026-09-28T15:29:44Z"
+}

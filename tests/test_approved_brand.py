@@ -1,4 +1,5 @@
 """Verify the approved B-shaped bulldog, not a substitute logo or external image."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -9,8 +10,14 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 BRAND = ROOT / "site/assets/brand"
 SOURCE_SHA256 = "79a75d93e09f2b0a460c7ae3feb854c601803adc922bf9a54346955bfd7d803a"
-VARIANTS = ("bull-mark.svg", "bull-primary.svg", "bull-primary-dark.svg",
-            "bull-stacked.svg", "bull-one-color.svg", "bull-favicon.svg")
+VARIANTS = (
+    "bull-mark.svg",
+    "bull-primary.svg",
+    "bull-primary-dark.svg",
+    "bull-stacked.svg",
+    "bull-one-color.svg",
+    "bull-favicon.svg",
+)
 
 
 class ApprovedBrandTests(unittest.TestCase):
@@ -39,10 +46,19 @@ class ApprovedBrandTests(unittest.TestCase):
                 self.assertIn(SOURCE_SHA256, text)
                 root = ET.fromstring(text)
                 self.assertEqual(len(root.attrib["viewBox"].split()), 4)
-                self.assertGreater(len(root.findall("{http://www.w3.org/2000/svg}path")), 0)
+                self.assertGreater(
+                    len(root.findall("{http://www.w3.org/2000/svg}path")), 0
+                )
                 for element in root.iter():
-                    self.assertNotIn(element.tag.split("}")[-1], ("script", "image", "foreignObject"))
-                    self.assertFalse(any(k.lower().startswith("on") or k.split("}")[-1] == "href" for k in element.attrib))
+                    self.assertNotIn(
+                        element.tag.split("}")[-1], ("script", "image", "foreignObject")
+                    )
+                    self.assertFalse(
+                        any(
+                            k.lower().startswith("on") or k.split("}")[-1] == "href"
+                            for k in element.attrib
+                        )
+                    )
 
     def test_existing_project_and_publication_logo_wiring_is_preserved(self):
         html = (ROOT / "site/index.html").read_text()
@@ -59,7 +75,10 @@ class ApprovedBrandTests(unittest.TestCase):
     def test_one_color_variant_uses_only_ink_and_knockout(self):
         for name in ("bull-one-color.svg", "bull-favicon.svg"):
             root = ET.parse(BRAND / name).getroot()
-            colors = {p.attrib["fill"] for p in root.findall("{http://www.w3.org/2000/svg}path")}
+            colors = {
+                p.attrib["fill"]
+                for p in root.findall("{http://www.w3.org/2000/svg}path")
+            }
             self.assertTrue(colors <= {"#202830", "#ffffff"})
 
 

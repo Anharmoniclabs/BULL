@@ -1,3 +1,5 @@
+"""Track host-owned security domains, delegation, grants and revocation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -150,9 +152,7 @@ class SecurityDomainRegistry:
             if not value:
                 raise SecurityDomainError("empty egress host")
             if "/" in value or "://" in value:
-                raise SecurityDomainError(
-                    "egress authority must be an exact hostname"
-                )
+                raise SecurityDomainError("egress authority must be an exact hostname")
             normalized.add(value)
         return frozenset(normalized)
 
@@ -169,9 +169,7 @@ class SecurityDomainRegistry:
         if not self.strict_identity_binding:
             return
         if model_id is None or not str(model_id).strip():
-            raise SecurityDomainError(
-                "strict identity binding requires model_id"
-            )
+            raise SecurityDomainError("strict identity binding requires model_id")
         if initial_command is None or len(initial_command) == 0:
             raise SecurityDomainError(
                 "strict identity binding requires initial_command"
@@ -256,9 +254,7 @@ class SecurityDomainRegistry:
             parent = self.require_active(parent_domain_id)
 
             if Capability.AGENT_SPAWN not in parent.capability_ceiling:
-                raise SecurityDomainError(
-                    "parent domain lacks agent.spawn authority"
-                )
+                raise SecurityDomainError("parent domain lacks agent.spawn authority")
 
             child_capabilities = frozenset(capability_ceiling)
             if not child_capabilities.issubset(parent.capability_ceiling):
@@ -324,11 +320,7 @@ class SecurityDomainRegistry:
         if domain.frozen:
             raise SecurityDomainError(
                 "security domain is frozen"
-                + (
-                    f": {domain.freeze_reason}"
-                    if domain.freeze_reason
-                    else ""
-                )
+                + (f": {domain.freeze_reason}" if domain.freeze_reason else "")
             )
         return domain
 
@@ -397,26 +389,26 @@ class SecurityDomainRegistry:
             domain.current_intent_hash = transition.next_intent_hash
             domain.transitions.append(transition)
 
-        self._emit({
-            "event": "security_domain_goal_transition",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "domain_fingerprint": domain.domain_fingerprint,
-            "sequence": transition.sequence,
-            "previous_intent_hash": transition.previous_intent_hash,
-            "next_intent_hash": transition.next_intent_hash,
-            "reason": transition.reason,
-            "approved_by": transition.approved_by,
-        })
+        self._emit(
+            {
+                "event": "security_domain_goal_transition",
+                "domain_id": domain.domain_id,
+                "root_domain_id": domain.root_domain_id,
+                "domain_fingerprint": domain.domain_fingerprint,
+                "sequence": transition.sequence,
+                "previous_intent_hash": transition.previous_intent_hash,
+                "next_intent_hash": transition.next_intent_hash,
+                "reason": transition.reason,
+                "approved_by": transition.approved_by,
+            }
+        )
         return transition
 
     def assert_egress(self, domain_id: str, url: str) -> None:
         domain = self.require_active(domain_id)
         hostname = (urlsplit(str(url)).hostname or "").lower().rstrip(".")
         if not hostname or hostname not in domain.egress_hosts:
-            raise SecurityDomainError(
-                "egress destination is outside domain authority"
-            )
+            raise SecurityDomainError("egress destination is outside domain authority")
 
     def freeze(self, domain_id: str, reason: str) -> None:
         with self._lock:
@@ -424,13 +416,15 @@ class SecurityDomainRegistry:
             domain.frozen = True
             domain.freeze_reason = str(reason)
 
-        self._emit({
-            "event": "security_domain_frozen",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "domain_fingerprint": domain.domain_fingerprint,
-            "reason": domain.freeze_reason,
-        })
+        self._emit(
+            {
+                "event": "security_domain_frozen",
+                "domain_id": domain.domain_id,
+                "root_domain_id": domain.root_domain_id,
+                "domain_fingerprint": domain.domain_fingerprint,
+                "reason": domain.freeze_reason,
+            }
+        )
 
     def freeze_root(self, root_domain_id: str, reason: str) -> None:
         frozen_ids = []
@@ -441,12 +435,14 @@ class SecurityDomainRegistry:
                     domain.freeze_reason = str(reason)
                     frozen_ids.append(domain.domain_id)
 
-        self._emit({
-            "event": "security_domain_root_frozen",
-            "root_domain_id": str(root_domain_id),
-            "domain_ids": sorted(frozen_ids),
-            "reason": str(reason),
-        })
+        self._emit(
+            {
+                "event": "security_domain_root_frozen",
+                "root_domain_id": str(root_domain_id),
+                "domain_ids": sorted(frozen_ids),
+                "reason": str(reason),
+            }
+        )
 
     def record_dispatch(
         self,
@@ -457,18 +453,20 @@ class SecurityDomainRegistry:
         command: Sequence[str],
     ) -> None:
         domain = self.require_active(domain_id)
-        self._emit({
-            "event": "security_domain_dispatch",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "domain_fingerprint": domain.domain_fingerprint,
-            "model_id_hash": domain.model_id_hash,
-            "current_intent_hash": domain.current_intent_hash,
-            "initial_command_hash": domain.initial_command_hash,
-            "command_hash": hash_command(command),
-            "capability": capability.value,
-            "resource": str(resource),
-        })
+        self._emit(
+            {
+                "event": "security_domain_dispatch",
+                "domain_id": domain.domain_id,
+                "root_domain_id": domain.root_domain_id,
+                "domain_fingerprint": domain.domain_fingerprint,
+                "model_id_hash": domain.model_id_hash,
+                "current_intent_hash": domain.current_intent_hash,
+                "initial_command_hash": domain.initial_command_hash,
+                "command_hash": hash_command(command),
+                "capability": capability.value,
+                "resource": str(resource),
+            }
+        )
 
     def record_broker_event(
         self,
@@ -480,17 +478,19 @@ class SecurityDomainRegistry:
         detail: dict | None = None,
     ) -> None:
         domain = self.require_active(domain_id)
-        self._emit({
-            "event": "security_domain_broker",
-            "domain_id": domain.domain_id,
-            "root_domain_id": domain.root_domain_id,
-            "domain_fingerprint": domain.domain_fingerprint,
-            "model_id_hash": domain.model_id_hash,
-            "broker": str(broker),
-            "operation": str(operation),
-            "allowed": bool(allowed),
-            "detail": dict(detail or {}),
-        })
+        self._emit(
+            {
+                "event": "security_domain_broker",
+                "domain_id": domain.domain_id,
+                "root_domain_id": domain.root_domain_id,
+                "domain_fingerprint": domain.domain_fingerprint,
+                "model_id_hash": domain.model_id_hash,
+                "broker": str(broker),
+                "operation": str(operation),
+                "allowed": bool(allowed),
+                "detail": dict(detail or {}),
+            }
+        )
 
     @staticmethod
     def _domain_event(event: str, domain: SecurityDomain) -> dict:

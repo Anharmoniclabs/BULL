@@ -1,0 +1,28 @@
+{
+  "format": "bull-agent-gateway-release-v1",
+  "status": "UNQUALIFIED",
+  "supported_mode": "connected-tools; managed-session preview (bull agent launch)",
+  "implemented": [
+    "fixed host-signed tool registry and exact command binding",
+    "explicit ProductionEffectRouter and ProductionDispatcher path",
+    "separate local process-only profile with per-installation authenticated audit",
+    "kernel-authenticated local IPC and authenticated egress client",
+    "expiring leases, persistent budgets and admission revocation",
+    "fail-closed JSON parsing and bounded serial MCP requests",
+    "uncertain outcome journal without automatic replay",
+    "console coverage disclosure",
+    "managed agent sessions: namespaced allowlisted root, loopback-only network with provider-only relay, dedicated agent account, seccomp, read-only client configuration and reviewed export"
+  ],
+  "release_gates": [
+    {"id": "G1", "status": "PARTIAL", "requirement": "contained launcher and native bypass qualification for actual Codex and Claude versions", "evidence": "docs/evidence/managed-session-20260928: 78 checks passed on one Linux host (containment probes, Claude Code 2.1.283 and codex-cli 0.158.0 start contained and load only BULL's MCP server, export refusals). Open: model-driven tasks need provider credentials; cgroup limits and other hosts unqualified."},
+    {"id": "G2", "status": "BLOCKED", "requirement": "live distinct-UID IPC and hostile tenant/project separation tests"},
+    {"id": "G3", "status": "BLOCKED", "requirement": "gateway hardware approval ceremony and revocation qualification"},
+    {"id": "G4", "status": "BLOCKED", "requirement": "crash and network fault qualification including external service reconciliation"},
+    {"id": "G5", "status": "BLOCKED", "requirement": "long-running soak and resource-exhaustion results"},
+    {"id": "G6", "status": "BLOCKED", "requirement": "locked transitive SDK dependencies, signed release artifacts, SBOM and provenance"},
+    {"id": "G7", "status": "BLOCKED", "requirement": "gateway model-to-runtime transition trace qualification"},
+    {"id": "G8", "status": "EXTERNAL", "requirement": "independent security review and remediation"},
+    {"id": "G9", "status": "BLOCKED", "requirement": "customer-specific identity, operational controls and deployment acceptance"}
+  ],
+  "disabled": ["remote HTTP", "free-form agent shell", "secret export", "publish", "message", "credential administration", "policy mutation"]
+}

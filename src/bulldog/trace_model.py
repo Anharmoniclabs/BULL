@@ -1,3 +1,8 @@
+"""Executable state-machine abstraction for runtime trace checks.
+
+These invariants describe the model; they are not a proof of deployed Python
+or kernel behavior."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -90,123 +95,60 @@ def validate_invariants(
 ) -> None:
 
     if state.phase not in PHASES:
-        _fail(
-            f"invalid phase: {state.phase}"
-        )
+        _fail(f"invalid phase: {state.phase}")
 
     if state.decision not in DECISIONS:
-        _fail(
-            f"invalid decision: {state.decision}"
-        )
+        _fail(f"invalid decision: {state.decision}")
 
     # DENY never executes.
-    if (
-        state.decision == "DENY"
-        and state.executed
-    ):
-        _fail(
-            "DENY state executed"
-        )
+    if state.decision == "DENY" and state.executed:
+        _fail("DENY state executed")
 
     # ESCALATE never executes.
-    if (
-        state.decision == "ESCALATE"
-        and state.executed
-    ):
-        _fail(
-            "ESCALATE state executed"
-        )
+    if state.decision == "ESCALATE" and state.executed:
+        _fail("ESCALATE state executed")
 
     # Execution requires approved decision.
-    if (
-        state.executed
-        and state.decision
-        not in EXECUTABLE_DECISIONS
-    ):
-        _fail(
-            "execution occurred without ALLOW/SANDBOX"
-        )
+    if state.executed and state.decision not in EXECUTABLE_DECISIONS:
+        _fail("execution occurred without ALLOW/SANDBOX")
 
     # Execution requires clean malware scan.
-    if state.executed and not (
-        state.scanned
-        and state.malware_clean
-    ):
-        _fail(
-            "execution occurred without clean malware scan"
-        )
+    if state.executed and not (state.scanned and state.malware_clean):
+        _fail("execution occurred without clean malware scan")
 
     # Execution always sandboxed.
-    if (
-        state.executed
-        and not state.sandboxed
-    ):
-        _fail(
-            "executed workload was not sandboxed"
-        )
+    if state.executed and not state.sandboxed:
+        _fail("executed workload was not sandboxed")
 
     # Execution always seccomp-protected.
-    if (
-        state.executed
-        and not state.seccomp
-    ):
-        _fail(
-            "executed workload lacked seccomp"
-        )
+    if state.executed and not state.seccomp:
+        _fail("executed workload lacked seccomp")
 
     # Malware never executes.
-    if (
-        state.scanned
-        and not state.malware_clean
-        and state.executed
-    ):
-        _fail(
-            "malware-detected workload executed"
-        )
+    if state.scanned and not state.malware_clean and state.executed:
+        _fail("malware-detected workload executed")
 
     # Child authority <= parent authority.
-    if (
-        state.child_has_capability
-        and not state.parent_has_capability
-    ):
-        _fail(
-            "child authority exceeded parent authority"
-        )
+    if state.child_has_capability and not state.parent_has_capability:
+        _fail("child authority exceeded parent authority")
 
     # Secret return requires grant.
-    if (
-        state.secret_returned
-        and not state.secret_granted
-    ):
-        _fail(
-            "secret returned without grant"
-        )
+    if state.secret_returned and not state.secret_granted:
+        _fail("secret returned without grant")
 
     # Brokered egress requires grant.
-    if (
-        state.egress_occurred
-        and not state.broker_granted
-    ):
-        _fail(
-            "egress occurred without broker grant"
-        )
+    if state.egress_occurred and not state.broker_granted:
+        _fail("egress occurred without broker grant")
 
     # Direct network must always remain off.
     if state.direct_network:
-        _fail(
-            "direct network became enabled"
-        )
+        _fail("direct network became enabled")
 
     # Review state corresponds to escalation.
     if state.phase == "review":
 
-        if not (
-            state.decision == "ESCALATE"
-            and state.review_required
-        ):
-            _fail(
-                "review phase does not correspond to ESCALATE"
-            )
+        if not (state.decision == "ESCALATE" and state.review_required):
+            _fail("review phase does not correspond to ESCALATE")
 
 
 def apply_transition(
@@ -215,15 +157,10 @@ def apply_transition(
 ) -> BullTraceState:
 
     name = event.transition
-    data = dict(
-        event.data
-    )
+    data = dict(event.data)
 
     if name not in TRANSITIONS:
-        _fail(
-            f"unknown transition: {name}"
-        )
-
+        _fail(f"unknown transition: {name}")
 
     # =====================================================================
     # Evaluate
@@ -232,9 +169,7 @@ def apply_transition(
     if name == "Evaluate":
 
         if state.phase != "start":
-            _fail(
-                "Evaluate requires start phase"
-            )
+            _fail("Evaluate requires start phase")
 
         decision = str(
             data.get(
@@ -249,9 +184,7 @@ def apply_transition(
             "ESCALATE",
             "DENY",
         }:
-            _fail(
-                f"invalid Evaluate decision: {decision}"
-            )
+            _fail(f"invalid Evaluate decision: {decision}")
 
         next_state = replace(
             state,
@@ -259,21 +192,14 @@ def apply_transition(
             decision=decision,
         )
 
-
     # =====================================================================
     # ScanClean
     # =====================================================================
 
     elif name == "ScanClean":
 
-        if not (
-            state.phase == "evaluated"
-            and state.decision
-            in EXECUTABLE_DECISIONS
-        ):
-            _fail(
-                "ScanClean illegal from current state"
-            )
+        if not (state.phase == "evaluated" and state.decision in EXECUTABLE_DECISIONS):
+            _fail("ScanClean illegal from current state")
 
         next_state = replace(
             state,
@@ -282,21 +208,14 @@ def apply_transition(
             malware_clean=True,
         )
 
-
     # =====================================================================
     # ScanMalware
     # =====================================================================
 
     elif name == "ScanMalware":
 
-        if not (
-            state.phase == "evaluated"
-            and state.decision
-            in EXECUTABLE_DECISIONS
-        ):
-            _fail(
-                "ScanMalware illegal from current state"
-            )
+        if not (state.phase == "evaluated" and state.decision in EXECUTABLE_DECISIONS):
+            _fail("ScanMalware illegal from current state")
 
         next_state = replace(
             state,
@@ -305,27 +224,19 @@ def apply_transition(
             malware_clean=False,
         )
 
-
     # =====================================================================
     # BlockMalware
     # =====================================================================
 
     elif name == "BlockMalware":
 
-        if not (
-            state.phase == "scanned"
-            and state.scanned
-            and not state.malware_clean
-        ):
-            _fail(
-                "BlockMalware illegal from current state"
-            )
+        if not (state.phase == "scanned" and state.scanned and not state.malware_clean):
+            _fail("BlockMalware illegal from current state")
 
         next_state = replace(
             state,
             phase="blocked",
         )
-
 
     # =====================================================================
     # Execute
@@ -335,15 +246,12 @@ def apply_transition(
 
         if not (
             state.phase == "scanned"
-            and state.decision
-            in EXECUTABLE_DECISIONS
+            and state.decision in EXECUTABLE_DECISIONS
             and state.scanned
             and state.malware_clean
             and not state.executed
         ):
-            _fail(
-                "Execute illegal from current state"
-            )
+            _fail("Execute illegal from current state")
 
         sandboxed = bool(
             data.get(
@@ -367,26 +275,19 @@ def apply_transition(
             seccomp=seccomp,
         )
 
-
     # =====================================================================
     # ResolveDeny
     # =====================================================================
 
     elif name == "ResolveDeny":
 
-        if not (
-            state.phase == "evaluated"
-            and state.decision == "DENY"
-        ):
-            _fail(
-                "ResolveDeny illegal from current state"
-            )
+        if not (state.phase == "evaluated" and state.decision == "DENY"):
+            _fail("ResolveDeny illegal from current state")
 
         next_state = replace(
             state,
             phase="blocked",
         )
-
 
     # =====================================================================
     # ResolveEscalate
@@ -394,13 +295,8 @@ def apply_transition(
 
     elif name == "ResolveEscalate":
 
-        if not (
-            state.phase == "evaluated"
-            and state.decision == "ESCALATE"
-        ):
-            _fail(
-                "ResolveEscalate illegal from current state"
-            )
+        if not (state.phase == "evaluated" and state.decision == "ESCALATE"):
+            _fail("ResolveEscalate illegal from current state")
 
         next_state = replace(
             state,
@@ -408,26 +304,19 @@ def apply_transition(
             review_required=True,
         )
 
-
     # =====================================================================
     # GrantChildCapability
     # =====================================================================
 
     elif name == "GrantChildCapability":
 
-        if not (
-            state.parent_has_capability
-            and not state.child_has_capability
-        ):
-            _fail(
-                "child capability grant exceeds parent authority"
-            )
+        if not (state.parent_has_capability and not state.child_has_capability):
+            _fail("child capability grant exceeds parent authority")
 
         next_state = replace(
             state,
             child_has_capability=True,
         )
-
 
     # =====================================================================
     # GrantSecret
@@ -436,15 +325,12 @@ def apply_transition(
     elif name == "GrantSecret":
 
         if state.secret_granted:
-            _fail(
-                "secret grant already exists"
-            )
+            _fail("secret grant already exists")
 
         next_state = replace(
             state,
             secret_granted=True,
         )
-
 
     # =====================================================================
     # ReturnSecret
@@ -452,19 +338,13 @@ def apply_transition(
 
     elif name == "ReturnSecret":
 
-        if not (
-            state.secret_granted
-            and not state.secret_returned
-        ):
-            _fail(
-                "ReturnSecret requires active grant"
-            )
+        if not (state.secret_granted and not state.secret_returned):
+            _fail("ReturnSecret requires active grant")
 
         next_state = replace(
             state,
             secret_returned=True,
         )
-
 
     # =====================================================================
     # GrantBroker
@@ -473,15 +353,12 @@ def apply_transition(
     elif name == "GrantBroker":
 
         if state.broker_granted:
-            _fail(
-                "broker grant already exists"
-            )
+            _fail("broker grant already exists")
 
         next_state = replace(
             state,
             broker_granted=True,
         )
-
 
     # =====================================================================
     # BrokerEgress
@@ -489,29 +366,18 @@ def apply_transition(
 
     elif name == "BrokerEgress":
 
-        if not (
-            state.broker_granted
-            and not state.egress_occurred
-        ):
-            _fail(
-                "BrokerEgress requires broker grant"
-            )
+        if not (state.broker_granted and not state.egress_occurred):
+            _fail("BrokerEgress requires broker grant")
 
         next_state = replace(
             state,
             egress_occurred=True,
         )
 
-
     else:
-        raise AssertionError(
-            name
-        )
+        raise AssertionError(name)
 
-
-    validate_invariants(
-        next_state
-    )
+    validate_invariants(next_state)
 
     return next_state
 
@@ -522,19 +388,11 @@ def verify_trace(
     initial: BullTraceState | None = None,
 ) -> BullTraceState:
 
-    state = (
-        initial
-        if initial is not None
-        else BullTraceState()
-    )
+    state = initial if initial is not None else BullTraceState()
 
-    validate_invariants(
-        state
-    )
+    validate_invariants(state)
 
-    for index, event in enumerate(
-        events
-    ):
+    for index, event in enumerate(events):
 
         try:
 
@@ -546,8 +404,7 @@ def verify_trace(
         except TraceViolation as exc:
 
             raise TraceViolation(
-                f"trace event {index} "
-                f"({event.transition}) violated model: {exc}"
+                f"trace event {index} " f"({event.transition}) violated model: {exc}"
             ) from exc
 
     return state

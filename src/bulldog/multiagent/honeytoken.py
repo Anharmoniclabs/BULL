@@ -21,7 +21,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from .contracts import AgentIdentity, AgentResult, Envelope, Finding, Severity, Verdict
 
-
 CANARY_PREFIX = "BULL-CANARY-v1:"
 MAX_CANARY_SCAN_CHARS = 262_144
 DEFAULT_MAX_TRACKED_RUNS = 1024
@@ -277,9 +276,7 @@ class HoneyTokenAgent:
             # keys are still scanned individually, but they are not injected
             # between values for this reconstruction.
             value_texts = [
-                text
-                for path, text in strings
-                if not (path and path[-1] == "<key>")
+                text for path, text in strings if not (path and path[-1] == "<key>")
             ]
             if value_texts:
                 candidates.append(("<joined-values>", "".join(value_texts)))
@@ -356,7 +353,9 @@ class HoneyTokenAgent:
         yield "base64", base64.b64encode(raw).decode("ascii")
         yield "base64url", base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
         yield "body-base64", base64.b64encode(body_raw).decode("ascii")
-        yield "body-base64url", base64.urlsafe_b64encode(body_raw).decode("ascii").rstrip("=")
+        yield "body-base64url", base64.urlsafe_b64encode(body_raw).decode(
+            "ascii"
+        ).rstrip("=")
         yield "hex", raw.hex()
         yield "body-hex", body_raw.hex()
         yield "urlencoded", urllib.parse.quote(token, safe="")

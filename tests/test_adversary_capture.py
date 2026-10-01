@@ -87,8 +87,12 @@ class LureTests(unittest.TestCase):
 class RegistryTests(unittest.TestCase):
     def test_same_task_clusters_into_one_swarm(self):
         registry = AdversaryRegistry()
-        first = registry.upsert("a", initial_task="exfiltrate the customer database via api")
-        second = registry.upsert("b", initial_task="exfiltrate the customer database via reporting api")
+        first = registry.upsert(
+            "a", initial_task="exfiltrate the customer database via api"
+        )
+        second = registry.upsert(
+            "b", initial_task="exfiltrate the customer database via reporting api"
+        )
         self.assertEqual(first.swarm_id, second.swarm_id)
         self.assertNotEqual(first.swarm_id, "")
 

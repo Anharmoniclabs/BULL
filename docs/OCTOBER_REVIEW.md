@@ -1,7 +1,8 @@
 # Technical presentation Q&A
 
 Start with the [five-minute presentation](PRESENTATION.md) and
-[latest exact-candidate evidence](VALIDATION_20260923.md).
+[historical one-shot evidence](VALIDATION_20260923.md) and
+[the later combined candidate](HUMAN_FIRST_PRODUCTION_ASSURANCE.md).
 
 ## Opening statement
 
@@ -67,7 +68,8 @@ key, a guest boot or external retention.
 ## Source of truth
 
 - `SECURITY_CLAIMS.md`: implementation/test mapping and unsupported behaviors.
-- `VALIDATION_20260923.md`: latest pinned evidence; older records remain historical.
+- `VALIDATION_20260923.md`: historical pinned evidence.
+- `HUMAN_FIRST_PRODUCTION_ASSURANCE.md`: later candidate scope and remaining checks.
 - `BRANCH_AUDIT_20260922.md`: preserved branch inventory and historical caveats.
 - PR #55: software release work, now merged.
 - PR #57 and `BRANCH_INTEGRATION.md`: merged hardware host integration, branding and dependency updates.
